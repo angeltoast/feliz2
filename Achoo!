@@ -1,0 +1,328 @@
+﻿#!/bin/bash
+#
+# avia-ais 2015/06/15
+#
+# Avia AIS - Arch Linux Installation Script
+
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the lution-ais script by Carl Duff for Evo/Lution Linux
+#
+#####################################################################
+#																	#
+#		Please read ALL the following notes before proceeding!		#
+#		------------------------------------------------------		#
+#																	#
+#####################################################################
+#
+# The Avia-AIS script is in its early stages of development. As such,
+# it may be unstable and will contain bugs. It was originally written
+# for my own use, but it is shared in the spirit of of the community,
+# subject to the conditions set out in the GNU GENERAL LICENSE file
+# shipped with it.
+#
+# Its purpose is to speed up installation of Arch Linux, plus a desktop
+# environment and a greeter. It does not pause for user intervention
+# during installation, instead you will make changes to the Variables
+# List at the start of the script before running it.
+#
+# As written, it is for a UK English setup with Xfce as the desktop
+# environment and LightDM GTK greeter, and with partitioning variables
+# for a Virtualbox installation of 12GiB.
+#
+# --------------------------------------------------------------------
+# Please note that no provision is included at this stage for Wifi
+# devices, or for UEFI, syslinux, GPT or other partitioning schemes
+# ---------------------------------------------------------------------
+#
+# Debugging code has been left in to keep the user informed during
+# installation. There is an error-trapping function which should exit
+# the script if any critical errors are detected. If the script fails,
+# check that all your variables are correct and in the correct format.
+#
+# When run, the script currently opens cfdisk to allow the user to
+# partition the disk. I am experimenting with an alternative, by which
+# the disk will be automatically partitioned by GNUParted, based on the
+# partition variables in the Variables List. Either way, the variables
+# must all be set (below) so you must plan your partition scheme and
+# enter all the variables before running the script. The experimental
+# code is currently commented out.
+
+########################################################################
+#																	   #
+#							Variables List							   #
+#							--------------							   #
+#	You must change all these variables as desired to suit your		   #
+#	  location and your personal requirements and preferences.		   #
+#																	   #
+########################################################################
+
+#
+# Country variables - these will be used for language, locale and clock settings
+#
+CountryCode="GB"						# Country code for mirrorlist
+CountryLocale="LANG=en_GB.UTF-8"		# Locale
+Country="uk"							# Country for keyboard
+ZONE="Europe"
+SUBZONE="London"
+
+#
+# Partition variables - essential for correctly mounting the partitions.
+# Contents of these variables are critical and must be accurately defined.
+# The size of the partitions must fit the constraints of the disk size.
+#
+DiskDrive="a"
+SwapPartition="/dev/sda1"
+SwapSize="2G"							# Include G
+RootPartition="/dev/sda2"
+RootSize="10G"							# Include G
+GrubDevice="/dev/sda"
+PartitionTable="msdos"					# Must be valid type
+										# If in doubt, use "msdos"
+
+#
+# Desktop environment and greeter variables
+#
+DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
+DisplayManager="lightdm"
+Greeter="lightdm-gtk-greeter"
+
+#
+# Root and User variables - change these unless you want to be Elizabeth.
+#
+HostName="ArchLinux"
+RootPassword="RootPassword"
+UserName="elizabeth"
+UserPassword="Elizabeth"
+
+#########################################################################
+#																		#
+#						End of Variables List							#
+#						---------------------							#
+#	You should not need to change anything beyond this point, unless	#
+#		you have more advanced requirements than are allowed for		#
+#						in the current setup.							#
+#																		#
+#########################################################################
+
+##############################################
+
+#####################
+#					#
+#	 Functions		#
+#					#
+#####################
+
+#
+# Check for error, display it and exit
+#
+CheckForError() {
+
+	if [[ $? -gt 0 ]]; then
+		echo "An error occurred at $1"
+		echo "Unable to continue installation - Press [Enter] to quit"
+		read -r Response
+		exit
+	else
+		clear
+		echo "Preparing next step ..."
+		echo "$1"				# Debugging line - remove when done
+	fi
+
+}
+
+#
+# Generate and save a shortened mirrorlist of only the mirrors defined
+# in the CountryCode variable. Adapted from Lution AIS
+#
+LocalMirrorList() {
+	
+	echo "Generating local mirrorlist"
+	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist)
+
+# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
+
+# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp}
+
+# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
+
+# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
+	chmod +r /etc/pacman.d/mirrorlist
+	CheckForError "Line ${LINENO}"
+	
+}
+
+#
+# Taken directly from Lution AIS (adapted by Carl from helmutdu's AIS)
+# Function chroots to /mnt for parameter passed from caller
+#
+arch_chroot() {
+	
+    arch-chroot /mnt /bin/bash -c "${1}"
+    
+}  
+
+#########################
+#		 Execute		#
+#########################
+
+# Set keyboard layout
+loadkeys ${Country}
+
+# Ensure that drive is partitioned
+cfdisk
+#
+# An experimental alternative to cfdisk
+# By using GNU-Parted the nominated drive can be partitioned without
+# further intervention, using the variables set under "Partition Variables"
+#
+# This code has not yet been tested. Uncommenting these lines could 
+# destroy your file-system 
+#
+# parted -s ${GrubDevice} mklabel ${PartitionTable} mkpart P1 primary linux-swap 0.0 ${SwapSize} mkpart P2 primary ext3 ${SwapSize} ${RootSize}
+# parted set P2 boot on
+
+echo "Mounting partitions and activating swap"
+# First unmount in case previously mounted
+swapoff ${SwapPartition}
+umount ${RootPartition} /mnt
+# Then remount
+mkfs.ext4 ${RootPartition}
+CheckForError "Line ${LINENO}"
+mount ${RootPartition} /mnt
+CheckForError "Line ${LINENO}"
+mkswap ${SwapPartition}
+CheckForError "Line ${LINENO}"
+swapon ${SwapPartition}
+CheckForError "Line ${LINENO}"
+
+LocalMirrorList
+CheckForError "Line ${LINENO}"
+
+#
+# Install base system and base-devel
+#
+echo "Installing base system"
+# Latest Kernel and base-devel
+pacstrap /mnt base base-devel btrfs-progs ntp sudo 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+
+echo "Generating fstab"
+genfstab -U -p /mnt >> /mnt/etc/fstab
+CheckForError "Line ${LINENO}"
+cat /mnt/etc/fstab
+CheckForError "Line ${LINENO}"
+
+# Copy chosen locale to locale.gen
+echo "Preparing locales and clock"
+echo ${CountryLocale}" UTF-8" >> /mnt/etc/locale.gen
+CheckForError "Line ${LINENO}"
+
+# Set locale-gen (code copied from Lution installer)
+echo LANG=${CountryLocale} > /mnt/etc/locale.conf
+sed -i "s/#${CountryLocale}/" /mnt/etc/locale.gen 2>/tmp/.errlog
+locale-gen >/dev/null 2>>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+
+export ${CountryLocale}
+CheckForError "Line ${LINENO}"
+arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime" 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+arch_chroot "hwclock --systohc --utc"  2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+echo ${HostName} > /etc/hostname
+CheckForError "Line ${LINENO}"
+
+echo "Configuring the network"
+arch_chroot "systemctl enable dhcpcd.service" 2>/tmp/.errlog
+pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>/tmp/.errlog
+arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+CheckForError "Line ${LINENO}"
+
+# Set root password (Reduced from Lution AIS)  
+echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd
+arch_chroot "passwd root" < /tmp/.passwd >/dev/null 2>/tmp/.errlog
+rm /tmp/.passwd
+CheckForError "Line ${LINENO}"
+
+echo "Installing GRUB"				# ERROR IN HERE
+pacstrap /mnt grub os-prober 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}" 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg" 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+
+echo "Running mkinitcpio"
+# mkinitcpio -p linux
+arch_chroot "mkinitcpio -p linux-lts" 2>/tmp/.errlog || arch_chroot "mkinitcpio -p linux" 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+
+# Set keyboard to UK at next startup
+echo "Finishing installation"
+echo KEYMAP=${Country} > /etc/vconsole.conf
+CheckForError "Line ${LINENO}"
+
+# Required for Virtualbox installations
+echo blacklist i2c_piix4 > /etc/modprobe.d/modprobe.conf
+CheckForError "Line ${LINENO}"
+
+# Create the user, set password, then remove temporary password file
+echo "Adding user as defined"
+arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash" 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd
+arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null 2>/tmp/.errlog
+rm /tmp/.passwd
+CheckForError "Line ${LINENO}"
+# Set up basic configuration files and permissions for user
+arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
+CheckForError "Line ${LINENO}"
+
+echo "Adding files needed for installing some applications"
+pacman-db-upgrade
+CheckForError "Line ${LINENO}"
+pacman-key --init
+CheckForError "Line ${LINENO}"
+pacman-key --populate archlinux
+CheckForError "Line ${LINENO}"
+dirmngr < /dev/null							# This added to prevent the 
+CheckForError "Line ${LINENO}"				# error on the next line ...
+pacman-key --refresh-keys					# ERROR WAS HERE !!!!!
+CheckForError "Line ${LINENO}"
+
+# To avoid keyring problems ...				# Not sure if this is needed
+pacstrap /mnt haveged
+CheckForError "Line ${LINENO}"
+arch_chroot "systemctl enable haveged.service" >/dev/null 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+arch_chroot "systemctl start haveged.service" >/dev/null 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+
+# Install Flash and other Multimedia Codecs (add/remove items as desired)
+echo "Adding Flash and other Multimedia Codecs"
+pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin
+CheckForError "Line ${LINENO}"
+
+# Install X, graphics, etc
+echo "Installing X, graphics, etc"
+pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
+CheckForError "Line ${LINENO}"	
+
+# Install Display Manager and Desktop Environment (from Lution AIS)
+echo "Installing Display Manager and Desktop Environment"
+pacstrap /mnt ${DisplayManager} ${Greeter} 2>/tmp/.errlog
+arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null 2>>/tmp/.errlog
+CheckForError "Line ${LINENO}"	
+pacstrap /mnt ${DesktopEnvironment}
+CheckForError "Line ${LINENO}"
+
+echo "Success! Finished installing"
+echo "Shut down and remove installation medium before restarting"
+
