@@ -3,7 +3,7 @@ Elizabeth Mills
 
 Please also read the README file.
 
-The Avia script was originally written for my own use, but it is shared
+The Achoo! script was originally written for my own use, but it is shared
 in the spirit of the community, subject to the conditions set out in the
 LICENSE file shipped with it, and with no warranty whatsoever. It is
 intended to speed up a basic Arch installation plus desktop, with no
@@ -38,5 +38,5 @@ INSTRUCTIONS
 2)	Partition the drive to be used (may be done when script is running)
 3)	Open the script with Nano or your prefered editor
 4)	Scroll down to the Variables List and change as required
-5)	Save and exit the script, then run it using: ./avia-ais
+5)	Save and exit the script, then run it using: ./Achoo
 6)	See how quickly it does the job
