@@ -1,6 +1,6 @@
 ﻿#!/bin/bash
 #
-# Achoo! 2015/06/15
+# Achoo! 2015/06/16
 # Arch Linux Installation Script
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
@@ -82,8 +82,8 @@ PartitionTable="msdos"					# Must be valid type
 # Desktop environment and greeter variables
 #
 DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
-DisplayManager="lightdm"
-Greeter="lightdm-gtk-greeter"
+DisplayManager="lxdm"
+Greeter=""								# Leave empty for Lxdm
 
 #
 # Root and User variables - change these unless you want to be Elizabeth.
