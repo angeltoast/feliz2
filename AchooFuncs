@@ -388,27 +388,37 @@ check_connection(){
 # Generate and save a shortened mirrorlist of only the mirrors defined
 # in the CountryCode variable. Adapted from Lution AIS
 #
-LocalMirrorList() { # {{{
+LocalMirrorList() {
 
 	echo "Generating local mirrorlist"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist)
-
-# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
-
-# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp}
-
-# Make a safe copy of existing mirrorlist
-	chmod +r /etc/pacman.d/mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
+	read -p "$LINENO" Response	##############
 	CheckForError "Line ${LINENO}"
 	
-# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
+	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
+	read -p "$LINENO" Response	##########################
 	CheckForError "Line ${LINENO}"
-} # }}}
+	
+	# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp}
+	read -p "$LINENO" Response	#########################
+	CheckForError "Line ${LINENO}"
+	
+	# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
+	read -p "$LINENO" Response	#########################
+	CheckForError "Line ${LINENO}"
+	
+	# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
+	read -p "$LINENO" Response	#########################
+	chmod +r /etc/pacman.d/mirrorlist
+	read -p "$LINENO" Response	#########################
+	CheckForError "Line ${LINENO}"
+	
+}
 
 #
 # Taken directly from Lution AIS (adapted by Carl from helmutdu's AIS)
