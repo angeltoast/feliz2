@@ -166,39 +166,37 @@ echo "${CountryLocale} UTF-8" >> /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
 
 # Set locale-gen (code copied from Lution installer)
-echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf
-# sed -i "s/#${CountryLocale}/" /mnt/etc/locale.gen 2>/tmp/.errlog
-sed -i "s/#${CountryLocale}/${CountryLocale}/" /etc/locale.gen
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
-# locale-gen >/dev/null 2>>/tmp/.errlog
-locale-gen >/dev/null 2>&1
-
+locale-gen >/dev/null
+CheckForError "Line ${LINENO}"
+echo "LANG=${CountryLocale}.UTF-8" > /mnt/etc/locale.conf
 CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}"
 CheckForError "Line ${LINENO}"
-arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime" 2>/tmp/.errlog
+arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 CheckForError "Line ${LINENO}"
-arch_chroot "hwclock --systohc --utc"  2>/tmp/.errlog
+arch_chroot "hwclock --systohc --utc"
 CheckForError "Line ${LINENO}"
 echo ${HostName} > /etc/hostname
 CheckForError "Line ${LINENO}"
 
 echo "Configuring the network"
-arch_chroot "systemctl enable dhcpcd.service" 2>/tmp/.errlog
-pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>/tmp/.errlog
+arch_chroot "systemctl enable dhcpcd.service"
+pacstrap /mnt networkmanager network-manager-applet rp-pppoe
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 CheckForError "Line ${LINENO}"
 
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd
-arch_chroot "passwd root" < /tmp/.passwd >/dev/null 2>/tmp/.errlog
+arch_chroot "passwd root" < /tmp/.passwd >/dev/null
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
-echo "Installing GRUB"				# ERROR IN HERE
-pacstrap /mnt grub os-prober 2>/tmp/.errlog
+echo "Installing GRUB"
+pacstrap /mnt grub os-prober
 CheckForError "Line ${LINENO}"
-arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}" 2>/tmp/.errlog
+arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
 CheckForError "Line ${LINENO}"
 arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg" 2>/tmp/.errlog
 CheckForError "Line ${LINENO}"
