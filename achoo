@@ -166,10 +166,13 @@ echo "${CountryLocale} UTF-8" >> /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
 
 # Set locale-gen (code copied from Lution installer)
-locale-gen >/dev/null 2>>/tmp/.errlog
-CheckForError "Line ${LINENO}"
 echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf
-sed -i "s/#${CountryLocale}/" /mnt/etc/locale.gen 2>/tmp/.errlog
+# sed -i "s/#${CountryLocale}/" /mnt/etc/locale.gen 2>/tmp/.errlog
+sed -i "s/#${CountryLocale}/${CountryLocale}/" /etc/locale.gen
+CheckForError "Line ${LINENO}"
+# locale-gen >/dev/null 2>>/tmp/.errlog
+locale-gen >/dev/null 2>&1
+
 CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}"
 CheckForError "Line ${LINENO}"

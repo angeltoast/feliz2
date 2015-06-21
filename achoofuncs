@@ -105,16 +105,15 @@ print_danger() { # {{{
 CheckForError() {
 	if [[ $? -gt 0 ]]; then
 		echo "An error occurred at $1"
-		echo "Unable to continue installation - Press [Enter] to quit"
 		read -r Response
 		exit
 	else
-		print_heading
-		if [[ ! $1 ]]; then
-			echo ""
-		else
+	#	print_heading
+	#	if [[ ! $1 ]]; then
+	#		echo ""
+	#	else
 			echo "Preparing next step ..."
-		fi
+	#	fi
 	fi
 }
 
@@ -127,7 +126,43 @@ CheckForError() {
 #
 # Locales input
 #
-EditLocales(){	#{{{
+
+#
+# Locations display loop
+#
+SetLocation(){
+	InPrompt="Do you wish to change any of these? [y/n]: "
+	while [ $Repeat ]
+	do
+	print_heading
+	print_info "The best way to install Arch Linux is to follow the Wiki."
+	print_info "But sometimes you just want a quick installation, and that's where Achoo! comes in."
+	print_info "First we need to gather some important information to ensure it meets your needs."
+	print_info "Beginning with the settings for your location ..."
+	print_line
+	print_info "The country code is set to:  $CountryCode"	# Country code for mirrorlist
+	print_info "The keyboard code is set to: $Countrykbd"	# Country for keyboard
+	print_info "The time zone is set to: $ZONE/$SUBZONE"	# For time
+	print_info "The locale is set to: $CountryLocale"		# Locale
+	echo ""
+	read -p "$InPrompt" Response
+	case $Response in
+		"y") EditLocales
+		;;
+		"Y") EditLocales
+		;;
+		"n") break
+		;;
+		"N") break
+		;;
+		*) InPrompt="Please enter either [y] to change them or [n] to retain: "
+			Response="n"
+	esac
+	break
+	done
+}
+
+EditLocales(){
 	InPrompt="Do you wish to change this? [y/n]: "
 	
 	# (1) Variable ="Countrykbd" - Default = "uk" - Used for keyboard code
@@ -181,49 +216,16 @@ EditLocales(){	#{{{
 	read -r Response
 	Repeat=0
 	  
-  }	#}}} End of locales input
-
-#
-# Locations display loop
-#
-SetLocation(){
-	InPrompt="Do you wish to change any of these? [y/n]: "
-	while [ $Repeat ]
-	do
-	print_heading
-	print_info "The best way to install Arch Linux is to follow the Wiki."
-	print_info "But sometimes you just want a quick installation, and that's where Achoo! comes in."
-	print_info "First we need to gather some important information to ensure it meets your needs."
-	print_info "Beginning with the settings for your location ..."
-	print_line
-	print_info "The country code is set to:  $CountryCode"	# Country code for mirrorlist
-	print_info "The keyboard code is set to: $Countrykbd"	# Country for keyboard
-	print_info "The time zone is set to: $ZONE/$SUBZONE"	# For time
-	print_info "The locale is set to: $CountryLocale"		# Locale
-	echo ""
-	read -p "$InPrompt" Response
-	case $Response in
-		"y") EditLocales
-		;;
-		"Y") EditLocales
-		;;
-		"n") break
-		;;
-		"N") break
-		;;
-		*) InPrompt="Please enter either [y] to change them or [n] to retain: "
-			Response="n"
-	esac
-	break
-	done
 }
 
 #
 # Locale functions from AUI
 #
+
+#
 # keymap
 #
-getkeymap() { #{{{
+getkeymap() {
   local _keymaps=(`localectl list-keymaps`)
     PS3="(shift+pgup/pgdown) $prompt1"
     echo "Select keymap:"
@@ -235,12 +237,12 @@ getkeymap() { #{{{
         invalid_option
       fi
     done
-} # }}}
+}
 
 #
 # Locale  
 #
-setlocale() { #{{{
+setlocale() {
     local _locale_list=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
     PS3="$prompt1"
     echo "Select locale:"
@@ -254,11 +256,12 @@ setlocale() { #{{{
         invalid_option
       fi
     done
-}   # }}}
+}
+
 #
 # Set Zone and Sub-Zone  
 #
-settimezone() { #{{{
+settimezone() {
     local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
     PS3="$prompt1"
     echo "Select zone:"
@@ -279,12 +282,12 @@ settimezone() { #{{{
         invalid_option
       fi
     done
-} # }}}
+}
 
 #
-# A simple routine to accept user input of hostname, username, user password and root password
+# Accept user input of hostname, username, user password and root password
 #
-UserAndRoot() {	# {{{
+UserAndRoot() {
 	while [ $Repeat ]
 	do
 		# Hostname
@@ -315,10 +318,9 @@ UserAndRoot() {	# {{{
 			*) UserName=${Entered}
 		esac
 		echo "Username set to: $UserName"
-	#
-	# Change case of entry to all lower
-	#
+
 		# User password
+		print_heading
 		Entered="Linux"
 		print_info "Passwords should be a mixture of upper- and lower-case letters, numbers and special characters."
 		print_info "If you do not enter a password, the default of 'Linux' will be used."
@@ -341,7 +343,7 @@ UserAndRoot() {	# {{{
 		echo "Root password set to: $RootPassword}"
 	break
 	done
-} # }}}
+}
 
 #
 #	System checks		######		Some of these may not be used		######
