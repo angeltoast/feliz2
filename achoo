@@ -162,16 +162,16 @@ CheckForError "Line ${LINENO}"
 
 # Copy chosen locale to locale.gen
 echo "Preparing locales and clock"
-echo ${CountryLocale}" UTF-8" >> /mnt/etc/locale.gen
+echo "${CountryLocale} UTF-8" >> /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
 
 # Set locale-gen (code copied from Lution installer)
-echo LANG=${CountryLocale} > /mnt/etc/locale.conf
-sed -i "s/#${CountryLocale}/" /mnt/etc/locale.gen 2>/tmp/.errlog
 locale-gen >/dev/null 2>>/tmp/.errlog
 CheckForError "Line ${LINENO}"
-
-export ${CountryLocale}
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf
+sed -i "s/#${CountryLocale}/" /mnt/etc/locale.gen 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+export "LANG=${CountryLocale}"
 CheckForError "Line ${LINENO}"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime" 2>/tmp/.errlog
 CheckForError "Line ${LINENO}"

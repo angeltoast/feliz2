@@ -65,7 +65,7 @@ HomePartition="/dev/sda2"
 # Default location variables - these will be used for language, locale and clock settings
 #
 CountryCode="GB"						# Country code for mirrorlist
-CountryLocale="LANG=en_GB.UTF-8"		# Locale
+CountryLocale="en_GB.UTF-8"		# Locale
 Countrykbd="uk"							# Country for keyboard
 ZONE="Europe"             				# For time
 SUBZONE="London"						# For time

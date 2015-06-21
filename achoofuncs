@@ -163,7 +163,7 @@ EditLocales(){	#{{{
 	read -r Response
 	# End of ZONE/SUBZONE code
 		
-	# (3) Variable = "CountryLocale" - Default = "LANG=en_GB.UTF-8"
+	# (3) Variable = "CountryLocale" - Default = "en_GB.UTF-8"
 	# Also sets CountryCode
 	print_heading
 	echo "The locale setting is currently $CountryLocale"
