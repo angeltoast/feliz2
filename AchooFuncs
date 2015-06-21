@@ -401,11 +401,12 @@ LocalMirrorList() { # {{{
 	sed -i 's/^#Server/Server/g' ${MirrorTemp}
 
 # Make a safe copy of existing mirrorlist
+	chmod +r /etc/pacman.d/mirrorlist
 	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
-
+	CheckForError "Line ${LINENO}"
+	
 # Replace existing mirrorlist with new local mirrorlist
 	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
-	chmod +r /etc/pacman.d/mirrorlist
 	CheckForError "Line ${LINENO}"
 } # }}}
 
