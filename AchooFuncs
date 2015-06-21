@@ -426,8 +426,7 @@ arch_chroot() {
 ################################################
 
 #
-# Unmount partitions 
-# (Nice code)
+# Unmount partitions (from Lution/AUI - Nice code)
 # 1) Gets a list of all mounted partitions into MOUNTED
 # 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
 # 3) Unmounts each mounted device in turn from MOUNTED
@@ -591,7 +590,7 @@ AllocatePartitions() {
 		Counter=$((Counter+1))
 			if [ $Counter -eq $REPLY ]
 			then
-				RootPartition=$i
+				RootPartition="/dev/$i"
 				echo "Root partition will be $RootPartition"
 			else
 				Remaining="$Remaining $i"	# Add next available partition
@@ -613,7 +612,7 @@ AllocatePartitions() {
 		Counter=$((Counter+1))
 		if [ $Counter -eq $REPLY ]
 		then
-			SwapPartition=$i
+			SwapPartition="/dev/$i"
 			echo "Swap partition will be $SwapPartition"
 		else
 			Remaining="$Remaining $i"	# Add next available partition
@@ -621,7 +620,7 @@ AllocatePartitions() {
 		fi
 		PartitionList=$Remaining		# Replace original PartitionList with remaining options
 		done
-		break
+	break
     done
 }
 

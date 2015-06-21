@@ -1,25 +1,10 @@
 #!/bin/bash
 #
 # Achoo! Arch Linux Installation Script Version 0.1
-#
-# Ensure that Document is NOT "Unicode BOM"
-# chmod 755 Achoo!Development
-# ./Achoo!Development
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Achoo! Development version 2015/06/16
+# Development version 2015/06/21
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Compile this version into an iso for code testing before changing
-# the master script and releasing into Github.
-# All code, from here .............. #~#~#~# ............... to the
-# partitioning stage, is to be copied into the live script when ready.
-# There are enough changes in this to qualify for a new version number! 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Arch Linux Installation Script
-
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
-#
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 #
 #		Please read ALL the following notes before proceeding!
@@ -38,10 +23,11 @@
 # user password and root password, and works with the user to set up 
 # their partitioning requirements.
 #
-# Variables are stored in a separate script for easy access. They are set
+# Variables are stored in a separate script for easy access. Defaults are set
 # for a default UK English setup with Xfce as the desktop environment
 # and LXDM display manager, and with partitioning variables for a
-# Virtualbox installation of 12GiB. These will change as the project develops.
+# Virtualbox installation of 12GiB. These can be changed during running
+# of the script.
 #
 # --------------------------------------------------------------------
 # Please note that no provision is included at this stage for Wifi
@@ -53,10 +39,10 @@
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
 #
-# When run, the script will ask for the minimum user details, then will
+# When run, the script will ask for the minimum necessary details, then will
 # automatically partition the device based on the partition variables
-# set by the user. Cfdisk is then opened for checking the result - this
-# may be removed in the release version.
+# set by the user. 
+#
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
