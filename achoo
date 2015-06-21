@@ -67,7 +67,6 @@ else
 fi
 
 # Welcome screen and initialisation
-print_heading
 check_boot_system
 CheckForError "Line ${LINENO}"
 check_connection
@@ -160,14 +159,17 @@ CheckForError "Line ${LINENO}"
 cat /mnt/etc/fstab
 CheckForError "Line ${LINENO}"
 
-# I think this line may have been deleted in error!
-# arch-chroot /mnt /bin/bash
-
 # Set up locale
 echo "Preparing locale.gen"
+read -p ${LINENO}${OutPrompt} Response
 echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen
+read -p ${LINENO}${OutPrompt} Response
 CheckForError "Line ${LINENO}"
-locale-gen > /dev/null
+read -p ${LINENO}${OutPrompt} Response
+arch-chroot /mnt /bin/bash
+read -p ${LINENO}${OutPrompt} Response
+locale-gen							 # > /dev/null
+read -p ${LINENO}${OutPrompt} Response
 CheckForError "Line ${LINENO}"
 
 echo "Preparing locale.conf"
