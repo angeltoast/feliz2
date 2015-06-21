@@ -178,7 +178,7 @@ arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 CheckForError "Line ${LINENO}"
 arch_chroot "hwclock --systohc --utc"
 CheckForError "Line ${LINENO}"
-echo ${HostName} > /etc/hostname
+echo ${HostName} >> /etc/hostname
 CheckForError "Line ${LINENO}"
 
 echo "Configuring the network"
