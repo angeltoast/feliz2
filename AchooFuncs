@@ -562,7 +562,7 @@ ManagePartitions() {
 		read -p "Would you like to open cfdisk to manage the partitions now? [y/n]: " Response
     
 		case $Response in
-		"y" | "Y")  # cfdisk
+		"y" | "Y")  cfdisk
 			echo "Response $Response ... cfdisk selected"
 			;;	
 		*) echo "Response $Response ... cfdisk not selected"
