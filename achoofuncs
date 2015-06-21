@@ -332,6 +332,7 @@ UserAndRoot() {
 		esac
 		echo "User password set to: $UserPassword}"
 		# Root password
+		print_heading
 		Entered="Root"
 		print_info "And finally, a password for root. If you do not enter one, the default of 'Root' will be used."
 		read -p "Enter a password for root: " Entered

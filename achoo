@@ -150,25 +150,35 @@ CheckForError "Line ${LINENO}"
 #
 echo "Installing base system"
 # Latest Kernel and base-devel
-pacstrap /mnt base base-devel btrfs-progs ntp sudo 2>/tmp/.errlog
+pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo 2>/tmp/.errlog
+CheckForError "Line ${LINENO}"
+
+# Set the default PATH variable (copied from Lution in case it helps with persistent errors)
+arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 CheckForError "Line ${LINENO}"
 
 # Generate fstab
 echo "Generating fstab"
-genfstab -U -p /mnt >> /mnt/etc/fstab
+genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 cat /mnt/etc/fstab
 CheckForError "Line ${LINENO}"
 
+# Set hostname
+echo ${HostName} >> /etc/hostname
+CheckForError "Line ${LINENO}"
+sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
+sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
+
 # Set up locale
 echo "Preparing locale.gen"
-echo "${CountryLocale} UTF-8" >> /mnt/etc/locale.gen
+echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen
 CheckForError "Line ${LINENO}"
 arch_chroot "locale-gen"
 CheckForError "Line ${LINENO}"
 
 echo "Preparing locale.conf"
-echo "LANG=${CountryLocale}.UTF-8" >> /mnt/etc/locale.conf
+echo "LANG=${CountryLocale}.UTF-8" >> ${MOUNTPOINT}/etc/locale.conf
 CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}"
 CheckForError "Line ${LINENO}"
@@ -178,8 +188,8 @@ arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 CheckForError "Line ${LINENO}"
 arch_chroot "hwclock --systohc --utc"
 CheckForError "Line ${LINENO}"
-echo ${HostName} >> /etc/hostname
-CheckForError "Line ${LINENO}"
+
+
 
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"

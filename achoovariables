@@ -54,12 +54,13 @@
 #
 DiskDrive="a"
 GrubDevice="/dev/sda"
-PartitionTable="msdos"					# Must be valid type
+PartitionTable="msdos"
 SwapPartition="/dev/sda1"
-SwapSize="2G"							# Include G
+SwapSize="2G"
 RootPartition="/dev/sda2"
-RootSize="10G"							# Include G
+RootSize="10G"
 HomePartition="/dev/sda2"
+MOUNTPOINT="/mnt"
 
 #
 # Default location variables - these will be used for language, locale and clock settings
