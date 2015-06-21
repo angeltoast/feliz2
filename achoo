@@ -52,17 +52,17 @@
 # ~~~~~~~~~~~~~~~~~~~~~ 
 
 # Check for external functions and variables files
-if [[ -f `pwd`/AchooVariables ]]; then
-  source AchooVariables
+if [[ -f `pwd`/achoovariables ]]; then
+  source achoovariables
 else
-  echo "missing file: AchooVariables"
+  echo "missing file: achoovariables"
   exit 1
 fi
 
-if [[ -f `pwd`/AchooFuncs ]]; then
-  source AchooFuncs
+if [[ -f `pwd`/achoofuncs ]]; then
+  source achoofuncs
 else
-  echo "missing file: AchooFuncs"
+  echo "missing file: achoofuncs"
   exit 1
 fi
 
