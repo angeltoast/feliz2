@@ -1,17 +1,30 @@
-﻿#!/bin/bash
+#!/bin/bash
 #
-# Achoo! 2015/06/16
-# Arch Linux Installation Script Version 0.0
+# Achoo! Arch Linux Installation Script Version 0.1
+#
+# Ensure that Document is NOT "Unicode BOM"
+# chmod 755 Achoo!Development
+# ./Achoo!Development
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Achoo! Development version 2015/06/16
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Compile this version into an iso for code testing before changing
+# the master script and releasing into Github.
+# All code, from here .............. #~#~#~# ............... to the
+# partitioning stage, is to be copied into the live script when ready.
+# There are enough changes in this to qualify for a new version number! 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Arch Linux Installation Script
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
 #
-#####################################################################
-#																	#
-#		Please read ALL the following notes before proceeding!		#
-#		------------------------------------------------------		#
-#																	#
-#####################################################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+#
+#		Please read ALL the following notes before proceeding!
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 #
 # The Achoo! script is in its early stages of development. As such,
 # it may be unstable and will contain bugs. It was originally written
@@ -20,13 +33,15 @@
 # shipped with it.
 #
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter. It does not pause for user intervention
-# during installation, instead you will make changes to the Variables
-# List at the start of the script before running it.
+# environment and a greeter, with minimum user intervention. An initiating
+# "wizard" is being added that asks for the user's country, username,
+# user password and root password, and works with the user to set up 
+# their partitioning requirements.
 #
-# As written, it is for a UK English setup with Xfce as the desktop
-# environment and LightDM GTK greeter, and with partitioning variables
-# for a Virtualbox installation of 12GiB.
+# Variables are stored in a separate script for easy access. They are set
+# for a default UK English setup with Xfce as the desktop environment
+# and LXDM display manager, and with partitioning variables for a
+# Virtualbox installation of 12GiB. These will change as the project develops.
 #
 # --------------------------------------------------------------------
 # Please note that no provision is included at this stage for Wifi
@@ -38,162 +53,108 @@
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
 #
-# When run, the script currently opens cfdisk to allow the user to
-# partition the disk. I am experimenting with an alternative, by which
-# the disk will be automatically partitioned by GNUParted, based on the
-# partition variables in the Variables List. Either way, the variables
-# must all be set (below) so you must plan your partition scheme and
-# enter all the variables before running the script. The experimental
-# code is currently commented out.
+# When run, the script will ask for the minimum user details, then will
+# automatically partition the device based on the partition variables
+# set by the user. Cfdisk is then opened for checking the result - this
+# may be removed in the release version.
+# Users - You must plan your partition scheme and take care when entering
+# your details, or loss of data could occur.
 
-########################################################################
-#																	   #
-#							Variables List							   #
-#							--------------							   #
-#	You must change all these variables as desired to suit your		   #
-#	  location and your personal requirements and preferences.		   #
-#																	   #
-########################################################################
 
-#
-# Country variables - these will be used for language, locale and clock settings
-#
-CountryCode="GB"						# Country code for mirrorlist
-CountryLocale="LANG=en_GB.UTF-8"		# Locale
-Country="uk"							# Country for keyboard
-ZONE="Europe"
-SUBZONE="London"
+# ~~~~~~~~~~~~~~~~~~~~~ 
+#		 Execute
+# ~~~~~~~~~~~~~~~~~~~~~ 
 
-#
-# Partition variables - essential for correctly mounting the partitions.
-# Contents of these variables are critical and must be accurately defined.
-# The size of the partitions must fit the constraints of the disk size.
-#
-DiskDrive="a"
-SwapPartition="/dev/sda1"
-SwapSize="2G"							# Include G
-RootPartition="/dev/sda2"
-RootSize="10G"							# Include G
-GrubDevice="/dev/sda"
-PartitionTable="msdos"					# Must be valid type
-										# If in doubt, use "msdos"
+# Check for external functions and variables files
+if [[ -f `pwd`/AchooVariables ]]; then
+  source AchooVariables
+else
+  echo "missing file: AchooVariables"
+  exit 1
+fi
 
-#
-# Desktop environment and greeter variables
-#
-DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
-DisplayManager="lxdm"
-Greeter=""								# Leave empty for Lxdm
+if [[ -f `pwd`/AchooFuncs ]]; then
+  source AchooFuncs
+else
+  echo "missing file: AchooFuncs"
+  exit 1
+fi
 
-#
-# Root and User variables - change these unless you want to be Elizabeth.
-#
-HostName="ArchLinux"
-RootPassword="RootPassword"
-UserName="elizabeth"
-UserPassword="Elizabeth"
+# Welcome screen and initialisation
+print_heading
+check_boot_system
+CheckForError "Line ${LINENO}"
+check_connection
+CheckForError "Line ${LINENO}"
+pacman -Sy
+CheckForError "Line ${LINENO}"
 
-#########################################################################
-#																		#
-#						End of Variables List							#
-#						---------------------							#
-#	You should not need to change anything beyond this point, unless	#
-#		you have more advanced requirements than are allowed for		#
-#						in the current setup.							#
-#																		#
-#########################################################################
-
-##############################################
-
-#####################
-#					#
-#	 Functions		#
-#					#
-#####################
-
-#
-# Check for error, display it and exit
-#
-CheckForError() {
-
-	if [[ $? -gt 0 ]]; then
-		echo "An error occurred at $1"
-		echo "Unable to continue installation - Press [Enter] to quit"
-		read -r Response
-		exit
-	else
-		clear
-		echo "Preparing next step ..."
-		echo "$1"				# Debugging line - remove when done
-	fi
-
-}
-
-#
-# Generate and save a shortened mirrorlist of only the mirrors defined
-# in the CountryCode variable. Adapted from Lution AIS
-#
-LocalMirrorList() {
-	
-	echo "Generating local mirrorlist"
-	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist)
-
-# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
-
-# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp}
-
-# Make a safe copy of existing mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
-
-# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
-	chmod +r /etc/pacman.d/mirrorlist
-	CheckForError "Line ${LINENO}"
-	
-}
-
-#
-# Taken directly from Lution AIS (adapted by Carl from helmutdu's AIS)
-# Function chroots to /mnt for parameter passed from caller
-#
-arch_chroot() {
-	
-    arch-chroot /mnt /bin/bash -c "${1}"
-    
-}  
-
-#########################
-#		 Execute		#
-#########################
+# Display welcome text and set user-variables
+Repeat=1
+SetLocation
+CheckForError "Line ${LINENO}"
 
 # Set keyboard layout
-loadkeys ${Country}
+loadkeys ${Countrykbd}
+CheckForError "Line ${LINENO}"
 
-# Ensure that drive is partitioned
-cfdisk
 #
-# An experimental alternative to cfdisk
-# By using GNU-Parted the nominated drive can be partitioned without
-# further intervention, using the variables set under "Partition Variables"
+# Names and passwords
 #
-# This code has not yet been tested. Uncommenting these lines could 
-# destroy your file-system 
-#
-# parted -s ${GrubDevice} mklabel ${PartitionTable} mkpart P1 primary linux-swap 0.0 ${SwapSize} mkpart P2 primary ext3 ${SwapSize} ${RootSize}
-# parted set P2 boot on
+Repeat=1
+UserAndRoot
 
+#
+# Partitioning steps
+#
+
+#
+# Ask user if they have prepared partitions before starting
+# If not, open cfdisk for user to create/set/amend partitions as desired
+#
+ManagePartitions
+
+#
+# Display available partitions and select /swap nad /root
+# (maybe later allow for separate /home and perhaps others)
+AllocatePartitions
+
+#
+# Set device for Grub
+#
+SetGrubDevice
+
+#
+# Set mirrorlist
+#
+LocalMirrorList
+CheckForError "Line ${LINENO}"
+
+# First stages in testing code to use GNU-Parted to partition the
+# nominated device without further intervention, using the variables set
+# under ManagePartitions or externally before running the script
+
+#
+# First unmount existing partitions in case previously mounted
+#
+# swapoff ${SwapPartition}
+# CheckForError "Line ${LINENO}"
+umount_partitions
+CheckForError "Line ${LINENO}"
+
+#
+# This block can include additional partitions, conditional on flags set
+# in the partitioning functions
+#
 echo "Mounting partitions and activating swap"
-# First unmount in case previously mounted
-swapoff ${SwapPartition}
-umount ${RootPartition} /mnt
-# Then remount
 mkfs.ext4 ${RootPartition}
 CheckForError "Line ${LINENO}"
+# mkfs.ext4 ${HomePartition}
+# CheckForError "Line ${LINENO}"
 mount ${RootPartition} /mnt
 CheckForError "Line ${LINENO}"
+# mount ${HomePartition} /mnt
+# CheckForError "Line ${LINENO}"
 mkswap ${SwapPartition}
 CheckForError "Line ${LINENO}"
 swapon ${SwapPartition}
@@ -263,7 +224,7 @@ CheckForError "Line ${LINENO}"
 
 # Set keyboard to UK at next startup
 echo "Finishing installation"
-echo KEYMAP=${Country} > /etc/vconsole.conf
+echo KEYMAP=${Countrykbd} > /etc/vconsole.conf
 CheckForError "Line ${LINENO}"
 
 # Required for Virtualbox installations

@@ -1,0 +1,632 @@
+#!/bin/bash
+#
+# Achoo! Arch Linux Installation Script Version 0.1
+# AchooFuncs - Functions called by the main Achoo! script
+# 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Achoo! Development version 2015/06/16
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Include this script and the AchooVariables script when compiling the
+# main Achoo! script into an iso for code testing, and when uploading
+# this major rewrite to Git and Github
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the lution-ais script by Carl Duff for Evo/Lution Linux and the
+# AUI scripts by HelmuthDU. I cannot overstate my debt to these two
+# men for their contributions to my understanding of the process.
+#
+# The Achoo! script is in its early stages of development. As such,
+# it may be unstable and will contain bugs. It was originally written
+# for my own use, but it is shared in the spirit of of the community,
+# subject to the conditions set out in the GNU GENERAL LICENSE file
+# shipped with it.
+#
+# Its purpose is to speed up installation of Arch Linux, plus a desktop
+# environment and a greeter, with minimum user intervention. Variables
+# and functions are stored in separate scripts for easy access.
+#
+# Users - You must plan your partition scheme and take care when entering
+# your details, or loss of data could occur.
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+#								#
+#	 		Functions			#
+#			---------			#
+#	Input/output				#
+#	Error-checking				#
+#	Set location variables		#
+#	System checks				#
+#	Mirrorlist					#
+#	System & partitioning		#
+#								#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+#
+# Input and output functions (some from AUI scripts)
+#
+contains_element() { # {{{
+    # check if an element exist in a string
+    for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
+} # }}}
+
+invalid_option() { # {{{
+    print_line
+    echo "Invalid option. Try another one."
+    read -p "$OutPrompt" Response
+} # }}}
+
+read_input_text() { # {{{
+    if [[ $AUTOMATIC_MODE -eq 1 ]]; then
+      OPTION=$2
+    else
+      read -p "$1 [y/N]: " OPTION
+      echo ""
+    fi
+    OPTION=`echo "$OPTION" | tr '[:upper:]' '[:lower:]'`
+} # }}} 
+
+print_heading() { # {{{	
+	clear
+    printf "                             # - The Achoo! Arch Linux Installation Script - # \n"
+    print_title "                 https://github.com/Angeltoast/Achoo   ~   https://wiki.archlinux.org/"
+} # }}}
+print_line() { # {{{
+    printf "%$(tput cols)s\n"|tr ' ' '-'
+} # }}}
+
+print_title() { # {{{
+#    clear
+    print_line
+    echo -e " ${Bold}$1${Reset}"
+    print_line
+    echo ""
+} # }}}
+
+print_info() { # {{{
+    # Console width number
+    T_COLS=`tput cols`
+    echo -e "${Bold}$1${Reset}\n" | fold -sw $(( $T_COLS - 18 )) | sed 's/^/\t/'
+} # }}}
+
+print_warning() { # {{{
+    T_COLS=`tput cols`
+    echo -e "${BYellow}$1${Reset}\n" | fold -sw $(( $T_COLS - 1 ))
+} # }}}
+
+print_danger() { # {{{
+    T_COLS=`tput cols`
+    echo -e "${BRed}$1${Reset}\n" | fold -sw $(( $T_COLS - 1 ))
+} # }}}
+
+#
+# Check for error, display it and exit
+#
+CheckForError() {
+	if [[ $? -gt 0 ]]; then
+		echo "An error occurred at $1"
+		echo "Unable to continue installation - Press [Enter] to quit"
+		read -r Response
+		exit
+	else
+		print_heading
+		if [[ ! $1 ]]; then
+			echo ""
+		else
+			echo "Preparing next step ..."
+		fi
+	fi
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+#								#
+# 		Location functions		#
+#								#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+#
+# Locales input
+#
+EditLocales(){	#{{{
+	InPrompt="Do you wish to change this? [y/n]: "
+	
+	# (1) Variable ="Countrykbd" - Default = "uk" - Used for keyboard code
+	print_heading
+	echo "The keyboard code is currently $Countrykbd"
+	read -p "$InPrompt" Response
+	case $Response in	#{{{
+		"y") getkeymap
+				echo "The keyboard is set to: $Countrykbd. $OutPrompt"
+			;;	
+		"Y") getkeymap
+			echo "The keyboard is set to: $Countrykbd. $OutPrompt"
+
+			;;	
+		*) echo "Default value of $Countrykbd retained. $OutPrompt"
+		esac	#}}}
+		read -r Response
+	# End of keyboard code
+				
+	# (2) Variables = "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
+	print_heading
+	echo "The zone settings are currently $ZONE / $SUBZONE"
+	read -p "$InPrompt" Response
+	case $Response in	#{{{
+		"y") settimezone
+				echo "Zone and Subzone are set to $ZONE / $SUBZONE. $OutPrompt"
+			;;
+		"Y") settimezone
+				echo "Zone and Subzone are set to $ZONE / $SUBZONE. $OutPrompt"
+			;;	
+		*) echo "Default value of $ZONE / $SUBZONE retained. $OutPrompt"
+	esac #}}}
+	read -r Response
+	# End of ZONE/SUBZONE code
+		
+	# (3) Variable = "CountryLocale" - Default = "LANG=en_GB.UTF-8"
+	# Also sets CountryCode
+	print_heading
+	echo "The locale setting is currently $CountryLocale"
+	read -p "$InPrompt" Response
+	case $Response in	#{{{
+		"y") setlocale
+				echo "Locale is set to $CountryLocale. $OutPrompt"
+		;;
+		"Y") setlocale
+				echo "Locale is set to $CountryLocale"
+		;;
+		*) echo "Default value of $CountryLocale retained. $OutPrompt"
+
+	esac	#}}}
+	read -r Response
+	Repeat=0
+	  
+  }	#}}} End of locales input
+
+#
+# Locations display loop
+#
+SetLocation(){
+	InPrompt="Do you wish to change any of these? [y/n]: "
+	while [ $Repeat ]
+	do
+	print_heading
+	print_info "The best way to install Arch Linux is to follow the Wiki."
+	print_info "But sometimes you just want a quick installation, and that's where Achoo! comes in."
+	print_info "First we need to gather some important information to ensure it meets your needs."
+	print_info "Beginning with the settings for your location ..."
+	print_line
+	print_info "The country code is set to:  $CountryCode"	# Country code for mirrorlist
+	print_info "The keyboard code is set to: $Countrykbd"	# Country for keyboard
+	print_info "The time zone is set to: $ZONE/$SUBZONE"	# For time
+	print_info "The locale is set to: $CountryLocale"		# Locale
+	echo ""
+	read -p "$InPrompt" Response
+	case $Response in
+		"y") EditLocales
+		;;
+		"Y") EditLocales
+		;;
+		"n") break
+		;;
+		"N") break
+		;;
+		*) InPrompt="Please enter either [y] to change them or [n] to retain: "
+			Response="n"
+	esac
+	break
+	done
+}
+
+#
+# Locale functions from AUI
+#
+# keymap
+#
+getkeymap() { #{{{
+  local _keymaps=(`localectl list-keymaps`)
+    PS3="(shift+pgup/pgdown) $prompt1"
+    echo "Select keymap:"
+    select KEYMAP in "${_keymaps[@]}"; do
+      if contains_element "$KEYMAP" "${_keymaps[@]}"; then
+		Countrykbd=$KEYMAP
+        break
+      else
+        invalid_option
+      fi
+    done
+} # }}}
+
+#
+# Locale  
+#
+setlocale() { #{{{
+    local _locale_list=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+    PS3="$prompt1"
+    echo "Select locale:"
+    select LOCALE in "${_locale_list[@]}"; do
+      if contains_element "$LOCALE" "${_locale_list[@]}"; then
+        LOCALE_UTF8="${LOCALE}.UTF-8"
+        CountryLocale=${LOCALE}
+		echo $LOCALE | awk '{substr($0,length($0)-2,2)}' > CountryCode
+        break
+      else
+        invalid_option
+      fi
+    done
+}   # }}}
+#
+# Set Zone and Sub-Zone  
+#
+settimezone() { #{{{
+    local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
+    PS3="$prompt1"
+    echo "Select zone:"
+    select ZONE in "${_zones[@]}"; do
+      if contains_element "$ZONE" "${_zones[@]}"; then
+        local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
+        PS3="$prompt1"
+        echo "Select subzone:"
+        select SUBZONE in "${_subzones[@]}"; do
+          if contains_element "$SUBZONE" "${_subzones[@]}"; then
+            break
+          else
+            invalid_option
+          fi
+        done
+        break
+      else
+        invalid_option
+      fi
+    done
+} # }}}
+
+#
+# A simple routine to accept user input of hostname, username, user password and root password
+#
+UserAndRoot() {	# {{{
+	while [ $Repeat ]
+	do
+		# Hostname
+		Entered="ArchLinux"
+		print_heading
+		print_info "A hostname is needed. This will be a unique name created to identify your device on a"
+		print_info "network. Host names are restricted to alphanumeric characters. The hyphen (-) can be"
+		print_info "used, but a host name cannot start or end with it. Length is restricted to 63 characters."
+		print_info "If you do not enter one, the default hostname of 'ArchLinux' will be used."
+		read -p "Enter a hostname for your computer (for example: archlinux): " Entered
+		case $Entered in
+			"") Entered=$HostName
+			;;
+			*) HostName=${Entered}
+		esac
+		read -p "$HostName ${OutPrompt}" Response
+		# Username
+		print_heading
+		Entered="Archie"
+		print_info "Next we have to deal with names and passwords."
+		print_line
+		print_info "If you don't create a username here, a default user called"
+		print_info "'archie' will be set up, with password 'Linux'"
+		read -p "Enter a username (must be all lower case): " Entered
+		case $Entered in
+			"") Entered=$UserName
+			;;
+			*) UserName=${Entered}
+		esac
+		read -p "$UserName ${OutPrompt}" Response
+	#
+	# Change case of entry to all lower
+	#
+		# User password
+		Entered="Linux"
+		print_info "Passwords should be a mixture of upper- and lower-case letters, numbers and special characters."
+		print_info "If you do not enter a password, the default of 'Linux' will be used."
+		read -p "Enter a password for $UserName: " Entered
+		case $Entered in
+			"") Entered=$UserPassword
+			;;
+			*) UserPassword=${Entered}
+		esac
+		read -p "$UserPassword ${OutPrompt}" Response
+		# Root password
+		Entered="Root"
+		print_info "And finally, a password for root. If you do not enter one, the default of 'Root' will be used."
+		read -p "Enter a password for root: " Entered
+		case $Entered in
+			"") Entered=$RootPassword
+			;;
+			*) RootPassword=${Entered}
+		esac
+		read -p "$RootPassword ${OutPrompt}" Response
+	break
+	done
+} # }}}
+
+#
+#	System checks		######		Some of these may not be used		######
+#
+check_boot_system() { # {{{
+    if [[ "$(cat /sys/class/dmi/id/sys_vendor)" == 'Apple Inc.' ]] || [[ "$(cat /sys/class/dmi/id/sys_vendor)" == 'Apple Computer, Inc.' ]]; then
+      modprobe -r -q efivars || true  # if MAC
+    else
+      modprobe -q efivarfs            # all others
+    fi
+    if [[ -d "/sys/firmware/efi/" ]]; then
+      ## Mount efivarfs if it is not already mounted
+      if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+        mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+      fi
+      UEFI=1
+      echo "UEFI Mode detected"
+    else
+      UEFI=0
+      echo "BIOS Mode detected"
+    fi
+} # }}}
+  
+check_root() { # {{{
+    if [[ "$(id -u)" != "0" ]]; then
+      error_msg "ERROR! You must execute the script as the 'root' user."
+    fi
+}
+
+check_connection(){
+    XPINGS=$(( $XPINGS + 1 ))
+    connection_test() {
+      ping -q -w 1 -c 1 `ip r | grep default | awk 'NR==1 {print $3}'` &> /dev/null && return 1 || return 0
+    }
+    WIRED_DEV=`ip link | grep "eno\|enp" | awk '{print $2}'| sed 's/://' | sed '1!d'`
+    WIRELESS_DEV=`ip link | grep wlp | awk '{print $2}'| sed 's/://' | sed '1!d'`
+    if connection_test; then
+      print_warning "ERROR! Connection not Found."
+      CheckForError
+    fi
+}
+
+#
+# Generate and save a shortened mirrorlist of only the mirrors defined
+# in the CountryCode variable. Adapted from Lution AIS
+#
+LocalMirrorList() { # {{{
+
+	echo "Generating local mirrorlist"
+	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist)
+
+# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
+
+# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp}
+
+# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
+
+# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
+	chmod +r /etc/pacman.d/mirrorlist
+	CheckForError "Line ${LINENO}"
+} # }}}
+
+#
+# Taken directly from Lution AIS (adapted by Carl from helmutdu's AIS)
+# Function chroots to /mnt for parameter passed from caller
+#
+arch_chroot() {
+	
+    arch-chroot /mnt /bin/bash -c "${1}"
+    
+}  
+
+################################################
+##
+##     System and Partitioning Functions 	
+##
+################################################
+
+#
+# Unmount partitions 
+# (Nice code)
+# 1) Gets a list of all mounted partitions into MOUNTED
+# 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
+# 3) Unmounts each mounted device in turn from MOUNTED
+umount_partitions(){
+  MOUNTED=""
+  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
+  swapoff -a
+  for i in ${MOUNTED[@]}; do
+      umount $i >/dev/null 2>>/tmp/.errlog
+  done
+  CheckForError "Line ${LINENO}"
+}
+
+#
+# Adapted from Lution
+# Allows user-selection of filesystem by entering a number
+# Returns enhanced selection via FILESYSTEM variable
+# 
+select_filesystem(){
+
+	print_info "Valid filesystems"
+ 	print_info " 1 - Skip"
+	print_info " 2 - ext2"
+ 	print_info " 3 - ext3"
+	print_info " 4 - ext4"
+	print_info " 5 - f2fs"
+	print_info " 6 - jfs"
+ 	print_info " 7 - nilfs2"
+	print_info " 8 - ntfs"
+	print_info " 9 - reiserfs"
+ 	print_info "10 - vfat"
+	print_info "11 - xfs"
+	read -p "Enter a number: " ANSWER	
+
+    case $(cat ${ANSWER}) in
+        "1") FILESYSTEM="skip"
+             ;;
+        "2") FILESYSTEM="mkfs.ext2 -F"
+             ;;
+        "3") FILESYSTEM="mkfs.ext3 -F"
+             ;;            
+        "4") FILESYSTEM="mkfs.ext4 -F"
+             ;;
+        "5") FILESYSTEM="mkfs.f2fs"
+             modprobe f2fs
+             ;;
+        "6") FILESYSTEM="mkfs.jfs -q"
+             ;;
+        "7") FILESYSTEM="mkfs.nilfs2 -f"
+             ;;  
+        "8") FILESYSTEM="mkfs.ntfs -q"
+             ;;  
+        "9") FILESYSTEM="mkfs.reiserfs -f -f"
+             ;;  
+       "10") FILESYSTEM="mkfs.vfat -F32"
+             ;;  
+       "11") FILESYSTEM="mkfs.xfs -f"
+             ;;      
+          *) prep_menu
+             ;;
+    esac
+
+  }
+
+#
+# User to choose device for grub installation
+#
+SetGrubDevice() {
+
+	# Store available devices in a list	
+    DEVICE=""
+    DevicesList=$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd');
+    
+	# Display available devices and select one for Grub
+	print_heading
+	Counter=0
+	PS3="$prompt1"
+	echo -e "Select the device for Grub:\n"
+	select partition in ${DevicesList}; do
+        for i in ${DevicesList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $REPLY ]
+			then
+				GrubDevice=$i
+				echo "Grub will be installed on $GrubDevice"
+			fi
+		done
+		break
+    done
+}
+
+#
+# Check and show partitions.
+#
+ManagePartitions() {
+	
+	# First test for existing partitions
+	print_heading
+	ShowPartitions=""
+	PARTITIONS=""
+	ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+	
+	# Count the partitions
+    for i in ${ShowPartitions[@]}; do
+       PARTITIONS="${PARTITIONS} ${i} -"
+       NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
+    done	
+
+	# If no partitions exist, offer cfdisk to create (or exit)
+	# Alternatively, offer cfdisk to edit
+	# NUMBER_PARTITIONS="0"			# To test situation of zero partitions
+	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
+		print_heading
+        echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table if you wish."
+		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
+        echo "If you choose not to use 'cfdisk', the script will terminate."
+        read -p "Would you like to open cfdisk now? [y/n]: " Response
+        case $Response in
+		"y" | "Y")  cfdisk
+			echo "Response $Response ... cfdisk selected"
+			;;	
+		*) echo "Response $Response ... cfdisk not selected. Exiting installation!"
+			exit
+		esac
+ 	else
+		echo "Before we can install the system, the device must be partitioned ready to receive it."
+		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
+		echo "Here is a list of available partitions on all connected devices ..."
+		lsblk
+		echo ""
+		read -p "Would you like to open cfdisk to manage the partitions now? [y/n]: " Response
+    
+		case $Response in
+		"y" | "Y")  # cfdisk
+			echo "Response $Response ... cfdisk selected"
+			;;	
+		*) echo "Response $Response ... cfdisk not selected"
+		esac
+	fi
+}
+
+#
+# Simple code to display partitions for user-selection
+#
+AllocatePartitions() {
+	
+	# Store available partitions in a list
+	PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+	
+	# Display available partitions in a vertical, numbered list
+	# and select one for /root
+	print_heading
+	Remaining=""
+	Counter=0
+	PS3="$prompt1"
+	echo -e "Select the partition for /root:\n"
+	select partition in ${PartitionList}; do
+        for i in ${PartitionList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $REPLY ]
+			then
+				RootPartition=$i
+				echo "Root partition will be $RootPartition"
+			else
+				Remaining="$Remaining $i"	# Add next available partition
+			fi
+		PartitionList=$Remaining			# Replace original PartitionList with remaining options
+		done
+		break
+    done
+
+	# Display remaining partitions and select one for /swap
+	echo ""
+	Remaining=""
+	Counter=0
+	PS3="$prompt1"
+	echo -e "Now select the partition for /swap:\n"
+	select partition in ${PartitionList}; do
+        for i in ${PartitionList}
+		do
+		Counter=$((Counter+1))
+		if [ $Counter -eq $REPLY ]
+		then
+			SwapPartition=$i
+			echo "Swap partition will be $SwapPartition"
+		else
+			Remaining="$Remaining $i"	# Add next available partition
+			# echo "$i added"
+		fi
+		PartitionList=$Remaining		# Replace original PartitionList with remaining options
+		done
+		break
+    done
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ #
+#							#
+#	 End of Functions		#
+#							#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ #
