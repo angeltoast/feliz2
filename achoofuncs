@@ -29,18 +29,18 @@
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-#								#
-#	 		Functions			#
-#			---------			#
-#	Input/output				#
-#	Error-checking				#
-#	Set location variables		#
-#	System checks				#
-#	Mirrorlist					#
-#	System & partitioning		#
-#								#
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+#
+#	 		Functions
+#			---------
+#	Input/output
+#	Error-checking
+#	Set location variables
+#	System checks
+#	Mirrorlist
+#	System & partitioning
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
 #
 # Input and output functions (some from AUI scripts)
@@ -68,8 +68,8 @@ read_input_text() { # {{{
 
 print_heading() { # {{{	
 	clear
-    printf "                             # - The Achoo! Arch Linux Installation Script - # \n"
-    print_title "                 https://github.com/Angeltoast/Achoo   ~   https://wiki.archlinux.org/"
+    printf "                 # - The Achoo! Arch Linux Installation Script - # \n"
+    print_title "    https://github.com/Angeltoast/Achoo   ~   https://wiki.archlinux.org/"
 } # }}}
 print_line() { # {{{
     printf "%$(tput cols)s\n"|tr ' ' '-'
@@ -118,11 +118,11 @@ CheckForError() {
 	fi
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-#								#
-# 		Location functions		#
-#								#
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+#
+# 		Location functions
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
 #
 # Locales input
@@ -300,7 +300,7 @@ UserAndRoot() {	# {{{
 			;;
 			*) HostName=${Entered}
 		esac
-		read -p "$HostName ${OutPrompt}" Response
+		echo "Hostname set to: $HostName}"
 		# Username
 		print_heading
 		Entered="Archie"
@@ -314,7 +314,7 @@ UserAndRoot() {	# {{{
 			;;
 			*) UserName=${Entered}
 		esac
-		read -p "$UserName ${OutPrompt}" Response
+		echo "Username set to: $UserName"
 	#
 	# Change case of entry to all lower
 	#
@@ -328,7 +328,7 @@ UserAndRoot() {	# {{{
 			;;
 			*) UserPassword=${Entered}
 		esac
-		read -p "$UserPassword ${OutPrompt}" Response
+		echo "User password set to: $UserPassword}"
 		# Root password
 		Entered="Root"
 		print_info "And finally, a password for root. If you do not enter one, the default of 'Root' will be used."
@@ -338,7 +338,7 @@ UserAndRoot() {	# {{{
 			;;
 			*) RootPassword=${Entered}
 		esac
-		read -p "$RootPassword ${OutPrompt}" Response
+		echo "Root password set to: $RootPassword}"
 	break
 	done
 } # }}}
@@ -393,29 +393,23 @@ LocalMirrorList() {
 	echo "Generating local mirrorlist"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist)
-	read -p "$LINENO" Response	##############
 	CheckForError "Line ${LINENO}"
 	
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
 	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
-	read -p "$LINENO" Response	##########################
 	CheckForError "Line ${LINENO}"
 	
 	# Use sed to filter entries
 	sed -i 's/^#Server/Server/g' ${MirrorTemp}
-	read -p "$LINENO" Response	#########################
 	CheckForError "Line ${LINENO}"
 	
 	# Make a safe copy of existing mirrorlist
 	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
-	read -p "$LINENO" Response	#########################
 	CheckForError "Line ${LINENO}"
 	
 	# Replace existing mirrorlist with new local mirrorlist
 	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
-	read -p "$LINENO" Response	#########################
 	chmod +r /etc/pacman.d/mirrorlist
-	read -p "$LINENO" Response	#########################
 	CheckForError "Line ${LINENO}"
 	
 }
@@ -635,8 +629,8 @@ AllocatePartitions() {
     done
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~ #
-#							#
-#	 End of Functions		#
-#							#
-# ~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ 
+#
+#	 End of Functions
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ 

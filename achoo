@@ -146,9 +146,6 @@ CheckForError "Line ${LINENO}"
 swapon ${SwapPartition}
 CheckForError "Line ${LINENO}"
 
-LocalMirrorList
-CheckForError "Line ${LINENO}"
-
 #
 # Install base system and base-devel
 #
