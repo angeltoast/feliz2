@@ -161,13 +161,13 @@ cat /mnt/etc/fstab
 CheckForError "Line ${LINENO}"
 
 # I think this line may have been deleted in error!
-arch-chroot /mnt /bin/bash
+# arch-chroot /mnt /bin/bash
 
 # Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
-arch-chroot locale-gen >/dev/null
+locale-gen > /dev/null
 CheckForError "Line ${LINENO}"
 
 echo "Preparing locale.conf"
