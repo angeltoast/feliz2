@@ -153,32 +153,22 @@ echo "Installing base system"
 pacstrap /mnt base base-devel btrfs-progs ntp sudo 2>/tmp/.errlog
 CheckForError "Line ${LINENO}"
 
+# Generate fstab
 echo "Generating fstab"
 genfstab -U -p /mnt >> /mnt/etc/fstab
-read -p "${LINENO} ${OutPrompt}" Response	################
 CheckForError "Line ${LINENO}"
-nano /mnt/etc/fstab			################################
-read -p "${LINENO} ${OutPrompt}" Response	################
 cat /mnt/etc/fstab
-read -p "${LINENO} ${OutPrompt}" Response	################
 CheckForError "Line ${LINENO}"
-read -p "${LINENO} ${OutPrompt}" Response	################
 
 # Set up locale
 echo "Preparing locale.gen"
-read -p "${LINENO} ${OutPrompt}" Response	################
-echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen
-read -p "${LINENO} ${OutPrompt}" Response	################
+echo "${CountryLocale} UTF-8" >> /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
-read -p "${LINENO} ${OutPrompt}" Response	################
-arch-chroot /mnt /bin/bash
-read -p "${LINENO} ${OutPrompt}" Response	################
-locale-gen							 # > /dev/null
-read -p "${LINENO} ${OutPrompt}" Response	################
+arch_chroot "locale-gen"
 CheckForError "Line ${LINENO}"
 
 echo "Preparing locale.conf"
-echo "LANG=${CountryLocale}.UTF-8" > /mnt/etc/locale.conf
+echo "LANG=${CountryLocale}.UTF-8" >> /mnt/etc/locale.conf
 CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}"
 CheckForError "Line ${LINENO}"
