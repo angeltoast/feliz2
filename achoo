@@ -160,17 +160,22 @@ CheckForError "Line ${LINENO}"
 cat /mnt/etc/fstab
 CheckForError "Line ${LINENO}"
 
-# Copy chosen locale to locale.gen
+# I think this line may have been deleted in error!
+arch-chroot /mnt /bin/bash
+
+# Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen
 CheckForError "Line ${LINENO}"
-locale-gen  >/dev/null
+arch-chroot locale-gen >/dev/null
 CheckForError "Line ${LINENO}"
+
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}.UTF-8" > /mnt/etc/locale.conf
 CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}"
 CheckForError "Line ${LINENO}"
+
 echo "Setting clock"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 CheckForError "Line ${LINENO}"
