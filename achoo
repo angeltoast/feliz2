@@ -47,9 +47,9 @@
 # your details, or loss of data could occur.
 
 
-# ~~~~~~~~~~~~~~~~~~~~~ 
-#		 Execute
-# ~~~~~~~~~~~~~~~~~~~~~ 
+# ~~~~~~~~~~~~
+#	Execute
+# ~~~~~~~~~~~~
 
 # Check for external functions and variables files
 if [[ -f `pwd`/achoovariables ]]; then
@@ -155,21 +155,26 @@ CheckForError "Line ${LINENO}"
 
 echo "Generating fstab"
 genfstab -U -p /mnt >> /mnt/etc/fstab
+read -p "${LINENO} ${OutPrompt}" Response	################
 CheckForError "Line ${LINENO}"
+nano /mnt/etc/fstab			################################
+read -p "${LINENO} ${OutPrompt}" Response	################
 cat /mnt/etc/fstab
+read -p "${LINENO} ${OutPrompt}" Response	################
 CheckForError "Line ${LINENO}"
+read -p "${LINENO} ${OutPrompt}" Response	################
 
 # Set up locale
 echo "Preparing locale.gen"
-read -p ${LINENO}${OutPrompt} Response
+read -p "${LINENO} ${OutPrompt}" Response	################
 echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen
-read -p ${LINENO}${OutPrompt} Response
+read -p "${LINENO} ${OutPrompt}" Response	################
 CheckForError "Line ${LINENO}"
-read -p ${LINENO}${OutPrompt} Response
+read -p "${LINENO} ${OutPrompt}" Response	################
 arch-chroot /mnt /bin/bash
-read -p ${LINENO}${OutPrompt} Response
+read -p "${LINENO} ${OutPrompt}" Response	################
 locale-gen							 # > /dev/null
-read -p ${LINENO}${OutPrompt} Response
+read -p "${LINENO} ${OutPrompt}" Response	################
 CheckForError "Line ${LINENO}"
 
 echo "Preparing locale.conf"
