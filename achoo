@@ -5,29 +5,26 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-#		Please read ALL the following notes before proceeding!
+#	Please read the following notes before proceeding!
 #
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # The Achoo! script is in its early stages of development. As such,
 # it may be unstable and will contain bugs. It was originally written
 # for my own use, but it is shared in the spirit of of the community,
-# subject to the conditions set out in the GNU GENERAL LICENSE file
-# shipped with it.
+# subject to the conditions set out in the GNU GENERAL LICENSE
 #
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter, with minimum user intervention. An initiating
-# "wizard" is being added that asks for the user's country, username,
-# user password and root password, and works with the user to set up 
-# their partitioning requirements.
+# environment and a greeter, with minimum user intervention. An initialising
+# "wizard" asks for the user's country, username, user password and root
+# password, and works with the user to set up their partitioning requirements.
 #
 # Variables are stored in a separate script for easy access. Defaults are set
-# for a default UK English setup with Xfce as the desktop environment
-# and LXDM display manager, and with partitioning variables for a
-# Virtualbox installation of 12GiB. These can be changed during running
-# of the script.
+# for a default UK English setup with Xfce as the desktop environment and
+# LXDM display manager, and with partitioning variables for a Virtualbox
+# installation of 12GiB. These can be changed when the script is running.
 #
 # --------------------------------------------------------------------
 # Please note that no provision is included at this stage for Wifi
@@ -66,14 +63,6 @@ else
   exit 1
 fi
 
-# Welcome screen and initialisation
-check_boot_system
-CheckForError "Line ${LINENO}"
-check_connection
-CheckForError "Line ${LINENO}"
-pacman -Sy
-CheckForError "Line ${LINENO}"
-
 # Display welcome text and set user-variables
 Repeat=1
 SetLocation
@@ -83,35 +72,30 @@ CheckForError "Line ${LINENO}"
 loadkeys ${Countrykbd}
 CheckForError "Line ${LINENO}"
 
-#
 # Names and passwords
-#
 Repeat=1
 UserAndRoot
+CheckForError "Line ${LINENO}"
 
 #
 # Partitioning steps
 #
 
-#
 # Ask user if they have prepared partitions before starting
 # If not, open cfdisk for user to create/set/amend partitions as desired
-#
 ManagePartitions
+CheckForError "Line ${LINENO}"
 
-#
 # Display available partitions and select /swap nad /root
 # (maybe later allow for separate /home and perhaps others)
 AllocatePartitions
+CheckForError "Line ${LINENO}"
 
-#
 # Set device for Grub
-#
 SetGrubDevice
+CheckForError "Line ${LINENO}"
 
-#
 # Set mirrorlist
-#
 LocalMirrorList
 CheckForError "Line ${LINENO}"
 
@@ -119,18 +103,12 @@ CheckForError "Line ${LINENO}"
 # nominated device without further intervention, using the variables set
 # under ManagePartitions or externally before running the script
 
-#
 # First unmount existing partitions in case previously mounted
-#
-# swapoff ${SwapPartition}
-# CheckForError "Line ${LINENO}"
 umount_partitions
 CheckForError "Line ${LINENO}"
 
-#
 # This block can include additional partitions, conditional on flags set
 # in the partitioning functions
-#
 echo "Mounting partitions and activating swap"
 mkfs.ext4 ${RootPartition}
 CheckForError "Line ${LINENO}"
@@ -145,9 +123,7 @@ CheckForError "Line ${LINENO}"
 swapon ${SwapPartition}
 CheckForError "Line ${LINENO}"
 
-#
 # Install base system and base-devel
-#
 echo "Installing base system"
 # Latest Kernel and base-devel
 pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo 2>/tmp/.errlog
