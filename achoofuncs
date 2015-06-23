@@ -430,11 +430,12 @@ AllocatePartitions() {
 ExtraPartitions() {
 	
 Remaining=""
-declare -a AddPartList	# Array to hold list of additional partitions by partition system name. eg: /dev/sda5
+declare -a AddPartList		# Array to hold list of additional partitions by partition system name. eg: /dev/sda5
 declare -a AddPartType		# Array to hold same partitions in same order by partition type. eg: ext2
 declare -a AddPartLabel		# Array to hold same partitions in same order by given name. eg: /home
-
-while :
+Counter=0
+Elements=${#AddPartList[@]}]
+while [ $Counter -lt $Elements ]
 do
 	print_heading
 	echo "The following partitions are still available: ${PartitionList}"
@@ -447,8 +448,7 @@ do
 		*) break
 	esac
 	Remaining=""
-	Counter=0
-	Elements=0
+
 	PS3="$prompt1"
 	echo -e "Select the partition to be allocated \n"
 	select partition in ${PartitionList}
@@ -463,9 +463,7 @@ do
 				Partition="/dev/$i"
 			# 1) When selected, first save to AddPartList (eg: /dev/sda5)
 				Elements=${#AddPartList[@]}
-				echo "Selected partition $Elements is ${Partition}"
 				AddPartList[$Elements]=" ${Partition} "
-				read -p "AddPartList[$Elements] is ${AddPartList[$Elements]}" Response
 				
 			# 2) Then get a label for selected partition (eg: /home)
 			# {{{ Start the loop here
@@ -488,9 +486,7 @@ do
 					esac
 				#
 				# Check that the label has not already been used
-					echo "AddPartLabel is ${AddPartLabel}"
-					read -p "PartLabel is ${PartLabel}"
-					Counter=0
+					LabelCounter=0
 					if [ -z ${AddPartLabel} ]
 					then
 						LoopRepeat="N"
@@ -498,9 +494,8 @@ do
 						# Go through AddPartLabel checking each item against PartLabel
 						for i in ${AddPartLabel}
 						do
-							Counter=$((Counter+1))
+							LabelCounter=$((LabelCounter+1))
 							echo $i
-							read -p "Counter is ${Counter}"
 							if [ $PartLabel = $i ]
 							then
 								read -p "Label ${PartLabel} has already been used. Please use a different label." Response
@@ -518,9 +513,7 @@ do
 			# }}}
 			# Add it to AddPartLabel list
 				Elements=${#AddPartLabel[@]}
-				echo "Selected partition $Elements is ${PartLabel}"
 				AddPartLabel[$Elements]=" ${PartLabel} "
-				read -p "AddPartLabel[$Elements] is ${AddPartLabel[$Elements]}" Response
 				
 			# 3) Then get a partition type (eg: ext4)
 				select_filesystem
@@ -533,9 +526,7 @@ do
 				echo "${PartLabel} ${Partition} is ${PartType}"
 			# Add partition type to AddPartType (eg: ext2)
 				Elements=${#AddPartType[@]}
-				echo "Selected partition $Elements is ${PartType}"
 				AddPartLabel[$Elements]=" ${PartType} "
-				read -p "AddPartType[$Elements] is ${AddPartType[$Elements]}" Response
 				
 			else
 				Remaining="$Remaining $i"	# Add unused partition

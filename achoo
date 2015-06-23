@@ -86,8 +86,7 @@ CheckForError "Line ${LINENO}"
 ManagePartitions
 CheckForError "Line ${LINENO}"
 
-# Display available partitions and select /swap nad /root
-# (maybe later allow for separate /home and perhaps others)
+# Display available partitions and select /swap and /root and others)
 AllocatePartitions
 CheckForError "Line ${LINENO}"
 
@@ -99,54 +98,44 @@ CheckForError "Line ${LINENO}"
 LocalMirrorList
 CheckForError "Line ${LINENO}"
 
-# First stages in testing code to use GNU-Parted to partition the
-# nominated device without further intervention, using the variables set
-# under ManagePartitions or externally before running the script
-
 # First unmount existing partitions in case previously mounted
 umount_partitions
 CheckForError "Line ${LINENO}"
 
 MountPartitions() {
-# Now includes 'unlimited' additional partitions
-
+# Root
 echo "Mounting partitions and activating swap"
-if [ -n ${RootPartition[1]} ]
-then
-	echo "Formatting /root partition"
-	mkfs.${RootType}
-	echo "Mounting /root partition"	
-	mount ${RootPartition} /mnt
-	CheckForError "Line ${LINENO}"
-fi
+echo "Formatting /root partition"
+mkfs.${RootType} ${RootPartition}
+echo "Mounting /root partition"	
+mount ${RootPartition} $MOUNTPOINT
+CheckForError "Line ${LINENO}"
+# Swap
+echo "Making /swap partition"
+mkswap ${SwapPartition}
+CheckForError "Line ${LINENO}"
+echo "Activating /swap"
+swapon ${SwapPartition}
+CheckForError "Line ${LINENO}"
 
-if [ -n ${SwapPartition} ]
-then
-	echo "Making /swap partition"
-	mkswap ${SwapPartition}
-	CheckForError "Line ${LINENO}"
-	echo "Activating /swap"
-	swapon ${SwapPartition}
-	CheckForError "Line ${LINENO}"
-fi
-
+# Now includes 'unlimited' additional partitions
 # Next a loop (if AddPartList is not empty) to add any extra partitions
-if [ -n ${AddPartList[1]} ]
+Counter=0
+Elements=${#AddPartList[@]}
+if [ $Counter -lt $Elements ]
 then
 	# Loop through AddPartList array, checking corresponding items in AddPartType and AddPartLabel
-	Counter=0
-	Elements=${#AddPartList[@]}
 	while [ $Counter -lt $Elements ]
 	do
 		case ${AddPartType[$Counter]} in
-		"-") 	mkdir -p /mnt${AddPartLabel[$Counter]}			# Make a directory (don't format)
-				mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
-				CheckForError "Line ${LINENO}"
+		"-") mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory (don't format)
+			mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
+			CheckForError "Line ${LINENO}"
 		;;
-		"ext2") mke2fs											# Make file system (Note ext2 format)
-				mkdir -p /mnt${AddPartLabel[$Counter]}			# Make a directory for the selected partition
-				mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
-				CheckForError "Line ${LINENO}"
+		"ext2") mke2fs												# Make file system (Note ext2 format)
+			mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory for the selected partition
+			mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
+			CheckForError "Line ${LINENO}"
 		;;
 		*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	# Make file system as defined in AddPartType
 			mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory as defined in AddPartLabel
@@ -162,7 +151,7 @@ fi
 # Install base system and base-devel
 echo "Installing base system"
 # Latest Kernel and base-devel
-pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo 2>/tmp/.errlog
+pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo # 2>/tmp/.errlog
 CheckForError "Line ${LINENO}"
 
 # Set the default PATH variable (copied from Lution in case it helps with persistent errors)
