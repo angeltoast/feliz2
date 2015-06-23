@@ -55,11 +55,10 @@
 DiskDrive="a"
 GrubDevice="/dev/sda"
 PartitionTable="msdos"
-SwapPartition="/dev/sda1"
-SwapSize="2G"
-RootPartition="/dev/sda2"
-RootSize="10G"
-HomePartition="/dev/sda2"
+SwapPartition="/dev/sda2"
+RootPartition="/dev/sda1"
+RootType="ext4"
+Partition="sda1"
 MOUNTPOINT="/mnt"
 
 #
