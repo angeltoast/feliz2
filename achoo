@@ -6,7 +6,7 @@
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
 # -------------------------------------------------
-#	Please read the following notes before proceeding!
+# Please read the following notes before proceeding!
 # -------------------------------------------------
 
 # The Achoo! script is in its early stages of development. As such,
@@ -22,7 +22,10 @@
 # Variables are stored in a separate script for easy access. Defaults are set
 # for a default UK English setup with Xfce as the desktop environment and
 # LXDM display manager, and with partitioning variables for a Virtualbox
-# installation of 12GiB. These can be changed when the script is running.
+# installation of 12GiB. These can be changed in the wizard.
+
+# After asking for the minimum necessary details, the script then runs
+# without further intervention to the end.
 
 # --------------------------------------------------------------------
 # Please note that no provision is included at this stage for Wifi
@@ -34,15 +37,11 @@
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
 
-# When run, the script will ask for the minimum necessary details, then will
-# automatically partition the device based on the partition variables
-# set by the user. 
-
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
 # -------
-#	Execute
+# Execute
 # -------
 
 # Check for external functions and variables files
@@ -169,7 +168,7 @@ echo "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts" || arch_chroot "mkinitcpio -p linux"
 CheckForError "Line ${LINENO}"
 
-# Set keyboard to UK at next startup
+# Set keyboard to selected language at next startup
 echo "Finishing installation"
 echo KEYMAP=${Countrykbd} > /etc/vconsole.conf
 CheckForError "Line ${LINENO}"
@@ -204,7 +203,7 @@ CheckForError "Line ${LINENO}"
 pacman-key --refresh-keys
 CheckForError "Line ${LINENO}"
 
-# To avoid keyring problems ...				# Not sure if this is needed
+# To avoid keyring problems
 pacstrap /mnt haveged
 CheckForError "Line ${LINENO}"
 arch_chroot "systemctl enable haveged.service" >/dev/null
@@ -231,5 +230,5 @@ pacstrap /mnt ${DesktopEnvironment}
 CheckForError "Line ${LINENO}"
 
 echo "Success! Finished installing"
-echo "Shut down and remove installation medium before restarting"
+echo "Shut down or reboot"
 

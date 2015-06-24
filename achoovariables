@@ -8,9 +8,9 @@
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#	Please read the following notes before proceeding!
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# --------------------------------------------------
+# Please read the following notes before proceeding!
+# --------------------------------------------------
 
 # The Achoo! script is in its early stages of development. As such,
 # it may be unstable and will contain bugs. It was originally written
@@ -38,7 +38,7 @@
 # ---------------------------------------------------------------------
 
 # --------------
-#	Variables List
+# Variables List
 # --------------
 
 # ---------------------------------------------------------------------
@@ -59,18 +59,18 @@ MOUNTPOINT="/mnt"
 # Default location variables
 # these will be used for language, locale and clock settings
 # ----------------------------------------------------------
-CountryCode="GB"						# Country code for mirrorlist
+CountryCode="GB"				# Country code for mirrorlist
 CountryLocale="en_GB.UTF-8"		# Locale
-Countrykbd="uk"							# Country for keyboard
-ZONE="Europe"             				# For time
-SUBZONE="London"						# For time
+Countrykbd="uk"					# Country for keyboard
+ZONE="Europe"             		# For time
+SUBZONE="London"				# For time
 
 # -----------------------------------------
 # Desktop environment and greeter variables
 # -----------------------------------------
 DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
 DisplayManager="lxdm"
-Greeter=""								# Not required for Lxdm
+Greeter=""						# Not required for Lxdm
 
 # -----------------------
 # Root and User variables

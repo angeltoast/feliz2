@@ -3,13 +3,13 @@
 # Achoo! Arch Linux Installation Script Version 0.1
 # AchooFuncs - Functions called by the main Achoo! script
 # 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# -------------------------------------
 # Achoo! Development version 2015/06/16
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Include this script and the AchooVariables script when compiling the
+# -------------------------------------
+# Include this script and the achoovariables script when compiling the
 # main Achoo! script into an iso for code testing, and when uploading
 # this major rewrite to Git and Github
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# --------------------------------------------------------------------
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux and the
@@ -28,8 +28,7 @@
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
-# ~~~~~~~~~~~~~~~~~~~~~~
-#
+# -----------------------
 # Functions
 # ---------
 # Input and output
@@ -38,15 +37,14 @@
 # System checks
 # Mirrorlist
 # System & partitioning
-#
-# ~~~~~~~~~~~~~~~~~~~~~~
+# -----------------------
 
-# ~~~~~~~~~~~~~~~~~
+# ----------------
 # Input and output 
-# ~~~~~~~~~~~~~~~~~
+# ----------------
 
-# check if an element exist in a string
 contains_element() { # (from AUI scripts)
+# check if an element exist in a string
     for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
 }
 
@@ -79,12 +77,12 @@ print_info() { # (from AUI scripts)
     echo -e "${Bold}$1${Reset}\n" | fold -sw $(( $T_COLS - 18 )) | sed 's/^/\t/'
 }
 
-# ~~~~~~~~~~~~~~
+# --------------
 # Error-checking
-# ~~~~~~~~~~~~~~
+# --------------
 
-# Check for error, display it and exit
 CheckForError() {
+# Check for error, display it, then exit program
 	if [[ $? -gt 0 ]]; then
 		echo "An error occurred at $1"
 		read -r Response
@@ -94,12 +92,12 @@ CheckForError() {
 	fi
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------
 # Locations, Names and Passwords
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------
 
-# Locations display loop
 SetLocation(){
+# Locations display loop
 	InPrompt="Do you wish to change any of these? [y/n]: "
 	while [ $Repeat ]
 	do
@@ -155,14 +153,15 @@ EditLocales(){
 	Repeat=0
 }
 
-# Build keymap (from AUI)
 getkeymap() {
+# Build keymap (from AUI)
   local _keymaps=(`localectl list-keymaps`)
     PS3="(shift+pgup/pgdown) $prompt1"
     echo "Select keymap:"
     select KEYMAP in "${_keymaps[@]}"; do
-      if contains_element "$KEYMAP" "${_keymaps[@]}"; then
-		Countrykbd=$KEYMAP
+      if contains_element "$KEYMAP" "${_keymaps[@]}"
+      then
+    		Countrykbd=$KEYMAP
         break
       else
         invalid_option
@@ -170,8 +169,8 @@ getkeymap() {
     done
 }
 
-# Generate list of locales  (from AUI)
 setlocale() {
+# Generate list of locales  (from AUI)
     local _locale_list=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
     PS3="$prompt1"
     echo "Select locale:"
@@ -187,12 +186,13 @@ setlocale() {
     done
 }
 
-# Set Zone and Sub-Zone from lists (from AUI)
 settimezone() {
+# Set Zone and Sub-Zone from lists (from AUI)
     local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
     PS3="$prompt1"
     echo "Select zone:"
-    select ZONE in "${_zones[@]}"; do
+    select ZONE in "${_zones[@]}"
+    do
       if contains_element "$ZONE" "${_zones[@]}"; then
         local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
         print_heading
@@ -212,8 +212,8 @@ settimezone() {
     done
 }
 
-# Accept user input of hostname, username, user password and root password
 UserAndRoot() {
+# Accept user input of hostname, username, user password and root password
 	while [ $Repeat ]
 	do
 		# Hostname
@@ -272,9 +272,9 @@ UserAndRoot() {
 	done
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~
+# -----------------------
 # System and Partitioning
-# ~~~~~~~~~~~~~~~~~~~~~~~
+# -----------------------
 
 
 LocalMirrorList() {
@@ -353,10 +353,10 @@ ManagePartitions() {
 	fi
 }
 
+select_filesystem() {
 # Adapted from Lution
 # Allows user-selection of filesystem by entering a number
 # Returns enhanced selection via FILESYSTEM variable
-select_filesystem() {
 	Counter=0
 	PS3="$prompt1"
 	TypeList="Skip ext2 ext3 ext4"	# Note: ext2 requires different 'make' tool
@@ -447,12 +447,13 @@ AllocatePartitions() {
 }
 
 ExtraPartitions() {
+# If partitions on the device remain unselected
 Remaining=""
 declare -a AddPartList		# Array to hold list of additional partitions by partition system name. eg: /dev/sda5
 declare -a AddPartType		# Array to hold same partitions in same order by partition type. eg: ext2
 declare -a AddPartLabel		# Array to hold same partitions in same order by given name. eg: /home
 Counter=0
-Elements=${#AddPartList[@]}]
+Elements=1
 while [ $Counter -lt $Elements ]
 do
 	print_heading
@@ -588,12 +589,11 @@ umount_partitions(){
   CheckForError "Line ${LINENO}"
 }
 
-MountPartitions
 MountPartitions() {
   # Root
   echo "Mounting partitions and activating swap"
   echo "Formatting /root partition"
-  mkfs.${RootType} ${RootPartition}     # eg: mkfs.ext4 /dev/sda1
+  mkfs.${RootType} ${RootPartition}    # eg: mkfs.ext4 /dev/sda1
   echo "Mounting /root partition"	
   mount ${RootPartition} $MOUNTPOINT   # eg: mount /dev/sda1 /mnt
   CheckForError "Line ${LINENO}"
@@ -605,33 +605,31 @@ MountPartitions() {
   swapon ${SwapPartition}
   CheckForError "Line ${LINENO}"
   # Next a loop (if AddPartList is not empty) to add any extra partitions
+  echo "Mounting additional partitions"
   Counter=0
   Elements=${#AddPartList[@]}
-  if [ $Counter -lt $Elements ]
-  then
-  	# Loop through AddPartList array, checking corresponding items in AddPartType and AddPartLabel
-  	while [ $Counter -lt $Elements ]
-  	do
-  		case ${AddPartType[$Counter]} in
-    		"-") mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory (don't format)
-			        mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
-			        CheckForError "Line ${LINENO}"
-    		;;
-    		"ext2") mke2fs												              # Make file system (Note ext2 format)
-        			mkdir -p /mnt${AddPartLabel[$Counter]}				# Make a directory for the selected partition
-	        		mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
-			CheckForError "Line ${LINENO}"
+ 	# Loop through AddPartList array, checking corresponding items in AddPartType and AddPartLabel
+  while [ $Counter -lt $Elements ]
+  do
+  	case ${AddPartType[$Counter]} in
+   		"-") mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Make a directory (don't format)
+		        mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it
+		        CheckForError "Line ${LINENO}"
+    	;;
+    	"ext2") mke2fs												                  # Make ext2 file system
+       			mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Make a directory for the partition
+	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it
+            CheckForError "Line ${LINENO}"
 	    	;;
-    		*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	# Make file system as defined in AddPartType
-	        		mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory as defined in AddPartLabel
-	        		mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}		# Then mount it
-	    		CheckForError "Line ${LINENO}"
-		  esac
-		  Counter=$((Counter+1))
-	  done
-  fi
+    	*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	# Make file system AddPartType
+	       		mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			# Make directory for the partition
+	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Then mount it
+             CheckForError "Line ${LINENO}"
+		esac
+		 Counter=$((Counter+1))
+	done
 }
 
-# ~~~~~~~~~~~~~~~~~
-#	 End of Functions
-# ~~~~~~~~~~~~~~~~~
+# ----------------
+#	End of Functions
+# ----------------
