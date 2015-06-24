@@ -448,13 +448,12 @@ AllocatePartitions() {
 
 ExtraPartitions() {
 # If partitions on the device remain unselected
-Remaining=""
 declare -a AddPartList		# Array to hold list of additional partitions by partition system name. eg: /dev/sda5
 declare -a AddPartType		# Array to hold same partitions in same order by partition type. eg: ext2
 declare -a AddPartLabel		# Array to hold same partitions in same order by given name. eg: /home
 Counter=0
 Elements=${#PartitionList[@]}
-while [ $Counter -lt $Elements ]
+while [ $Counter -le $Elements ]
 do
 	print_heading
 	echo "The following partitions are still available: ${PartitionList}"
@@ -474,16 +473,16 @@ do
 		Selected=$REPLY
 		for i in ${PartitionList}
 		do
-		Partition=""
-		PartitionType=""
-		Counter=$((Counter+1))
+      Partition=""
+      PartitionType=""
+      Counter=$((Counter+1))
 			if [ $Counter -eq $Selected ]
 			then
 			Partition="/dev/$i"
-			# 1) When selected, first save to AddPartList (eg: /dev/sda5)
+        # 1) When selected, first save to AddPartList (eg: /dev/sda5)
 				Elements=${#AddPartList[@]}
 				AddPartList[$Elements]=" ${Partition} "
-			# 2) Then get a label for selected partition (eg: /home)
+        # 2) Then get a label for selected partition (eg: /home)
 				LoopRepeat="Y"
 				while [ ${LoopRepeat} = "Y" ]
 				do
@@ -501,7 +500,7 @@ do
 								PartLabel="${Response}"
 							fi
 					esac
-				# Check that the label has not already been used
+          # Check that the label has not already been used
 					LabelCounter=0
 					if [ -z ${AddPartLabel} ]
 					then
@@ -509,44 +508,53 @@ do
 					else
 						# Go through AddPartLabel checking each item against PartLabel
 						for i in ${AddPartLabel}
-						do
+						do 
 							LabelCounter=$((LabelCounter+1))
 							echo $i
-							if [ $PartLabel = $i ]
+							if [ $PartLabel = $i ] 
 							then
 								read -p "Label ${PartLabel} has already been used. Please use a different label." Response
 							else
 								LoopRepeat="N"
 								break
 							fi
-						done
-					fi
-					if [ ${LoopRepeat} = "N" ]
+						done 
+					fi 
+					if [ ${LoopRepeat} = "N" ]  
 					then
 						break
-					fi
-				done
+					fi 
+				done 
   			# Add it to AddPartLabel list
  				AddPartLabel[$Elements]=" ${PartLabel} "
   			# 3) Then get a partition type (eg: ext4)
 				select_filesystem
-				if [ -z ${PartitionType} ]
+				if [ -z ${PartitionType} ] 
 				then
 					PartType="-"
 				else
 					PartType="${PartitionType}"
-				fi
+				fi 
   			# Add partition type to AddPartType (eg: ext2)
 				AddPartType[$Elements]=" ${PartType} "
-			else
-				Remaining="$Remaining $i"	# Add unused partition to temp list
+			else                            # ie: $Counter is not equal to $Selected
+        if [ -n $i ]                  # Test that loop element is not empty
+        then
+          Remaining="$Remaining $i" 	# Add unused partition to temp list
+        else                          # If it is empty ...
+          break                       # ... exit loop
+        fi
 			fi
 		done
     break
   done
-	PartitionList=$Remaining			  # Replace original PartitionList with temp list
-  Elements=${#PartitionList[@]}   # Reset condition variables
-  Counter=0
+	PartitionList=$Remaining		    	  # Replace original PartitionList with temp list
+  if [ -z $PartitionList ]            # If PartitionList is now empty
+  then
+    break                             # Exit function
+  fi                                  # Otherwise
+  Elements=${#PartitionList[@]}       # Reset condition variables
+  Counter=0                           # And loop to top
 done
 }
 
