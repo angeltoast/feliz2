@@ -1,52 +1,49 @@
 #!/bin/bash
-#
-# Achoo! Arch Linux Installation Script Version 0.1
+
+# Achoo! Arch Linux Installation Script v0.1
 # Development version 2015/06/21
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
+# -------------------------------------------------
 #	Please read the following notes before proceeding!
-#
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
+# -------------------------------------------------
+
 # The Achoo! script is in its early stages of development. As such,
 # it may be unstable and will contain bugs. It was originally written
 # for my own use, but it is shared in the spirit of of the community,
 # subject to the conditions set out in the GNU GENERAL LICENSE
-#
+
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. An initialising
 # "wizard" asks for the user's country, username, user password and root
 # password, and works with the user to set up their partitioning requirements.
-#
+
 # Variables are stored in a separate script for easy access. Defaults are set
 # for a default UK English setup with Xfce as the desktop environment and
 # LXDM display manager, and with partitioning variables for a Virtualbox
 # installation of 12GiB. These can be changed when the script is running.
-#
+
 # --------------------------------------------------------------------
 # Please note that no provision is included at this stage for Wifi
 # devices, or for UEFI, syslinux, GPT or other partitioning schemes
 # ---------------------------------------------------------------------
-#
+
 # Debugging code has been left in to keep the user informed during
 # installation. There is an error-trapping function which should exit
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
-#
+
 # When run, the script will ask for the minimum necessary details, then will
 # automatically partition the device based on the partition variables
 # set by the user. 
-#
+
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
-
-# ~~~~~~~~~~~~
+# -------
 #	Execute
-# ~~~~~~~~~~~~
+# -------
 
 # Check for external functions and variables files
 if [[ -f `pwd`/achoovariables ]]; then
@@ -77,9 +74,9 @@ Repeat=1
 UserAndRoot
 CheckForError "Line ${LINENO}"
 
-#
+# ------------------
 # Partitioning steps
-#
+# ------------------
 
 # Ask user if they have prepared partitions before starting
 # If not, open cfdisk for user to create/set/amend partitions as desired
@@ -102,56 +99,13 @@ CheckForError "Line ${LINENO}"
 umount_partitions
 CheckForError "Line ${LINENO}"
 
-MountPartitions() {
-# Root
-echo "Mounting partitions and activating swap"
-echo "Formatting /root partition"
-mkfs.${RootType} ${RootPartition}
-echo "Mounting /root partition"	
-mount ${RootPartition} $MOUNTPOINT
-CheckForError "Line ${LINENO}"
-# Swap
-echo "Making /swap partition"
-mkswap ${SwapPartition}
-CheckForError "Line ${LINENO}"
-echo "Activating /swap"
-swapon ${SwapPartition}
-CheckForError "Line ${LINENO}"
-
-# Now includes 'unlimited' additional partitions
-# Next a loop (if AddPartList is not empty) to add any extra partitions
-Counter=0
-Elements=${#AddPartList[@]}
-if [ $Counter -lt $Elements ]
-then
-	# Loop through AddPartList array, checking corresponding items in AddPartType and AddPartLabel
-	while [ $Counter -lt $Elements ]
-	do
-		case ${AddPartType[$Counter]} in
-		"-") mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory (don't format)
-			mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
-			CheckForError "Line ${LINENO}"
-		;;
-		"ext2") mke2fs												# Make file system (Note ext2 format)
-			mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory for the selected partition
-			mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}	# Then mount it
-			CheckForError "Line ${LINENO}"
-		;;
-		*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	# Make file system as defined in AddPartType
-			mkdir -p /mnt${AddPartLabel[$Counter]}					# Make a directory as defined in AddPartLabel
-			mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}		# Then mount it
-			CheckForError "Line ${LINENO}"
-		esac
-		Counter=$((Counter+1))
-	done
-fi
-
-}
+# Mount all partitions
+MountPartitions
 
 # Install base system and base-devel
 echo "Installing base system"
 # Latest Kernel and base-devel
-pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo # 2>/tmp/.errlog
+pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo
 CheckForError "Line ${LINENO}"
 
 # Set the default PATH variable (copied from Lution in case it helps with persistent errors)
@@ -190,8 +144,6 @@ CheckForError "Line ${LINENO}"
 arch_chroot "hwclock --systohc --utc"
 CheckForError "Line ${LINENO}"
 
-
-
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
 pacstrap /mnt networkmanager network-manager-applet rp-pppoe
@@ -209,12 +161,12 @@ pacstrap /mnt grub os-prober
 CheckForError "Line ${LINENO}"
 arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
 CheckForError "Line ${LINENO}"
-arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg" 2>/tmp/.errlog
+arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 CheckForError "Line ${LINENO}"
 
 echo "Running mkinitcpio"
 # mkinitcpio -p linux
-arch_chroot "mkinitcpio -p linux-lts" 2>/tmp/.errlog || arch_chroot "mkinitcpio -p linux" 2>/tmp/.errlog
+arch_chroot "mkinitcpio -p linux-lts" || arch_chroot "mkinitcpio -p linux"
 CheckForError "Line ${LINENO}"
 
 # Set keyboard to UK at next startup
@@ -228,18 +180,18 @@ CheckForError "Line ${LINENO}"
 
 # Create the user, set password, then remove temporary password file
 echo "Adding user as defined"
-arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash" 2>/tmp/.errlog
+arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
 CheckForError "Line ${LINENO}"
 echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd
-arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null 2>/tmp/.errlog
+arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
+
 # Set up basic configuration files and permissions for user
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
 CheckForError "Line ${LINENO}"
-
 echo "Adding files needed for installing some applications"
 pacman-db-upgrade
 CheckForError "Line ${LINENO}"
@@ -247,17 +199,17 @@ pacman-key --init
 CheckForError "Line ${LINENO}"
 pacman-key --populate archlinux
 CheckForError "Line ${LINENO}"
-dirmngr < /dev/null							# This added to prevent the 
-CheckForError "Line ${LINENO}"				# error on the next line ...
-pacman-key --refresh-keys					# ERROR WAS HERE !!!!!
+dirmngr < /dev/null
+CheckForError "Line ${LINENO}"
+pacman-key --refresh-keys
 CheckForError "Line ${LINENO}"
 
 # To avoid keyring problems ...				# Not sure if this is needed
 pacstrap /mnt haveged
 CheckForError "Line ${LINENO}"
-arch_chroot "systemctl enable haveged.service" >/dev/null 2>/tmp/.errlog
+arch_chroot "systemctl enable haveged.service" >/dev/null
 CheckForError "Line ${LINENO}"
-arch_chroot "systemctl start haveged.service" >/dev/null 2>/tmp/.errlog
+arch_chroot "systemctl start haveged.service" >/dev/null
 CheckForError "Line ${LINENO}"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
@@ -272,8 +224,8 @@ CheckForError "Line ${LINENO}"
 
 # Install Display Manager and Desktop Environment (from Lution AIS)
 echo "Installing Display Manager and Desktop Environment"
-pacstrap /mnt ${DisplayManager} ${Greeter} 2>/tmp/.errlog
-arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null 2>>/tmp/.errlog
+pacstrap /mnt ${DisplayManager} ${Greeter}
+arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
 CheckForError "Line ${LINENO}"	
 pacstrap /mnt ${DesktopEnvironment}
 CheckForError "Line ${LINENO}"
