@@ -453,7 +453,7 @@ declare -a AddPartList		# Array to hold list of additional partitions by partiti
 declare -a AddPartType		# Array to hold same partitions in same order by partition type. eg: ext2
 declare -a AddPartLabel		# Array to hold same partitions in same order by given name. eg: /home
 Counter=0
-Elements=1
+Elements=${#PartitionList[@]}
 while [ $Counter -lt $Elements ]
 do
 	print_heading
@@ -471,14 +471,15 @@ do
 	echo -e "Select the partition to be allocated \n"
 	select partition in ${PartitionList}
 	do
-    for i in ${PartitionList}
+		Selected=$REPLY
+		for i in ${PartitionList}
 		do
 		Partition=""
 		PartitionType=""
 		Counter=$((Counter+1))
-			if [ $Counter -eq $REPLY ]
+			if [ $Counter -eq $Selected ]
 			then
-				Partition="/dev/$i"
+			Partition="/dev/$i"
 			# 1) When selected, first save to AddPartList (eg: /dev/sda5)
 				Elements=${#AddPartList[@]}
 				AddPartList[$Elements]=" ${Partition} "
@@ -526,8 +527,7 @@ do
 					fi
 				done
   			# Add it to AddPartLabel list
- 				Elements=${#AddPartLabel[@]}
-				AddPartLabel[$Elements]=" ${PartLabel} "
+ 				AddPartLabel[$Elements]=" ${PartLabel} "
   			# 3) Then get a partition type (eg: ext4)
 				select_filesystem
 				if [ -z ${PartitionType} ]
@@ -536,17 +536,17 @@ do
 				else
 					PartType="${PartitionType}"
 				fi
-				echo "${PartLabel} ${Partition} is ${PartType}"
   			# Add partition type to AddPartType (eg: ext2)
-				Elements=${#AddPartType[@]}
-				AddPartLabel[$Elements]=" ${PartType} "
+				AddPartType[$Elements]=" ${PartType} "
 			else
 				Remaining="$Remaining $i"	# Add unused partition to temp list
 			fi
 		done
-		break
+    break
   done
-    PartitionList=$Remaining			# Replace original PartitionList with temp list
+	PartitionList=$Remaining			  # Replace original PartitionList with temp list
+  Elements=${#PartitionList[@]}   # Reset condition variables
+  Counter=0
 done
 }
 
@@ -613,8 +613,8 @@ MountPartitions() {
   do
   	case ${AddPartType[$Counter]} in
    		"-") mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Make a directory (don't format)
-		        mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it
-		        CheckForError "Line ${LINENO}"
+		       mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it
+		       CheckForError "Line ${LINENO}"
     	;;
     	"ext2") mke2fs												                  # Make ext2 file system
        			mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Make a directory for the partition
@@ -624,7 +624,7 @@ MountPartitions() {
     	*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	# Make file system AddPartType
 	       		mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			# Make directory for the partition
 	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Then mount it
-             CheckForError "Line ${LINENO}"
+            CheckForError "Line ${LINENO}"
 		esac
 		 Counter=$((Counter+1))
 	done

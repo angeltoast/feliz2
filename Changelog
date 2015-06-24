@@ -3,3 +3,6 @@ Fixed error in setlocale() that failed to produce short CountryCode from LOCALE
 2015/06/23
 Added function ExtraPartitions() to allow additional partitions over / and /swap
 Removed most testing code.
+2015/06/24
+Removed bug in ExtraPartitions() that was failing to add labels, and thus
+preventing proper mounting.

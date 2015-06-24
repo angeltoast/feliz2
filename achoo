@@ -115,7 +115,7 @@ CheckForError "Line ${LINENO}"
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
-cat /mnt/etc/fstab
+cat ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 
 # Set hostname
@@ -145,7 +145,7 @@ CheckForError "Line ${LINENO}"
 
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
-pacstrap /mnt networkmanager network-manager-applet rp-pppoe
+pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 CheckForError "Line ${LINENO}"
 
@@ -156,7 +156,7 @@ rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
 echo "Installing GRUB"
-pacstrap /mnt grub os-prober
+pacstrap ${MOUNTPOINT} grub os-prober
 CheckForError "Line ${LINENO}"
 arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
 CheckForError "Line ${LINENO}"
@@ -189,7 +189,7 @@ CheckForError "Line ${LINENO}"
 # Set up basic configuration files and permissions for user
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
+sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
 CheckForError "Line ${LINENO}"
 echo "Adding files needed for installing some applications"
 pacman-db-upgrade
@@ -204,7 +204,7 @@ pacman-key --refresh-keys
 CheckForError "Line ${LINENO}"
 
 # To avoid keyring problems
-pacstrap /mnt haveged
+pacstrap ${MOUNTPOINT} haveged
 CheckForError "Line ${LINENO}"
 arch_chroot "systemctl enable haveged.service" >/dev/null
 CheckForError "Line ${LINENO}"
@@ -213,20 +213,20 @@ CheckForError "Line ${LINENO}"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
-pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin
+pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin
 CheckForError "Line ${LINENO}"
 
 # Install X, graphics, etc
 echo "Installing X, graphics, etc"
-pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
+pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
 CheckForError "Line ${LINENO}"	
 
 # Install Display Manager and Desktop Environment (from Lution AIS)
 echo "Installing Display Manager and Desktop Environment"
-pacstrap /mnt ${DisplayManager} ${Greeter}
+pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
 arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
 CheckForError "Line ${LINENO}"	
-pacstrap /mnt ${DesktopEnvironment}
+pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
 CheckForError "Line ${LINENO}"
 
 echo "Success! Finished installing"
