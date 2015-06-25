@@ -594,14 +594,13 @@ MountPartitions() {
   echo "Activating /swap"
   swapon ${SwapPartition}
   CheckForError "Line ${LINENO}"
-  # Next a loop (if AddPartList is not empty) to add any extra partitions
   echo "Mounting additional partitions"
   Counter=0
   Elements=${#AddPartList[@]}
- 	# Loop through AddPartList array, checking corresponding items in AddPartType and AddPartLabel
+ 	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
   while [ $Counter -lt $Elements ]
   do
-  	mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			          # Make directory. eg: mkdir -p /mnt/home
+  	mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			                  # Make directory. eg: mkdir -p /mnt/home
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it eg: mount /dev/sda3 /mnt/home
     CheckForError "Line ${LINENO}"
 		Counter=$((Counter+1))
