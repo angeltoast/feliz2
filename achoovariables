@@ -45,6 +45,9 @@
 # Partition variables - essential for correctly mounting the partitions.
 # Contents of these variables are critical and must be accurately defined.
 # ----------------------------------------------------------------------
+declare -a AddPartList		# Array of additional partitions by partition system name. eg: /dev/sda5
+declare -a AddPartType		# Array of same partitions in same order by partition type. eg: ext2
+declare -a AddPartLabel		# Array of same partitions in same order by given name. eg: /home
 DiskDrive="a"
 GrubDevice="/dev/sda"
 PartitionTable="msdos"
@@ -84,5 +87,6 @@ UserPassword="Linux"
 # Input/Output variables
 # ----------------------
 OutPrompt="Please press any key to continue."
+prompt1="Enter your option: "
 Response=""
 

@@ -90,6 +90,13 @@ CheckForError "Line ${LINENO}"
 SetGrubDevice
 CheckForError "Line ${LINENO}"
 
+echo "Testing arrays"
+for i in ${AddPartList[@]} ${AddPartLabel[@]} ${AddPartType[@]}
+do
+	echo $i
+	read
+done
+
 # Set mirrorlist
 LocalMirrorList
 CheckForError "Line ${LINENO}"

@@ -322,22 +322,20 @@ ManagePartitions() {
     NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
   done	
 	# If no partitions exist, offer cfdisk to create (or exit)
-	# Alternatively, offer cfdisk to edit
 	# NUMBER_PARTITIONS="0"			# To test situation of zero partitions
 	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
 		print_heading
     echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table if you wish."
 		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
     echo "If you choose not to use 'cfdisk', the script will terminate."
-    read -p "Would you like to open cfdisk now? [y/n]: " Response
+    read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
-		  "y" | "Y")  cfdisk
-			echo "Response $Response ... cfdisk selected"
-			;;	
-		*) echo "Response $Response ... cfdisk not selected. Exiting installation!"
-			exit
+		  "y" | "Y" | "" )  cfdisk
+			;;
+		*) exit
 		esac
  	else
+    # Alternatively, offer cfdisk to edit
 		echo "Before we can install the system, the device must be partitioned ready to receive it."
 		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
 		echo "Here is a list of available partitions on all connected devices ..."
@@ -345,10 +343,8 @@ ManagePartitions() {
 		echo ""
 		read -p "Would you like to open cfdisk to manage the partitions now? [y/n]: " Response
 		case $Response in
-		  "y" | "Y")  cfdisk
-		  	echo "Response $Response ... cfdisk selected"
+		  "y" | "Y" | "" )  cfdisk
 			;;	
-		  *) echo "Response $Response ... cfdisk not selected"
 		esac
 	fi
 }
@@ -359,7 +355,7 @@ select_filesystem() {
 # Returns enhanced selection via FILESYSTEM variable
 	Counter=0
 	PS3="$prompt1"
-	TypeList="Skip ext2 ext3 ext4"	# Note: ext2 requires different 'make' tool
+	TypeList="Skip ext2 ext3 ext4"	
 	echo "Now select the format type for ${Partition}"
 	select type in ${TypeList}
 	do
@@ -432,7 +428,6 @@ AllocatePartitions() {
 		  if [ $Counter -eq $REPLY ]
 		  then
 		  	SwapPartition="/dev/$i"
-			  read -p "$SwapPartition selected as /swap. ${OutPrompt}" Response
 		  else
 		  	Remaining="$Remaining $i"	# Add next available partition
 		  fi
@@ -448,9 +443,6 @@ AllocatePartitions() {
 
 ExtraPartitions() {
 # If partitions on the device remain unselected
-declare -a AddPartList		# Array to hold list of additional partitions by partition system name. eg: /dev/sda5
-declare -a AddPartType		# Array to hold same partitions in same order by partition type. eg: ext2
-declare -a AddPartLabel		# Array to hold same partitions in same order by given name. eg: /home
 Counter=0
 Elements=${#PartitionList[@]}
 while [ $Counter -le $Elements ]
@@ -546,6 +538,14 @@ do
         fi
 			fi
 		done
+    
+    echo "Testing arrays"
+    for i in ${AddPartList[@]} ${AddPartLabel[@]} ${AddPartType[@]}
+		do
+			echo $i
+			read
+		done
+    
     break
   done
 	PartitionList=$Remaining		    	  # Replace original PartitionList with temp list
