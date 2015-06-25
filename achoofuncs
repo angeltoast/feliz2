@@ -620,18 +620,14 @@ MountPartitions() {
   while [ $Counter -lt $Elements ]
   do
   	case ${AddPartType[$Counter]} in
-   		"-") mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Make a directory (don't format)
-		       mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it
+   		"-") mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		          # Make a directory. eg: mkdir -p /mnt/home (don't format)
+		       mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it. eg: mount /dev/sda3 /mnt/home
 		       CheckForError "Line ${LINENO}"
     	;;
-    	"ext2") mke2fs												                  # Make ext2 file system
-       			mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Make a directory for the partition
-	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it
-            CheckForError "Line ${LINENO}"
-	    	;;
-    	*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	# Make file system AddPartType
-	       		mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			# Make directory for the partition
-	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}		# Then mount it
+    	*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	        # Make file system AddPartType
+	       		mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			        # Make directory for the partition
+            mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}      # Format it eg: mkfs.ext4 /dev/sda3
+	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it eg: mount /dev/sda3 /mnt/home
             CheckForError "Line ${LINENO}"
 		esac
 		 Counter=$((Counter+1))
