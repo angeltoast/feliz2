@@ -519,16 +519,6 @@ do
 				done 
   			# Add it to AddPartLabel list
  				AddPartLabel[$Elements]=" ${PartLabel} "
-  			# 3) Then get a partition type (eg: ext4)
-				select_filesystem
-				if [ -z ${PartitionType} ] 
-				then
-					PartType="-"
-				else
-					PartType="${PartitionType}"
-				fi 
-  			# Add partition type to AddPartType (eg: ext2)
-				AddPartType[$Elements]=" ${PartType} "
 			else                            # ie: $Counter is not equal to $Selected
         if [ -n $i ]                  # Test that loop element is not empty
         then
@@ -538,14 +528,6 @@ do
         fi
 			fi
 		done
-    
-    echo "Testing arrays"
-    for i in ${AddPartList[@]} ${AddPartLabel[@]} ${AddPartType[@]}
-		do
-			echo $i
-			read
-		done
-    
     break
   done
 	PartitionList=$Remaining		    	  # Replace original PartitionList with temp list
@@ -619,18 +601,10 @@ MountPartitions() {
  	# Loop through AddPartList array, checking corresponding items in AddPartType and AddPartLabel
   while [ $Counter -lt $Elements ]
   do
-  	case ${AddPartType[$Counter]} in
-   		"-") mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}		          # Make a directory. eg: mkdir -p /mnt/home (don't format)
-		       mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it. eg: mount /dev/sda3 /mnt/home
-		       CheckForError "Line ${LINENO}"
-    	;;
-    	*) mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}	        # Make file system AddPartType
-	       		mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			        # Make directory for the partition
-            mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}      # Format it eg: mkfs.ext4 /dev/sda3
-	       		mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it eg: mount /dev/sda3 /mnt/home
-            CheckForError "Line ${LINENO}"
-		esac
-		 Counter=$((Counter+1))
+  	mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			          # Make directory. eg: mkdir -p /mnt/home
+    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it eg: mount /dev/sda3 /mnt/home
+    CheckForError "Line ${LINENO}"
+		Counter=$((Counter+1))
 	done
 }
 
