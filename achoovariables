@@ -47,6 +47,7 @@
 # ----------------------------------------------------------------------
 declare -a AddPartList		# Array of additional partitions by partition system name. eg: /dev/sda5
 declare -a AddPartLabel		# Array of same partitions in same order by given name. eg: /home
+declare -a AddPartType		# Array of same partitions in same order by format type. eg: ext4
 DiskDrive="a"
 GrubDevice="/dev/sda"
 PartitionTable="msdos"

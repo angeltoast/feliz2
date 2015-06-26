@@ -6,3 +6,5 @@ Removed most testing code.
 2015/06/24
 Removed bug in ExtraPartitions() that was failing to add labels, and thus
 preventing proper mounting.
+2015/06/24
+Removed more bugs in ExtraPartitions() that were preventing proper mounting.

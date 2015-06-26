@@ -276,7 +276,6 @@ UserAndRoot() {
 # System and Partitioning
 # -----------------------
 
-
 LocalMirrorList() {
 # Generate and save a shortened mirrorlist of only the mirrors defined
 # in the CountryCode variable. Adapted from Lution AIS
@@ -448,7 +447,7 @@ Elements=${#PartitionList[@]}
 while [ $Counter -le $Elements ]
 do
 	print_heading
-	echo "The following partitions are still available: ${PartitionList}"
+	echo "The following partitions are still available:" ${PartitionList}
 	read -p "Do you wish to allocate any of these? [y/N]: " Response
 	case $Response in
 		"y") echo ""
@@ -519,6 +518,17 @@ do
 				done 
   			# Add it to AddPartLabel list
  				AddPartLabel[$Elements]="${PartLabel}"
+ 				
+ 				# Set format type for the selected partition
+ 				select_filesystem
+				if [ -z ${PartitionType} ]
+				then
+					PartitionType="ext4"
+				fi
+				# Add it to AddPartType list
+ 				AddPartType[$Elements]="${PartitionType}"
+ 				
+ 				
 			else                            # ie: $Counter is not equal to $Selected
         if [ -n $i ]                  # Test that loop element is not empty
         then
@@ -543,10 +553,11 @@ do
   Counter=0                           # And loop to top
 done
 Elements=${#AddPartList[@]}
-if [ Elements -eq 0 ]
+if [ $Elements -eq 0 ]
 then
   AddPartList=""
   AddPartLabel=""
+  AddPartType=""
 fi
 }
 
@@ -611,7 +622,7 @@ MountPartitions() {
   while [ $Counter -lt $Elements ]
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
-    mkfs.${RootType} ${AddPartList[$Counter]} # eg: mkfs.ext4 /dev/sda3
+    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} # eg: mkfs.ext4 /dev/sda3
     CheckForError "Line ${LINENO}"
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
     CheckForError "Line ${LINENO}"
