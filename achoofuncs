@@ -354,7 +354,7 @@ select_filesystem() {
 # Returns enhanced selection via FILESYSTEM variable
 	Counter=0
 	PS3="$prompt1"
-	TypeList="Skip ext2 ext3 ext4"	
+	TypeList="Skip ext2 ext3 ext4 btrfs"	
 	echo "Now select the format type for ${Partition}"
 	select type in ${TypeList}
 	do

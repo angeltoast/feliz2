@@ -119,7 +119,7 @@ cat ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 
 # Set hostname
-echo ${HostName} >> /etc/hostname
+echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
 CheckForError "Line ${LINENO}"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
@@ -170,11 +170,11 @@ CheckForError "Line ${LINENO}"
 
 # Set keyboard to selected language at next startup
 echo "Finishing installation"
-echo KEYMAP=${Countrykbd} > /etc/vconsole.conf
+echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf
 CheckForError "Line ${LINENO}"
 
 # Required for Virtualbox installations
-echo blacklist i2c_piix4 > /etc/modprobe.d/modprobe.conf
+echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf
 CheckForError "Line ${LINENO}"
 
 # Create the user, set password, then remove temporary password file
