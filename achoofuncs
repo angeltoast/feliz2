@@ -536,8 +536,24 @@ do
     break                             # Exit function
   fi                                  # Otherwise
   Elements=${#PartitionList[@]}       # Reset condition variables
+  if [ Elements -eq 0 ]
+  then
+    Elements=0
+  fi
   Counter=0                           # And loop to top
 done
+Elements=${#AddPartList[@]}
+if [ Elements -eq 0 ]
+then
+  AddPartList=""
+  AddPartLabel=""
+else
+  for i in ${AddPartList[@]} ${AddPartLabel[@]}
+  do
+    echo $i
+  done
+  read
+fi
 }
 
 # User to choose device for grub installation
@@ -600,8 +616,11 @@ MountPartitions() {
  	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
   while [ $Counter -lt $Elements ]
   do
-  	mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}			                  # Make directory. eg: mkdir -p /mnt/home
-    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# Then mount it eg: mount /dev/sda3 /mnt/home
+    read -p "mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}"
+  	mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
+    CheckForError "Line ${LINENO}"
+    read -p "mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}"
+    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
     CheckForError "Line ${LINENO}"
 		Counter=$((Counter+1))
 	done
