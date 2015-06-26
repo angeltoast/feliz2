@@ -473,7 +473,7 @@ do
 			Partition="/dev/$i"
         # 1) When selected, first save to AddPartList (eg: /dev/sda5)
 				Elements=${#AddPartList[@]}
-				AddPartList[$Elements]=" ${Partition} "
+				AddPartList[$Elements]="${Partition}"
         # 2) Then get a label for selected partition (eg: /home)
 				LoopRepeat="Y"
 				while [ ${LoopRepeat} = "Y" ]
@@ -518,7 +518,7 @@ do
 					fi 
 				done 
   			# Add it to AddPartLabel list
- 				AddPartLabel[$Elements]=" ${PartLabel} "
+ 				AddPartLabel[$Elements]="${PartLabel}"
 			else                            # ie: $Counter is not equal to $Selected
         if [ -n $i ]                  # Test that loop element is not empty
         then
@@ -536,9 +536,9 @@ do
     break                             # Exit function
   fi                                  # Otherwise
   Elements=${#PartitionList[@]}       # Reset condition variables
-  if [ Elements -eq 0 ]
+  if [ $Elements -eq 0 ]
   then
-    Elements=0
+    PartitionList=""
   fi
   Counter=0                           # And loop to top
 done
@@ -547,12 +547,6 @@ if [ Elements -eq 0 ]
 then
   AddPartList=""
   AddPartLabel=""
-else
-  for i in ${AddPartList[@]} ${AddPartLabel[@]}
-  do
-    echo $i
-  done
-  read
 fi
 }
 
@@ -616,10 +610,8 @@ MountPartitions() {
  	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
   while [ $Counter -lt $Elements ]
   do
-    read -p "mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}"
-  	mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
+    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
     CheckForError "Line ${LINENO}"
-    read -p "mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}"
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
     CheckForError "Line ${LINENO}"
 		Counter=$((Counter+1))
