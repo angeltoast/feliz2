@@ -559,7 +559,7 @@ SetGrubDevice() {
 	print_heading
 	Counter=0
 	PS3="$prompt1"
-	echo -e "Select the device for Grub:\n"
+	echo -e "And finally, select the device for Grub:\n"
 	select partition in ${DevicesList}
 	do
     for i in ${DevicesList}
@@ -593,16 +593,16 @@ MountPartitions() {
   # Root
   echo "Mounting partitions and activating swap"
   echo "Formatting /root partition"
-  mkfs.${RootType} ${RootPartition}    # eg: mkfs.ext4 /dev/sda1
+  mkfs.${RootType} ${RootPartition} # eg: mkfs.ext4 /dev/sda1
   echo "Mounting /root partition"	
-  mount ${RootPartition} $MOUNTPOINT   # eg: mount /dev/sda1 /mnt
+  mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
   CheckForError "Line ${LINENO}"
   # Swap
   echo "Making /swap partition"
-  mkswap ${SwapPartition}
+  mkswap ${SwapPartition} # eg: mkswap /dev/sda2
   CheckForError "Line ${LINENO}"
   echo "Activating /swap"
-  swapon ${SwapPartition}
+  swapon ${SwapPartition} # eg: swapon /dev/sda2
   CheckForError "Line ${LINENO}"
   echo "Mounting additional partitions"
   Counter=0
@@ -611,6 +611,7 @@ MountPartitions() {
   while [ $Counter -lt $Elements ]
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
+    mkfs.${RootType} ${AddPartList[$Counter]} # eg: mkfs.ext4 /dev/sda3
     CheckForError "Line ${LINENO}"
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
     CheckForError "Line ${LINENO}"
