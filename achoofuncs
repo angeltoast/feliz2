@@ -324,7 +324,7 @@ ManagePartitions() {
 	# NUMBER_PARTITIONS="0"			# To test situation of zero partitions
 	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
 		print_heading
-    echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table if you wish."
+    echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table now if you wish."
 		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
     echo "If you choose not to use 'cfdisk', the script will terminate."
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
@@ -447,7 +447,7 @@ Elements=${#PartitionList[@]}
 while [ $Counter -le $Elements ]
 do
 	print_heading
-	echo "The following partitions are still available:" ${PartitionList}
+	echo "The following partitions are also available:" ${PartitionList}
 	read -p "Do you wish to allocate any of these? [y/N]: " Response
 	case $Response in
 		"y") echo ""
