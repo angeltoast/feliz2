@@ -321,7 +321,6 @@ ManagePartitions() {
     NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
   done	
 	# If no partitions exist, offer cfdisk to create (or exit)
-	# NUMBER_PARTITIONS="0"			# To test situation of zero partitions
 	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
 		print_heading
     echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table now if you wish."
@@ -381,8 +380,7 @@ AllocatePartitions() {
 # Display partitions for user-selection	
 	# Store all available partitions in a list
 	PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-	# Display available partitions in a vertical, numbered list
-	# and select one for /root
+	# Display available partitions and select one for /root
 	print_heading
 	Remaining=""
 	Counter=0
@@ -434,11 +432,15 @@ AllocatePartitions() {
 		done
 	break
   done
-	if [ -n ${PartitionList[1]} ]
-	then
-		ExtraPartitions
-	fi
-}
+  # Check contents of PartitionList. If not empty, call the ExtraPartitions function
+	case ${PartitionList} in
+	"") echo $PartitionList
+  ;;
+  " ") echo $PartitionList
+  ;;
+  *) ExtraPartitions
+	esac
+}	
 
 ExtraPartitions() {
 # If partitions on the device remain unselected
@@ -447,7 +449,7 @@ Elements=${#PartitionList[@]}
 while [ $Counter -le $Elements ]
 do
 	print_heading
-	echo "The following partitions are also available:" ${PartitionList}
+	echo "The following partitions are still available:" ${PartitionList}
 	read -p "Do you wish to allocate any of these? [y/N]: " Response
 	case $Response in
 		"y") echo ""
@@ -552,6 +554,7 @@ do
   fi
   Counter=0                           # And loop to top
 done
+# Ensure that if AddPartList (the defining array) is empty, all others are too
 Elements=${#AddPartList[@]}
 if [ $Elements -eq 0 ]
 then
