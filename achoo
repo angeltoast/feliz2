@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script v0.1
-# Development version 2015/06/21
+# Achoo! Arch Linux Installation Script 2015/06/28
 # ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux
@@ -12,27 +11,25 @@
 # The Achoo! script is in its early stages of development. As such,
 # it may be unstable and will contain bugs. It was originally written
 # for my own use, but it is shared in the spirit of of the community,
-# subject to the conditions set out in the GNU GENERAL LICENSE
+# subject to the conditions set out in the GNU GENERAL LICENSE.
 
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. An initialising
 # "wizard" asks for the user's country, username, user password and root
-# password, and works with the user to set up their partitioning requirements.
+# password, and works with the user to set up their partitioning
+# requirements. The script then runs without further intervention to the end.
 
-# Variables are stored in a separate script for easy access. Defaults are set
-# for a default UK English setup with Xfce as the desktop environment and
-# LXDM display manager, and with partitioning variables for a Virtualbox
-# installation of 12GiB. These can be changed in the wizard.
-
-# After asking for the minimum necessary details, the script then runs
-# without further intervention to the end.
+# Variables and functions are stored in separate scripts for easy access.
+# Defaults are set for a UK English setup with Xfce as the desktop
+# environment and LXDM display manager, and with partitioning variables
+# for a Virtualbox installation of 12GiB. These can be changed in the wizard.
 
 # --------------------------------------------------------------------
 # Please note that no provision is included at this stage for Wifi
 # devices, or for UEFI, syslinux, GPT or other partitioning schemes
 # ---------------------------------------------------------------------
 
-# Debugging code has been left in to keep the user informed during
+# Some debugging code has been left in to keep the user informed during
 # installation. There is an error-trapping function which should exit
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
@@ -40,9 +37,9 @@
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
-# -------
-# Execute
-# -------
+# -----
+# Setup
+# -----
 
 # Check for external functions and variables files
 if [[ -f `pwd`/achoovariables ]]; then
@@ -59,12 +56,16 @@ else
   exit 1
 fi
 
+# -------------------------------------------
 # Display welcome text and set user-variables
+# -------------------------------------------
+
+# Location
 Repeat=1
 SetLocation
 CheckForError "Line ${LINENO}"
 
-# Set keyboard layout
+# Keyboard layout
 loadkeys ${Countrykbd}
 CheckForError "Line ${LINENO}"
 
@@ -73,22 +74,25 @@ Repeat=1
 UserAndRoot
 CheckForError "Line ${LINENO}"
 
-# ------------------
-# Partitioning steps
-# ------------------
+# ------------
+# Partitioning
+# ------------
 
-# Ask user if they have prepared partitions before starting
-# If not, open cfdisk for user to create/set/amend partitions as desired
+# Define partitions
 ManagePartitions
 CheckForError "Line ${LINENO}"
 
-# Display available partitions and select /swap and /root and others)
+# Allocat /swap and /root and others
 AllocatePartitions
 CheckForError "Line ${LINENO}"
 
 # Set device for Grub
 SetGrubDevice
 CheckForError "Line ${LINENO}"
+
+# --------------
+# Auto from here
+# --------------
 
 # Set mirrorlist
 LocalMirrorList
@@ -98,27 +102,25 @@ CheckForError "Line ${LINENO}"
 umount_partitions
 CheckForError "Line ${LINENO}"
 
-# Mount all partitions
+echo "Mounting partitions"
 MountPartitions
 
-# Install base system and base-devel
 echo "Installing base system"
-# Latest Kernel and base-devel
-pacstrap ${MOUNTPOINT} base base-devel btrfs-progs ntp sudo
+# LTS Kernel and base-devel
+pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo
 CheckForError "Line ${LINENO}"
 
-# Set the default PATH variable (copied from Lution in case it helps with persistent errors)
+# Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 CheckForError "Line ${LINENO}"
 
-# Generate fstab
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 cat ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 
-# Set hostname
+echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
 CheckForError "Line ${LINENO}"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
@@ -164,8 +166,7 @@ arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 CheckForError "Line ${LINENO}"
 
 echo "Running mkinitcpio"
-# mkinitcpio -p linux
-arch_chroot "mkinitcpio -p linux-lts" || arch_chroot "mkinitcpio -p linux"
+arch_chroot "mkinitcpio -p linux-lts"
 CheckForError "Line ${LINENO}"
 
 # Set keyboard to selected language at next startup
@@ -187,10 +188,12 @@ rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
 # Set up basic configuration files and permissions for user
+echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
 CheckForError "Line ${LINENO}"
+
 echo "Adding files needed for installing some applications"
 pacman-db-upgrade
 CheckForError "Line ${LINENO}"
@@ -204,6 +207,7 @@ pacman-key --refresh-keys
 CheckForError "Line ${LINENO}"
 
 # To avoid keyring problems
+echo "Adding haveged"
 pacstrap ${MOUNTPOINT} haveged
 CheckForError "Line ${LINENO}"
 arch_chroot "systemctl enable haveged.service" >/dev/null
@@ -230,5 +234,5 @@ pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
 CheckForError "Line ${LINENO}"
 
 echo "Success! Finished installing"
-echo "Shut down or reboot"
-
+echo "Rebooting now"
+reboot

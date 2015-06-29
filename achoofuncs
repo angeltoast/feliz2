@@ -1,15 +1,11 @@
 #!/bin/bash
-#
-# Achoo! Arch Linux Installation Script Version 0.1
+
+# Achoo! Arch Linux Installation Script 2015/06/28
 # AchooFuncs - Functions called by the main Achoo! script
-# 
-# -------------------------------------
-# Achoo! Development version 2015/06/16
-# -------------------------------------
-# Include this script and the achoovariables script when compiling the
-# main Achoo! script into an iso for code testing, and when uploading
-# this major rewrite to Git and Github
-# --------------------------------------------------------------------
+# -----------------------------------------------------------
+# This script and the achoovariables script are necessary when running
+# main Achoo! script
+# -----------------------------------------------------------
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the lution-ais script by Carl Duff for Evo/Lution Linux and the
@@ -19,7 +15,7 @@
 # The Achoo! script is in its early stages of development. As such,
 # it may be unstable and will contain bugs. It was originally written
 # for my own use, but it is shared in the spirit of of the community,
-# subject to the conditions set out in the GNU GENERAL LICENSE 
+# subject to the conditions set out in the GNU GENERAL LICENSE.
 #
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. Variables
@@ -28,16 +24,16 @@
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
-# -----------------------
-# Functions
-# ---------
+# ----------------
+# Functions layout
+# ----------------
 # Input and output
 # Error-checking
 # Set location variables
 # System checks
 # Mirrorlist
 # System & partitioning
-# -----------------------
+# ---------------------
 
 # ----------------
 # Input and output 
