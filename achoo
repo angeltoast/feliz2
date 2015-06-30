@@ -194,26 +194,26 @@ arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
 CheckForError "Line ${LINENO}"
 
-echo "Adding files needed for installing some applications"
-pacman-db-upgrade
-CheckForError "Line ${LINENO}"
-pacman-key --init
-CheckForError "Line ${LINENO}"
-pacman-key --populate archlinux
-CheckForError "Line ${LINENO}"
-dirmngr < /dev/null
-CheckForError "Line ${LINENO}"
-pacman-key --refresh-keys
-CheckForError "Line ${LINENO}"
+#echo "Adding files needed for installing some applications"
+#pacman-db-upgrade
+#CheckForError "Line ${LINENO}"
+#pacman-key --init
+#CheckForError "Line ${LINENO}"
+#pacman-key --populate archlinux
+#CheckForError "Line ${LINENO}"
+#dirmngr < /dev/null
+#CheckForError "Line ${LINENO}"
+#pacman-key --refresh-keys
+#CheckForError "Line ${LINENO}"
 
 # To avoid keyring problems
-echo "Adding haveged"
-pacstrap ${MOUNTPOINT} haveged
-CheckForError "Line ${LINENO}"
-arch_chroot "systemctl enable haveged.service" >/dev/null
-CheckForError "Line ${LINENO}"
-arch_chroot "systemctl start haveged.service" >/dev/null
-CheckForError "Line ${LINENO}"
+#echo "Adding haveged"
+#pacstrap ${MOUNTPOINT} haveged
+#CheckForError "Line ${LINENO}"
+#arch_chroot "systemctl enable haveged.service" >/dev/null
+#CheckForError "Line ${LINENO}"
+#arch_chroot "systemctl start haveged.service" >/dev/null
+#CheckForError "Line ${LINENO}"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
@@ -223,13 +223,13 @@ CheckForError "Line ${LINENO}"
 # Install X, graphics, etc
 echo "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
-CheckForError "Line ${LINENO}"	
+CheckForError "Line ${LINENO}"  
 
 # Install Display Manager and Desktop Environment (from Lution AIS)
 echo "Installing Display Manager and Desktop Environment"
 pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
 arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-CheckForError "Line ${LINENO}"	
+CheckForError "Line ${LINENO}"  
 pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
 CheckForError "Line ${LINENO}"
 
