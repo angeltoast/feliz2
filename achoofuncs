@@ -1,25 +1,21 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/06/28
-# AchooFuncs - Functions called by the main Achoo! script
+# Achoo! Arch Linux Installation Script 2015/07/01
+# achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
-# This script and the achoovariables script are necessary when running
-# main Achoo! script
+# This script and the achoovariables script are necessary when
+# running the main Achoo! script
 # -----------------------------------------------------------
 
-# Developed by Elizabeth Mills, incorporating some code adapted from
-# the lution-ais script by Carl Duff for Evo/Lution Linux and the
-# AUI scripts by HelmuthDU. I cannot overstate my debt to these two
-# men for their contributions to my understanding of the process.
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
 #
-# The Achoo! script is in its early stages of development. As such,
-# it may be unstable and will contain bugs. It was originally written
-# for my own use, but it is shared in the spirit of of the community,
-# subject to the conditions set out in the GNU GENERAL LICENSE.
+# The Achoo! script is still in development. As such, it may contain bugs.
+# It was originally written for my own use, but it is shared in the spirit of
+# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 #
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter, with minimum user intervention. Variables
-# and functions are stored in separate scripts for easy access.
+# environment and a greeter, with minimum user intervention.
 #
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
@@ -50,7 +46,7 @@ invalid_option() { # (from AUI scripts)
     read -p "$OutPrompt" Response
 }
 
-print_heading() { # (from AUI scripts)
+print_heading() {
 	clear
     printf "                 # - The Achoo! Arch Linux Installation Script - # \n"
     print_title "    https://github.com/Angeltoast/Achoo   ~   https://wiki.archlinux.org/"

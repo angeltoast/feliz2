@@ -1,26 +1,25 @@
 #!/bin/bash
 
-# AchooVariables - Variables for Achoo! Arch Linux Installation Script
+# achoovariables - Variables for Achoo! Arch Linux Installation Script
 
 # -------------------------------------
-# Achoo! Development version 2015/06/28
+# Achoo! Arch Linux installation scripts 2015/07/01
 # -------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the lution-ais script by Carl Duff for Evo/Lution Linux
+# the Evo?Lution script by Carl Duff
 
 # --------------------------------------------------
 # Please read the following notes before proceeding!
 # --------------------------------------------------
 
-# The Achoo! script is in its early stages of development. As such,
-# it may be unstable and will contain bugs. It was originally written
-# for my own use, but it is shared in the spirit of of the community,
-# subject to the conditions set out in the GNU GENERAL LICENSE.
+# The Achoo! script is still in development. As such, it may contain bugs.
+# It was originally written for my own use, but it is shared in the spirit of
+# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. An initiating
-# "wizard" asks for the user's country, username, user password and root
-# password, and works with the user to set up their partitioning requirements.
+# "wizard" only essential data of location, username, and passwords, and works
+# with the user to set up their partitioning requirements.
 
 # Initial variables here are for a default UK English setup with Xfce as
 # the desktop environment and LXDM display manager, and with partitioning
@@ -29,11 +28,6 @@
 # script fails, check that all your variables are correct and in the
 # correct format. You must plan your partition scheme and take care when
 # entering your details, or loss of data could occur.
-
-# --------------------------------------------------------------------
-# Please note that no provision is included at this stage for Wifi
-# devices, or for UEFI, syslinux, GPT or other partitioning schemes
-# ---------------------------------------------------------------------
 
 # --------------
 # Variables List
@@ -44,8 +38,8 @@
 # Contents of these variables are critical and must be accurately defined.
 # ----------------------------------------------------------------------
 declare -a AddPartList		# Array of additional partitions by partition system name. eg: /dev/sda5
-declare -a AddPartLabel		# Array of same partitions in same order by given name. eg: /home
-declare -a AddPartType		# Array of same partitions in same order by format type. eg: ext4
+declare -a AddPartLabel		# Array of the same partitions in the same order by given name. eg: /home
+declare -a AddPartType		# Array of the same partitions in the same order by format type. eg: ext4
 DiskDrive="a"
 GrubDevice="/dev/sda"
 PartitionTable="msdos"
@@ -60,18 +54,18 @@ MOUNTPOINT="/mnt"
 # Default location variables
 # these will be used for language, locale and clock settings
 # ----------------------------------------------------------
-CountryCode="GB"				# Country code for mirrorlist
+CountryCode="GB"				      # Country code for mirrorlist
 CountryLocale="en_GB.UTF-8"		# Locale
-Countrykbd="uk"					# Country for keyboard
+Countrykbd="uk"					      # Country for keyboard
 ZONE="Europe"             		# For time
-SUBZONE="London"				# For time
+SUBZONE="London"				      # For time
 
 # -----------------------------------------
 # Desktop environment and greeter variables
 # -----------------------------------------
 DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
 DisplayManager="lxdm"
-Greeter=""						# Not required for Lxdm
+Greeter=""						        # Not required for Lxdm
 
 # -----------------------
 # Root and User variables
@@ -87,4 +81,3 @@ UserPassword="Linux"
 OutPrompt="Please press any key to continue."
 prompt1="Enter your option: "
 Response=""
-

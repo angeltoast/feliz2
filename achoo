@@ -1,33 +1,27 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/06/28
+# Achoo! Arch Linux Installation Script 2015/07/01
 # ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the lution-ais script by Carl Duff for Evo/Lution Linux
+# the excellent Evo/Lution script by Carl Duff
 # -------------------------------------------------
 # Please read the following notes before proceeding!
 # -------------------------------------------------
 
-# The Achoo! script is in its early stages of development. As such,
-# it may be unstable and will contain bugs. It was originally written
-# for my own use, but it is shared in the spirit of of the community,
-# subject to the conditions set out in the GNU GENERAL LICENSE.
+# The Achoo! script is still in development. As such, it may contain bugs.
+# It was originally written for my own use, but it is shared in the spirit of
+# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. An initialising
-# "wizard" asks for the user's country, username, user password and root
-# password, and works with the user to set up their partitioning
+# "wizard" asks for only the essential data of location, username, and
+# passwords, and works with the user to set up their partitioning
 # requirements. The script then runs without further intervention to the end.
 
 # Variables and functions are stored in separate scripts for easy access.
 # Defaults are set for a UK English setup with Xfce as the desktop
 # environment and LXDM display manager, and with partitioning variables
 # for a Virtualbox installation of 12GiB. These can be changed in the wizard.
-
-# --------------------------------------------------------------------
-# Please note that no provision is included at this stage for Wifi
-# devices, or for UEFI, syslinux, GPT or other partitioning schemes
-# ---------------------------------------------------------------------
 
 # Some debugging code has been left in to keep the user informed during
 # installation. There is an error-trapping function which should exit
@@ -98,15 +92,14 @@ CheckForError "Line ${LINENO}"
 LocalMirrorList
 CheckForError "Line ${LINENO}"
 
-# First unmount existing partitions in case previously mounted
+# Unmount any existing partitions and mounting as defined in setup
 umount_partitions
 CheckForError "Line ${LINENO}"
-
 echo "Mounting partitions"
 MountPartitions
+CheckForError "Line ${LINENO}"
 
-echo "Installing base system"
-# LTS Kernel and base-devel
+echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo
 CheckForError "Line ${LINENO}"
 
@@ -124,7 +117,9 @@ echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
 CheckForError "Line ${LINENO}"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
+CheckForError "Line ${LINENO}"
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
+CheckForError "Line ${LINENO}"
 
 # Set up locale
 echo "Preparing locale.gen"
@@ -147,6 +142,7 @@ CheckForError "Line ${LINENO}"
 
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
+CheckForError "Line ${LINENO}"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 CheckForError "Line ${LINENO}"
@@ -154,6 +150,7 @@ CheckForError "Line ${LINENO}"
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd
 arch_chroot "passwd root" < /tmp/.passwd >/dev/null
+CheckForError "Line ${LINENO}"
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
@@ -179,41 +176,23 @@ echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf
 CheckForError "Line ${LINENO}"
 
 # Create the user, set password, then remove temporary password file
-echo "Adding user as defined"
+echo "Adding user as defined in setup"
 arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
 CheckForError "Line ${LINENO}"
 echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd
 arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+CheckForError "Line ${LINENO}"
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
 # Set up basic configuration files and permissions for user
 echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+CheckForError "Line ${LINENO}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+CheckForError "Line ${LINENO}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
 CheckForError "Line ${LINENO}"
-
-#echo "Adding files needed for installing some applications"
-#pacman-db-upgrade
-#CheckForError "Line ${LINENO}"
-#pacman-key --init
-#CheckForError "Line ${LINENO}"
-#pacman-key --populate archlinux
-#CheckForError "Line ${LINENO}"
-#dirmngr < /dev/null
-#CheckForError "Line ${LINENO}"
-#pacman-key --refresh-keys
-#CheckForError "Line ${LINENO}"
-
-# To avoid keyring problems
-#echo "Adding haveged"
-#pacstrap ${MOUNTPOINT} haveged
-#CheckForError "Line ${LINENO}"
-#arch_chroot "systemctl enable haveged.service" >/dev/null
-#CheckForError "Line ${LINENO}"
-#arch_chroot "systemctl start haveged.service" >/dev/null
-#CheckForError "Line ${LINENO}"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"

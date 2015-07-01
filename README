@@ -1,11 +1,13 @@
-This project is still in vigorous, active development, and will contain bugs which could damage your system. It aims to produce a fast installation of basic Arch Linux with Xfce desktop environment and LXDM greeter.
+This project is still in development, and may contain bugs.
+Achoo aims to produce a fast installation of basic Arch Linux with Xfce desktop
+environment and LXDM greeter.
 
 How to use it:
 
-1) Requirements ... Running a live Arch session (as 'root') A working internet connection
+1) You should be running a live Arch session (as 'root') with a working internet connection
 
-2) Update package list and install git: pacman -Sy git
+2) First update the package list and install git: pacman -Sy git
 
-3) Get the script: git clone git://github.com/Angeltoast/Achoo
+3) Next get the script from Github: git clone git://github.com/Angeltoast/Achoo
 
-4) Run it: cd Achoo && ./achoo
+4) Then run it: cd Achoo && ./achoo
