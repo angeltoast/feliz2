@@ -339,10 +339,16 @@ ManagePartitions() {
 	# If no partitions exist, offer cfdisk to create (or exit)
 	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
 		print_heading
-    echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table now if you wish."
-		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
-    echo "If you choose not to use 'cfdisk', the script will terminate."
-    read -p "Would you like to open cfdisk now? [Y/n]: " Response
+    echo " There are no partitions on the device, and we cannot continue without"
+    echo " partitions on which to install. However, 'cfdisk' is available for you"
+    echo " to create a partition table now if you wish."
+    echo ""
+		echo " If you are uncertain about partitioning, you should read the"
+    echo " Arch Wiki (address at the top)"
+    echo ""
+    echo " If you choose not to use 'cfdisk', the script will terminate."
+    echo ""
+    read -p " Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y" | "Y" | "" )  cfdisk
 			;;
@@ -350,12 +356,14 @@ ManagePartitions() {
 		esac
  	else
     # Alternatively, offer cfdisk to edit
-		echo "Before we can install the system, the device must be partitioned ready to receive it."
-		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
-		echo "Here is a list of available partitions on all connected devices ..."
+		echo " Here is a list of partitions on all connected devices ..."
+    echo ""
 		lsblk
 		echo ""
-		read -p "Would you like to open cfdisk to manage the partitions now? [y/n]: " Response
+    echo " If you are uncertain about partitioning, you should read the"
+    echo " Arch Wiki (address at the top)"
+    echo ""
+		read -p " Would you like to open cfdisk to change the partitions? [Y/n]: " Response
 		case $Response in
 		  "y" | "Y" | "" )  cfdisk
 			;;	
