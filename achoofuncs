@@ -264,6 +264,30 @@ UserAndRoot() {
 	done
 }
 
+SetDisplayManager() {
+# Change from default lightdm display manager and greeter
+	InPrompt="Do you wish to change to LXDM? [y/N]: "
+  while [ $Repeat ]
+	do
+	print_heading
+	print_info "The default display manager is LightDM. However, this"
+	print_info "sometimes fails with certain hardware. If you know that your"
+	print_info "system has problems with LightDM, you can choose LXDM instead."
+	print_line
+	read -p "$InPrompt" Response
+	case $Response in
+		"y") DisplayManager="lxdm"
+          Greeter=""
+		;;
+		"Y") DisplayManager="lxdm"
+          Greeter=""
+		;;
+		*) break
+	esac
+  break
+	done
+}
+
 # -----------------------
 # System and Partitioning
 # -----------------------

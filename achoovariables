@@ -64,8 +64,8 @@ SUBZONE="London"				      # For time
 # Desktop environment and greeter variables
 # -----------------------------------------
 DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
-DisplayManager="lxdm"
-Greeter=""						        # Not required for Lxdm
+DisplayManager="lightdm"
+Greeter="lightdm-gtk-greeter"						        # Not required for Lxdm
 
 # -----------------------
 # Root and User variables

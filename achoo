@@ -68,6 +68,11 @@ Repeat=1
 UserAndRoot
 CheckForError "Line ${LINENO}"
 
+# Set display manager
+Repeat=1
+SetDisplayManager
+CheckForError "Line ${LINENO}"
+
 # ------------
 # Partitioning
 # ------------
