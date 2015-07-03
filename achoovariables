@@ -1,12 +1,13 @@
 #!/bin/bash
 
+# Achoo! Arch Linux installation scripts 2015/07/03
 # achoovariables - Variables for Achoo! Arch Linux Installation Script
+# -------------------------------------
+# This script and the achoofuncs script must be present when
+# running the main Achoo! script
 
-# -------------------------------------
-# Achoo! Arch Linux installation scripts 2015/07/01
-# -------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo?Lution script by Carl Duff
+# the Evo/Lution script by Carl Duff
 
 # --------------------------------------------------
 # Please read the following notes before proceeding!

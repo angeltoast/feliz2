@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/01
+# Achoo! Arch Linux Installation Script 2015/07/03
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
 # This script and the achoovariables script are necessary when
@@ -99,10 +99,10 @@ SetLocation(){
 	print_info "First we need to gather some important information to ensure it meets your needs."
 	print_info "Beginning with the settings for your location ..."
 	print_line
-	print_info "The country code is set to:  $CountryCode"	# Country code for mirrorlist
-	print_info "The keyboard code is set to: $Countrykbd"	# Country for keyboard
-	print_info "The time zone is set to: $ZONE/$SUBZONE"	# For time
-	print_info "The locale is set to: $CountryLocale"		# Locale
+	print_info "The country code is set to:  $CountryCode" # For mirrorlist
+	print_info "The keyboard code is set to: $Countrykbd" # For keyboard
+	print_info "The time zone is set to: $ZONE/$SUBZONE" # For time
+	print_info "The locale is set to: $CountryLocale" # Locale
 	echo ""
 	read -p "$InPrompt" Response
 	case $Response in
@@ -118,7 +118,6 @@ SetLocation(){
 
 EditLocales(){
 	InPrompt="Please press any key"
-
 	# (1) Variable ="Countrykbd" - Default = "uk" - Used for keyboard code
 	print_heading
 	echo "The keyboard code is currently: '$Countrykbd'"
@@ -126,7 +125,6 @@ EditLocales(){
 	getkeymap
 	read -p "The keyboard is now set to: '$Countrykbd'. $InPrompt"
 	# End of keyboard code
-				
 	# (2) Variables = "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
 	print_heading
 	echo "The zone settings are currently: '$ZONE/$SUBZONE'"
@@ -134,7 +132,6 @@ EditLocales(){
 	settimezone
 	read -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'. $InPrompt"
 	# End of ZONE/SUBZONE code
-		
 	# (3) Variable = "CountryLocale" - Default = "en_GB.UTF-8"
 	# Also sets CountryCode
 	print_heading
@@ -267,11 +264,11 @@ UserAndRoot() {
 SetDisplayManager() {
 # Change from default lightdm display manager and greeter
 	InPrompt="Do you wish to change to LXDM? [y/N]: "
-  while [ $Repeat ]
+	while [ $Repeat ]
 	do
 	print_heading
-	print_info "The default display manager is LightDM. However, this"
-	print_info "sometimes fails with certain hardware. If you know that your"
+	print_info "The default display manager is LightDM. However, this can"
+	print_info "sometimes fail with certain hardware. If you know that your"
 	print_info "system has problems with LightDM, you can choose LXDM instead."
 	print_line
 	read -p "$InPrompt" Response
@@ -284,7 +281,7 @@ SetDisplayManager() {
 		;;
 		*) break
 	esac
-  break
+	break
 	done
 }
 
@@ -339,16 +336,10 @@ ManagePartitions() {
 	# If no partitions exist, offer cfdisk to create (or exit)
 	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
 		print_heading
-    echo " There are no partitions on the device, and we cannot continue without"
-    echo " partitions on which to install. However, 'cfdisk' is available for you"
-    echo " to create a partition table now if you wish."
-    echo ""
-		echo " If you are uncertain about partitioning, you should read the"
-    echo " Arch Wiki (address at the top)"
-    echo ""
-    echo " If you choose not to use 'cfdisk', the script will terminate."
-    echo ""
-    read -p " Would you like to open cfdisk now? [Y/n]: " Response
+    echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table now if you wish."
+		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
+    echo "If you choose not to use 'cfdisk', the script will terminate."
+    read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y" | "Y" | "" )  cfdisk
 			;;
@@ -356,14 +347,12 @@ ManagePartitions() {
 		esac
  	else
     # Alternatively, offer cfdisk to edit
-		echo " Here is a list of partitions on all connected devices ..."
-    echo ""
+		echo "Before we can install the system, the device must be partitioned ready to receive it."
+		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
+		echo "Here is a list of available partitions on all connected devices ..."
 		lsblk
 		echo ""
-    echo " If you are uncertain about partitioning, you should read the"
-    echo " Arch Wiki (address at the top)"
-    echo ""
-		read -p " Would you like to open cfdisk to change the partitions? [Y/n]: " Response
+		read -p "Would you like to open cfdisk to manage the partitions now? [y/n]: " Response
 		case $Response in
 		  "y" | "Y" | "" )  cfdisk
 			;;	
