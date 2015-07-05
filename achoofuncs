@@ -96,8 +96,7 @@ SetLocation() {
 	print_heading
 	print_info "The best way to install Arch Linux is to follow the Wiki."
 	print_info "But sometimes you just want a quick installation, and that's where Achoo! comes in."
-	print_info "First we need to gather some important information to ensure it meets your needs."
-	print_info "Beginning with the settings for your location ..."
+	print_info "First we need to gather some important information, beginning with the settings for your location ..."
 	print_line
 	print_info "The country code is set to:  $CountryCode" # For mirrorlist
 	print_info "The keyboard code is set to: $Countrykbd" # For keyboard
@@ -307,7 +306,7 @@ LocalMirrorList() {
 }
 
 arch_chroot() {
-# Taken directly from Lution AIS (adapted by Carl from helmutdu's AIS)
+# Taken directly from Lution AIS
 # Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
     arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}"
 }  
@@ -328,7 +327,7 @@ ManagePartitions() {
 	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
 		print_heading
     echo "There are no partitions on the device, and we cannot continue without partitions on which to install."
-    echo "'Cfdisk' is available for you to create a partition table now if you wish."
+    echo "'cfdisk' is available for you to create a partition table now if you wish."
 		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
     echo "If you choose not to use 'cfdisk', the script will terminate to allow you to partition in some other way."
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
@@ -377,12 +376,12 @@ AllocatePartitions() {
 # Display partitions for user-selection	
 	# First store all available partitions in a list
 	PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-	# Display them and select one for /root
+	# Display them and select one for root
 	print_heading
 	Remaining=""
 	Counter=0
 	PS3="$prompt1"
-	echo -e "Select the partition for /root:\n"
+	echo "Select the partition for root:"
 	select partition in ${PartitionList}
 	do
     for i in ${PartitionList}
