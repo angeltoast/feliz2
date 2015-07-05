@@ -423,12 +423,16 @@ AllocatePartitions() {
 		done
 		break
   done
-	echo ""
+  SetSwap
+}
+
+SetSwap() {
+	print_heading
   read -p "Do you wish to allocate a swap partition? (Y/n): " Response
   # If 'yes' display remaining partitions and select one for /swap
   case ${Response} in
     "y" | "Y" | "")
-    echo ""
+    print_heading
     Remaining=""
     Counter=0
     PS3="$prompt1"
@@ -449,13 +453,12 @@ AllocatePartitions() {
     break
     done
     ;;
-    *) SwapPartition=""
+    *) SwapPartition="Skip"
+    read -p $SwapPartition
   esac
   # Check contents of PartitionList. If not empty, call the ExtraPartitions function
 	case ${PartitionList} in
-	"") echo $PartitionList
-  ;;
-  " ") echo $PartitionList
+	"" | " ") echo $PartitionList
   ;;
   *) ExtraPartitions
 	esac
@@ -471,9 +474,7 @@ do
 	echo "The following partition(s) are still available:" ${PartitionList}
 	read -p "Do you wish to allocate any of these? [y/N]: " Response
 	case $Response in
-		"y") echo ""
-		;;
-		"Y") echo ""
+		"y" | "Y") echo ""
 		;;
 		*) break
 	esac
@@ -539,7 +540,6 @@ do
 				done 
   			# Add it to AddPartLabel list
  				AddPartLabel[$Elements]="${PartLabel}"
- 				
  				# Set format type for the selected partition
  				select_filesystem
 				if [ -z ${PartitionType} ]
@@ -548,9 +548,7 @@ do
 				fi
 				# Add it to AddPartType list
  				AddPartType[$Elements]="${PartitionType}"
- 				
- 				
-			else                            # ie: $Counter is not equal to $Selected
+ 			else                            # ie: $Counter is not equal to $Selected
         if [ -n $i ]                  # Test that loop element is not empty
         then
           Remaining="$Remaining $i" 	# Add unused partition to temp list
@@ -600,17 +598,13 @@ SetGrubDevice() {
   	Counter=$((Counter+1))
 			if [ $Counter -eq $REPLY ]
 			then
-        if [ $i = "Skip" ]
-        then
-          GrubDevice=""
-        else
-          GrubDevice=$i
-          echo "Grub will be installed on $GrubDevice"
-        fi
-			fi
- 		done
+        GrubDevice=$i
+    	fi
 		break
+ 		done
+    break
   done
+}
 
 # Unmount partitions (from Lution/AUI - Nice code)
 # 1) Gets a list of all mounted partitions into MOUNTED
@@ -628,14 +622,14 @@ umount_partitions(){
 
 MountPartitions() {
   # Root
-  echo "Mounting partitions and activating swap"
+  echo "Mounting partitions"
   echo "Formatting /root partition"
   mkfs.${RootType} ${RootPartition} # eg: mkfs.ext4 /dev/sda1
   echo "Mounting /root partition"	
   mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
   CheckForError "Line ${LINENO}"
   # Swap
-  if [ ${SwapPartition} != "" ]
+  if [ ${SwapPartition} != "Skip" ]
   then
     echo "Making /swap partition"
     mkswap ${SwapPartition} # eg: mkswap /dev/sda2

@@ -97,7 +97,7 @@ CheckForError "Line ${LINENO}"
 LocalMirrorList
 CheckForError "Line ${LINENO}"
 
-# Unmount any existing partitions and mounting as defined in setup
+# Unmount any existing partitions and mount as required as defined in setup
 umount_partitions
 CheckForError "Line ${LINENO}"
 echo "Mounting partitions"
@@ -160,7 +160,7 @@ rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
 # Install Grub if selected
-if [ ${GrubDevice} != "" ]
+if [ ${GrubDevice} != "Skip" ]
 then
   echo "Installing GRUB"
   pacstrap ${MOUNTPOINT} grub os-prober
