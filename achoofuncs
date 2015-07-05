@@ -36,7 +36,7 @@
 # ----------------
 
 contains_element() { # (from AUI scripts)
-# check if an element exist in a string
+# check if an element exists in a string
     for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
 }
 
@@ -78,7 +78,7 @@ CheckForError() {
 	if [[ $? -gt 0 ]]; then
 		echo "An error occurred at $1"
 		read -r Response
-		#exit
+		exit
 	else
 		echo "Preparing next step ..."
 	fi
@@ -175,28 +175,28 @@ setlocale() {
 
 settimezone() {
 # Set Zone and Sub-Zone from lists (from AUI)
-    local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
-    PS3="$prompt1"
-    echo "Select zone:"
-    select ZONE in "${_zones[@]}"
-    do
-      if contains_element "$ZONE" "${_zones[@]}"; then
-        local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
-        print_heading
-        PS3="$prompt1"
-        echo "Select subzone:"
-        select SUBZONE in "${_subzones[@]}"; do
-          if contains_element "$SUBZONE" "${_subzones[@]}"; then
-            break
-          else
-            invalid_option
-          fi
-        done
-        break
-      else
-        invalid_option
-      fi
-    done
+  local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
+  PS3="$prompt1"
+  echo "Select zone:"
+  select ZONE in "${_zones[@]}"
+  do
+    if contains_element "$ZONE" "${_zones[@]}"; then
+      local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
+      print_heading
+      PS3="$prompt1"
+      echo "Select subzone:"
+      select SUBZONE in "${_subzones[@]}"; do
+        if contains_element "$SUBZONE" "${_subzones[@]}"; then
+          break
+        else
+          invalid_option
+        fi
+      done
+      break
+    else
+      invalid_option
+    fi
+  done
 }
 
 UserAndRoot() {
@@ -214,7 +214,7 @@ UserAndRoot() {
 			;;
 			*) HostName=${Entered}
 		esac
-		echo "Hostname set to: $HostName}"
+		echo "Hostname set to: $HostName"
 		# Username
 		print_heading
 		Entered="Archie"
@@ -222,7 +222,6 @@ UserAndRoot() {
 		print_line
 		print_info "If you don't create a username here, a default user called 'archie' will be set up, with a password of 'Linux'"
 		read -p "Enter a username (must be all lower case): " Entered
-		
 		case $Entered in
 			"") Entered=$UserName
 			;;
@@ -241,7 +240,6 @@ UserAndRoot() {
 			*) UserPassword=${Entered}
 		esac
 		echo "User password set to: $UserPassword}"
-		
 		# Root password
 		print_heading
 		Entered="Root"
@@ -291,7 +289,7 @@ LocalMirrorList() {
 	CheckForError "Line ${LINENO}"
 	
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} 2>/tmp/.errlog
+	curl -so ${MirrorTemp} ${URL}
 	CheckForError "Line ${LINENO}"
 	
 	# Use sed to filter entries
@@ -414,10 +412,9 @@ AllocatePartitions() {
   then
     print_heading
     read -p "Do you wish to allocate a swap partition? (Y/n): " Response
-    # If 'yes' display remaining partitions and select one for /swap
+    # If 'yes' display remaining partitions and select one for swap
     case ${Response} in
-      "y"|"Y"|"")
-      print_heading
+    "y"|"Y"|"") print_heading
       Remaining=""
       Counter=0
       PS3="$prompt1"
@@ -438,7 +435,7 @@ AllocatePartitions() {
       break
       done
       ;;
-      *) SwapPartition="Skip"
+    *) SwapPartition="Skip"
     esac
     # Check contents of PartitionList. If not empty, call the ExtraPartitions function
     case ${PartitionList} in
@@ -490,15 +487,15 @@ do
 					# Check that entry includes '/'
 					CheckInput=(`echo $Response | cut -c1`)
 					case ${CheckInput} in
-						"") echo "You must enter a valid name"
+					"") echo "You must enter a valid name"
 							PartLabel=""
-						;;
-						*) if [ ${CheckInput} != "/" ]
-							then
-								PartLabel="/${Response}"
-							else
-								PartLabel="${Response}"
-							fi
+            ;;
+					*) if [ ${CheckInput} != "/" ]
+						then
+							PartLabel="/${Response}"
+						else
+							PartLabel="${Response}"
+						fi
 					esac
           # Check that the label has not already been used
 					LabelCounter=0
