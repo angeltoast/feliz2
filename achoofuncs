@@ -329,7 +329,7 @@ ManagePartitions() {
     echo "There are no partitions on the device, and we cannot continue without partitions on which to install."
     echo "'cfdisk' is available for you to create a partition table now if you wish."
 		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
-    echo "If you choose not to use 'cfdisk', the script will terminate to allow you to partition in some other way."
+    echo "If you choose not to use 'cfdisk' the script will terminate to allow you to partition in some other way."
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y"|"Y"|"") cfdisk
@@ -443,7 +443,7 @@ AllocatePartitions() {
     *) ExtraPartitions
     esac
   else
-    *) SwapPartition="Skip"
+    SwapPartition="Skip"
   fi
 }
 
@@ -573,9 +573,9 @@ SetGrubDevice() {
 	print_heading
 	Counter=0
 	PS3="$prompt1"
-	echo -e "Select the device where Grub is to be installed.\n"
-  echo -e "(If you select the 'Skip' option, Grub will not be installed, and\n"
-  echo -e "you will have to make alternative arrangements for booting your system.\n)"
+	print_info "Select the device where Grub is to be installed."
+  print_info "If you select the 'Skip' option, Grub will not be installed, and you"
+  print_info "will have to make alternative arrangements for booting your system."
 	select partition in ${DevicesList}
 	do
     for i in ${DevicesList}
