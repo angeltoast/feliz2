@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/03
+# Achoo! Arch Linux Installation Script 2015/07/04
 # ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff
@@ -8,7 +8,7 @@
 # Please read the following notes before proceeding!
 # -------------------------------------------------
 
-# The Achoo! script is still in development. As such, it may contain bugs.
+# The Achoo! script is still in development, and may contain bugs.
 # It was originally written for my own use, but it is shared in the spirit of
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
@@ -159,13 +159,17 @@ CheckForError "Line ${LINENO}"
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 
-echo "Installing GRUB"
-pacstrap ${MOUNTPOINT} grub os-prober
-CheckForError "Line ${LINENO}"
-arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
-CheckForError "Line ${LINENO}"
-arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
-CheckForError "Line ${LINENO}"
+# Install Grub if selected
+if [ ${GrubDevice} != "" ]
+then
+  echo "Installing GRUB"
+  pacstrap ${MOUNTPOINT} grub os-prober
+  CheckForError "Line ${LINENO}"
+  arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
+  CheckForError "Line ${LINENO}"
+  arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+  CheckForError "Line ${LINENO}"
+fi
 
 echo "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"

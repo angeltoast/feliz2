@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/03
+# Achoo! Arch Linux Installation Script 2015/07/04
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
 # This script and the achoovariables script are necessary when
@@ -10,7 +10,7 @@
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
 #
-# The Achoo! script is still in development. As such, it may contain bugs.
+# The Achoo! script is still in development, and may contain bugs.
 # It was originally written for my own use, but it is shared in the spirit of
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 #
@@ -237,7 +237,7 @@ UserAndRoot() {
 		print_heading
 		Entered="Linux"
 		print_info "Passwords should be a mixture of upper- and lower-case letters, numbers and special characters."
-		print_info "If you do not enter a password, the default of 'Linux' will be used."
+		print_info "If you do not enter a user password, the default of 'Linux' will be used."
 		read -p "Enter a password for $UserName: " Entered
 		case $Entered in
 			"") Entered=$UserPassword
@@ -249,7 +249,7 @@ UserAndRoot() {
 		# Root password
 		print_heading
 		Entered="Root"
-		print_info "And finally, a password for root. If you do not enter one, the default of 'Root' will be used."
+		print_info "Now set a password for root. If you do not enter one, the default of 'Root' will be used."
 		read -p "Enter a password for root: " Entered
 		case $Entered in
 			"") Entered=$RootPassword
@@ -336,9 +336,10 @@ ManagePartitions() {
 	# If no partitions exist, offer cfdisk to create (or exit)
 	if [[ $NUMBER_PARTITIONS -eq 0 ]] ; then
 		print_heading
-    echo "There are no partitions on the device, and we cannot continue without partitions on which to install. However, 'cfdisk' is available for you to create a partition table now if you wish."
+    echo "There are no partitions on the device, and we cannot continue without partitions on which to install."
+    echo "'Cfdisk' is available for you to create a partition table now if you wish."
 		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
-    echo "If you choose not to use 'cfdisk', the script will terminate."
+    echo "If you choose not to use 'cfdisk', the script will terminate to allow you to partition in some other way."
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y" | "Y" | "" )  cfdisk
@@ -346,13 +347,11 @@ ManagePartitions() {
 		*) exit
 		esac
  	else
-    # Alternatively, offer cfdisk to edit
-		echo "Before we can install the system, the device must be partitioned ready to receive it."
-		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
+    # Alternatively, offer cfdisk to edit existing partitions
 		echo "Here is a list of available partitions on all connected devices ..."
 		lsblk
 		echo ""
-		read -p "Would you like to open cfdisk to manage the partitions now? [y/n]: " Response
+		read -p "Would you like to open cfdisk to manage those partitions now? [y/n]: " Response
 		case $Response in
 		  "y" | "Y" | "" )  cfdisk
 			;;	
@@ -391,9 +390,9 @@ select_filesystem() {
 
 AllocatePartitions() {
 # Display partitions for user-selection	
-	# Store all available partitions in a list
+	# First store all available partitions in a list
 	PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-	# Display available partitions and select one for /root
+	# Display them and select one for /root
 	print_heading
 	Remaining=""
 	Counter=0
@@ -424,27 +423,34 @@ AllocatePartitions() {
 		done
 		break
   done
-	# Display remaining partitions and select one for /swap
 	echo ""
-	Remaining=""
-	Counter=0
-	PS3="$prompt1"
-	echo -e "Now select the partition for /swap from the ones that remain:\n"
-	select partition in ${PartitionList}
-	do
-    for i in ${PartitionList}
-		do
-		Counter=$((Counter+1))
-		  if [ $Counter -eq $REPLY ]
-		  then
-		  	SwapPartition="/dev/$i"
-		  else
-		  	Remaining="$Remaining $i"	# Add next available partition
-		  fi
-		  PartitionList=$Remaining		# Replace original PartitionList with remaining options
-		done
-	break
-  done
+  read -p "Do you wish to allocate a swap partition? (Y/n): " Response
+  # If 'yes' display remaining partitions and select one for /swap
+  case ${Response} in
+    "y" | "Y" | "")
+    echo ""
+    Remaining=""
+    Counter=0
+    PS3="$prompt1"
+    echo -e "Select the partition for /swap from the ones that remain:\n"
+    select partition in ${PartitionList}
+    do
+      for i in ${PartitionList}
+      do
+      Counter=$((Counter+1))
+        if [ $Counter -eq $REPLY ]
+        then
+          SwapPartition="/dev/$i"
+        else
+          Remaining="$Remaining $i"	# Add next available partition
+        fi
+        PartitionList=$Remaining		# Replace original PartitionList with remaining options
+      done
+    break
+    done
+    ;;
+    *) SwapPartition=""
+  esac
   # Check contents of PartitionList. If not empty, call the ExtraPartitions function
 	case ${PartitionList} in
 	"") echo $PartitionList
@@ -462,7 +468,7 @@ Elements=${#PartitionList[@]}
 while [ $Counter -le $Elements ]
 do
 	print_heading
-	echo "The following partitions are still available:" ${PartitionList}
+	echo "The following partition(s) are still available:" ${PartitionList}
 	read -p "Do you wish to allocate any of these? [y/N]: " Response
 	case $Response in
 		"y") echo ""
@@ -581,12 +587,12 @@ fi
 SetGrubDevice() {
   # Store available devices in a list	
   DEVICE=""
-  DevicesList=$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd');
+  DevicesList="Skip $(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
 	# Display available devices and select one for Grub
 	print_heading
 	Counter=0
 	PS3="$prompt1"
-	echo -e "And finally, select the device for Grub:\n"
+	echo -e "Select the device where Grub is to be installed:\n"
 	select partition in ${DevicesList}
 	do
     for i in ${DevicesList}
@@ -594,13 +600,17 @@ SetGrubDevice() {
   	Counter=$((Counter+1))
 			if [ $Counter -eq $REPLY ]
 			then
-				GrubDevice=$i
-				echo "Grub will be installed on $GrubDevice"
+        if [ $i = "Skip" ]
+        then
+          GrubDevice=""
+        else
+          GrubDevice=$i
+          echo "Grub will be installed on $GrubDevice"
+        fi
 			fi
  		done
 		break
   done
-}
 
 # Unmount partitions (from Lution/AUI - Nice code)
 # 1) Gets a list of all mounted partitions into MOUNTED
@@ -625,12 +635,15 @@ MountPartitions() {
   mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
   CheckForError "Line ${LINENO}"
   # Swap
-  echo "Making /swap partition"
-  mkswap ${SwapPartition} # eg: mkswap /dev/sda2
-  CheckForError "Line ${LINENO}"
-  echo "Activating /swap"
-  swapon ${SwapPartition} # eg: swapon /dev/sda2
-  CheckForError "Line ${LINENO}"
+  if [ ${SwapPartition} != "" ]
+  then
+    echo "Making /swap partition"
+    mkswap ${SwapPartition} # eg: mkswap /dev/sda2
+    CheckForError "Line ${LINENO}"
+    echo "Activating /swap"
+    swapon ${SwapPartition} # eg: swapon /dev/sda2
+    CheckForError "Line ${LINENO}"
+  fi
   echo "Mounting additional partitions"
   Counter=0
   Elements=${#AddPartList[@]}
