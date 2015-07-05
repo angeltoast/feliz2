@@ -81,9 +81,13 @@ CheckForError "Line ${LINENO}"
 ManagePartitions
 CheckForError "Line ${LINENO}"
 
-# Allocat /swap and /root and others
+# Allocate and /root and others
 AllocatePartitions
 CheckForError "Line ${LINENO}"
+
+# Select swap partition
+#ChooseSwap
+#CheckForError "Line ${LINENO}"
 
 # Set device for Grub
 SetGrubDevice
@@ -128,15 +132,16 @@ CheckForError "Line ${LINENO}"
 
 # Set up locale
 echo "Preparing locale.gen"
-echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen
+echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen # eg: en_US.UTF-8 UTF-8
 CheckForError "Line ${LINENO}"
 arch_chroot "locale-gen"
 CheckForError "Line ${LINENO}"
 
 echo "Preparing locale.conf"
-echo "LANG=${CountryLocale}.UTF-8" >> ${MOUNTPOINT}/etc/locale.conf
+echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf # eg: LANG=en_US.UTF-8 > /etc/locale.conf
+
 CheckForError "Line ${LINENO}"
-export "LANG=${CountryLocale}"
+export "LANG=${CountryLocale}" # export LANG=en_US.UTF-8
 CheckForError "Line ${LINENO}"
 
 echo "Setting clock"
