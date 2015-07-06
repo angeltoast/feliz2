@@ -50,6 +50,28 @@ else
   exit 1
 fi
 
+# Check for internet connection (adapted from Lution)
+Retry="Y"
+while [ $Retry = "Y" ]
+do
+  print_heading
+  print_info "A working internet connection is needed for installation."
+  print_info "Checking for an internet connection ... "
+  if [[ ! $(ping -c 1 google.com) ]]; then
+    print_info "Unable to establish a connection. If you are using wifi, it"
+    print_info "is not working - you could try connecting an ethernet cable."
+    read -p "Try again? (y/n): " Retry
+    if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
+      exit
+    else
+      Retry="Y"
+    fi
+  else
+    echo "Connection successful"
+    Retry="N"
+  fi
+done
+
 # -------------------------------------------
 # Display welcome text and set user-variables
 # -------------------------------------------
@@ -59,16 +81,16 @@ Repeat=1
 SetLocation
 CheckForError "Line ${LINENO}"
 
-# Keyboard layout
+# Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd}
 CheckForError "Line ${LINENO}"
 
-# Names and passwords
+# User input of names and passwords
 Repeat=1
 UserAndRoot
 CheckForError "Line ${LINENO}"
 
-# Set display manager
+# User selection of display manager/greeter
 Repeat=1
 SetDisplayManager
 CheckForError "Line ${LINENO}"
@@ -77,11 +99,11 @@ CheckForError "Line ${LINENO}"
 # Partitioning
 # ------------
 
-# Define partitions
+# User-defined partitions
 ManagePartitions
 CheckForError "Line ${LINENO}"
 
-# Allocate root, swap and others
+# Allocate root, swap and others as set in ManagePartitions
 AllocateRoot
 CheckForError "Line ${LINENO}"
 
@@ -126,7 +148,7 @@ CheckForError "Line ${LINENO}"
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
 CheckForError "Line ${LINENO}"
 
-# Set up locale
+# Set up localeelizabeth@itsliz.net
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen # eg: en_US.UTF-8 UTF-8
 CheckForError "Line ${LINENO}"

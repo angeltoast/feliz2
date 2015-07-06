@@ -1,5 +1,7 @@
+2015-07-06
+Bugs removed in allocate partitions functions. Internet detection added at start.
 2015-07-04
-Options added to skip /swap and Grub if desired
+Options added to skip /swap and Grub
 2015-07-03
 Added wireless firmware. 
 2015-06-30

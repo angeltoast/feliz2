@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/04
+# Achoo! Arch Linux Installation Script 2015/07/06
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
 # This script and the achoovariables script are necessary when
@@ -66,7 +66,7 @@ print_title() { # (from AUI scripts)
 print_info() { # (from AUI scripts)
     # Console width number
     T_COLS=`tput cols`
-    echo -e "${Bold}$1${Reset}\n" | fold -sw $(( $T_COLS - 18 )) | sed 's/^/\t/'
+    echo -e "${Bold}$1${Reset}\n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
 }
 
 # --------------
@@ -438,8 +438,6 @@ AllocateSwap() {
     for i in ${PartitionList}
     do
     Counter=$((Counter+1))
-    echo "$LINENO Reply: $Reply"
-    read -p "Counter: $Counter"
       if [ $Counter -eq $Reply ]
       then
         SwapPartition="/dev/$i"
@@ -578,9 +576,9 @@ SetGrubDevice() {
 	print_heading
 	Counter=0
 	PS3="$prompt1"
-	print_info "Select the device where Grub is to be installed."
-  print_info "If you select the 'Skip' option, Grub will not be installed, and you"
-  print_info "will have to make alternative arrangements for booting your system."
+	print_info "Select the device where Grub is to be installed. Note that, if you"
+  print_info "select the 'Skip' option, Grub will not be installed, and you will"
+  print_info "have to make alternative arrangements for booting your system."
 	select partition in ${DevicesList}
 	do
     for i in ${DevicesList}
