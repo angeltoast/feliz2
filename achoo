@@ -81,8 +81,8 @@ CheckForError "Line ${LINENO}"
 ManagePartitions
 CheckForError "Line ${LINENO}"
 
-# Allocate root and others
-AllocatePartitions
+# Allocate root, swap and others
+AllocateRoot
 CheckForError "Line ${LINENO}"
 
 # Set device for Grub
