@@ -287,12 +287,12 @@ ChooseDE() {    # This new code with option of Xfce, Gnome or skip
                 "LXDM") DisplayManager="lxdm"
                   Greeter=""
                   ;;
-                *) DisplayManager="Skip"
+                *) DisplayManager=""
                   Greeter=""
               esac	
           ;;
-        *) DesktopEnvironment="Skip"
-            DisplayManager="Skip"
+        *) DesktopEnvironment=""
+            DisplayManager=""
               Greeter=""	
  			esac
       break
@@ -634,12 +634,15 @@ SetGrubDevice() {
 	do
     for i in ${DevicesList}
 		do
+    DEVICE=$i
   	Counter=$((Counter+1))
 			if [ $Counter -eq $REPLY ]
 			then
-        GrubDevice=$i
+        GrubDevice=$DEVICE
+        if [ $GrubDevice = Skip ]; then
+        GrubDevice=""
+        fi
     	fi
-		break
  		done
     break
   done
