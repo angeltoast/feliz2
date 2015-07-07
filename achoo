@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/04
+# Achoo! Arch Linux Installation Script 2015/07/07
 # ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff
@@ -90,9 +90,9 @@ Repeat=1
 UserAndRoot
 CheckForError "Line ${LINENO}"
 
-# User selection of display manager/greeter
+# User selection of desktop environment and display manager/greeter
 Repeat=1
-SetDisplayManager
+ChooseDE
 CheckForError "Line ${LINENO}"
 
 # ------------
@@ -245,11 +245,17 @@ CheckForError "Line ${LINENO}"
 
 # Install Display Manager and Desktop Environment (from Lution AIS)
 echo "Installing Display Manager and Desktop Environment"
-pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
-arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-CheckForError "Line ${LINENO}"  
-pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
-CheckForError "Line ${LINENO}"
+if [ ${DisplayManager} != "Skip" ]
+then
+  pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
+  arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  CheckForError "Line ${LINENO}"
+fi
+if [ ${DesktopEnvironment} != "Skip" ]
+then
+  pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
+  CheckForError "Line ${LINENO}"
+fi
 
 print_heading
 print_info "Success! Finished installing"

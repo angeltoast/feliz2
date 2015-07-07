@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux installation scripts 2015/07/06
+# Achoo! Arch Linux installation scripts 2015/07/07
 # achoovariables - Variables for Achoo! Arch Linux Installation Script
 # -------------------------------------
 # This script and the achoofuncs script must be present when
@@ -34,10 +34,10 @@
 # Variables List
 # --------------
 
-# ---------------------------------------------------------------------
-# Partition variables - essential for correctly mounting the partitions.
+# ------------------------------------------------------------------------------
+# Default partition variables - essential for correctly mounting the partitions.
 # Contents of these variables are critical and must be accurately defined.
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 declare -a AddPartList		# Array of additional partitions by partition system name. eg: /dev/sda5
 declare -a AddPartLabel		# Array of the same partitions in the same order by given name. eg: /home
 declare -a AddPartType		# Array of the same partitions in the same order by format type. eg: ext4
@@ -52,7 +52,7 @@ Partition="sda1"
 MOUNTPOINT="/mnt"
 
 # ----------------------------------------------------------
-# Default location variables
+# Default location variables.
 # these will be used for language, locale and clock settings
 # ----------------------------------------------------------
 CountryCode="GB"				      # Country code for mirrorlist
@@ -61,16 +61,16 @@ Countrykbd="uk"					      # Country for keyboard
 ZONE="Europe"             		# For time
 SUBZONE="London"				      # For time
 
-# -----------------------------------------
-# Desktop environment and greeter variables
-# -----------------------------------------
+# ------------------------------------------------------------------
+# Default desktop environment, display manager and greeter variables
+# ------------------------------------------------------------------
 DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
 DisplayManager="lightdm"
-Greeter="lightdm-gtk-greeter"						        # Not required for Lxdm
+Greeter="lightdm-gtk-greeter" # Not required for some DMs
 
-# -----------------------
-# Root and User variables
-# -----------------------
+# -------------------------------
+# Default root and user variables
+# -------------------------------
 HostName="ArchLinux"
 RootPassword="Root"
 UserName="archie"

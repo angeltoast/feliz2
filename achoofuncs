@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/06
+# Achoo! Arch Linux Installation Script 2015/07/07
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
 # This script and the achoovariables script are necessary when
@@ -254,25 +254,77 @@ UserAndRoot() {
 	done
 }
 
-SetDisplayManager() {
-# Change from default lightdm display manager and greeter
-	InPrompt="Do you wish to change to LXDM? [y/N]: "
-	while [ $Repeat ]
+ChooseDE() {    # This new code is to replace SetDisplayManager
+# First offer option of Xfce, Gnome or skip
+# Then, for Xfce, a choice of Display Manager (lightDM, LXDM or skip)
+	Counter=0
+	PS3="$prompt1"
+	DEList="Gnome Xfce Skip"
+  print_heading
+  print_info "This installer offers only Gnome or Xfce Desktop Environments."
+  print_info "Alternatively, you can choose to skip this option and"
+  print_info "install something else manually later."
+	echo "Choose your Desktop Environment"
+	select type in ${DEList}
 	do
-	print_heading
-	print_info "The default display manager is LightDM. However, this can"
-	print_info "sometimes fail with certain hardware. If you know that your"
-	print_info "system has problems with LightDM, you can choose LXDM instead."
-	print_line
-	read -p "$InPrompt" Response
-	case $Response in
-		"y"|"Y") DisplayManager="lxdm"
-          Greeter=""
-		;;
-		*) break
-	esac
-	break
-	done
+  Reply=$REPLY
+    for i in ${DEList}
+		do
+      Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]
+			then
+      SelectedDE=$i
+      case $SelectedDE in
+        "Gnome") DesktopEnvironment="gnome gnome-extra"
+              DisplayManager="gdm"
+              Greeter=""
+          ;;
+        "Xfce") DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
+          ;;
+        *) DesktopEnvironment="Skip"
+            DisplayManager="Skip"
+              Greeter=""	
+ 			esac
+      break
+			fi
+		done
+		break
+  done
+  if [ $SelectedDE = "Xfce" ]
+  then
+    Counter=0
+    PS3="$prompt1"
+    DMList="LightDM LXDM Skip"
+    print_heading
+    print_info "Choose one of the following Display Managers for Xfce."
+    print_info "Alternatively, you can choose to skip this option and install"
+    print_info "something else manually later."
+    echo "Choose your Display Manager for Xfce"
+    select type in ${DMList}
+    do
+    Reply=$REPLY
+      for i in ${DMList}
+      do
+        Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          SelectedDM=$i
+          case $SelectedDM in
+            "LightDM") DisplayManager="lightdm"
+                Greeter="lightdm-gtk-greeter"	
+              ;;
+            "LXDM") DisplayManager="lxdm"
+                Greeter=""
+              ;;
+            *) DisplayManager="Skip"
+                Greeter=""
+          esac	
+        fi
+      done
+		break
+  done
+  fi
+  read -p "DE is: $DesktopEnvironment DM is: $DisplayManager Greeter is: $Greeter"
 }
 
 # -----------------------
@@ -571,7 +623,7 @@ fi
 SetGrubDevice() {
   # Store available devices in a list	
   DEVICE=""
-  DevicesList="Skip $(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
 	# Display available devices and select one for Grub
 	print_heading
 	Counter=0
