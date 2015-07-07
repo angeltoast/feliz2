@@ -26,7 +26,7 @@
 # Input and output
 # Error-checking
 # Set location variables
-# System checks
+# Choose desktop environment
 # Mirrorlist
 # System & partitioning
 # ---------------------
@@ -254,9 +254,7 @@ UserAndRoot() {
 	done
 }
 
-ChooseDE() {    # This new code is to replace SetDisplayManager
-# First offer option of Xfce, Gnome or skip
-# Then, for Xfce, a choice of Display Manager (lightDM, LXDM or skip)
+ChooseDE() {    # This new code with option of Xfce, Gnome or skip
 	Counter=0
 	PS3="$prompt1"
 	DEList="Gnome Xfce Skip"
@@ -280,6 +278,18 @@ ChooseDE() {    # This new code is to replace SetDisplayManager
               Greeter=""
           ;;
         "Xfce") DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
+              DMList="LightDM LXDM Skip"
+              ChooseDM
+              case $SelectedDM in
+                "LightDM") DisplayManager="lightdm"
+                  Greeter="lightdm-gtk-greeter"	
+                  ;;
+                "LXDM") DisplayManager="lxdm"
+                  Greeter=""
+                  ;;
+                *) DisplayManager="Skip"
+                  Greeter=""
+              esac	
           ;;
         *) DesktopEnvironment="Skip"
             DisplayManager="Skip"
@@ -290,41 +300,30 @@ ChooseDE() {    # This new code is to replace SetDisplayManager
 		done
 		break
   done
-  if [ $SelectedDE = "Xfce" ]
-  then
-    Counter=0
-    PS3="$prompt1"
-    DMList="LightDM LXDM Skip"
-    print_heading
-    print_info "Choose one of the following Display Managers for Xfce."
-    print_info "Alternatively, you can choose to skip this option and install"
-    print_info "something else manually later."
-    echo "Choose your Display Manager for Xfce"
-    select type in ${DMList}
-    do
-    Reply=$REPLY
+}
+
+ChooseDM() {
+  # Then a choice of Display Manager
+  Counter=0
+  PS3="$prompt1"
+  print_heading
+  print_info "Choose one of the following Display Managers for $SelectedDE"
+  print_info "Alternatively, you can choose to skip this option and install"
+  print_info "something else manually later."
+  echo "Choose your Display Manager"
+  select type in ${DMList}
+  do
+  Reply=$REPLY
       for i in ${DMList}
       do
         Counter=$((Counter+1))
         if [ $Counter -eq $Reply ]
         then
           SelectedDM=$i
-          case $SelectedDM in
-            "LightDM") DisplayManager="lightdm"
-                Greeter="lightdm-gtk-greeter"	
-              ;;
-            "LXDM") DisplayManager="lxdm"
-                Greeter=""
-              ;;
-            *) DisplayManager="Skip"
-                Greeter=""
-          esac	
         fi
       done
 		break
   done
-  fi
-  read -p "DE is: $DesktopEnvironment DM is: $DisplayManager Greeter is: $Greeter"
 }
 
 # -----------------------

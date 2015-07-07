@@ -244,15 +244,17 @@ pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-
 CheckForError "Line ${LINENO}"  
 
 # Install Display Manager and Desktop Environment (from Lution AIS)
-echo "Installing Display Manager and Desktop Environment"
+read -p "DE is: $DesktopEnvironment DM is: $DisplayManager Greeter is: $Greeter"
 if [ ${DisplayManager} != "Skip" ]
 then
+  echo "Installing ${DisplayManager} Display Manager"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   CheckForError "Line ${LINENO}"
 fi
 if [ ${DesktopEnvironment} != "Skip" ]
 then
+  echo "Installing ${DesktopEnvironment} Desktop Environment"
   pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
   CheckForError "Line ${LINENO}"
 fi
