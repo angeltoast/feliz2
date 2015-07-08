@@ -205,6 +205,8 @@ then
   CheckForError "Line ${LINENO}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
   CheckForError "Line ${LINENO}"
+else
+  read -p "Not installing GRUB - $GrubDevice. $OutPrompt"
 fi
 date +"%T"
 
@@ -272,12 +274,16 @@ then
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   CheckForError "Line ${LINENO}"
+else
+  read -p "Not installing a Display Manager - $DisplayManager. $OutPrompt"
 fi
 if [ ${DesktopEnvironment} ]
 then
   read -p "Installing ${DesktopEnvironment} Desktop Environment. $OutPrompt"
   pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
   CheckForError "Line ${LINENO}"
+else
+  read -p "Not installing a Desktop Environment - $DesktopEnvironment. $OutPrompt"
 fi
 date +"%T"
 
