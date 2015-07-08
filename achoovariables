@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux installation scripts 2015/07/07
+# Achoo! Arch Linux installation scripts 2015/07/08
 # achoovariables - Variables for Achoo! Arch Linux Installation Script
 # -------------------------------------
 # This script and the achoofuncs script must be present when
@@ -38,7 +38,7 @@
 # Default partition variables - essential for correctly mounting the partitions.
 # Contents of these variables are critical and must be accurately defined.
 # ------------------------------------------------------------------------------
-declare -a AddPartList		# Array of additional partitions by partition system name. eg: /dev/sda5
+declare -a AddPartList		# Array of additional partitions by system name. eg: /dev/sda5
 declare -a AddPartLabel		# Array of the same partitions in the same order by given name. eg: /home
 declare -a AddPartType		# Array of the same partitions in the same order by format type. eg: ext4
 DiskDrive="a"

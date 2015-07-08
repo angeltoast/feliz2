@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/07
+# Achoo! Arch Linux Installation Script 2015/07/08
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
 # This script and the achoovariables script are necessary when
@@ -537,7 +537,8 @@ do
 				LoopRepeat="Y"
 				while [ ${LoopRepeat} = "Y" ]
 				do
-					read -p "Enter a label for ${Partition} ... eg: '/home' (you must include the '/'): " Response
+					echo "Enter a label for ${Partition} ... eg: '/home' ... "
+          read -p "(you must include the '/'): " Response
 					# Check that entry includes '/'
 					CheckInput=(`echo $Response | cut -c1`)
 					case ${CheckInput} in

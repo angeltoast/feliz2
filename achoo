@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/07
+# Achoo! Arch Linux Installation Script 2015/07/08
 # ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff
@@ -198,7 +198,7 @@ date +"%T"
 # Install Grub if selected
 if [ ${GrubDevice} ]
 then
-  read -p "Installing GRUB. $OutPrompt"
+  echo "Installing GRUB to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober
   CheckForError "Line ${LINENO}"
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
@@ -206,7 +206,7 @@ then
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
   CheckForError "Line ${LINENO}"
 else
-  read -p "Not installing GRUB - $GrubDevice. $OutPrompt"
+  echo "Not installing GRUB"
 fi
 date +"%T"
 
@@ -270,20 +270,20 @@ date +"%T"
 # Install Display Manager and Desktop Environment (from Lution AIS)
 if [ ${DisplayManager} ]
 then
-  read -p "Installing ${DisplayManager} Display Manager. $OutPrompt"
+  echo "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   CheckForError "Line ${LINENO}"
 else
-  read -p "Not installing a Display Manager - $DisplayManager. $OutPrompt"
+  echo "Not installing a Display Manager"
 fi
-if [ ${DesktopEnvironment} ]
+if [ ${#DesktopEnvironment[@]} ]
 then
-  read -p "Installing ${DesktopEnvironment} Desktop Environment. $OutPrompt"
+  echo "Installing Desktop Environment ${DesktopEnvironment}"
   pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
   CheckForError "Line ${LINENO}"
 else
-  read -p "Not installing a Desktop Environment - $DesktopEnvironment. $OutPrompt"
+  echo "Not installing a Desktop Environment"
 fi
 date +"%T"
 
