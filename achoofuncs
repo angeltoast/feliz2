@@ -254,25 +254,25 @@ UserAndRoot() {
 	done
 }
 
-ChooseDE() {    # This new code with option of Xfce, Gnome or skip
+ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	Counter=0
 	PS3="$prompt1"
 	DEList="Gnome Xfce Skip"
   print_heading
   print_info "This installer offers only Gnome or Xfce Desktop Environments."
-  print_info "Alternatively, you can choose to skip this option and"
-  print_info "install something else manually later."
+  print_info "Alternatively, you can choose to skip this option. Either way, you"
+  print_info "can always install something else manually later."
 	echo "Choose your Desktop Environment"
 	select type in ${DEList}
 	do
   Reply=$REPLY
     for i in ${DEList}
-		do
+    do
+      Item=$i
       Counter=$((Counter+1))
 			if [ $Counter -eq $Reply ]
 			then
-      SelectedDE=$i
-      case $SelectedDE in
+      case $Item in
         "Gnome") DesktopEnvironment="gnome gnome-extra"
               DisplayManager="gdm"
               Greeter=""
@@ -303,25 +303,26 @@ ChooseDE() {    # This new code with option of Xfce, Gnome or skip
 }
 
 ChooseDM() {
-  # Then a choice of Display Manager
+  # Choice of Display Manager from list passed via DMList
   Counter=0
   PS3="$prompt1"
   print_heading
   print_info "Choose one of the following Display Managers for $SelectedDE"
-  print_info "Alternatively, you can choose to skip this option and install"
-  print_info "something else manually later."
+  print_info "Alternatively, you can choose to skip this option. Either way, you"
+  print_info "can always install something else manually later."
   echo "Choose your Display Manager"
   select type in ${DMList}
   do
   Reply=$REPLY
-      for i in ${DMList}
-      do
-        Counter=$((Counter+1))
-        if [ $Counter -eq $Reply ]
-        then
-          SelectedDM=$i
-        fi
-      done
+    for item in ${DMList}
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]
+      then
+        SelectedDM=$item
+        break
+      fi
+    done
 		break
   done
 }

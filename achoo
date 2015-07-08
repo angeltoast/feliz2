@@ -8,11 +8,11 @@
 # Please read the following notes before proceeding!
 # -------------------------------------------------
 
-# The Achoo! script is still in development, and may contain bugs.
-# It was originally written for my own use, but it is shared in the spirit of
+# The Achoo! scripts are still in development, and may contain bugs.
+# They were originally written for my own use, but it is shared in the spirit of
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
-# Its purpose is to speed up installation of Arch Linux, plus a desktop
+# Achoo!'s purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. An initialising
 # "wizard" asks for only the essential data of location, username, and
 # passwords, and works with the user to set up their partitioning
@@ -75,49 +75,52 @@ done
 # -------------------------------------------
 # Display welcome text and set user-variables
 # -------------------------------------------
-date +"%T"
+
 # Location
 Repeat=1
 SetLocation
 CheckForError "Line ${LINENO}"
-date +"%T"
+
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd}
 CheckForError "Line ${LINENO}"
-date +"%T"
+
 # User input of names and passwords
 Repeat=1
 UserAndRoot
 CheckForError "Line ${LINENO}"
-date +"%T"
+
 # User selection of desktop environment and display manager/greeter
 Repeat=1
 ChooseDE
 CheckForError "Line ${LINENO}"
-date +"%T"
+
 # ------------
 # Partitioning
 # ------------
-date +"%T"
+
 # User-defined partitions
 ManagePartitions
 CheckForError "Line ${LINENO}"
-date +"%T"
+
 # Allocate root, swap and others as set in ManagePartitions
 AllocateRoot
 CheckForError "Line ${LINENO}"
-date +"%T"
+
 # Set device for Grub
 SetGrubDevice
 CheckForError "Line ${LINENO}"
 # --------------
 # Auto from here
 # --------------
+
 date +"%T"
+
 # Set mirrorlist
 LocalMirrorList
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Unmount any existing partitions and mount as required as defined in setup
 umount_partitions
 CheckForError "Line ${LINENO}"
@@ -125,20 +128,24 @@ echo "Mounting partitions"
 MountPartitions
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 cat ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
 CheckForError "Line ${LINENO}"
@@ -147,26 +154,31 @@ CheckForError "Line ${LINENO}"
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
 CheckForError "Line ${LINENO}"
 date +"%T"
-# Set up localeelizabeth@itsliz.net
+
+# Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen # eg: en_US.UTF-8 UTF-8
 CheckForError "Line ${LINENO}"
 arch_chroot "locale-gen"
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf # eg: LANG=en_US.UTF-8
 date +"%T"
+
 CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}" # eg: LANG=en_US.UTF-8
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 echo "Setting clock"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 CheckForError "Line ${LINENO}"
 arch_chroot "hwclock --systohc --utc"
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
 CheckForError "Line ${LINENO}"
@@ -174,6 +186,7 @@ pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd
 arch_chroot "passwd root" < /tmp/.passwd >/dev/null
@@ -181,10 +194,11 @@ CheckForError "Line ${LINENO}"
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Install Grub if selected
 if [ ${GrubDevice} ]
 then
-  echo "Installing GRUB"
+  read -p "Installing GRUB. $OutPrompt"
   pacstrap ${MOUNTPOINT} grub os-prober
   CheckForError "Line ${LINENO}"
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
@@ -193,19 +207,23 @@ then
   CheckForError "Line ${LINENO}"
 fi
 date +"%T"
+
 echo "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Set keyboard to selected language at next startup
 echo "Finishing installation"
 echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Required for Virtualbox installations
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Create the user, set password, then remove temporary password file
 echo "Adding user as defined in setup"
 arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
@@ -216,6 +234,7 @@ CheckForError "Line ${LINENO}"
 rm /tmp/.passwd
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Set up basic configuration files and permissions for user
 echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
@@ -225,11 +244,13 @@ CheckForError "Line ${LINENO}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Wireless tools
 echo "Installing wireless tools"
 pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
@@ -237,26 +258,29 @@ CheckForError "Line ${LINENO}"
 pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog
 CheckForError "Line ${LINENO}"
 date +"%T"
+
 # Install X, graphics, etc
 echo "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
 CheckForError "Line ${LINENO}"  
 date +"%T"
+
 # Install Display Manager and Desktop Environment (from Lution AIS)
 if [ ${DisplayManager} ]
 then
-  echo "Installing ${DisplayManager} Display Manager"
+  read -p "Installing ${DisplayManager} Display Manager. $OutPrompt"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   CheckForError "Line ${LINENO}"
 fi
 if [ ${DesktopEnvironment} ]
 then
-  echo "Installing ${DesktopEnvironment} Desktop Environment"
+  read -p "Installing ${DesktopEnvironment} Desktop Environment. $OutPrompt"
   pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
   CheckForError "Line ${LINENO}"
 fi
 date +"%T"
+
 print_heading
 print_info "Success! Finished installing"
 print_info "Press any key to shutdown"
