@@ -117,14 +117,16 @@ EditLocales() {
 	# (1) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
 	print_heading
 	echo "The keyboard code is currently: '$Countrykbd'"
-	read -p "A list will be displayed for you to choose - $OutPrompt"
+	echo "A list will be displayed for you to choose"
+  read -p $OutPrompt
 	getkeymap
 	read -p "The keyboard is now set to: '$Countrykbd'. $OutPrompt"
 	# End of keyboard code
 	# (2) Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
 	print_heading
 	echo "The zone settings are currently: '$ZONE/$SUBZONE'"
-	read -p "A list will be displayed for you to choose - $OutPrompt"
+	echo "A list will be displayed for you to choose"
+  read -p $OutPrompt
 	settimezone
 	read -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'. $OutPrompt"
 	# End of ZONE/SUBZONE code
@@ -132,7 +134,8 @@ EditLocales() {
 	# Also sets CountryCode to "GB"
 	print_heading
 	echo "The locale setting is currently: '$CountryLocale'"
-	read -p "A list will be displayed for you to choose - $OutPrompt"
+	echo "A list will be displayed for you to choose"
+  read -p $OutPrompt
 	setlocale
 	read -p "Locale is now set to: '$CountryLocale'. $OutPrompt"	
 	Repeat=0
@@ -458,47 +461,53 @@ AllocateRoot() {
     PartitionList=$Remaining			# Replace original PartitionList with remaining options
 		break
   done
-  if [ -n ${#PartitionList[@]} ]
-  then
-    print_heading
-    read -p "Do you wish to allocate a swap partition? (Y/n): " Response
-    case ${Response} in
-    "y"|"Y"|"") print_heading
-        AllocateSwap # Display remaining partitions and select one for swap
-      ;;
-    *) SwapPartition="Skip"
-    esac
+  AllocateSwap
+}
+
+AllocateSwap() {
+  print_heading
+  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions ...
+  then                           # ... offer one for swap
+    Remaining=""
+    Counter=0
+    PS3="$prompt1"
+    SwapPartition=""
+    PartitionList="$PartitionList Skip"
+    echo -e "Select the partition for /swap from the ones that remain."
+    echo -e "If you select the 'Skip' option, no swap will be allocated:\n"
+    select partition in ${PartitionList}
+    do
+    Reply=$REPLY
+      for i in ${PartitionList}
+      do
+      Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          if [ $i = Skip ]; then
+            SwapPartition=""
+          else
+            SwapPartition="/dev/$i"
+          fi          
+        else
+          if [ $i != Skip ]; then
+            Remaining="$Remaining $i"	# Add next available partition
+          fi
+        fi
+      done
+      break
+    done
+    if [ $SwapPartition ]; then
+        read -p "$SwapPartition will be used for swap. $OutPrompt"
+    else
+        read -p "No swap partition will be allocated. $OutPrompt"
+    fi
+    PartitionList=$Remaining		# Replace original PartitionList with remaining options
     # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
     if [ -n ${#PartitionList[@]} ]
     then
       ExtraPartitions
     fi
-  else
-    SwapPartition="Skip"
   fi
-}
-
-AllocateSwap() {
-  Remaining=""
-  Counter=0
-  PS3="$prompt1"
-  echo -e "Select the partition for /swap from the ones that remain:\n"
-  select partition in ${PartitionList}
-  do
-  Reply=$REPLY
-    for i in ${PartitionList}
-    do
-    Counter=$((Counter+1))
-      if [ $Counter -eq $Reply ]
-      then
-        SwapPartition="/dev/$i"
-      else
-        Remaining="$Remaining $i"	# Add next available partition
-      fi
-    done
-    break
-  done
-  PartitionList=$Remaining		# Replace original PartitionList with remaining options
 }
 
 ExtraPartitions() {
@@ -676,7 +685,7 @@ MountPartitions() {
   mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
   CheckForError "Line ${LINENO}"
   # Swap
-  if [ ${SwapPartition} != "Skip" ]
+  if [ ${SwapPartition} ]
   then
     echo "Making /swap partition"
     mkswap ${SwapPartition} # eg: mkswap /dev/sda2
