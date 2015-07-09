@@ -110,6 +110,7 @@ CheckForError "Line ${LINENO}"
 # Set device for Grub
 SetGrubDevice
 CheckForError "Line ${LINENO}"
+
 # --------------
 # Auto from here
 # --------------

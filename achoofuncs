@@ -114,28 +114,27 @@ SetLocation() {
 }
 
 EditLocales() {
-	InPrompt="Please press any key"
 	# (1) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
 	print_heading
 	echo "The keyboard code is currently: '$Countrykbd'"
-	read -p "A list will be displayed for you to choose - $InPrompt" Response
+	read -p "A list will be displayed for you to choose - $OutPrompt"
 	getkeymap
-	read -p "The keyboard is now set to: '$Countrykbd'. $InPrompt"
+	read -p "The keyboard is now set to: '$Countrykbd'. $OutPrompt"
 	# End of keyboard code
 	# (2) Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
 	print_heading
 	echo "The zone settings are currently: '$ZONE/$SUBZONE'"
-	read -p "A list will be displayed for you to choose - $InPrompt" Response
+	read -p "A list will be displayed for you to choose - $OutPrompt"
 	settimezone
-	read -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'. $InPrompt"
+	read -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'. $OutPrompt"
 	# End of ZONE/SUBZONE code
 	# (3) Variable "CountryLocale" - Default = "en_GB.UTF-8"
 	# Also sets CountryCode to "GB"
 	print_heading
 	echo "The locale setting is currently: '$CountryLocale'"
-	read -p "A list will be displayed for you to choose - $InPrompt" Response
+	read -p "A list will be displayed for you to choose - $OutPrompt"
 	setlocale
-	read -p "Locale is now set to: '$CountryLocale'. $InPrompt"	
+	read -p "Locale is now set to: '$CountryLocale'. $OutPrompt"	
 	Repeat=0
 }
 
@@ -627,6 +626,7 @@ SetGrubDevice() {
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
 	# Display available devices and select one for Grub
 	print_heading
+  GrubDevice=""
 	Counter=0
 	PS3="$prompt1"
 	print_info "Select the device where Grub is to be installed. Note that, if you"
@@ -634,16 +634,19 @@ SetGrubDevice() {
   print_info "have to make alternative arrangements for booting your system."
 	select partition in ${DevicesList}
 	do
+  Reply=$REPLY
     for i in ${DevicesList}
 		do
-    DEVICE=$i
+    Item=$i
   	Counter=$((Counter+1))
-			if [ $Counter -eq $REPLY ]
+			if [ $Counter -eq $Reply ]
 			then
-        GrubDevice=$DEVICE
-        if [ $GrubDevice = Skip ]; then
+        if [ $Item = Skip ]; then
         GrubDevice=""
+        else
+        GrubDevice=$Item
         fi
+      break
     	fi
  		done
     break
