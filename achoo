@@ -275,6 +275,10 @@ date +"%T"
 # Copy modified pacman.conf to new system and install Yaourt
 cp pacman.conf ${MOUNTPOINT}/etc
 CheckForError "Line ${LINENO}"
+cp pacman.conf /etc
+CheckForError "Line ${LINENO}"
+pacman -Sy
+CheckForError "Line ${LINENO}"
 pacstrap ${MOUNTPOINT} yaourt
 CheckForError "Line ${LINENO}"
 date +"%T"
