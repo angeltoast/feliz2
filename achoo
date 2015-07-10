@@ -268,6 +268,9 @@ pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-
 CheckForError "Line ${LINENO}"  
 date +"%T"
 
+# Copy modified pacman.conf to new ssystem
+cp pacman.conf ${MOUNTPOINT}/etc
+
 # Install Display Manager and Desktop Environment (from Lution AIS)
 if [ ${DisplayManager} ]
 then
@@ -290,6 +293,6 @@ date +"%T"
 
 print_heading
 print_info "Success! Finished installing"
-print_info "Press any key to shutdown"
-read -p "(remember to remove the installation medium before restarting"
+print_info "Press any key to shut down"
+read -n1 -p "(remember to remove the installation medium before restarting"
 shutdown -h now

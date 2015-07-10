@@ -42,8 +42,8 @@ contains_element() { # (from AUI scripts)
 
 invalid_option() { # (from AUI scripts)
     print_line
-    echo "Invalid option. Try another one."
-    read -p "$OutPrompt" Response
+    echo 
+    read -t 2 -p "Invalid option. Try another one."
 }
 
 print_heading() {
@@ -74,10 +74,13 @@ print_info() { # (from AUI scripts)
 # --------------
 
 CheckForError() {
-# Check for error, display it, then exit program
+# Check for stderr, display it, then exit script
 	if [[ $? -gt 0 ]]; then
-		echo "An error occurred at $1"
-		read -r Response
+    clear
+		echo "A fatal error was reported at $1."
+    echo "The script cannot continue."
+    read -n1 -p "Please press any key: "
+    echo ""
 		exit
 	else
 		echo "Preparing next step ..."
@@ -90,7 +93,7 @@ CheckForError() {
 
 SetLocation() {
 # Locations display loop
-	InPrompt="Do you wish to change any of these? [y/n]: "
+	InPrompt="Do you wish to change any of these? [Y/n]: "
 	while [ $Repeat ]
 	do
 	print_heading
@@ -103,9 +106,9 @@ SetLocation() {
 	print_info "The time zone is set to: $ZONE/$SUBZONE" # For time
 	print_info "The locale is set to: $CountryLocale" # Locale
 	echo ""
-	read -p "$InPrompt" Response
+	read -n1 -p "$InPrompt" Response
 	case $Response in
-		"y"|"Y") EditLocales
+		"y"|"Y"|"") EditLocales
 		;;
 		*) echo ""
 	esac
@@ -117,34 +120,31 @@ EditLocales() {
 	# (1) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
 	print_heading
 	echo "The keyboard code is currently: '$Countrykbd'"
-	echo "A list will be displayed for you to choose"
-  read -p $OutPrompt
+  read -t 4 -p "Please choose one from the following list"
 	getkeymap
-	read -p "The keyboard is now set to: '$Countrykbd'. $OutPrompt"
+	read -t 2 -p "The keyboard is now set to: '$Countrykbd'"
 	# End of keyboard code
 	# (2) Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
 	print_heading
 	echo "The zone settings are currently: '$ZONE/$SUBZONE'"
-	echo "A list will be displayed for you to choose"
-  read -p $OutPrompt
+  read -t 4 -p "Please choose one from the following list"
 	settimezone
-	read -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'. $OutPrompt"
+	read -t 2 -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
 	# End of ZONE/SUBZONE code
 	# (3) Variable "CountryLocale" - Default = "en_GB.UTF-8"
 	# Also sets CountryCode to "GB"
 	print_heading
-	echo "The locale setting is currently: '$CountryLocale'"
-	echo "A list will be displayed for you to choose"
-  read -p $OutPrompt
+	echo "The locale setting is currently: `echo $CountryLocale | cut -c1-5`"
+  read -t 4 -p "Please choose one from the following list"
 	setlocale
-	read -p "Locale is now set to: '$CountryLocale'. $OutPrompt"	
+	read -t 2 -p "Locale is now set to: '$CountryLocale'"	
 	Repeat=0
 }
 
 getkeymap() {
 # Build keymap (from AUI)
   local _keymaps=(`localectl list-keymaps`)
-    PS3="(shift+pgup/pgdown) $prompt1"
+    PS3="(shift+pgup/pgdown for more:) $prompt1"
     echo "Select keymap:"
     select KEYMAP in "${_keymaps[@]}"; do
       if contains_element "$KEYMAP" "${_keymaps[@]}"
@@ -160,7 +160,7 @@ getkeymap() {
 setlocale() {
 # Generate list of locales  (from AUI)
     local _locale_list=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-    PS3="$prompt1"
+    PS3="(shift+pgup/pgdown for more:) $prompt1"
     echo "Select locale:"
     select LOCALE in "${_locale_list[@]}"; do
       if contains_element "$LOCALE" "${_locale_list[@]}"; then
@@ -497,9 +497,9 @@ AllocateSwap() {
       break
     done
     if [ $SwapPartition ]; then
-        read -p "$SwapPartition will be used for swap. $OutPrompt"
+        read -t 2 -p "$SwapPartition will be used for swap."
     else
-        read -p "No swap partition will be allocated. $OutPrompt"
+        read -t 2 -p "No swap partition will be allocated."
     fi
     PartitionList=$Remaining		# Replace original PartitionList with remaining options
     # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
@@ -573,7 +573,7 @@ do
 							echo $i
 							if [ $PartLabel = $i ] 
 							then
-								read -p "Label ${PartLabel} has already been used. Please use a different label." Response
+								read -t 4 -p "Label ${PartLabel} has already been used. Please use a different label."
 							else
 								LoopRepeat="N"
 								break

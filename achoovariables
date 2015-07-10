@@ -79,6 +79,7 @@ UserPassword="Linux"
 # ----------------------
 # Input/Output variables
 # ----------------------
-OutPrompt="Please press [Enter] to continue."
+OutPrompt="Press [Enter] to continue."
+AnyPrompt="Press any key to continue."
 prompt1="Enter your option: "
 Response=""
