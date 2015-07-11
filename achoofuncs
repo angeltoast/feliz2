@@ -69,6 +69,11 @@ print_info() { # (from AUI scripts)
     echo -e "${Bold}$1${Reset}\n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
 }
 
+read_timed() {
+  echo $1
+  read -t 3 -p ""
+}
+
 # --------------
 # Error-checking
 # --------------
@@ -92,53 +97,42 @@ CheckForError() {
 # ------------------------------
 
 SetLocation() {
-# Locations display loop
-	InPrompt="Do you wish to change any of these? [Y/n]: "
-	while [ $Repeat ]
-	do
+# Welcome screen
 	print_heading
-	print_info "The best way to install Arch Linux is to follow the Wiki."
-	print_info "But sometimes you just want a quick installation, and that's where Achoo! comes in."
-	print_info "First we need to gather some important information, beginning with the settings for your location ..."
-	print_line
-	print_info "The country code is set to:  $CountryCode" # For mirrorlist
-	print_info "The keyboard code is set to: $Countrykbd" # For keyboard
-	print_info "The time zone is set to: $ZONE/$SUBZONE" # For time
-	print_info "The locale is set to: $CountryLocale" # Locale
-	echo ""
-	read -n1 -p "$InPrompt" Response
-	case $Response in
-		"y"|"Y"|"") EditLocales
-		;;
-		*) echo ""
-	esac
-	break
-	done
+	read_timed "We all know that the best way to install Arch Linux is to follow the Wiki"
+	read_timed "But sometimes you just want a quick and easy installation"
+  read_timed "And that's where Achoo! comes in, by automating as much as possible"
+	read_timed "We need to start by gathering some important information"
+  read_timed "Beginning with the settings for your location ..."
+  print_line
+  EditLocales
 }
 
 EditLocales() {
-	# (1) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
-	print_heading
-	echo "The keyboard code is currently: '$Countrykbd'"
-  read -t 4 -p "Please choose one from the following list"
-	getkeymap
-	read -t 2 -p "The keyboard is now set to: '$Countrykbd'"
-	# End of keyboard code
-	# (2) Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
-	print_heading
-	echo "The zone settings are currently: '$ZONE/$SUBZONE'"
-  read -t 4 -p "Please choose one from the following list"
+	# (1) Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
+	#print_heading
+	read_timed "First we have to set up the best mirrors for downloading your system"
+  read_timed "Choose the World Zone of your location from the following list"
+  read_timed "by entering the number of your selection ..."
 	settimezone
-	read -t 2 -p "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
-	# End of ZONE/SUBZONE code
-	# (3) Variable "CountryLocale" - Default = "en_GB.UTF-8"
-	# Also sets CountryCode to "GB"
+	read_timed "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
+	# (2) Variable "CountryLocale" - Default = "en_GB.UTF-8"
+	# Also sets CountryCode ("GB" in default)
 	print_heading
-	echo "The locale setting is currently: `echo $CountryLocale | cut -c1-5`"
-  read -t 4 -p "Please choose one from the following list"
+	read_timed "Next the locale setting - your language and country - eg: en_GB."
+  read_timed "This is a longer list that may scroll off your screen"
+  read_timed "Use Shift+CursorUp or Shift+CursorDown to find your locale ..."
 	setlocale
-	read -t 2 -p "Locale is now set to: '$CountryLocale'"	
-	Repeat=0
+	read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
+  # (3) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
+	print_heading
+	read_timed "Next a list of keyboard layouts."
+  read_timed "It is another long list that may scroll off your screen"
+  read_timed "Use Shift+CursorUp or Shift+CursorDown to find yours"
+  read_timed "Then enter the number corresponding to your keyboard ..."
+	getkeymap
+	read_timed "The keyboard is now set to: '$Countrykbd'"
+	# End of keyboard code
 }
 
 getkeymap() {
@@ -160,7 +154,7 @@ getkeymap() {
 setlocale() {
 # Generate list of locales  (from AUI)
     local _locale_list=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-    PS3="(shift+pgup/pgdown for more:) $prompt1"
+    PS3="(shift+CursorUp/CursorDown for more:) $prompt1"
     echo "Select locale:"
     select LOCALE in "${_locale_list[@]}"; do
       if contains_element "$LOCALE" "${_locale_list[@]}"; then
@@ -185,7 +179,7 @@ settimezone() {
       local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
       print_heading
       PS3="$prompt1"
-      echo "Select subzone:"
+      echo "Now select your local Sub-Zone:"
       select SUBZONE in "${_subzones[@]}"; do
         if contains_element "$SUBZONE" "${_subzones[@]}"; then
           break
@@ -207,8 +201,9 @@ UserAndRoot() {
 		# Hostname
 		Entered="ArchLinux"
 		print_heading
-		print_info "A hostname is needed. This will be a unique name created to identify your device on a network."
-		print_info "If you do not enter one, the default hostname of 'ArchLinux' will be used."
+		read_timed "A hostname is needed. This will be a unique name created to"
+		read_timed "identify your device on a network. If you do not enter one,"
+		read_timed "the default hostname of 'ArchLinux' will be used."
 		read -p "Enter a hostname for your computer (for example: archlinux): " Entered
 		case $Entered in
 			"") Entered=$HostName
@@ -219,9 +214,10 @@ UserAndRoot() {
 		# Username
 		print_heading
 		Entered="Archie"
-		print_info "Next we have to deal with names and passwords."
+		read_timed "Next we have to deal with names and passwords."
 		print_line
-		print_info "If you don't create a username here, a default user called 'archie' will be set up, with a password of 'Linux'"
+		print_info "If you don't create a username here, a default user called 'archie'"
+    print_info "will be set up, with a password of 'Linux'"
 		read -p "Enter a username (must be all lower case): " Entered
 		case $Entered in
 			"") Entered=$UserName
@@ -232,7 +228,8 @@ UserAndRoot() {
   	# User password
 		print_heading
 		Entered="Linux"
-		print_info "Passwords should be a mixture of upper- and lower-case letters, numbers and special characters."
+		print_info "Passwords should be a mixture of upper- and lower-case letters"
+		print_info "plus numbers and special characters."
 		print_info "If you do not enter a user password, the default of 'Linux' will be used."
 		read -p "Enter a password for $UserName: " Entered
 		case $Entered in
