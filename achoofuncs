@@ -136,36 +136,73 @@ EditLocales() {
 }
 
 getkeymap() {
-# Build keymap (from AUI)
-  local _keymaps=(`localectl list-keymaps`)
-    PS3="(shift+pgup/pgdown for more:) $prompt1"
-    echo "Select keymap:"
-    select KEYMAP in "${_keymaps[@]}"; do
-      if contains_element "$KEYMAP" "${_keymaps[@]}"
-      then
-    		Countrykbd=$KEYMAP
-        break
-      else
-        invalid_option
-      fi
-    done
+# New routine to enable user to input two-letter country-code to find keyboard
+print_heading
+DoDoDo=1
+SearchPrompt="Enter the two-letter (lower case) code for your country or keyboard: "
+echo "First we will try to find your keyboard from a list of all known layouts"
+while [ $DoDoDo -eq 1 ]
+do
+  read -p "$SearchPrompt" search_term
+  SEARCHTERM="${search_term,,}"
+  KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+  for i in ${KeyboardList[@]}; do
+    echo $i
+  done
+  read -p "Is your keyboard layout in this list? " Response
+  case $Response in
+    "Y"|"y"|"") PS3="$prompt1"
+      echo "Select keyboard:"
+      select KEYMAP in "${KeyboardList[@]}"; do
+        if contains_element "$KEYMAP" "${KeyboardList[@]}"
+        then
+          Countrykbd=$KEYMAP
+          break
+        else
+          invalid_option
+        fi
+      done
+      DoDoDo=0
+    ;;
+    *) SearchPrompt="Try a different two-letter code (remember, lower case): "
+          print_heading
+  esac
+done
 }
 
 setlocale() {
-# Generate list of locales  (from AUI)
-    local _locale_list=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-    PS3="(shift+CursorUp/CursorDown for more:) $prompt1"
-    echo "Select locale:"
-    select LOCALE in "${_locale_list[@]}"; do
-      if contains_element "$LOCALE" "${_locale_list[@]}"; then
-        LOCALE_UTF8="${LOCALE}.UTF-8"
-        CountryLocale=${LOCALE_UTF8}
-        CountryCode=(`echo $LOCALE | cut -c4-6`)
-        break
-      else
-        invalid_option
-      fi
-    done
+# New routine to enable user to input two-letter country-code to find locale
+print_heading
+DoDoDo=1
+SearchPrompt="Enter the two-letter (UPPER CASE) code for your country or language: "
+echo "Now we will try to find your locale"
+while [ $DoDoDo -eq 1 ]
+do
+  read -p "$SearchPrompt" search_term
+  SEARCHTERM="${search_term^^}"
+    LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+  for i in ${LocaleList[@]}; do
+    echo $i
+  done
+  read -p "Is your locale in this list? " Response
+  case $Response in
+    "Y"|"y"|"") PS3="$prompt1"
+      echo "Select locale:"
+      select LOCALE in "${LocaleList[@]}"; do
+        if contains_element "$LOCALE" "${LocaleList[@]}"; then
+          CountryLocale="${LOCALE}.UTF-8"
+          CountryCode=(`echo $LOCALE | cut -c4-6`)
+          break
+        else
+          invalid_option
+        fi
+      done
+      DoDoDo=0
+    ;;
+    *) SearchPrompt="Try a different two-letter code (remember, UPPER CASE): "
+          print_heading
+  esac
+done
 }
 
 settimezone() {
