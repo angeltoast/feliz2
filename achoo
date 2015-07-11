@@ -170,9 +170,9 @@ date +"%T"
 
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf # eg: LANG=en_US.UTF-8
+CheckForError "Line ${LINENO}"
 date +"%T"
 
-CheckForError "Line ${LINENO}"
 export "LANG=${CountryLocale}" # eg: LANG=en_US.UTF-8
 CheckForError "Line ${LINENO}"
 date +"%T"
