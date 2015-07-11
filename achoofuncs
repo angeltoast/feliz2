@@ -110,7 +110,7 @@ do
   for i in ${KeyboardList[@]}; do
     echo $i
   done
-  read -p "Is your keyboard layout in this list? " Response
+  read -p "Is your keyboard layout in this list? (y/n): " Response
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
       echo "Select keyboard:"
@@ -145,7 +145,7 @@ do
   for i in ${LocaleList[@]}; do
     echo $i
   done
-  read -p "Is your locale in this list? " Response
+  read -p "Is your locale in this list? (y/n): " Response
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
       echo "Select locale:"
@@ -203,10 +203,10 @@ UserAndRoot() {
 		# Hostname
 		Entered="ArchLinux"
 		print_heading
-		read_timed "A hostname is needed. This will be a unique name created to"
-		read_timed "identify your device on a network. If you do not enter one,"
-		read_timed "the default hostname of 'ArchLinux' will be used."
-		read -p "Enter a hostname for your computer (for example: archlinux): " Entered
+		read_timed "A hostname is needed. This will be a unique name to identify"
+		read_timed "your device on a network. If you do not enter one, the default"
+		read_timed "hostname of 'ArchLinux' will be used."
+		read -p "Enter a hostname for your computer : " Entered
 		case $Entered in
 			"") Entered=$HostName
 			;;
@@ -218,8 +218,8 @@ UserAndRoot() {
 		Entered="Archie"
 		read_timed "Next we have to deal with names and passwords."
 		print_line
-		print_info "If you don't create a username here, a default user called 'archie'"
-    print_info "will be set up, with a password of 'Linux'"
+		print_info "If you don't create a username here, a default user called"
+    print_info "'archie' will be set up"
 		read -p "Enter a username (must be all lower case): " Entered
 		case $Entered in
 			"") Entered=$UserName
@@ -231,8 +231,8 @@ UserAndRoot() {
 		print_heading
 		Entered="Linux"
 		print_info "Passwords should be a mixture of upper- and lower-case letters"
-		print_info "plus numbers and special characters."
-		print_info "If you do not enter a user password, the default of 'Linux' will be used."
+		print_info "plus numbers and special characters. If you do not enter"
+		print_info "a user password, the default of 'Linux' will be used."
 		read -p "Enter a password for $UserName: " Entered
 		case $Entered in
 			"") Entered=$UserPassword
@@ -243,7 +243,8 @@ UserAndRoot() {
 		# Root password
 		print_heading
 		Entered="Root"
-		print_info "Now set a password for root. If you do not enter one, the default of 'Root' will be used."
+		print_info "Now set a password for root. If you do not enter one, a default"
+    print_info "password of 'Root' will be used."
 		read -p "Enter a password for root: " Entered
 		case $Entered in
 			"") Entered=$RootPassword
@@ -267,6 +268,7 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	select type in ${DEList}
 	do
   Reply=$REPLY
+  SelectedDE=type
     for i in ${DEList}
     do
       Item=$i
@@ -379,11 +381,12 @@ ManagePartitions() {
 	# If no partitions exist, offer cfdisk to create (or exit)
 	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
 		print_heading
-    echo "There are no partitions on the device, and we cannot continue without partitions on which to install."
-    echo "'cfdisk' is available for you to create a partition table now if you wish."
-		echo "If you are uncertain about partitioning, you should read the Wiki (address at the top)"
-    echo "If you choose not to use 'cfdisk' the script will terminate to allow you to partition in some other way."
-    read -n1 -p "Would you like to open cfdisk now? [Y/n]: " Response
+    echo "There are no partitions on the device, and we cannot continue without at least"
+    echo "one partition on which to install. 'cfdisk' is available for you to create a"
+		echo "partition table now if you wish. If you are uncertain about partitioning, you"
+    echo "should read the Wiki (address at the top). If you choose not to use 'cfdisk'"
+    echo "now, the script will terminate to allow you to partition in some other way."
+    read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y"|"Y"|"") cfdisk
 			;;
@@ -394,7 +397,7 @@ ManagePartitions() {
 		echo "Here is a list of available partitions on all connected devices ..."
 		lsblk
 		echo ""
-		read -n1 -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
+		read -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
 		case $Response in
 		  "y"|"Y"|"") cfdisk
 			;;
