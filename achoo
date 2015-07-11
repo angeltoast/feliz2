@@ -80,14 +80,24 @@ done
 # Display welcome text and set user-variables
 # -------------------------------------------
 
-# Location
-Repeat=1
-SetLocation
-CheckForError "Line ${LINENO}"
 
+# Variable "Countrykbd" - Default = "uk" - Used for keyboard code
+getkeymap
+CheckForError "Line ${LINENO}"
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd}
 CheckForError "Line ${LINENO}"
+read_timed "The keyboard is now set to: '$Countrykbd'"
+# Location
+print_heading
+settimezone
+CheckForError "Line ${LINENO}"
+read_timed "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
+# Variable "CountryLocale" - Default = "en_GB.UTF-8"
+# Also sets CountryCode ("GB" in default)
+setlocale
+CheckForError "Line ${LINENO}"
+read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
 
 # User input of names and passwords
 Repeat=1
@@ -98,6 +108,11 @@ CheckForError "Line ${LINENO}"
 Repeat=1
 ChooseDE
 CheckForError "Line ${LINENO}"
+
+# Stop here!
+exit
+# ........................................................................
+
 
 # ------------
 # Partitioning

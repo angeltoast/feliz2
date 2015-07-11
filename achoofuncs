@@ -96,42 +96,11 @@ CheckForError() {
 # Locations, Names and Passwords
 # ------------------------------
 
-SetLocation() {
-# Welcome screen
-	print_heading
-	read_timed "We all know that the best way to install Arch Linux is to follow the Wiki"
-	read_timed "But sometimes you just want a quick and easy installation"
-  read_timed "And that's where Achoo! comes in, by automating as much as possible"
-	read_timed "We need to start by gathering some important information"
-  read_timed "Beginning with the settings for your location ..."
-  print_line
-  EditLocales
-}
-
-EditLocales() {
-	# (1) Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
-	#print_heading
-	read_timed "First we have to set up the best mirrors for downloading your system"
-  read_timed "Choose the World Zone of your location from the following list"
-  read_timed "by entering the number of your selection ..."
-	settimezone
-	read_timed "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
-  # (2) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
-	getkeymap
-	read_timed "The keyboard is now set to: '$Countrykbd'"
-	# End of keyboard code
-	# (3) Variable "CountryLocale" - Default = "en_GB.UTF-8"
-	# Also sets CountryCode ("GB" in default)
-	setlocale
-	read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
-
-}
-
 getkeymap() {
 # New routine to enable user to input two-letter country-code to find keyboard
 print_heading
 DoDoDo=1
-SearchPrompt="Enter the two-letter (lower case) code for your country or keyboard: "
+SearchPrompt="Enter the two-letter code for your country or keyboard (eg: uk): "
 echo "First we will try to find your keyboard from a list of all known layouts"
 while [ $DoDoDo -eq 1 ]
 do
@@ -166,8 +135,8 @@ setlocale() {
 # New routine to enable user to input two-letter country-code to find locale
 print_heading
 DoDoDo=1
-SearchPrompt="Enter the two-letter (UPPER CASE) code for your country or language: "
-echo "Now we will try to find your locale"
+SearchPrompt="Enter the two-letter code for your country or language (eg: GB): "
+echo "Next we will try to find your locale"
 while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
@@ -198,6 +167,10 @@ done
 }
 
 settimezone() {
+# Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
+read_timed "Now we have to set up the best mirrors for downloading your system"
+read_timed "This will also be used for setting the clock during installation"
+read_timed "Choose the World Zone of your location from the following list"
 # Set Zone and Sub-Zone from lists (from AUI)
   local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   PS3="$prompt1"
