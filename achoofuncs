@@ -116,23 +116,15 @@ EditLocales() {
   read_timed "by entering the number of your selection ..."
 	settimezone
 	read_timed "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
-	# (2) Variable "CountryLocale" - Default = "en_GB.UTF-8"
-	# Also sets CountryCode ("GB" in default)
-	print_heading
-	read_timed "Next the locale setting - your language and country - eg: en_GB."
-  read_timed "This is a longer list that may scroll off your screen"
-  read_timed "Use Shift+CursorUp or Shift+CursorDown to find your locale ..."
-	setlocale
-	read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
-  # (3) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
-	print_heading
-	read_timed "Next a list of keyboard layouts."
-  read_timed "It is another long list that may scroll off your screen"
-  read_timed "Use Shift+CursorUp or Shift+CursorDown to find yours"
-  read_timed "Then enter the number corresponding to your keyboard ..."
+  # (2) Variable "Countrykbd" - Default = "uk" - Used for keyboard code
 	getkeymap
 	read_timed "The keyboard is now set to: '$Countrykbd'"
 	# End of keyboard code
+	# (3) Variable "CountryLocale" - Default = "en_GB.UTF-8"
+	# Also sets CountryCode ("GB" in default)
+	setlocale
+	read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
+
 }
 
 getkeymap() {
