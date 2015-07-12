@@ -25,10 +25,10 @@
 # ----------------
 # Input and output
 # Error-checking
-# Set location variables
-# Choose desktop environment
 # Mirrorlist
-# System & partitioning
+# Partitioning
+# Location variables
+# Desktop environment
 # ---------------------
 
 # ----------------
@@ -92,6 +92,399 @@ CheckForError() {
 	fi
 }
 
+# -----------------------
+# Mirrorlist
+# -----------------------
+
+LocalMirrorList() {
+# Generate and save a shortened mirrorlist of only the mirrors defined
+# in the CountryCode variable. Adapted from Lution AIS
+	echo "Generating local mirrorlist"
+	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist)
+	CheckForError "Line ${LINENO}"
+	
+	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL}
+	CheckForError "Line ${LINENO}"
+	
+	# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp}
+	CheckForError "Line ${LINENO}"
+	
+	# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
+	CheckForError "Line ${LINENO}"
+	
+	# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
+	chmod +r /etc/pacman.d/mirrorlist
+	CheckForError "Line ${LINENO}"
+}
+
+# ------------
+# Partitioning
+# ------------
+
+ManagePartitions() {
+# Check and show partitions.	
+	# First test for existing partitions
+	print_heading
+	ShowPartitions=""
+	PARTITIONS=""
+	ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+	# Count the partitions
+  for i in ${ShowPartitions[@]}; do
+    PARTITIONS="${PARTITIONS} ${i} -"
+    NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
+  done	
+	# If no partitions exist, offer cfdisk to create (or exit)
+	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
+		print_heading
+    echo "There are no partitions on the device, and we cannot continue without at least"
+    echo "one partition on which to install. 'cfdisk' is available for you to create a"
+		echo "partition table now if you wish. If you are uncertain about partitioning, you"
+    echo "should read the Wiki (address at the top). If you choose not to use 'cfdisk'"
+    echo "now, the script will terminate to allow you to partition in some other way."
+    read -p "Would you like to open cfdisk now? [Y/n]: " Response
+    case $Response in
+		  "y"|"Y"|"") cfdisk
+			;;
+		*) exit
+		esac
+ 	else
+    # Alternatively, offer cfdisk to edit existing partitions
+		echo "Here is a list of available partitions on all connected devices ..."
+		lsblk
+		echo ""
+		read -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
+		case $Response in
+		  "y"|"Y"|"") cfdisk
+			;;
+      *) echo ""
+		esac
+	fi
+  # After cfdisk, build new list of partitions
+  PartitionList=" "
+  ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+  PartCounter=0
+  for Part in ${ShowPartitions}
+  do
+    PartitionList="$PartitionList $Part"	# Add each partition
+  done
+}
+
+select_filesystem() {
+# Adapted from Lution
+# Allows user-selection of filesystem by entering a number
+# Returns enhanced selection via FILESYSTEM variable
+	Counter=0
+	PS3="$prompt1"
+	TypeList="Skip ext2 ext3 ext4 btrfs"	
+	echo "Now select the format type for ${Partition}"
+	select type in ${TypeList}
+	do
+    for i in ${TypeList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $REPLY ]
+			then
+				PartitionType=$i
+			fi
+		done
+		break
+  done
+}
+
+AllocateRoot() {
+# Display partitions for user-selection	
+	# First store all available partitions in a list
+	print_heading
+	echo "Here are the available partitions."
+	# PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+	Remaining=""
+	Counter=0
+	PS3="$prompt1"
+	echo "Select the one for root:" # Display them and select one for root
+	select partition in ${PartitionList}
+	do
+    Reply=$REPLY
+    for i in ${PartitionList}
+		do
+		Partition=""
+		PartitionType=""
+		Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]
+			then
+				Partition="/dev/$i"
+				echo "Root partition will be $Partition"
+				RootPartition="${Partition}"
+				select_filesystem
+				if [ -z ${PartitionType} ]
+				then
+					RootType="ext4"
+				fi
+				RootType="${PartitionType}"
+			else
+				Remaining="$Remaining $i"	# Add next available partition
+			fi
+		done
+    PartitionList=$Remaining			# Replace original PartitionList with remaining options
+		break
+  done
+}
+
+AllocateSwap() {
+  print_heading
+  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions ...
+  then                         # ... offer one for swap
+    echo -e "Select the partition for /swap from the ones that remain."
+    Remaining=""
+    Counter=0
+    PS3="$prompt1"
+    SwapPartition=""
+    PartitionList="$PartitionList Skip"
+    echo -e "If you select the 'Skip' option, no swap will be allocated:\n"
+    select partition in ${PartitionList}
+    do
+    Reply=$REPLY
+      for i in ${PartitionList}
+      do
+      Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          if [ $i = Skip ]; then
+            SwapPartition=""
+          else
+            SwapPartition="/dev/$i"
+          fi          
+        else
+          if [ $i != Skip ]; then
+            Remaining="$Remaining $i"	# Add next available partition
+          fi
+        fi
+      done
+      break
+    done
+    if [ $SwapPartition ]; then
+        read -t 2 -p "$SwapPartition will be used for swap."
+    else
+        read -t 2 -p "No swap partition will be allocated."
+    fi
+    PartitionList=$Remaining		# Replace original PartitionList with remaining options
+  fi
+}
+
+ExtraPartitions() {
+# If partitions on the device remain unselected
+PartCounter=0
+Elements=${#PartitionList[@]}
+while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option) 
+do
+	print_heading
+	Remaining=""
+	PS3="$prompt1"
+  PartitionList="$PartitionList Skip"
+	echo "The following partitions remain unallocated."
+	echo "If you wish to use one, select it from the list."
+  echo -e "Or choose 'Skip' to exit. \n"
+	select partition in ${PartitionList} # User select an item from the list
+	do
+		Selected=$REPLY
+		for Part in ${PartitionList} # Iterate through the list
+		do
+      Partition=""
+      PartitionType=""
+      PartCounter=$((PartCounter+1))
+			if [ $PartCounter -eq $Selected ]
+			then
+        Item=$Part  # Selected item
+        if [ $Item = Skip ]; then   # If item is 'Skip'
+          #Counter=$Elements
+          break     # Finish
+        else                        # If item is not 'Skip'
+        	Partition="/dev/$Item"
+          MakePartition # Call MakePartition to complete details
+        fi
+      else                          # If $Counter is not equal to $Selected
+        if [ $Part != Skip ]; then   # (and not 'Skip')
+          Remaining="$Remaining $Part" # Add unused partition to temp list
+        fi
+			fi
+    done
+    if [ $Part = Skip ] || [ -z ${Remaining} ]; then  # If skip or there are no more to allocate
+      break
+    fi
+  done
+  if [ $Item = Skip ] || [ -z ${Remaining} ]; then
+    break
+  fi                     
+  PartCounter=0
+  PartitionList=$Remaining	# Replace original PartitionList with temp list
+  Elements=${#PartitionList[@]}
+done
+# Ensure that if AddPartList (the defining array) is empty, all others are too
+if [ -z ${#AddPartList[@]} ]
+then
+  AddPartList=""
+  AddPartLabel=""
+  AddPartType=""
+fi
+}
+
+MakePartition() {
+    # 1) When selected, first save to AddPartList (eg: /dev/sda5)
+		ExtraPartitions=${#AddPartList[@]}
+		AddPartList[$ExtraPartitions]="${Partition}"
+    # 2) Then get a label for selected partition (eg: /home)
+		LoopRepeat="Y"
+		while [ ${LoopRepeat} = "Y" ]
+		do
+			echo "Enter a label for ${Partition} ... eg: '/home' ... "
+      read -p "(you must include the '/'): " Response
+			# Check that entry includes '/'
+			CheckInput=(`echo $Response | cut -c1`)
+			case ${CheckInput} in
+        "") echo "You must enter a valid name"
+						PartLabel=""
+           ;;
+				*) if [ ${CheckInput} != "/" ]
+					then
+						PartLabel="/${Response}"
+					else
+						PartLabel="${Response}"
+					fi
+      esac
+      # Check that the label has not already been used
+			LabelCounter=0
+			if [ -z ${AddPartLabel} ]
+			then
+				LoopRepeat="N"
+			else
+				# Go through AddPartLabel checking each item against PartLabel
+				for Label in ${AddPartLabel}
+				do 
+					LabelCounter=$((LabelCounter+1))
+					if [ $Label = $PartLabel ] 
+					then
+						read -t 4 -p "Label ${PartLabel} has already been used. Please use a different label."
+					else
+						LoopRepeat="N"
+						break
+					fi
+				done 
+			fi 
+			if [ ${LoopRepeat} = "N" ]  
+			then
+				break
+			fi 
+		done 
+		# Add it to AddPartLabel list
+		AddPartLabel[$ExtraPartitions]="${PartLabel}"
+		# Set format type for the selected partition
+		select_filesystem
+    if [ -z ${PartitionType} ]
+		then
+			PartitionType="ext4"
+		fi
+		# Add it to AddPartType list
+		AddPartType[$ExtraPartitions]="${PartitionType}"
+
+}
+
+# User to choose device for grub installation
+SetGrubDevice() {
+  # Store available devices in a list	
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
+	# Display available devices and select one for Grub
+	print_heading
+  GrubDevice=""
+	Counter=0
+	PS3="$prompt1"
+	print_info "Select the device where Grub is to be installed. Note that, if you"
+  print_info "select the 'Skip' option, Grub will not be installed, and you will"
+  print_info "have to make alternative arrangements for booting your system."
+	select partition in ${DevicesList}
+	do
+  Reply=$REPLY
+    for i in ${DevicesList}
+		do
+    Item=$i
+  	Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]
+			then
+        if [ $Item = Skip ]; then
+        GrubDevice=""
+        else
+        GrubDevice=$Item
+        fi
+      break
+    	fi
+ 		done
+    break
+  done
+}
+
+# -------
+# Running
+# -------
+
+arch_chroot() {
+# Taken directly from Lution AIS
+# Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
+  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}"
+  CheckForError "Line ${LINENO}"
+}  
+
+# Unmount partitions (from Lution/AUI - Nice code)
+# 1) Gets a list of all mounted partitions into MOUNTED
+# 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
+# 3) Unmounts each mounted device in turn from MOUNTED
+umount_partitions(){
+  MOUNTED=""
+  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
+  swapoff -a
+  for i in ${MOUNTED[@]}; do
+    umount $i >/dev/null
+  done
+  CheckForError "Line ${LINENO}"
+}
+
+MountPartitions() {
+  # Root
+  echo "Mounting partitions"
+  echo "Formatting /root partition"
+  mkfs.${RootType} ${RootPartition} # eg: mkfs.ext4 /dev/sda1
+  CheckForError "Line ${LINENO} 'mkfs'"
+  echo "Mounting /root partition"	
+  mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
+  CheckForError "Line ${LINENO} 'mount'"
+  # Swap
+  if [ ${SwapPartition} ]
+  then
+    echo "Making /swap partition"
+    mkswap ${SwapPartition} # eg: mkswap /dev/sda2
+    CheckForError "Line ${LINENO} 'mkswap'"
+    echo "Activating /swap"
+    swapon ${SwapPartition} # eg: swapon /dev/sda2
+    CheckForError "Line ${LINENO} 'swapon'"
+  fi
+  echo "Mounting additional partitions"
+  Counter=0
+  Elements=${#AddPartList[@]}
+ 	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
+  while [ $Counter -lt $Elements ]
+  do
+    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
+    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} # eg: mkfs.ext4 /dev/sda3
+    CheckForError "Line ${LINENO}"
+    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "Line ${LINENO}"
+		Counter=$((Counter+1))
+	done
+}
+
 # ------------------------------
 # Locations, Names and Passwords
 # ------------------------------
@@ -141,7 +534,7 @@ while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
   SEARCHTERM="${search_term^^}"
-    LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+  LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
   for i in ${LocaleList[@]}; do
     echo $i
   done
@@ -328,386 +721,6 @@ ChooseDM() {
     done
 		break
   done
-}
-
-# -----------------------
-# System and Partitioning
-# -----------------------
-
-LocalMirrorList() {
-# Generate and save a shortened mirrorlist of only the mirrors defined
-# in the CountryCode variable. Adapted from Lution AIS
-	echo "Generating local mirrorlist"
-	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist)
-	CheckForError "Line ${LINENO}"
-	
-	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL}
-	CheckForError "Line ${LINENO}"
-	
-	# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp}
-	CheckForError "Line ${LINENO}"
-	
-	# Make a safe copy of existing mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
-	CheckForError "Line ${LINENO}"
-	
-	# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
-	chmod +r /etc/pacman.d/mirrorlist
-	CheckForError "Line ${LINENO}"
-}
-
-arch_chroot() {
-# Taken directly from Lution AIS
-# Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
-    arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}"
-}  
-
-ManagePartitions() {
-# Check and show partitions.	
-	# First test for existing partitions
-	print_heading
-	ShowPartitions=""
-	PARTITIONS=""
-	ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-	# Count the partitions
-  for i in ${ShowPartitions[@]}; do
-    PARTITIONS="${PARTITIONS} ${i} -"
-    NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
-  done	
-	# If no partitions exist, offer cfdisk to create (or exit)
-	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
-		print_heading
-    echo "There are no partitions on the device, and we cannot continue without at least"
-    echo "one partition on which to install. 'cfdisk' is available for you to create a"
-		echo "partition table now if you wish. If you are uncertain about partitioning, you"
-    echo "should read the Wiki (address at the top). If you choose not to use 'cfdisk'"
-    echo "now, the script will terminate to allow you to partition in some other way."
-    read -p "Would you like to open cfdisk now? [Y/n]: " Response
-    case $Response in
-		  "y"|"Y"|"") cfdisk
-			;;
-		*) exit
-		esac
- 	else
-    # Alternatively, offer cfdisk to edit existing partitions
-		echo "Here is a list of available partitions on all connected devices ..."
-		lsblk
-		echo ""
-		read -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
-		case $Response in
-		  "y"|"Y"|"") cfdisk
-			;;
-      *) echo ""
-		esac
-	fi
-}
-
-select_filesystem() {
-# Adapted from Lution
-# Allows user-selection of filesystem by entering a number
-# Returns enhanced selection via FILESYSTEM variable
-	Counter=0
-	PS3="$prompt1"
-	TypeList="Skip ext2 ext3 ext4 btrfs"	
-	echo "Now select the format type for ${Partition}"
-	select type in ${TypeList}
-	do
-    for i in ${TypeList}
-		do
-		Counter=$((Counter+1))
-			if [ $Counter -eq $REPLY ]
-			then
-				PartitionType=$i
-			fi
-		done
-		break
-  done
-}
-
-AllocateRoot() {
-# Display partitions for user-selection	
-	# First store all available partitions in a list
-	PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-	print_heading
-	Remaining=""
-	Counter=0
-	PS3="$prompt1"
-	echo "Select the partition for root:" # Display them and select one for root
-	select partition in ${PartitionList}
-	do
-    Reply=$REPLY
-    for i in ${PartitionList}
-		do
-		Partition=""
-		PartitionType=""
-		Counter=$((Counter+1))
-			if [ $Counter -eq $Reply ]
-			then
-				Partition="/dev/$i"
-				echo "Root partition will be $Partition"
-				RootPartition="${Partition}"
-				select_filesystem
-				if [ -z ${PartitionType} ]
-				then
-					RootType="ext4"
-				fi
-				RootType="${PartitionType}"
-			else
-				Remaining="$Remaining $i"	# Add next available partition
-			fi
-		done
-    PartitionList=$Remaining			# Replace original PartitionList with remaining options
-		break
-  done
-  AllocateSwap
-}
-
-AllocateSwap() {
-  print_heading
-  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions ...
-  then                           # ... offer one for swap
-    Remaining=""
-    Counter=0
-    PS3="$prompt1"
-    SwapPartition=""
-    PartitionList="$PartitionList Skip"
-    echo -e "Select the partition for /swap from the ones that remain."
-    echo -e "If you select the 'Skip' option, no swap will be allocated:\n"
-    select partition in ${PartitionList}
-    do
-    Reply=$REPLY
-      for i in ${PartitionList}
-      do
-      Counter=$((Counter+1))
-        if [ $Counter -eq $Reply ]
-        then
-          if [ $i = Skip ]; then
-            SwapPartition=""
-          else
-            SwapPartition="/dev/$i"
-          fi          
-        else
-          if [ $i != Skip ]; then
-            Remaining="$Remaining $i"	# Add next available partition
-          fi
-        fi
-      done
-      break
-    done
-    if [ $SwapPartition ]; then
-        read -t 2 -p "$SwapPartition will be used for swap."
-    else
-        read -t 2 -p "No swap partition will be allocated."
-    fi
-    PartitionList=$Remaining		# Replace original PartitionList with remaining options
-    # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
-    if [ -n ${#PartitionList[@]} ]
-    then
-      ExtraPartitions
-    fi
-  fi
-}
-
-ExtraPartitions() {
-# If partitions on the device remain unselected
-PartCounter=0
-Elements=${#PartitionList[@]}
-while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option) 
-do
-	print_heading
-	Remaining=""
-	PS3="$prompt1"
-  PartitionList="$PartitionList Skip"
-	echo "The following partitions remain unallocated."
-	echo "If you wish to use one, select it from the list."
-  echo -e "Or choose 'Skip' to exit. \n"
-	select partition in ${PartitionList} # User select an item from the list
-	do
-		Selected=$REPLY
-		for Part in ${PartitionList} # Iterate through the list
-		do
-      Partition=""
-      PartitionType=""
-      PartCounter=$((PartCounter+1))
-			if [ $PartCounter -eq $Selected ]
-			then
-        Item=$Part  # Selected item
-        if [ $Item = Skip ]; then   # If item is 'Skip'
-          #Counter=$Elements
-          break     # Finish
-        else                        # If item is not 'Skip'
-        	Partition="/dev/$Item"
-          MakePartition # Call MakePartition to complete details
-        fi
-      else                          # If $Counter is not equal to $Selected
-        if [ $Part != Skip ]; then   # (and not 'Skip')
-          Remaining="$Remaining $Part" # Add unused partition to temp list
-        fi
-			fi
-    done
-    if [ $Part = Skip ] || [ -z ${Remaining} ]; then  # If skip or there are no more to allocate
-      break
-    fi
-  done
-  if [ $Item = Skip ] || [ -z ${Remaining} ]; then
-    break
-  fi                     
-  PartCounter=0
-  PartitionList=$Remaining	# Replace original PartitionList with temp list
-  Elements=${#PartitionList[@]}
-done
-# Ensure that if AddPartList (the defining array) is empty, all others are too
-if [ -z ${#AddPartList[@]} ]
-then
-  AddPartList=""
-  AddPartLabel=""
-  AddPartType=""
-fi
-}
-
-MakePartition() {
-    # 1) When selected, first save to AddPartList (eg: /dev/sda5)
-		ExtraPartitions=${#AddPartList[@]}
-		AddPartList[$ExtraPartitions]="${Partition}"
-    # 2) Then get a label for selected partition (eg: /home)
-		LoopRepeat="Y"
-		while [ ${LoopRepeat} = "Y" ]
-		do
-			echo "Enter a label for ${Partition} ... eg: '/home' ... "
-      read -p "(you must include the '/'): " Response
-			# Check that entry includes '/'
-			CheckInput=(`echo $Response | cut -c1`)
-			case ${CheckInput} in
-        "") echo "You must enter a valid name"
-						PartLabel=""
-           ;;
-				*) if [ ${CheckInput} != "/" ]
-					then
-						PartLabel="/${Response}"
-					else
-						PartLabel="${Response}"
-					fi
-      esac
-      # Check that the label has not already been used
-			LabelCounter=0
-			if [ -z ${AddPartLabel} ]
-			then
-				LoopRepeat="N"
-			else
-				# Go through AddPartLabel checking each item against PartLabel
-				for Label in ${AddPartLabel}
-				do 
-					LabelCounter=$((LabelCounter+1))
-					if [ $Label = $PartLabel ] 
-					then
-						read -t 4 -p "Label ${PartLabel} has already been used. Please use a different label."
-					else
-						LoopRepeat="N"
-						break
-					fi
-				done 
-			fi 
-			if [ ${LoopRepeat} = "N" ]  
-			then
-				break
-			fi 
-		done 
-		# Add it to AddPartLabel list
-		AddPartLabel[$ExtraPartitions]="${PartLabel}"
-		# Set format type for the selected partition
-		select_filesystem
-    if [ -z ${PartitionType} ]
-		then
-			PartitionType="ext4"
-		fi
-		# Add it to AddPartType list
-		AddPartType[$ExtraPartitions]="${PartitionType}"
-
-}
-
-# User to choose device for grub installation
-SetGrubDevice() {
-  # Store available devices in a list	
-  DEVICE=""
-  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
-	# Display available devices and select one for Grub
-	print_heading
-  GrubDevice=""
-	Counter=0
-	PS3="$prompt1"
-	print_info "Select the device where Grub is to be installed. Note that, if you"
-  print_info "select the 'Skip' option, Grub will not be installed, and you will"
-  print_info "have to make alternative arrangements for booting your system."
-	select partition in ${DevicesList}
-	do
-  Reply=$REPLY
-    for i in ${DevicesList}
-		do
-    Item=$i
-  	Counter=$((Counter+1))
-			if [ $Counter -eq $Reply ]
-			then
-        if [ $Item = Skip ]; then
-        GrubDevice=""
-        else
-        GrubDevice=$Item
-        fi
-      break
-    	fi
- 		done
-    break
-  done
-}
-
-# Unmount partitions (from Lution/AUI - Nice code)
-# 1) Gets a list of all mounted partitions into MOUNTED
-# 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
-# 3) Unmounts each mounted device in turn from MOUNTED
-umount_partitions(){
-  MOUNTED=""
-  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
-  swapoff -a
-  for i in ${MOUNTED[@]}; do
-    umount $i >/dev/null
-  done
-  CheckForError "Line ${LINENO}"
-}
-
-MountPartitions() {
-  # Root
-  echo "Mounting partitions"
-  echo "Formatting /root partition"
-  mkfs.${RootType} ${RootPartition} # eg: mkfs.ext4 /dev/sda1
-  echo "Mounting /root partition"	
-  mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
-  CheckForError "Line ${LINENO}"
-  # Swap
-  if [ ${SwapPartition} ]
-  then
-    echo "Making /swap partition"
-    mkswap ${SwapPartition} # eg: mkswap /dev/sda2
-    CheckForError "Line ${LINENO}"
-    echo "Activating /swap"
-    swapon ${SwapPartition} # eg: swapon /dev/sda2
-    CheckForError "Line ${LINENO}"
-  fi
-  echo "Mounting additional partitions"
-  Counter=0
-  Elements=${#AddPartList[@]}
- 	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
-  while [ $Counter -lt $Elements ]
-  do
-    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
-    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} # eg: mkfs.ext4 /dev/sda3
-    CheckForError "Line ${LINENO}"
-    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "Line ${LINENO}"
-		Counter=$((Counter+1))
-	done
 }
 
 # ----------------

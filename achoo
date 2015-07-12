@@ -67,27 +67,38 @@ do
     print_info "is not working - you could try connecting an ethernet cable."
     read -p "Try again? (y/n): " Retry
     if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
-      exit
+      $?=1    # Unable to continue without a partition
+      CheckForError "Line ${LINENO} 'No internet'"
     else
       Retry="Y"
     fi
   else
-    echo "Connection successful"
     Retry="N"
   fi
 done
 
-# -------------------------------------------------------
-# Check partitioning, offer cfdisk and allocate partitions
-# -------------------------------------------------------
+# Check partitioning, offer cfdisk
 ManagePartitions
-CheckForError "Line ${LINENO}"
-# Allocate root, swap and others as set in ManagePartitions
-AllocateRoot
-CheckForError "Line ${LINENO}"
-# Set device for Grub
+# Display partitions and allocate root
+if [ -n ${#PartitionList[@]} ]
+then
+  AllocateRoot
+else
+  $?=1    # Unable to continue without a partition
+  CheckForError "Line ${LINENO} 'No partitions'"
+fi
+# Display remaining partitions and allocate swap
+if [ -n ${#PartitionList[@]} ]
+then
+  AllocateSwap
+fi
+# Check contents of PartitionList again. If not empty, call the ExtraPartitions function
+if [ -n ${#PartitionList[@]} ]
+then
+  ExtraPartitions
+fi
+# Select device for Grub
 SetGrubDevice
-CheckForError "Line ${LINENO}"
 
 # -------------------------------------------
 # Display welcome text and set user-variables
@@ -95,31 +106,25 @@ CheckForError "Line ${LINENO}"
 
 # Variable "Countrykbd" - Default = "uk" - Used for keyboard code
 getkeymap
-CheckForError "Line ${LINENO}"
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd}
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Loadkeys error'"
 read_timed "The keyboard is now set to: '$Countrykbd'"
 # Location
-print_heading
 settimezone
-CheckForError "Line ${LINENO}"
 read_timed "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
 # Variable "CountryLocale" - Default = "en_GB.UTF-8"
 # Also sets CountryCode ("GB" in default)
 setlocale
-CheckForError "Line ${LINENO}"
 read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
 
 # User input of names and passwords
 Repeat=1
 UserAndRoot
-CheckForError "Line ${LINENO}"
 
 # User selection of desktop environment and display manager/greeter
 Repeat=1
 ChooseDE
-CheckForError "Line ${LINENO}"
 
 # --------------
 # Auto from here
@@ -129,14 +134,11 @@ date +"%T"
 
 # Set mirrorlist
 LocalMirrorList
-CheckForError "Line ${LINENO}"
 
 # Unmount any existing partitions and mount as required as defined in setup
 umount_partitions
-CheckForError "Line ${LINENO}"
 echo "Mounting partitions"
 MountPartitions
-CheckForError "Line ${LINENO}"
 
 echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo
@@ -145,70 +147,69 @@ date +"%T"
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
-CheckForError "Line ${LINENO}"
 
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'genfstab'"
 cat ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
 date +"%T"
 
 echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Hostname1'"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Hostname2'"
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Hostname3'"
 
 # Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen # eg: en_US.UTF-8 UTF-8
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'CountryLocale'"
 arch_chroot "locale-gen"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'locale-gen'"
 date +"%T"
 
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf # eg: LANG=en_US.UTF-8
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'CountryLocale'"
 
 export "LANG=${CountryLocale}" # eg: LANG=en_US.UTF-8
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'export CountryLocale'"
 date +"%T"
 
 echo "Setting clock"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'localtime'"
 arch_chroot "hwclock --systohc --utc"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'hwclock'"
 
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'enable dhcpcd'"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'enable NetworkManager'"
 date +"%T"
 
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd
 arch_chroot "passwd root" < /tmp/.passwd >/dev/null
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Root password'"
 rm /tmp/.passwd
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'rm temp passwd'"
 
 # Install Grub if selected
 if [ ${GrubDevice} ]
 then
   echo "Installing GRUB to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober
-  CheckForError "Line ${LINENO}"
+  CheckForError "Line ${LINENO} 'Install grub'"
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
-  CheckForError "Line ${LINENO}"
+  CheckForError "Line ${LINENO} 'grub-install'"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
-  CheckForError "Line ${LINENO}"
+  CheckForError "Line ${LINENO} 'grub-mkconfig'"
 else
   echo "Not installing GRUB"
 fi
@@ -216,68 +217,68 @@ date +"%T"
 
 echo "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'mkinitcpio'"
 date +"%T"
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Persistent keymap'"
 date +"%T"
 
 # Required for Virtualbox installations
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} vbox'"
 
 # Create the user, set password, then remove temporary password file
 echo "Adding user as defined in setup"
 arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'add user'"
 echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd
 arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'user password'"
 rm /tmp/.passwd
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'rm temp passwd'"
 date +"%T"
 
 # Set up basic configuration files and permissions for user
 echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'User-config1'"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'User-config2'"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'User-config3'"
 date +"%T"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Install codecs'"
 date +"%T"
 
 # Wireless tools
 echo "Installing wireless tools"
 pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Wireless firmware'"
 pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Wireless tools'"
 date +"%T"
 
 # Install X, graphics, etc
 echo "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
-CheckForError "Line ${LINENO}"  
+CheckForError "Line ${LINENO} 'X, Graphics, etc'"  
 date +"%T"
 
 # Copy modified pacman.conf to new system and install Yaourt
 cp pacman.conf ${MOUNTPOINT}/etc
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'pacman.conf MOUNTPOINT'"
 cp pacman.conf /etc
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'pacman.conf local'"
 pacman -Sy
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Update"
 pacstrap ${MOUNTPOINT} yaourt
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'Install yaourt'"
 date +"%T"
 
 # Install Display Manager and Desktop Environment (from Lution AIS)
@@ -285,9 +286,9 @@ if [ ${DisplayManager} ]
 then
   echo "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter}
-  CheckForError "Line ${LINENO}"
+  CheckForError "Line ${LINENO} 'Install display manager'"
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  CheckForError "Line ${LINENO}"
+  CheckForError "Line ${LINENO} 'Mount display manager'"
 else
   echo "Not installing a Display Manager"
 fi
@@ -303,6 +304,8 @@ date +"%T"
 
 print_heading
 print_info "Success! Finished installing"
-print_info "Press any key to shut down"
+print_info "Press any key to reboot"
 read -n1 -p "(remember to remove the installation medium before restarting)"
-shutdown -h now
+exit
+reboot
+#shutdown -h now
