@@ -76,10 +76,22 @@ do
     Retry="N"
   fi
 done
+
+# -------------------------------------------------------
+# Check partitioning, offer cfdisk and allocate partitions
+# -------------------------------------------------------
+ManagePartitions
+CheckForError "Line ${LINENO}"
+# Allocate root, swap and others as set in ManagePartitions
+AllocateRoot
+CheckForError "Line ${LINENO}"
+# Set device for Grub
+SetGrubDevice
+CheckForError "Line ${LINENO}"
+
 # -------------------------------------------
 # Display welcome text and set user-variables
 # -------------------------------------------
-
 
 # Variable "Countrykbd" - Default = "uk" - Used for keyboard code
 getkeymap
@@ -107,22 +119,6 @@ CheckForError "Line ${LINENO}"
 # User selection of desktop environment and display manager/greeter
 Repeat=1
 ChooseDE
-CheckForError "Line ${LINENO}"
-
-# ------------
-# Partitioning
-# ------------
-
-# User-defined partitions
-ManagePartitions
-CheckForError "Line ${LINENO}"
-
-# Allocate root, swap and others as set in ManagePartitions
-AllocateRoot
-CheckForError "Line ${LINENO}"
-
-# Set device for Grub
-SetGrubDevice
 CheckForError "Line ${LINENO}"
 
 # --------------
