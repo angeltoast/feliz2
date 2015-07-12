@@ -129,7 +129,8 @@ ChooseDE
 # Auto from here
 # --------------
 
-date +"%T"
+print_heading
+read_timed "Entering automatic installation mode"
 
 # Set mirrorlist
 LocalMirrorList
@@ -296,6 +297,11 @@ then
   echo "Installing Desktop Environment ${DesktopEnvironment}"
   pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
   CheckForError "Line ${LINENO}"
+  if [ ${DElxde} -eq 1 ]
+  then
+  arch_chroot "systemctl enable lxdm.service" >/dev/null
+  CheckForError "Line ${LINENO} 'Mount display manager'"
+  fi
 else
   echo "Not installing a Desktop Environment"
 fi

@@ -652,6 +652,7 @@ UserAndRoot() {
 
 ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	Counter=0
+  DElxde=0
 	PS3="$prompt1"
 	DEList="Gnome Xfce LXDE Skip"
   print_heading
@@ -688,8 +689,9 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
                   Greeter=""
               esac	
           ;;
-        "Gnome") DesktopEnvironment="lxde"
-              DisplayManager="lxdm"
+        "LXDE") DesktopEnvironment="lxde"
+              DElxde=1
+              DisplayManager=""
               Greeter=""
           ;;
         *) DesktopEnvironment=""
