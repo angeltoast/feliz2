@@ -494,7 +494,7 @@ getkeymap() {
 print_heading
 DoDoDo=1
 SearchPrompt="Enter the two-letter code for your country or keyboard (eg: uk): "
-echo "First we will try to find your keyboard from a list of all known layouts"
+echo "Now we will try to find your keyboard from a list of all known layouts"
 while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
@@ -503,7 +503,7 @@ do
   for i in ${KeyboardList[@]}; do
     echo $i
   done
-  read -p "Is your keyboard layout in this list? (y/n): " Response
+  read -n1 -p "Is your keyboard layout in this list? (y/n): " Response
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
       echo "Select keyboard:"
@@ -538,7 +538,7 @@ do
   for i in ${LocaleList[@]}; do
     echo $i
   done
-  read -p "Is your locale in this list? (y/n): " Response
+  read -n1 -p "Is your locale in this list? (y/n): " Response
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
       echo "Select locale:"
@@ -560,10 +560,11 @@ done
 }
 
 settimezone() {
-# Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"	
-read_timed "Now we have to set up the best mirrors for downloading your system"
-read_timed "This will also be used for setting the clock during installation"
-read_timed "Choose the World Zone of your location from the following list"
+# Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"
+print_heading
+print_info "Now we have to set up the best mirrors for downloading your system"
+print_info "This will also be used for setting the clock during installation"
+print_info "Choose the World Zone of your location from the following list"
 # Set Zone and Sub-Zone from lists (from AUI)
   local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   PS3="$prompt1"
@@ -574,7 +575,7 @@ read_timed "Choose the World Zone of your location from the following list"
       local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
       print_heading
       PS3="$prompt1"
-      echo "Now select your local Sub-Zone:"
+      echo "Now select your local city or Sub-Zone:"
       select SUBZONE in "${_subzones[@]}"; do
         if contains_element "$SUBZONE" "${_subzones[@]}"; then
           break
@@ -596,9 +597,9 @@ UserAndRoot() {
 		# Hostname
 		Entered="ArchLinux"
 		print_heading
-		read_timed "A hostname is needed. This will be a unique name to identify"
-		read_timed "your device on a network. If you do not enter one, the default"
-		read_timed "hostname of 'ArchLinux' will be used."
+		print_info "A hostname is needed. This will be a unique name to identify"
+		print_info "your device on a network. If you do not enter one, the default"
+		print_info "hostname of 'ArchLinux' will be used."
 		read -p "Enter a hostname for your computer : " Entered
 		case $Entered in
 			"") Entered=$HostName
@@ -609,7 +610,7 @@ UserAndRoot() {
 		# Username
 		print_heading
 		Entered="Archie"
-		read_timed "Next we have to deal with names and passwords."
+		print_info "Next we have to deal with names and passwords."
 		print_line
 		print_info "If you don't create a username here, a default user called"
     print_info "'archie' will be set up"
@@ -652,9 +653,9 @@ UserAndRoot() {
 ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	Counter=0
 	PS3="$prompt1"
-	DEList="Gnome Xfce Skip"
+	DEList="Gnome Xfce LXDE Skip"
   print_heading
-  print_info "This installer offers only Gnome or Xfce Desktop Environments."
+  print_info "This installer offers only Gnome, LXDE or Xfce Desktop Environments."
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
 	echo "Choose your Desktop Environment"
@@ -686,6 +687,10 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
                 *) DisplayManager=""
                   Greeter=""
               esac	
+          ;;
+        "Gnome") DesktopEnvironment="lxde"
+              DisplayManager="lxdm"
+              Greeter=""
           ;;
         *) DesktopEnvironment=""
             DisplayManager=""
