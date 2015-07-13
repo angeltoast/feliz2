@@ -281,7 +281,7 @@ pacstrap ${MOUNTPOINT} yaourt
 CheckForError "Line ${LINENO} 'Install yaourt'"
 date +"%T"
 
-# Install Display Manager and Desktop Environment (from Lution AIS)
+# Install Display Manager
 if [ ${DisplayManager} ]
 then
   echo "Installing Display Manager ${DisplayManager}"
@@ -292,19 +292,26 @@ then
 else
   echo "Not installing a Display Manager"
 fi
-if [ ${#DesktopEnvironment[@]} ]
-then
-  echo "Installing Desktop Environment ${DesktopEnvironment}"
-  pacstrap ${MOUNTPOINT} ${DesktopEnvironment}
-  CheckForError "Line ${LINENO}"
-  if [ ${DElxde} -eq 1 ]
-  then
-  arch_chroot "systemctl enable lxdm.service" >/dev/null
-  CheckForError "Line ${LINENO} 'Mount display manager'"
-  fi
-else
-  echo "Not installing a Desktop Environment"
-fi
+
+# Install Desktop Environment
+case ${DesktopEnvironment} in
+  "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
+      CheckForError "Line ${LINENO} 'Install Mate'"
+      dconf write /org/mate/marco/general/compositing-manager true
+      CheckForError "Line ${LINENO} 'Mate compositing'"
+      dconf write /org/mate/marco/general/center-new-windows true
+      CheckForError "Line ${LINENO} 'Mate window centre'"
+      ;;
+  "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome
+      CheckForError "Line ${LINENO} 'Install Xfce'"
+      ;;
+  "LXDE") pacstrap ${MOUNTPOINT} lxde
+      CheckForError "Line ${LINENO} Install lxde'"
+      arch_chroot "systemctl enable lxdm.service" >/dev/null
+      CheckForError "Line ${LINENO} 'Mount lxdm'"
+      ;;
+  *) echo "Not installing a Desktop Environment"	
+esac
 date +"%T"
 
 print_heading

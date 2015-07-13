@@ -87,8 +87,6 @@ CheckForError() {
     read -n1 -p "Please press any key: "
     echo ""
 		exit
-	else
-		echo "Preparing next step ..."
 	fi
 }
 
@@ -498,15 +496,17 @@ echo "Now we will try to find your keyboard from a list of all known layouts"
 while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
+  echo ""
   SEARCHTERM="${search_term,,}"
   KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
   for i in ${KeyboardList[@]}; do
-    echo $i
+    print_info $i
   done
+  echo ""
   read -n1 -p "Is your keyboard layout in this list? (y/n): " Response
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
-      echo "Select keyboard:"
+      echo "Select your keyboard:"
       select KEYMAP in "${KeyboardList[@]}"; do
         if contains_element "$KEYMAP" "${KeyboardList[@]}"
         then
@@ -533,11 +533,13 @@ echo "Next we will try to find your locale"
 while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
+  echo ""
   SEARCHTERM="${search_term^^}"
   LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
   for i in ${LocaleList[@]}; do
-    echo $i
+    print_info $i
   done
+  echo ""
   read -n1 -p "Is your locale in this list? (y/n): " Response
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
@@ -652,11 +654,10 @@ UserAndRoot() {
 
 ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	Counter=0
-  DElxde=0
 	PS3="$prompt1"
-	DEList="Gnome Xfce LXDE Skip"
+	DEList="Mate Xfce LXDE Skip"
   print_heading
-  print_info "This installer offers only Gnome, LXDE or Xfce Desktop Environments."
+  print_info "This installer offers only the 'lightweight' Desktop Environments."
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
 	echo "Choose your Desktop Environment"
@@ -670,28 +671,15 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
       Counter=$((Counter+1))
 			if [ $Counter -eq $Reply ]
 			then
+      DesktopEnvironment=$Item
       case $Item in
-        "Gnome") DesktopEnvironment="gnome gnome-extra"
-              DisplayManager="gdm"
-              Greeter=""
-          ;;
-        "Xfce") DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
-              DMList="LightDM LXDM Skip"
+        "Mate") DMList="LightDM LXDM Skip"
               ChooseDM
-              case $SelectedDM in
-                "LightDM") DisplayManager="lightdm"
-                  Greeter="lightdm-gtk-greeter"	
-                  ;;
-                "LXDM") DisplayManager="lxdm"
-                  Greeter=""
-                  ;;
-                *) DisplayManager=""
-                  Greeter=""
-              esac	
           ;;
-        "LXDE") DesktopEnvironment="lxde"
-              DElxde=1
-              DisplayManager=""
+        "Xfce") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "LXDE") DisplayManager=""
               Greeter=""
           ;;
         *) DesktopEnvironment=""
@@ -710,7 +698,7 @@ ChooseDM() {
   Counter=0
   PS3="$prompt1"
   print_heading
-  print_info "Choose one of the following Display Managers for $SelectedDE"
+  print_info "Choose one of the following Display Managers for "$Item
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
   echo "Choose your Display Manager"
@@ -723,6 +711,16 @@ ChooseDM() {
       if [ $Counter -eq $Reply ]
       then
         SelectedDM=$item
+        case $SelectedDM in
+          "LightDM") DisplayManager="lightdm"
+                Greeter="lightdm-gtk-greeter"	
+              ;;
+          "LXDM") DisplayManager="lxdm"
+                Greeter=""
+              ;;
+          *) DisplayManager=""
+                Greeter=""
+        esac	
         break
       fi
     done
