@@ -132,7 +132,7 @@ ChooseDE
 print_heading
 echo "Entering automatic installation mode"
 echo "If you are re-using existing partitions, the system may ask you to confirm that"
-read_timed "you wish to mount them ... 'Y' or 'y' would be an appropriate response."
+read_timed "you wish to mount them ... 'y' would be an appropriate response."
 echo ""
 
 # Set mirrorlist

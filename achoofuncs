@@ -490,44 +490,46 @@ getkeymap() {
 # New routine to enable user to input two-letter country-code to find keyboard
 print_heading
 DoDoDo=1
-echo "Now we will try to find your keyboard from a list of all known layouts"
-echo "If you know your keyboard code, enter it now. Alternatively, enter the "
-SearchPrompt="two-letter code for your country (eg: uk): "
+echo "Now we will try to find your keyboard from a list of all known"
+echo "layouts. If you know your keyboard code, enter it now. Alternatively, "
+SearchPrompt="enter the two-letter code for your country (eg: uk): "
 while [ $DoDoDo -eq 1 ]
 do
+  PS3="$prompt1"
   read -p "$SearchPrompt" search_term
   echo ""
   SEARCHTERM="${search_term,,}"
-  KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-  for i in ${KeyboardList[@]}; do
-    print_info $i
-  done
+  KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` );
+  Counter=${#KeyboardList[@]}
+  Counter=$((Counter+1))
+  KeyboardList[$Counter]='Try_Again'
   echo ""
-  read -n1 -p "Is your keyboard layout in this list? (y/n): " Response
+  echo "Choose your keyboard, or 'Try_Again': "
   echo""
-  case $Response in
-    "Y"|"y"|"") PS3="$prompt1"
-      echo "Select your keyboard:"
-      select KEYMAP in "${KeyboardList[@]}"; do
-        if contains_element "$KEYMAP" "${KeyboardList[@]}"
-        then
-          Countrykbd=$KEYMAP
-          break
-        else
-          invalid_option
-        fi
-      done
-      DoDoDo=0
-    ;;
-    *) SearchPrompt="Try a different two-letter code (remember, lower case): "
-          print_heading
-  esac
+  select KEYMAP in "${KeyboardList[@]}"; do
+    if contains_element "$KEYMAP" "${KeyboardList[@]}"
+    then
+      if [ $KEYMAP = "Try_Again" ]
+      then
+        print_heading
+        echo "Try a different two-letter code (remember, lower case): "
+        break
+      else
+        Countrykbd=$KEYMAP
+        DoDoDo=0
+        break
+      fi
+    else
+      invalid_option
+    fi
+  done
 done
 }
 
 setlocale() {
 # New routine to enable user to input two-letter country-code to find locale
 print_heading
+PS3="$prompt1"
 DoDoDo=1
 SearchPrompt="Enter the two-letter code for your country or language (eg: GB): "
 echo "Next we will try to find your locale"
@@ -535,32 +537,40 @@ while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
   echo ""
-  SEARCHTERM="${search_term^^}"
-  LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-  for i in ${LocaleList[@]}; do
-    print_info $i
+  SEARCHTERM=${search_term}
+  LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+ Counter=${#LocaleList[@]}
+  if [ $Counter -eq 0 ]
+  then 
+    SEARCHTERM="${search_term^^}"
+    LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+    Counter=${#LocaleList[@]}
+  fi
+  Counter=$((Counter+1))
+  LocaleList[$Counter]='Try_Again'
+  echo ""
+  echo "Choose your locale, or 'Try_Again': "
+  echo""
+  select LOCALE in "${LocaleList[@]}"; do
+    if contains_element "$LOCALE" "${LocaleList[@]}"
+    then
+      if [ $LOCALE = "Try_Again" ]
+      then
+        print_heading
+        echo "Try a different two-letter code (try UPPER CASE): "
+        break
+      else
+        CountryLocale="${LOCALE}.UTF-8"
+        CountryCode=(`echo $LOCALE | cut -c4-6`)
+        DoDoDo=0
+        break
+      fi
+    else
+      invalid_option
+    fi
   done
-  echo ""
-  read -n1 -p "Is your locale in this list? (y/n): " Response
-  echo ""
-  case $Response in
-    "Y"|"y"|"") PS3="$prompt1"
-      echo "Select locale:"
-      select LOCALE in "${LocaleList[@]}"; do
-        if contains_element "$LOCALE" "${LocaleList[@]}"; then
-          CountryLocale="${LOCALE}.UTF-8"
-          CountryCode=(`echo $LOCALE | cut -c4-6`)
-          break
-        else
-          invalid_option
-        fi
-      done
-      DoDoDo=0
-    ;;
-    *) SearchPrompt="Try a different two-letter code (remember, UPPER CASE): "
-          print_heading
-  esac
 done
+
 }
 
 settimezone() {
@@ -659,10 +669,12 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	PS3="$prompt1"
 	DEList="LXDE LXQt Mate Xfce Skip"
   print_heading
-  print_info "This installer offers only the 'lightweight' Desktop Environments."
-  print_info "Alternatively, you can choose to skip this option and install"
-  print_info "something else manually later."
-	echo "Choose your Desktop Environment/Window Manager"
+  print_info "This installer offers only the 'lightweight' Desktop Environments. Mate and"
+  print_info "Xfce include many of the essential desktop tools, whereas LXDE and LXQt are"
+  print_info "just basic desktops onto which you can add your choice of tools. Note that"
+  print_info "LXQt includes the Openbox window manager - useful for building your own desktop."
+  print_info "Or you can choose to skip this option and install something else manually later."
+	echo "Choose your Desktop Environment"
 	select type in ${DEList}
 	do
   Reply=$REPLY
