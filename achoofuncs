@@ -451,7 +451,6 @@ umount_partitions(){
 
 MountPartitions() {
   # Root
-  echo "Mounting partitions"
   echo "Formatting /root partition"
   mkfs.${RootType} ${RootPartition} # eg: mkfs.ext4 /dev/sda1
   CheckForError "Line ${LINENO} 'mkfs'"
@@ -491,8 +490,9 @@ getkeymap() {
 # New routine to enable user to input two-letter country-code to find keyboard
 print_heading
 DoDoDo=1
-SearchPrompt="Enter the two-letter code for your country or keyboard (eg: uk): "
 echo "Now we will try to find your keyboard from a list of all known layouts"
+echo "If you know your keyboard code, enter it now. Alternatively, enter the "
+SearchPrompt="two-letter code for your country (eg: uk): "
 while [ $DoDoDo -eq 1 ]
 do
   read -p "$SearchPrompt" search_term
@@ -504,6 +504,7 @@ do
   done
   echo ""
   read -n1 -p "Is your keyboard layout in this list? (y/n): " Response
+  echo""
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
       echo "Select your keyboard:"
@@ -541,6 +542,7 @@ do
   done
   echo ""
   read -n1 -p "Is your locale in this list? (y/n): " Response
+  echo ""
   case $Response in
     "Y"|"y"|"") PS3="$prompt1"
       echo "Select locale:"
@@ -655,12 +657,12 @@ UserAndRoot() {
 ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	Counter=0
 	PS3="$prompt1"
-	DEList="Mate Xfce LXDE Skip"
+	DEList="LXDE LXQt Mate Openbox Xfce Skip"
   print_heading
-  print_info "This installer offers only the 'lightweight' Desktop Environments."
-  print_info "Alternatively, you can choose to skip this option. Either way, you"
-  print_info "can always install something else manually later."
-	echo "Choose your Desktop Environment"
+  print_info "This installer offers only the 'lightweight' Desktop Environments and"
+  print_info "one Window Manager. Alternatively, you can choose to skip this option."
+  print_info " Either way, you can always install something else manually later."
+	echo "Choose your Desktop Environment/Window Manager"
 	select type in ${DEList}
 	do
   Reply=$REPLY
@@ -673,14 +675,26 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 			then
       DesktopEnvironment=$Item
       case $Item in
+        "LXDE") DisplayManager=""
+              Greeter=""
+          ;;
+        "LXQt") DisplayManager="sddm"
+              Greeter=""
+          ;;
         "Mate") DMList="LightDM LXDM Skip"
               ChooseDM
           ;;
+        "Openbox") DMList="LightDM LXDM Skip"
+              ChooseDM
+              read -p "Add Tint2 panel: (Y/n): " Response
+              case $Response in
+                "Y"|"y"|"") AddTint2=1
+                  ;;
+                *) AddTint2=0
+              esac
+          ;;
         "Xfce") DMList="LightDM LXDM Skip"
               ChooseDM
-          ;;
-        "LXDE") DisplayManager=""
-              Greeter=""
           ;;
         *) DesktopEnvironment=""
             DisplayManager=""

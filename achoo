@@ -137,7 +137,6 @@ LocalMirrorList
 
 # Unmount any existing partitions and mount as required as defined in setup
 umount_partitions
-echo "Mounting partitions"
 MountPartitions
 
 echo "Installing LTS Kernel and base-devel"
@@ -295,21 +294,31 @@ fi
 
 # Install Desktop Environment
 case ${DesktopEnvironment} in
-  "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
-      CheckForError "Line ${LINENO} 'Install Mate'"
-      dconf write /org/mate/marco/general/compositing-manager true
-      CheckForError "Line ${LINENO} 'Mate compositing'"
-      dconf write /org/mate/marco/general/center-new-windows true
-      CheckForError "Line ${LINENO} 'Mate window centre'"
-      ;;
-  "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome
-      CheckForError "Line ${LINENO} 'Install Xfce'"
-      ;;
   "LXDE") pacstrap ${MOUNTPOINT} lxde
       CheckForError "Line ${LINENO} Install lxde'"
       arch_chroot "systemctl enable lxdm.service" >/dev/null
       CheckForError "Line ${LINENO} 'Mount lxdm'"
       ;;
+  "LXQt") pacstrap ${MOUNTPOINT} lxqt oxygen-icons
+      CheckForError "Line ${LINENO} Install lxde'"
+      arch_chroot "systemctl enable lxdm.service" >/dev/null
+      CheckForError "Line ${LINENO} 'Mount lxdm'"
+      ;;
+  "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
+      CheckForError "Line ${LINENO} 'Install Mate'"
+      ;;
+  "Openbox") if [ $AddTint2 -eq 1 ]; then
+                Package="openbox tint2"
+            else
+                Package="openbox"
+            fi
+      pacstrap ${MOUNTPOINT} ${Package}
+      CheckForError "Line ${LINENO} 'Install Openbox'"
+      ;;
+  "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome
+      CheckForError "Line ${LINENO} 'Install Xfce'"
+      ;;
+
   *) echo "Not installing a Desktop Environment"	
 esac
 date +"%T"
