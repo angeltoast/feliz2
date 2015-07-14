@@ -131,7 +131,9 @@ ChooseDE
 
 print_heading
 echo "Entering automatic installation mode"
-read_timed "If you are using existing partitions, the system may ask you to confirm that you wish to mount them ... 'Y' or 'y' would be an appropriate response."
+echo "If you are re-using existing partitions, the system may ask you to confirm that"
+read_timed "you wish to mount them ... 'Y' or 'y' would be an appropriate response."
+echo ""
 
 # Set mirrorlist
 LocalMirrorList
@@ -143,7 +145,6 @@ MountPartitions
 echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo
 CheckForError "Line ${LINENO}"
-date +"%T"
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
@@ -153,7 +154,6 @@ genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO} 'genfstab'"
 cat ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO}"
-date +"%T"
 
 echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
@@ -169,7 +169,6 @@ echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen # eg: en_US.UTF-8 
 CheckForError "Line ${LINENO} 'CountryLocale'"
 arch_chroot "locale-gen"
 CheckForError "Line ${LINENO} 'locale-gen'"
-date +"%T"
 
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf # eg: LANG=en_US.UTF-8
@@ -177,7 +176,6 @@ CheckForError "Line ${LINENO} 'CountryLocale'"
 
 export "LANG=${CountryLocale}" # eg: LANG=en_US.UTF-8
 CheckForError "Line ${LINENO} 'export CountryLocale'"
-date +"%T"
 
 echo "Setting clock"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
@@ -191,7 +189,6 @@ CheckForError "Line ${LINENO} 'enable dhcpcd'"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 CheckForError "Line ${LINENO} 'enable NetworkManager'"
-date +"%T"
 
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd
@@ -213,17 +210,14 @@ then
 else
   echo "Not installing GRUB"
 fi
-date +"%T"
 
 echo "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"
 CheckForError "Line ${LINENO} 'mkinitcpio'"
-date +"%T"
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf
 CheckForError "Line ${LINENO} 'Persistent keymap'"
-date +"%T"
 
 # Required for Virtualbox installations
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf
@@ -238,7 +232,6 @@ arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
 CheckForError "Line ${LINENO} 'user password'"
 rm /tmp/.passwd
 CheckForError "Line ${LINENO} 'rm temp passwd'"
-date +"%T"
 
 # Set up basic configuration files and permissions for user
 echo "Setting up user configuration"
@@ -248,13 +241,11 @@ arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 CheckForError "Line ${LINENO} 'User-config2'"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers
 CheckForError "Line ${LINENO} 'User-config3'"
-date +"%T"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin
 CheckForError "Line ${LINENO} 'Install codecs'"
-date +"%T"
 
 # Wireless tools
 echo "Installing wireless tools"
@@ -268,7 +259,6 @@ date +"%T"
 echo "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau
 CheckForError "Line ${LINENO} 'X, Graphics, etc'"  
-date +"%T"
 
 # Copy modified pacman.conf to new system and install Yaourt
 cp pacman.conf ${MOUNTPOINT}/etc
@@ -279,7 +269,6 @@ pacman -Sy
 CheckForError "Line ${LINENO} 'Update"
 pacstrap ${MOUNTPOINT} yaourt
 CheckForError "Line ${LINENO} 'Install yaourt'"
-date +"%T"
 
 # Install Display Manager
 if [ ${DisplayManager} ]
@@ -306,25 +295,15 @@ case ${DesktopEnvironment} in
   "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
       CheckForError "Line ${LINENO} 'Install Mate'"
       ;;
-  "Openbox") if [ $AddTint2 -eq 1 ]; then
-                Package="openbox obconf xterm openbox-themes polkit-gnome tint2"
-            else
-                Package="openbox obconf xterm openbox-themes polkit-gnome"
-            fi
-      pacstrap ${MOUNTPOINT} ${Package}
-      CheckForError "Line ${LINENO} 'Install Openbox'"
-      ;;
   "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome
       CheckForError "Line ${LINENO} 'Install Xfce'"
       ;;
 
   *) echo "Not installing a Desktop Environment"	
 esac
-date +"%T"
 
 print_heading
 print_info "Success! Finished installing"
 print_info "Press any key to reboot"
 read -n1 -p "(remember to remove the installation medium before restarting)"
 reboot
-#shutdown -h now

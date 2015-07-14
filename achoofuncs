@@ -657,11 +657,11 @@ UserAndRoot() {
 ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	Counter=0
 	PS3="$prompt1"
-	DEList="LXDE LXQt Mate Openbox Xfce Skip"
+	DEList="LXDE LXQt Mate Xfce Skip"
   print_heading
-  print_info "This installer offers only the 'lightweight' Desktop Environments and"
-  print_info "one Window Manager. Alternatively, you can choose to skip this option."
-  print_info " Either way, you can always install something else manually later."
+  print_info "This installer offers only the 'lightweight' Desktop Environments."
+  print_info "Alternatively, you can choose to skip this option and install"
+  print_info "something else manually later."
 	echo "Choose your Desktop Environment/Window Manager"
 	select type in ${DEList}
 	do
@@ -683,15 +683,6 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
           ;;
         "Mate") DMList="LightDM LXDM Skip"
               ChooseDM
-          ;;
-        "Openbox") DMList="LightDM LXDM Skip"
-              ChooseDM
-              read -p "Add Tint2 panel: (Y/n): " Response
-              case $Response in
-                "Y"|"y"|"") AddTint2=1
-                  ;;
-                *) AddTint2=0
-              esac
           ;;
         "Xfce") DMList="LightDM LXDM Skip"
               ChooseDM
