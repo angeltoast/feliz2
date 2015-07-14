@@ -71,7 +71,7 @@ print_info() { # (from AUI scripts)
 
 read_timed() {
   echo $1
-  read -t 3 -p ""
+  read -t 2 -p ""
 }
 
 # --------------

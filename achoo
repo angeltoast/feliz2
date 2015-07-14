@@ -51,16 +51,16 @@ else
 fi
 
 # Check for internet connection (adapted from Lution)
+print_heading
+print_info "Welcome to the Achoo! Arch Linux installation scripts."
+print_info "Achoo! is designed to perform with the minimum of fuss."
+print_info "But you will have to provide some basic data to ensure"
+print_info "that the installation meets your needs."
+print_info "A working internet connection is needed for installation."
+print_info "Checking for one now ... "
 Retry="Y"
 while [ $Retry = "Y" ]
 do
-  print_heading
-  print_info "Welcome to the Achoo! Arch Linux installation scripts."
-  print_info "Achoo! is designed to perform with the minimum of fuss."
-  print_info "But you will have to provide some basic data to ensure"
-  print_info "that the installation meets your needs."
-  print_info "A working internet connection is needed for installation."
-  print_info "Checking for one now ... "
   if [[ ! $(ping -c 1 google.com) ]]; then
     print_info "Unable to establish a connection. If you are using wifi, it"
     print_info "is not working - you could try connecting an ethernet cable."
@@ -130,7 +130,8 @@ ChooseDE
 # --------------
 
 print_heading
-read_timed "Entering automatic installation mode"
+echo "Entering automatic installation mode"
+read_timed "If you are using existing partitions, the system may ask you to confirm that you wish to mount them ... 'Y' or 'y' would be an appropriate response."
 
 # Set mirrorlist
 LocalMirrorList
@@ -295,22 +296,20 @@ fi
 # Install Desktop Environment
 case ${DesktopEnvironment} in
   "LXDE") pacstrap ${MOUNTPOINT} lxde
-      CheckForError "Line ${LINENO} Install lxde'"
+      CheckForError "Line ${LINENO} 'Installing lxde'"
       arch_chroot "systemctl enable lxdm.service" >/dev/null
       CheckForError "Line ${LINENO} 'Mount lxdm'"
       ;;
-  "LXQt") pacstrap ${MOUNTPOINT} lxqt oxygen-icons
-      CheckForError "Line ${LINENO} Install lxde'"
-      arch_chroot "systemctl enable lxdm.service" >/dev/null
-      CheckForError "Line ${LINENO} 'Mount lxdm'"
+  "LXQt") pacstrap ${MOUNTPOINT} lxqt xterm
+      CheckForError "Line ${LINENO} 'Installing lxqt'"
       ;;
   "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
       CheckForError "Line ${LINENO} 'Install Mate'"
       ;;
   "Openbox") if [ $AddTint2 -eq 1 ]; then
-                Package="openbox tint2"
+                Package="openbox obconf xterm openbox-themes polkit-gnome tint2"
             else
-                Package="openbox"
+                Package="openbox obconf xterm openbox-themes polkit-gnome"
             fi
       pacstrap ${MOUNTPOINT} ${Package}
       CheckForError "Line ${LINENO} 'Install Openbox'"
