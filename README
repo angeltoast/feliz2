@@ -8,6 +8,6 @@ How to use it:
 
 2) First update the package list and install git: pacman -Sy git
 
-3) Next get the scripts from Github: git clone git://github.com/Angeltoast/achoo
+3) Next get the scripts from Github: git clone git://github.com/angeltoast/achoo
 
 4) Then run it: cd achoo && ./achoo
