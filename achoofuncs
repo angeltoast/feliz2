@@ -141,9 +141,11 @@ ManagePartitions() {
 		print_heading
     echo "There are no partitions on the device, and we cannot continue without at least"
     echo "one partition on which to install. 'cfdisk' is available for you to create a"
-		echo "partition table now if you wish. If you are uncertain about partitioning, you"
-    echo "should read the Wiki (address at the top). If you choose not to use 'cfdisk'"
-    echo "now, the script will terminate to allow you to partition in some other way."
+		echo "partition table now if you wish."
+    echo "  At least a partition for the / (root) directory must be created."
+    echo "  Achoo! does not, as yet, support the UEFI/GPT partition table."
+    echo "If you are uncertain about partitioning, you should read the Arch Wiki (address at the top)."
+    echo "If you choose not to use 'cfdisk' now, the script will terminate to allow you to partition in some other way."
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y"|"Y"|"") cfdisk
@@ -670,11 +672,11 @@ ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
 	PS3="$prompt1"
 	DEList="LXDE LXQt Mate Xfce Skip"
   print_heading
-  print_info "This installer offers only the 'lightweight' Desktop Environments. Mate and"
-  print_info "Xfce include many of the essential desktop tools, whereas LXDE and LXQt are"
-  print_info "just basic desktops onto which you can add your choice of tools. Note that"
-  print_info "LXQt includes the Openbox window manager - useful for building your own desktop."
-  print_info "Or you can choose to skip this option and install something else manually later."
+  echo "This installer offers only the 'lightweight' Desktop Environments."
+  echo "Mate and Xfce include many of the essential desktop tools, whereas LXDE and LXQt are basic desktops onto which you can add your choice of tools."
+  echo "Note that LXDE and LXQt include the Openbox window manager - useful for building your own desktop."
+  echo "Or you can choose to skip this option and install something else manually later."
+  echo ""
 	echo "Choose your Desktop Environment"
 	select type in ${DEList}
 	do
