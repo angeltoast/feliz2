@@ -250,14 +250,14 @@ pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-
 CheckForError "Line ${LINENO} 'X, Graphics, etc'"  
 
 # Copy modified pacman.conf to new system and install Yaourt
-cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
-CheckForError "Line ${LINENO} 'pacman.conf MOUNTPOINT'"
-cp pacman.conf /etc 2> error.log
-CheckForError "Line ${LINENO} 'pacman.conf local'"
-pacman -Sy 2> error.log
-CheckForError "Line ${LINENO} 'Update"
-pacstrap ${MOUNTPOINT} yaourt 2> error.log
-CheckForError "Line ${LINENO} 'Install yaourt'"
+# cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
+# CheckForError "Line ${LINENO} 'pacman.conf MOUNTPOINT'"
+# cp pacman.conf /etc 2> error.log
+# CheckForError "Line ${LINENO} 'pacman.conf local'"
+# pacman -Sy 2> error.log
+# CheckForError "Line ${LINENO} 'Update"
+# pacstrap ${MOUNTPOINT} yaourt 2> error.log
+# CheckForError "Line ${LINENO} 'Install yaourt'"
 
 # Install Display Manager
 if [ ${DisplayManager} ]
