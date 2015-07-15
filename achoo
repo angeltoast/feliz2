@@ -107,7 +107,7 @@ SetGrubDevice
 getkeymap
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd}
-CheckForError "Line ${LINENO} 'Loadkeys error'"
+CheckForError "Line ${LINENO} 'Loadkeys'"
 read_timed "The keyboard is now set to: '$Countrykbd'"
 # Location
 settimezone
@@ -131,8 +131,8 @@ ChooseDE
 
 print_heading
 echo "Entering automatic installation mode"
-echo "If you are re-using existing partitions, the system may ask you to confirm that"
-read_timed "you wish to mount them ... 'y' would be an appropriate response."
+echo "If you are re-using existing partitions, the system may ask you to confirm"
+read_timed "that you wish to mount them ... 'y' would be an appropriate response."
 echo ""
 
 # Set mirrorlist
@@ -144,42 +144,43 @@ MountPartitions
 
 echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo
-CheckForError "Line ${LINENO}"
+CheckForError "Line ${LINENO} 'installing kernel and base-devel'"
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
+CheckForError "Line ${LINENO} 'set the default PATH variable'"
 
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
 CheckForError "Line ${LINENO} 'genfstab'"
-cat ${MOUNTPOINT}/etc/fstab
-CheckForError "Line ${LINENO}"
+# cat ${MOUNTPOINT}/etc/fstab
+# CheckForError "Line ${LINENO}"
 
 echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname
-CheckForError "Line ${LINENO} 'Hostname1'"
+CheckForError "Line ${LINENO} 'save hostname'"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
-CheckForError "Line ${LINENO} 'Hostname2'"
+CheckForError "Line ${LINENO} 'save to hosts'"
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts
-CheckForError "Line ${LINENO} 'Hostname3'"
+CheckForError "Line ${LINENO} 'save to hosts'"
 
 # Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen # eg: en_US.UTF-8 UTF-8
-CheckForError "Line ${LINENO} 'CountryLocale'"
+CheckForError "Line ${LINENO} 'save full locale'"
 arch_chroot "locale-gen"
 CheckForError "Line ${LINENO} 'locale-gen'"
 
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf # eg: LANG=en_US.UTF-8
-CheckForError "Line ${LINENO} 'CountryLocale'"
+CheckForError "Line ${LINENO} 'set LANG'"
 
 export "LANG=${CountryLocale}" # eg: LANG=en_US.UTF-8
-CheckForError "Line ${LINENO} 'export CountryLocale'"
+CheckForError "Line ${LINENO} 'export LANG'"
 
 echo "Setting clock"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
-CheckForError "Line ${LINENO} 'localtime'"
+CheckForError "Line ${LINENO} 'set localtime'"
 arch_chroot "hwclock --systohc --utc"
 CheckForError "Line ${LINENO} 'hwclock'"
 
@@ -217,11 +218,11 @@ CheckForError "Line ${LINENO} 'mkinitcpio'"
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf
-CheckForError "Line ${LINENO} 'Persistent keymap'"
+CheckForError "Line ${LINENO} 'persistent keymap'"
 
 # Required for Virtualbox installations
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf
-CheckForError "Line ${LINENO} vbox'"
+CheckForError "Line ${LINENO} 'vbox override'"
 
 # Create the user, set password, then remove temporary password file
 echo "Adding user as defined in setup"

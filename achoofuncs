@@ -117,7 +117,7 @@ LocalMirrorList() {
 	# Replace existing mirrorlist with new local mirrorlist
 	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
 	chmod +r /etc/pacman.d/mirrorlist
-	CheckForError "Line ${LINENO}"
+	CheckForError "Line ${LINENO} 'saving mirrorlist'"
 }
 
 # ------------
@@ -125,7 +125,7 @@ LocalMirrorList() {
 # ------------
 
 ManagePartitions() {
-# Check and show partitions.	
+# Check and show partitions ... call cfdisk
 	# First test for existing partitions
 	print_heading
 	ShowPartitions=""
@@ -147,6 +147,7 @@ ManagePartitions() {
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y"|"Y"|"") cfdisk
+      	CheckForError "Line ${LINENO} 'cfdisk'"
 			;;
 		*) exit
 		esac
@@ -158,6 +159,7 @@ ManagePartitions() {
 		read -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
 		case $Response in
 		  "y"|"Y"|"") cfdisk
+            	CheckForError "Line ${LINENO} 'cfdisk'"
 			;;
       *) echo ""
 		esac
@@ -165,7 +167,6 @@ ManagePartitions() {
   # After cfdisk, build new list of partitions
   PartitionList=" "
   ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-  PartCounter=0
   for Part in ${ShowPartitions}
   do
     PartitionList="$PartitionList $Part"	# Add each partition
@@ -176,7 +177,7 @@ select_filesystem() {
 # Adapted from Lution
 # Allows user-selection of filesystem by entering a number
 # Returns enhanced selection via FILESYSTEM variable
-	Counter=0
+	local Counter=0
 	PS3="$prompt1"
 	TypeList="Skip ext2 ext3 ext4 btrfs"	
 	echo "Now select the format type for ${Partition}"
@@ -184,7 +185,7 @@ select_filesystem() {
 	do
     for i in ${TypeList}
 		do
-		Counter=$((Counter+1))
+		local Counter=$((Counter+1))
 			if [ $Counter -eq $REPLY ]
 			then
 				PartitionType=$i
@@ -196,21 +197,20 @@ select_filesystem() {
 
 AllocateRoot() {
 # Display partitions for user-selection	
-	# First store all available partitions in a list
+	# Uses list of all available partitions in PartitionList created in ManagePartitions
 	print_heading
-	echo "Here are the available partitions."
-	# PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
 	Remaining=""
-	Counter=0
+	local Counter=0
+  Partition=""
+	PartitionType=""
 	PS3="$prompt1"
-	echo "Select the one for root:" # Display them and select one for root
+	echo "Here are the available partitions."
+	echo "Select the one for root:" 
 	select partition in ${PartitionList}
 	do
     Reply=$REPLY
     for i in ${PartitionList}
 		do
-		Partition=""
-		PartitionType=""
 		Counter=$((Counter+1))
 			if [ $Counter -eq $Reply ]
 			then
@@ -221,8 +221,9 @@ AllocateRoot() {
 				if [ -z ${PartitionType} ]
 				then
 					RootType="ext4"
-				fi
-				RootType="${PartitionType}"
+				else
+          RootType="${PartitionType}"
+        fi
 			else
 				Remaining="$Remaining $i"	# Add next available partition
 			fi
@@ -234,11 +235,11 @@ AllocateRoot() {
 
 AllocateSwap() {
   print_heading
-  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions ...
-  then                         # ... offer one for swap
+  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions from AllocateRoot ...
+  then
     echo -e "Select the partition for /swap from the ones that remain."
     Remaining=""
-    Counter=0
+    local Counter=0
     PS3="$prompt1"
     SwapPartition=""
     PartitionList="$PartitionList Skip"
