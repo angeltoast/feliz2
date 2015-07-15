@@ -82,8 +82,9 @@ CheckForError() {
 # Check for stderr, display it, then exit script
 	if [[ $? -gt 0 ]]; then
     clear
-		echo "A fatal error was reported at $1."
-    echo "The script cannot continue."
+		echo "Error reported at Line: $1"
+    cat error.log
+    echo "The script cannot continue"
     read -n1 -p "Please press any key: "
     echo ""
 		exit
@@ -99,25 +100,26 @@ LocalMirrorList() {
 # in the CountryCode variable. Adapted from Lution AIS
 	echo "Generating local mirrorlist"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist)
-	CheckForError "Line ${LINENO}"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
+	CheckForError "${LINENO}"
 	
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL}
-	CheckForError "Line ${LINENO}"
+	curl -so ${MirrorTemp} ${URL} 2> error.log
+	CheckForError "${LINENO}"
 	
 	# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp}
-	CheckForError "Line ${LINENO}"
+	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
+	CheckForError "${LINENO}"
 	
 	# Make a safe copy of existing mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig
-	CheckForError "Line ${LINENO}"
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+	CheckForError "${LINENO}"
 	
 	# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist
-	chmod +r /etc/pacman.d/mirrorlist
-	CheckForError "Line ${LINENO} 'saving mirrorlist'"
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+	CheckForError "${LINENO} 'saving mirrorlist'"  
+	chmod +r /etc/pacman.d/mirrorlist 2> error.log
+	CheckForError "${LINENO} 'saving mirrorlist'"
 }
 
 # ------------
@@ -139,17 +141,21 @@ ManagePartitions() {
 	# If no partitions exist, offer cfdisk to create (or exit)
 	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
 		print_heading
+    echo ""
     echo "There are no partitions on the device, and we cannot continue without at least"
-    echo "one partition on which to install. 'cfdisk' is available for you to create a"
-		echo "partition table now if you wish."
-    echo "  At least a partition for the / (root) directory must be created."
+    echo "one partition on which to install. 'cfdisk' is available for you to create a partition table now if you wish."
+    echo ""
+    echo "Please note:"
+    echo "  At least one partition, for the / (root) directory, must be created."
     echo "  Achoo! does not, as yet, support the UEFI/GPT partition table."
-    echo "If you are uncertain about partitioning, you should read the Arch Wiki (address at the top)."
-    echo "If you choose not to use 'cfdisk' now, the script will terminate to allow you to partition in some other way."
+    echo "  If you are uncertain about partitioning, you should read the Arch Wiki."
+    echo "  If you choose not to use 'cfdisk' now, the script will terminate, to"
+    echo "     allow you to partition in some other way."
+    echo ""
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
-		  "y"|"Y"|"") cfdisk
-      	CheckForError "Line ${LINENO} 'cfdisk'"
+		  "y"|"Y"|"") cfdisk 2> error.log
+      	CheckForError "${LINENO} 'cfdisk'"
 			;;
 		*) exit
 		esac
@@ -160,8 +166,8 @@ ManagePartitions() {
 		echo ""
 		read -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
 		case $Response in
-		  "y"|"Y"|"") cfdisk
-            	CheckForError "Line ${LINENO} 'cfdisk'"
+		  "y"|"Y"|"") cfdisk 2> error.log
+            	CheckForError "${LINENO} 'cfdisk'"
 			;;
       *) echo ""
 		esac
@@ -434,8 +440,8 @@ SetGrubDevice() {
 arch_chroot() {
 # Taken directly from Lution AIS
 # Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
-  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}"
-  CheckForError "Line ${LINENO}"
+  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
+  CheckForError "${LINENO}"
 }  
 
 # Unmount partitions (from Lution/AUI - Nice code)
@@ -445,30 +451,32 @@ arch_chroot() {
 umount_partitions(){
   MOUNTED=""
   MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
-  swapoff -a
+  swapoff -a 2> error.log
+  CheckForError "${LINENO} 'swapoff'"
   for i in ${MOUNTED[@]}; do
-    umount $i >/dev/null
+    umount $i >/dev/null 2> error.log
+    CheckForError "${LINENO} 'umount'"
   done
-  CheckForError "Line ${LINENO}"
+
 }
 
 MountPartitions() {
   # Root
   echo "Formatting /root partition"
-  mkfs.${RootType} ${RootPartition} # eg: mkfs.ext4 /dev/sda1
-  CheckForError "Line ${LINENO} 'mkfs'"
+  mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+  CheckForError "${LINENO} 'mkfs'"
   echo "Mounting /root partition"	
-  mount ${RootPartition} $MOUNTPOINT # eg: mount /dev/sda1 /mnt
-  CheckForError "Line ${LINENO} 'mount'"
+  mount ${RootPartition} $MOUNTPOINT 2> error.log # eg: mount /dev/sda1 /mnt
+  CheckForError "${LINENO} 'mount'"
   # Swap
   if [ ${SwapPartition} ]
   then
     echo "Making /swap partition"
-    mkswap ${SwapPartition} # eg: mkswap /dev/sda2
-    CheckForError "Line ${LINENO} 'mkswap'"
+    mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
+    CheckForError "${LINENO} 'mkswap'"
     echo "Activating /swap"
-    swapon ${SwapPartition} # eg: swapon /dev/sda2
-    CheckForError "Line ${LINENO} 'swapon'"
+    swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
+    CheckForError "${LINENO} 'swapon'"
   fi
   echo "Mounting additional partitions"
   Counter=0
@@ -476,11 +484,12 @@ MountPartitions() {
  	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
   while [ $Counter -lt $Elements ]
   do
-    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mkdir -p /mnt/home
-    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} # eg: mkfs.ext4 /dev/sda3
-    CheckForError "Line ${LINENO}"
-    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "Line ${LINENO}"
+    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    CheckForError "${LINENO}"    
+    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+    CheckForError "${LINENO}"
+    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "${LINENO}"
 		Counter=$((Counter+1))
 	done
 }
