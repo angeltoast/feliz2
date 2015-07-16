@@ -1,35 +1,35 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/08
+# Achoo! Arch Linux Installation Script 2015/07/16
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
-# This script and the achoovariables script are necessary when
-# running the main Achoo! script
+# This script and the achoovariables script must be present in the same
+# directory when running the main Achoo! script
 # -----------------------------------------------------------
 
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
-#
+
 # The Achoo! script is still in development, and may contain bugs.
 # It was originally written for my own use, but it is shared in the spirit of
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
-#
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention.
-#
+
 # Users - You must plan your partition scheme and take care when entering
 # your details, or loss of data could occur.
 
-# ----------------
-# Functions layout
-# ----------------
-# Input and output
-# Error-checking
-# Mirrorlist
-# Partitioning
-# Location variables
-# Desktop environment
-# ---------------------
+# -------------------------
+# Functions           Line
+# -------------------------
+# Input and output     34
+# Error-checking       77
+# Mirrorlist           94
+# Partitioning         125
+# User & Location      436
+# Desktop Environment  618
+# Running              704
+# ------------------------
 
 # ----------------
 # Input and output 
@@ -49,7 +49,7 @@ invalid_option() { # (from AUI scripts)
 print_heading() {
 	clear
     printf "                 # - The Achoo! Arch Linux Installation Script - # \n"
-    print_title "    https://github.com/Angeltoast/Achoo   ~   https://wiki.archlinux.org/"
+    print_title "    https://github.com/angeltoast/achoo   ~   https://wiki.archlinux.org/"
 }
 
 print_line() { # (from AUI scripts)
@@ -433,67 +433,6 @@ SetGrubDevice() {
   done
 }
 
-# -------
-# Running
-# -------
-
-arch_chroot() {
-# Taken directly from Lution AIS
-# Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
-  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
-  CheckForError "${LINENO}"
-}  
-
-# Unmount partitions (from Lution/AUI - Nice code)
-# 1) Gets a list of all mounted partitions into MOUNTED
-# 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
-# 3) Unmounts each mounted device in turn from MOUNTED
-umount_partitions(){
-  MOUNTED=""
-  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
-  swapoff -a 2> error.log
-  CheckForError "${LINENO} 'swapoff'"
-  for i in ${MOUNTED[@]}; do
-    umount $i >/dev/null 2> error.log
-    CheckForError "${LINENO} 'umount'"
-  done
-
-}
-
-MountPartitions() {
-  # Root
-  echo "Formatting /root partition"
-  mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
-  CheckForError "${LINENO} 'mkfs'"
-  echo "Mounting /root partition"	
-  mount ${RootPartition} $MOUNTPOINT 2> error.log # eg: mount /dev/sda1 /mnt
-  CheckForError "${LINENO} 'mount'"
-  # Swap
-  if [ ${SwapPartition} ]
-  then
-    echo "Making /swap partition"
-    mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
-    CheckForError "${LINENO} 'mkswap'"
-    echo "Activating /swap"
-    swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
-    CheckForError "${LINENO} 'swapon'"
-  fi
-  echo "Mounting additional partitions"
-  Counter=0
-  Elements=${#AddPartList[@]}
- 	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
-  while [ $Counter -lt $Elements ]
-  do
-    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
-    CheckForError "${LINENO}"    
-    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
-    CheckForError "${LINENO}"
-    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "${LINENO}"
-		Counter=$((Counter+1))
-	done
-}
-
 # ------------------------------
 # Locations, Names and Passwords
 # ------------------------------
@@ -676,7 +615,11 @@ UserAndRoot() {
 	done
 }
 
-ChooseDE() {  # This is new code with option of Xfce, Gnome or skip
+# -------------------
+# Desktop Environment
+# -------------------
+
+ChooseDE() {
 	Counter=0
 	PS3="$prompt1"
 	DEList="LXDE LXQt Mate Xfce Skip"
@@ -755,6 +698,67 @@ ChooseDM() {
     done
 		break
   done
+}
+
+# -------
+# Running
+# -------
+
+arch_chroot() {
+# Taken directly from Lution AIS
+# Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
+  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
+  CheckForError "${LINENO}"
+}  
+
+# Unmount partitions (from Lution/AUI - Nice code)
+# 1) Gets a list of all mounted partitions into MOUNTED
+# 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
+# 3) Unmounts each mounted device in turn from MOUNTED
+umount_partitions(){
+  MOUNTED=""
+  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
+  swapoff -a 2> error.log
+  CheckForError "${LINENO} 'swapoff'"
+  for i in ${MOUNTED[@]}; do
+    umount $i >/dev/null 2> error.log
+    CheckForError "${LINENO} 'umount'"
+  done
+
+}
+
+MountPartitions() {
+  # Root
+  echo "Formatting /root partition"
+  mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+  CheckForError "${LINENO} 'mkfs'"
+  echo "Mounting /root partition"	
+  mount ${RootPartition} $MOUNTPOINT 2> error.log # eg: mount /dev/sda1 /mnt
+  CheckForError "${LINENO} 'mount'"
+  # Swap
+  if [ ${SwapPartition} ]
+  then
+    echo "Making /swap partition"
+    mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
+    CheckForError "${LINENO} 'mkswap'"
+    echo "Activating /swap"
+    swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
+    CheckForError "${LINENO} 'swapon'"
+  fi
+  echo "Mounting additional partitions"
+  Counter=0
+  Elements=${#AddPartList[@]}
+ 	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
+  while [ $Counter -lt $Elements ]
+  do
+    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    CheckForError "${LINENO}"    
+    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+    CheckForError "${LINENO}"
+    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "${LINENO}"
+		Counter=$((Counter+1))
+	done
 }
 
 # ----------------

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Achoo! Arch Linux installation scripts 2015/07/08
+# Achoo! Arch Linux installation scripts 2015/07/16
 # achoovariables - Variables for Achoo! Arch Linux Installation Script
 # -------------------------------------
-# This script and the achoofuncs script must be present when
-# running the main Achoo! script
+# This script and the achoofuncs script must be present in the same directory
+# when running the main Achoo! script
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff
@@ -18,15 +18,13 @@
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
 # Its purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter, with minimum user intervention. An initiating
-# "wizard" only essential data of location, username, and passwords, and works
-# with the user to set up their partitioning requirements.
+# environment and a greeter, with minimum user intervention.
 
-# Initial variables here are for a default UK English setup with Xfce as
-# the desktop environment and LXDM display manager, and with partitioning
-# variables for a Virtualbox installation of 12GiB. You may change these
-# in this file, or through interaction as the Achoo! script runs. If the
-# script fails, check that all your variables are correct and in the
+# Initial variables are set here as examples, with a UK English setup with Xfce
+# as the desktop environment and LXDM display manager. These are changed
+# through interaction as the Achoo! script runs.
+
+# If the script fails, check that all your data entries are correct and in the
 # correct format. You must plan your partition scheme and take care when
 # entering your details, or loss of data could occur.
 
@@ -38,9 +36,9 @@
 # Default partition variables - essential for correctly mounting the partitions.
 # Contents of these variables are critical and must be accurately defined.
 # ------------------------------------------------------------------------------
-declare -a AddPartList		# Array of additional partitions by system name. eg: /dev/sda5
-declare -a AddPartLabel		# Array of the same partitions in the same order by given name. eg: /home
-declare -a AddPartType		# Array of the same partitions in the same order by format type. eg: ext4
+declare -a AddPartList	# Array of additional partitions by system name. eg: /dev/sda5
+declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
+declare -a AddPartType	# Array of format type for the same partitions in the same order. eg: ext4
 DiskDrive="a"
 GrubDevice="/dev/sda"
 PartitionTable="msdos"

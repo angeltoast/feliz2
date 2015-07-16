@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/08
+# Achoo! Arch Linux Installation Script 2015/07/16
 # ------------------------------------------------
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff
@@ -9,7 +9,7 @@
 # -------------------------------------------------
 
 # The Achoo! scripts are still in development, and may contain bugs.
-# They were originally written for my own use, but it is shared in the spirit of
+# They were originally written for my own use, but are shared in the spirit of
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
 # Achoo!'s purpose is to speed up installation of Arch Linux, plus a desktop
@@ -19,10 +19,6 @@
 # requirements. The script then runs without further intervention to the end.
 
 # Variables and functions are stored in separate scripts for easy access.
-# Defaults are set for a UK English setup with Xfce as the desktop
-# environment and LXDM display manager, and with partitioning variables
-# for a Virtualbox installation of 12GiB. These can be changed in the wizard.
-
 # Some debugging code has been left in to keep the user informed during
 # installation. There is an error-trapping function which should exit
 # the script if any critical errors are detected. If the script fails,
@@ -66,8 +62,8 @@ do
     print_info "is not working - you could try connecting an ethernet cable."
     read -p "Try again? (y/n): " Retry
     if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
-      $?=1    # Unable to continue without a partition
-      CheckForError "Line ${LINENO} 'No internet'"
+      $?=1    # Unable to continue without internet
+      CheckForError "${LINENO} 'No internet'"
     else
       Retry="Y"
     fi
@@ -84,7 +80,7 @@ then
   AllocateRoot
 else
   $?=1    # Unable to continue without a partition
-  CheckForError "Line ${LINENO} 'No partitions'"
+  CheckForError "${LINENO} 'No partitions'"
 fi
 # Display remaining partitions and allocate swap
 if [ -n ${#PartitionList[@]} ]
@@ -107,7 +103,7 @@ SetGrubDevice
 getkeymap
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd} 2> error.log
-CheckForError "Line ${LINENO} 'Loadkeys'"
+CheckForError "${LINENO} 'Loadkeys'"
 read_timed "The keyboard is now set to: '$Countrykbd'"
 # Location
 settimezone
@@ -144,37 +140,37 @@ MountPartitions
 
 echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
-CheckForError "Line ${LINENO} 'installing kernel and base-devel'"
+CheckForError "${LINENO} 'installing kernel and base-devel'"
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab 2> error.log
-CheckForError "Line ${LINENO} 'genfstab'"
+CheckForError "${LINENO} 'genfstab'"
 # cat ${MOUNTPOINT}/etc/fstab
 # CheckForError "Line ${LINENO}"
 
 echo "Setting hostname"
 echo ${HostName} >> ${MOUNTPOINT}/etc/hostname 2> error.log
-CheckForError "Line ${LINENO} 'save hostname'"
+CheckForError "${LINENO} 'save hostname'"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
-CheckForError "Line ${LINENO} 'save to hosts'"
+CheckForError "${LINENO} 'save to hosts'"
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
-CheckForError "Line ${LINENO} 'save to hosts'"
+CheckForError "${LINENO} 'save to hosts'"
 
 # Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
-CheckForError "Line ${LINENO} 'save full locale'"
+CheckForError "${LINENO} 'save full locale'"
 arch_chroot "locale-gen"
 
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
-CheckForError "Line ${LINENO} 'set LANG'"
+CheckForError "${LINENO} 'set LANG'"
 
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
-CheckForError "Line ${LINENO} 'export LANG'"
+CheckForError "${LINENO} 'export LANG'"
 
 echo "Setting clock"
 arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
@@ -183,22 +179,22 @@ arch_chroot "hwclock --systohc --utc"
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
-CheckForError "Line ${LINENO} 'enable dhcpcd'"
+CheckForError "${LINENO} 'enable dhcpcd'"
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd 2> error.log
-CheckForError "Line ${LINENO} 'Root password'"
+CheckForError "${LINENO} 'Root password'"
 arch_chroot "passwd root" < /tmp/.passwd >/dev/null
 rm /tmp/.passwd 2> error.log
-CheckForError "Line ${LINENO} 'rm temp passwd'"
+CheckForError "${LINENO} 'rm temp passwd'"
 
 # Install Grub if selected
 if [ ${GrubDevice} ]
 then
   echo "Installing GRUB to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
-  CheckForError "Line ${LINENO} 'Install grub'"
+  CheckForError "${LINENO} 'Install grub'"
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
@@ -210,54 +206,54 @@ arch_chroot "mkinitcpio -p linux-lts"
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf 2> error.log
-CheckForError "Line ${LINENO} 'persistent keymap'"
+CheckForError "${LINENO} 'persistent keymap'"
 
 # Required for Virtualbox installations
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
-CheckForError "Line ${LINENO} 'vbox override'"
+CheckForError "${LINENO} 'vbox override'"
 
 # Create the user, set password, then remove temporary password file
 echo "Adding user as defined in setup"
 arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
-CheckForError "Line ${LINENO} 'add user'"
+CheckForError "${LINENO} 'add user'"
 echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
 arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
 rm /tmp/.passwd 2> error.log
-CheckForError "Line ${LINENO} 'rm temp passwd'"
+CheckForError "${LINENO} 'rm temp passwd'"
 
 # Set up basic configuration files and permissions for user
 echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
-CheckForError "Line ${LINENO} 'User-config3'"
+CheckForError "${LINENO} 'User-config3'"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
-CheckForError "Line ${LINENO} 'Install codecs'"
+CheckForError "${LINENO} 'Install codecs'"
 
 # Wireless tools
 echo "Installing wireless tools"
 pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
-CheckForError "Line ${LINENO} 'Wireless firmware'"
+CheckForError "${LINENO} 'Wireless firmware'"
 pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
-CheckForError "Line ${LINENO} 'Wireless tools'"
+CheckForError "${LINENO} 'Wireless tools'"
 
 # Install X, graphics, etc
 echo "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
-CheckForError "Line ${LINENO} 'X, Graphics, etc'"  
+CheckForError "${LINENO} 'X, Graphics, etc'"  
 
 # Copy modified pacman.conf to new system and install Yaourt
-# cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
-# CheckForError "Line ${LINENO} 'pacman.conf MOUNTPOINT'"
-# cp pacman.conf /etc 2> error.log
-# CheckForError "Line ${LINENO} 'pacman.conf local'"
-# pacman -Sy 2> error.log
-# CheckForError "Line ${LINENO} 'Update"
-# pacstrap ${MOUNTPOINT} yaourt 2> error.log
-# CheckForError "Line ${LINENO} 'Install yaourt'"
+cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
+CheckForError "${LINENO} 'pacman.conf MOUNTPOINT'"
+cp pacman.conf /etc 2> error.log
+CheckForError "${LINENO} 'pacman.conf local'"
+pacman -Sy 2> error.log
+CheckForError "${LINENO} 'Update"
+pacstrap ${MOUNTPOINT} yaourt 2> error.log
+CheckForError "${LINENO} 'Install yaourt'"
 
 # Install Display Manager
 if [ ${DisplayManager} ]
