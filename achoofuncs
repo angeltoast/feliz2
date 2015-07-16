@@ -392,7 +392,7 @@ MakePartition() {
 		select_filesystem
     if [ -z ${PartitionType} ]
 		then
-			PartitionType="ext4"
+			PartitionType="Skip"
 		fi
 		# Add it to AddPartType list
 		AddPartType[$ExtraPartitions]="${PartitionType}"
@@ -708,7 +708,7 @@ arch_chroot() {
 # Taken directly from Lution AIS
 # Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
   arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
-  CheckForError "${LINENO}"
+  CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'"
 }  
 
 # Unmount partitions (from Lution/AUI - Nice code)
@@ -722,41 +722,47 @@ umount_partitions(){
   CheckForError "${LINENO} 'swapoff'"
   for i in ${MOUNTED[@]}; do
     umount $i >/dev/null 2> error.log
-    CheckForError "${LINENO} 'umount'"
+    CheckForError "${LINENO} 'umount $i >/dev/null'"
   done
 
 }
 
 MountPartitions() {
   # Root
-  echo "Formatting /root partition"
-  mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
-  CheckForError "${LINENO} 'mkfs'"
+  if [ $RootType ]
+  then
+    echo "Formatting /root partition"
+    mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+    CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'"
+  fi
   echo "Mounting /root partition"	
-  mount ${RootPartition} $MOUNTPOINT 2> error.log # eg: mount /dev/sda1 /mnt
-  CheckForError "${LINENO} 'mount'"
+  mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
+  CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'"
   # Swap
   if [ ${SwapPartition} ]
   then
     echo "Making /swap partition"
     mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
-    CheckForError "${LINENO} 'mkswap'"
+    CheckForError "${LINENO} 'mkswap ${SwapPartition}'"
     echo "Activating /swap"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
-    CheckForError "${LINENO} 'swapon'"
+    CheckForError "${LINENO} 'swapon ${SwapPartition}'"
   fi
   echo "Mounting additional partitions"
   Counter=0
   Elements=${#AddPartList[@]}
- 	# Repeat $Elements times getting data from AddPartList AddPartLabel arrays
+ 	# Repeat $Elements times getting data from the three arrays
   while [ $Counter -lt $Elements ]
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
-    CheckForError "${LINENO}"    
-    mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
-    CheckForError "${LINENO}"
+    # CheckForError "${LINENO}" !! Error-checking turned off here to allow for possible existing directory !!
+    if [ ${AddPartType[$Counter]} != "Skip" ]
+    then
+      mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'"
+    fi
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "${LINENO}"
+    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'"
 		Counter=$((Counter+1))
 	done
 }

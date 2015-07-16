@@ -31,7 +31,7 @@
 # Setup
 # -----
 
-# Check for external functions and variables files
+# Check for the external files
 if [[ -f `pwd`/achoovariables ]]; then
   source achoovariables
 else
@@ -47,19 +47,19 @@ else
 fi
 
 # Check for internet connection (adapted from Lution)
-print_heading
-print_info "Welcome to the Achoo! Arch Linux installation scripts."
-print_info "Achoo! is designed to perform with the minimum of fuss."
-print_info "But you will have to provide some basic data to ensure"
-print_info "that the installation meets your needs."
-print_info "A working internet connection is needed for installation."
-print_info "Checking for one now ... "
 Retry="Y"
 while [ $Retry = "Y" ]
 do
-  if [[ ! $(ping -c 1 google.com) ]]; then
-    print_info "Unable to establish a connection. If you are using wifi, it"
-    print_info "is not working - you could try connecting an ethernet cable."
+  print_heading
+  print_info "Welcome to the Achoo! Arch Linux installation scripts."
+  print_info "Achoo! is designed to perform with the minimum of fuss."
+  print_info "But you will have to provide some basic data to ensure"
+  print_info "that the installation meets your needs."
+  print_info "A working internet connection by ethernet cable is needed"
+  print_info "for installation. Checking your connection now ... "
+  if [[ ! $(ping -c 3 google.com) ]]; then
+    print_info "Unable to establish a connection. Ensure that your computer"
+    print_info "is connected to the router via an ethernet cable."
     read -p "Try again? (y/n): " Retry
     if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
       $?=1    # Unable to continue without internet
