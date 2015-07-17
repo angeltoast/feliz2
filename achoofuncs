@@ -729,12 +729,15 @@ umount_partitions(){
 
 MountPartitions() {
   # Root
-  if [ $RootType ]
-  then
-    echo "Formatting /root partition"
+  case $RootType in
+    "") echo "Not formatting root partition"
+    ;;
+    "Skip") echo "Not formatting root partition"
+    ;;
+    *) echo "Formatting /root partition"
     mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
     CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'"
-  fi
+  esac
   echo "Mounting /root partition"	
   mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'"

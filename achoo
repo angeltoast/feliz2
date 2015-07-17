@@ -212,14 +212,20 @@ CheckForError "${LINENO} 'persistent keymap'"
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
 CheckForError "${LINENO} 'vbox override'"
 
-# Create the user, set password, then remove temporary password file
-echo "Adding user as defined in setup"
-arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
-CheckForError "${LINENO} 'add user'"
-echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
-arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-rm /tmp/.passwd 2> error.log
-CheckForError "${LINENO} 'rm temp passwd'"
+# If not already exist, create user and set password
+CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
+if [ -z ${CheckUsers} ]
+then
+  echo "Adding user ${UserName} ... "
+  arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
+  CheckForError "${LINENO} 'add user'"
+  echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
+  arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+  rm /tmp/.passwd 2> error.log
+  CheckForError "${LINENO} 'rm temp passwd'"
+else
+  echo "User already exists"
+fi
 
 # Set up basic configuration files and permissions for user
 echo "Setting up user configuration"
@@ -260,6 +266,7 @@ if [ ${DisplayManager} ]
 then
   # First test for existing display manager and disable if necessary
   DMLine=`systemctl list-unit-files | grep dm.service`
+  read -p "Test code at ${LINENO} : existing DM :${DMLine}:"
   case ${DMLine} in
     "") echo ""
     ;;
