@@ -161,12 +161,12 @@ CheckForError "${LINENO} 'save to hosts'"
 
 # Set up locale
 echo "Preparing locale.gen"
-echo "${CountryLocale} UTF-8" >> ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
+echo "${CountryLocale} UTF-8" > ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
 CheckForError "${LINENO} 'save full locale'"
 arch_chroot "locale-gen"
 
 echo "Preparing locale.conf"
-echo "LANG=${CountryLocale}" >> ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
+echo "LANG=${CountryLocale}" > ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'set LANG'"
 
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
@@ -232,7 +232,7 @@ echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
-CheckForError "${LINENO} 'User-config3'"
+CheckForError "${LINENO} 'User-configuration'"
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
@@ -265,7 +265,9 @@ CheckForError "${LINENO} 'Install yaourt'"
 if [ ${DisplayManager} ]
 then
   # First test for existing display manager and disable if necessary
-  DMLine=`systemctl list-unit-files | grep dm.service`
+  arch_chroot "systemctl list-unit-files | grep dm.service > /etc/output.log"
+  arch_chroot "chmod +x /etc/output.log"
+  DMLine=`cat ${MOUNTPOINT}/etc/output.log`
   read -p "Test code at ${LINENO} : existing DM :${DMLine}:"
   case ${DMLine} in
     "") echo ""
