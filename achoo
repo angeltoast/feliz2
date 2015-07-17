@@ -173,7 +173,7 @@ export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'export LANG'"
 
 echo "Setting clock"
-arch_chroot "ln -s /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
+arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
 echo "Configuring the network"
@@ -258,6 +258,22 @@ CheckForError "${LINENO} 'Install yaourt'"
 # Install Display Manager
 if [ ${DisplayManager} ]
 then
+  # First test for existing display manager and disable if necessary
+  DMLine=`systemctl list-unit-files | grep dm.service`
+  case ${DMLine} in
+    "") echo ""
+    ;;
+    *) ExDM=`echo $DMLine  | cut -f 1 -d ' '`
+      ExDMStatus=`echo $DMLine  | cut -f 2 -d ' '`
+      case ${ExDMStatus} in
+        "") echo ""
+        ;;
+        "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+        ;;
+        *) echo ""
+      esac
+  esac
+  # Then enable new DM
   echo "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
   CheckForError "Line ${LINENO} 'Install display manager'"
