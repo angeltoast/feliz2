@@ -1,34 +1,12 @@
 #!/bin/bash
 
-# achoo script code testing
-
-# chmod 755 testbed.sh
-# "./testbed.sh"
-
-#
-# Writing and testing new code
-# 
-
-# Various dummy variables for testing code
-# PartitionList=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
-# PartitionList="sda4 sda5"
-# PartitionList=""
-# AddPartList=(/dev/sda4 /dev/sda5 /dev/sda6)
-# AddPartLabel=(/home /spare /spot)
-# AddPartType=(ext3 Skip ext4)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~
-#	Drop function or function calls into testbed
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 testbed() {
 
 # Install Display Manager
 if [ ${DisplayManager} ]
 then
   # First test for existing display manager and disable if necessary
-  arch_chroot "systemctl list-unit-files | grep dm.service > /etc/output.log"
-  arch_chroot "chmod +x /etc/output.log"
+  arch_chroot "echo `systemctl list-unit-files | grep dm.service` > /etc/output.log"
   DMLine=`cat ${MOUNTPOINT}/etc/output.log`
   read -p "Test code at ${LINENO} : existing DM :${DMLine}:"
   case ${DMLine} in
@@ -45,16 +23,15 @@ then
       esac
   esac
   # Then enable new DM
-  echo "Installing Display Manager ${DisplayManager}"
-  pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
-  CheckForError "Line ${LINENO} 'Install display manager'"
-  arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  #  echo "Installing Display Manager ${DisplayManager}"
+  #  pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
+  #  CheckForError "Line ${LINENO} 'Install display manager'"
+  #  arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
 else
   echo "Not installing a Display Manager"
 fi
 
 }
-
 
 # ~~~~~~~
 #	Execute
@@ -78,12 +55,3 @@ fi
 # Call the function being tested
 testbed
 exit
-
-# Code to check content of arrays
-  for i in ${AddPartList[@]} ${AddPartLabel[@]} ${AddPartType[@]}
-  do
-    echo $i
-  done
-# End of final test code ... by the way, this is a really useful piece of code!!
-      
-echo "End of test script. Line: $LINENO"	# Testing only

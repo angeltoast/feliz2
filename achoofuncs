@@ -142,8 +142,8 @@ ManagePartitions() {
 	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
 		print_heading
     echo ""
-    echo "There are no partitions on the device, and we cannot continue without at least"
-    echo "one partition on which to install. 'cfdisk' is available for you to create a partition table now if you wish."
+    echo "There are no partitions on the device. 'cfdisk' is available for you to"
+    echo "create a partition table now if you wish."
     echo ""
     echo "Please note:"
     echo "  At least one partition, for the / (root) directory, must be created."
@@ -188,7 +188,7 @@ select_filesystem() {
 	local Counter=0
 	PS3="$prompt1"
 	TypeList="Skip ext2 ext3 ext4 btrfs"	
-	echo "Now select the format type for ${Partition}"
+	echo "Now select the file system for ${Partition}"
 	select type in ${TypeList}
 	do
     for i in ${TypeList}
@@ -443,7 +443,7 @@ print_heading
 DoDoDo=1
 echo "Now we will try to find your keyboard from a list of all known"
 echo "layouts. If you know your keyboard code, enter it now. Alternatively, "
-SearchPrompt="enter the two-letter code for your country (eg: uk): "
+SearchPrompt="enter the two-letter code for your country (eg: uk or us): "
 while [ $DoDoDo -eq 1 ]
 do
   PS3="$prompt1"
@@ -463,7 +463,7 @@ do
       if [ $KEYMAP = "Try_Again" ]
       then
         print_heading
-        echo "Try a different two-letter code (remember, lower case): "
+        echo "Try a different two-letter code: "
         break
       else
         Countrykbd=$KEYMAP
@@ -482,7 +482,7 @@ setlocale() {
 print_heading
 PS3="$prompt1"
 DoDoDo=1
-SearchPrompt="Enter the two-letter code for your country or language (eg: GB): "
+SearchPrompt="Enter the two-letter code for your country or language (eg: GB or en): "
 echo "Next we will try to find your locale"
 while [ $DoDoDo -eq 1 ]
 do

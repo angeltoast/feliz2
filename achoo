@@ -265,8 +265,7 @@ CheckForError "${LINENO} 'Install yaourt'"
 if [ ${DisplayManager} ]
 then
   # First test for existing display manager and disable if necessary
-  arch_chroot "systemctl list-unit-files | grep dm.service > /etc/output.log"
-  arch_chroot "chmod +x /etc/output.log"
+  arch_chroot "echo `systemctl list-unit-files | grep dm.service` > /etc/output.log"
   DMLine=`cat ${MOUNTPOINT}/etc/output.log`
   read -p "Test code at ${LINENO} : existing DM :${DMLine}:"
   case ${DMLine} in
