@@ -294,7 +294,7 @@ then
           *)  SwapPartition="/dev/$i"
         esac          
       else
-        if [ $i != Skip ]; then
+        if [ $i != Skip ] && [ $i != Swapfile ]; then
           Remaining="$Remaining $i"	# Add next available partition
         fi
       fi
