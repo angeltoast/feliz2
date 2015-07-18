@@ -187,7 +187,7 @@ select_filesystem() {
 # Returns enhanced selection via FILESYSTEM variable
 	local Counter=0
 	PS3="$prompt1"
-	TypeList="Skip ext2 ext3 ext4 btrfs"	
+#	TypeList="Skip ext2 ext3 ext4 btrfs"	# Now passed by caller
 	echo "Now select the file system for ${Partition}"
 	select type in ${TypeList}
 	do
@@ -213,7 +213,7 @@ AllocateRoot() {
 	PartitionType=""
 	PS3="$prompt1"
 	echo "Here are the available partitions."
-	echo "Select the one for root:" 
+	echo "First you should select one to use for root:"
 	select partition in ${PartitionList}
 	do
     Reply=$REPLY
@@ -223,9 +223,19 @@ AllocateRoot() {
 			if [ $Counter -eq $Reply ]
 			then
 				Partition="/dev/$i"
-				echo "Root partition will be $Partition"
 				RootPartition="${Partition}"
-				select_filesystem
+        # Before going to select_filesystem, check the partition
+        CheckPartition
+        if [ ${CurrentType} ]; then
+          echo "You can choose to leave it as it is, by selecting 'Skip', but"
+          echo "not reformatting the root partition can have unexpected consequences."
+          echo ""
+          TypeList="Skip ext2 ext3 ext4 btrfs"	
+        else
+        	TypeList="ext2 ext3 ext4 btrfs"	
+        fi
+        # Now select a filesystem
+ 				select_filesystem
 				if [ -z ${PartitionType} ]
 				then
 					RootType="ext4"
@@ -241,9 +251,22 @@ AllocateRoot() {
   done
 }
 
-AllocateSwap() {
+CheckPartition() {
+# Finds if there is an existing file system on the selected partition
 print_heading
-if [ -n ${#PartitionList[@]} ] # If there are remaining partitions from AllocateRoot ...
+CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
+if [ ${CurrentType} ]; then
+echo "The selected partition ${Partition} is currently formatted to ${CurrentType}"
+echo "Reformatting it will remove all data currently on it."
+echo ""
+fi
+
+}
+
+AllocateSwap() {
+# Checks if there are remaining partitions from AllocateRoot, and allows selection for swap
+print_heading
+if [ -n ${#PartitionList[@]} ]
 then
   echo -e "Select the partition for /swap from the ones that remain."
   Remaining=""
@@ -291,6 +314,7 @@ fi
 }
 
 SetSwapFile() {
+# If user chooses to have a swap file instead of swap partition
 LoopRepeat="Y"
 while [ ${LoopRepeat} = "Y" ]
 do
@@ -329,6 +353,7 @@ do
   echo -e "Or choose 'Skip' to exit. \n"
 	select partition in ${PartitionList} # User select an item from the list
 	do
+  echo ""
 		Selected=$REPLY
 		for Part in ${PartitionList} # Iterate through the list
 		do
@@ -420,6 +445,14 @@ MakePartition() {
 		done 
 		# Add it to AddPartLabel list
 		AddPartLabel[$ExtraPartitions]="${PartLabel}"
+# Before going to select_filesystem, check the partition
+        CheckPartition
+        if [ ${CurrentType} ]; then
+          echo "You can choose to leave it as it is, by selecting 'Skip', but not"
+          echo "reformatting an existing partition can have unexpected consequences."
+          echo ""
+        fi
+    TypeList="Skip ext2 ext3 ext4 btrfs"	
 		# Set format type for the selected partition
 		select_filesystem
     if [ -z ${PartitionType} ]

@@ -2,82 +2,132 @@
 
 testbed() {
 
-PartitionList="sda1 sda2 sda3"
+PartitionList="sda10 sda11 sda13"
 
-# AllocateSwap() {
-  print_heading
-  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions from AllocateRoot ...
-  then
-    echo -e "Select the partition for /swap from the ones that remain."
-    Remaining=""
-    local Counter=0
-    PS3="$prompt1"
-    SwapPartition=""
-    PartitionList="$PartitionList Swapfile Skip"
-    SwapFile=""
-    echo -e "If you select the 'Skip' option, no swap will be allocated:\n"
-    select partition in ${PartitionList}
-    do
-    Reply=$REPLY
-    echo ""
-      for i in ${PartitionList}
-      do
-      Counter=$((Counter+1))
-        if [ $Counter -eq $Reply ]
-        then
-          case $i in
-          "Skip") SwapPartition=""
-          ;;
-          "Swapfile") SetSwapFile
-                SwapPartition=""
-          ;;
-          *)  SwapPartition="/dev/$i"
-          esac          
-        else
-          if [ $i != Skip ]; then
-            Remaining="$Remaining $i"	# Add next available partition
-          fi
+#ExtraPartitions() {
+# If partitions on the device remain unselected
+PartCounter=0
+Elements=${#PartitionList[@]}
+while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option) 
+do
+	print_heading
+	Remaining=""
+	PS3="$prompt1"
+  PartitionList="$PartitionList Skip"
+	echo "The following partitions remain unallocated."
+	echo "If you wish to use one, select it from the list."
+  echo -e "Or choose 'Skip' to exit. \n"
+	select partition in ${PartitionList} # User select an item from the list
+	do
+  echo ""
+		Selected=$REPLY
+		for Part in ${PartitionList} # Iterate through the list
+		do
+      Partition=""
+      PartitionType=""
+      PartCounter=$((PartCounter+1))
+			if [ $PartCounter -eq $Selected ]
+			then
+        Item=$Part  # Selected item
+        if [ $Item = Skip ]; then   # If item is 'Skip'
+          #Counter=$Elements
+          break     # Finish
+        else                        # If item is not 'Skip'
+        	Partition="/dev/$Item"
+          MakePartition # Call MakePartition to complete details
         fi
-      done
-      break
+      else                          # If $Counter is not equal to $Selected
+        if [ $Part != Skip ]; then   # (and not 'Skip')
+          Remaining="$Remaining $Part" # Add unused partition to temp list
+        fi
+			fi
     done
-    if [ $SwapPartition ]; then
-        read -t 2 -p "$SwapPartition will be used for swap."
-    elif [ $SwapFile ]; then
-        read -t 2 -p "A swap file of ${SwapFile} will be allocated."
-    else
-        read -t 2 -p "No swap partition will be allocated."
+    if [ $Part = Skip ] || [ -z ${Remaining} ]; then  # If skip or there are no more to allocate
+      break
     fi
-    echo ""
-    PartitionList=$Remaining		# Replace original PartitionList with remaining options
-  fi
-
+  done
+  if [ $Item = Skip ] || [ -z ${Remaining} ]; then
+    break
+  fi                     
+  PartCounter=0
+  PartitionList=$Remaining	# Replace original PartitionList with temp list
+  Elements=${#PartitionList[@]}
+done
+# Ensure that if AddPartList (the defining array) is empty, all others are too
+if [ -z ${#AddPartList[@]} ]
+then
+  AddPartList=""
+  AddPartLabel=""
+  AddPartType=""
+fi
 }
 
-SetSwapFile() {
-
-LoopRepeat="Y"
+MakePartition() {
+    # 1) When selected, first save to AddPartList (eg: /dev/sda5)
+		ExtraPartitions=${#AddPartList[@]}
+		AddPartList[$ExtraPartitions]="${Partition}"
+    # 2) Then get a label for selected partition (eg: /home)
+		LoopRepeat="Y"
 		while [ ${LoopRepeat} = "Y" ]
 		do
-			echo "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
-      read -p "Size of swap file [eg: 512M or 2G]: " Response
-      RESPONSE="${Response^^}"
-			# Check that entry includes 'M or G'
-			CheckInput=(`echo $RESPONSE | grep "G\|M"`)
-      echo ""
-			if [ -z ${CheckInput} ]; then
-        echo "You must include M or G"
-				SwapFile=""
+			echo "Enter a label for ${Partition} ... eg: '/home' ... "
+      read -p "(you must include the '/'): " Response
+			# Check that entry includes '/'
+			CheckInput=(`echo $Response | cut -c1`)
+			case ${CheckInput} in
+        "") echo "You must enter a valid name"
+						PartLabel=""
+           ;;
+				*) if [ ${CheckInput} != "/" ]
+					then
+						PartLabel="/${Response}"
+					else
+						PartLabel="${Response}"
+					fi
+      esac
+      # Check that the label has not already been used
+			LabelCounter=0
+			if [ -z ${AddPartLabel} ]
+			then
+				LoopRepeat="N"
 			else
-        SwapFile=$RESPONSE
-        LoopRepeat="N"
-      fi
-
+				# Go through AddPartLabel checking each item against PartLabel
+				for Label in ${AddPartLabel}
+				do 
+					LabelCounter=$((LabelCounter+1))
+					if [ $Label = $PartLabel ] 
+					then
+						read -t 4 -p "Label ${PartLabel} has already been used. Please use a different label."
+					else
+						LoopRepeat="N"
+						break
+					fi
+				done 
+			fi 
 			if [ ${LoopRepeat} = "N" ]  
 			then
 				break
 			fi 
 		done 
+		# Add it to AddPartLabel list
+		AddPartLabel[$ExtraPartitions]="${PartLabel}"
+# Before going to select_filesystem, check the partition
+        CheckPartition
+        if [ ${CurrentType} ]; then
+          echo "You can choose to leave it as it is, by selecting 'Skip', but not"
+          echo "reformatting an existing partition can have unexpected consequences."
+          echo ""
+        fi
+    
+		# Set format type for the selected partition
+		select_filesystem
+    if [ -z ${PartitionType} ]
+		then
+			PartitionType="Skip"
+		fi
+		# Add it to AddPartType list
+		AddPartType[$ExtraPartitions]="${PartitionType}"
+
 }
 
 
