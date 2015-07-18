@@ -63,7 +63,7 @@ do
     read -p "Try again? (y/n): " Retry
     if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
       $?=1    # Unable to continue without internet
-      CheckForError "${LINENO} 'No internet'"
+      CheckForError "${LINENO} 'No internet'" 2
     else
       Retry="Y"
     fi
@@ -80,7 +80,7 @@ then
   AllocateRoot
 else
   $?=1    # Unable to continue without a partition
-  CheckForError "${LINENO} 'No partitions'"
+  CheckForError "${LINENO} 'No partitions'" 2
 fi
 # Display remaining partitions and allocate swap
 if [ -n ${#PartitionList[@]} ]
@@ -103,7 +103,7 @@ SetGrubDevice
 getkeymap
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd} 2> error.log
-CheckForError "${LINENO} 'Loadkeys'"
+CheckForError "${LINENO} 'Loadkeys'" 1
 read_timed "The keyboard is now set to: '$Countrykbd'"
 # Location
 settimezone
@@ -140,35 +140,35 @@ MountPartitions
 
 echo "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
-CheckForError "${LINENO} 'installing kernel and base-devel'"
+CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
-CheckForError "${LINENO} 'genfstab'"
+CheckForError "${LINENO} 'genfstab'" 2
 
 echo "Setting hostname"
 echo ${HostName} > ${MOUNTPOINT}/etc/hostname 2> error.log
-CheckForError "${LINENO} 'save hostname'"
+CheckForError "${LINENO} 'save hostname'" 2
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
-CheckForError "${LINENO} 'save to hosts'"
+CheckForError "${LINENO} 'save to hosts'" 2
 sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
-CheckForError "${LINENO} 'save to hosts'"
+CheckForError "${LINENO} 'save to hosts'" 2
 
 # Set up locale
 echo "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" > ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
-CheckForError "${LINENO} 'save full locale'"
+CheckForError "${LINENO} 'save full locale'" 2
 arch_chroot "locale-gen"
 
 echo "Preparing locale.conf"
 echo "LANG=${CountryLocale}" > ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
-CheckForError "${LINENO} 'set LANG'"
+CheckForError "${LINENO} 'set LANG'" 2
 
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
-CheckForError "${LINENO} 'export LANG'"
+CheckForError "${LINENO} 'export LANG'" 2
 
 echo "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
@@ -177,22 +177,22 @@ arch_chroot "hwclock --systohc --utc"
 echo "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
-CheckForError "${LINENO} 'enable dhcpcd'"
+CheckForError "${LINENO} 'enable dhcpcd'" 2
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 
 # Set root password (Reduced from Lution AIS)  
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd 2> error.log
-CheckForError "${LINENO} 'Root password'"
+CheckForError "${LINENO} 'Root password'" 2
 arch_chroot "passwd root" < /tmp/.passwd >/dev/null
 rm /tmp/.passwd 2> error.log
-CheckForError "${LINENO} 'rm temp passwd'"
+CheckForError "${LINENO} 'rm temp passwd'" 0
 
 # Install Grub if selected
 if [ ${GrubDevice} ]
 then
   echo "Installing GRUB to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
-  CheckForError "${LINENO} 'Install grub'"
+  CheckForError "${LINENO} 'Install grub'" 2
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
@@ -204,11 +204,11 @@ arch_chroot "mkinitcpio -p linux-lts"
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf 2> error.log
-CheckForError "${LINENO} 'persistent keymap'"
+CheckForError "${LINENO} 'Saving persistent keymap'" 1
 
 # Required for Virtualbox installations
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
-CheckForError "${LINENO} 'vbox override'"
+CheckForError "${LINENO} 'vbox piix4 override'" 1
 
 # If not already exist, create user and set password
 CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
@@ -216,11 +216,11 @@ if [ -z ${CheckUsers} ]
 then
   echo "Adding user ${UserName} ... "
   arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
-  CheckForError "${LINENO} 'add user'"
+  CheckForError "${LINENO} 'Could not add user'" 1
   echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
   arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
   rm /tmp/.passwd 2> error.log
-  CheckForError "${LINENO} 'rm temp passwd'"
+  CheckForError "${LINENO} 'rm temp passwd'" 0
 else
   echo "User already exists"
 fi
@@ -230,34 +230,34 @@ echo "Setting up user configuration"
 arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
 arch_chroot "chown -R ${UserName}:users /home/${UserName}"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
-CheckForError "${LINENO} 'User-configuration'"
+CheckForError "${LINENO} 'User-configuration'" 1
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 echo "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
-CheckForError "${LINENO} 'Install codecs'"
+CheckForError "${LINENO} 'Install codecs'" 1
 
 # Wireless tools
 echo "Installing wireless tools"
 pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
-CheckForError "${LINENO} 'Wireless firmware'"
+CheckForError "${LINENO} 'Wireless firmware'" 1
 pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
-CheckForError "${LINENO} 'Wireless tools'"
+CheckForError "${LINENO} 'Wireless tools'" 1
 
 # Install X, graphics, etc
 echo "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
-CheckForError "${LINENO} 'X, Graphics, etc'"  
+CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
 # Copy modified pacman.conf to new system and install Yaourt
 cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
-CheckForError "${LINENO} 'pacman.conf MOUNTPOINT'"
+CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
 cp pacman.conf /etc 2> error.log
-CheckForError "${LINENO} 'pacman.conf local'"
+CheckForError "${LINENO} 'Copying pacman.conf local'" 1
 pacman -Sy 2> error.log
-CheckForError "${LINENO} 'Update"
+CheckForError "${LINENO} 'Update Arch" 1
 pacstrap ${MOUNTPOINT} yaourt 2> error.log
-CheckForError "${LINENO} 'Install yaourt'"
+CheckForError "${LINENO} 'Install yaourt'" 1
 
 # Install Display Manager
 if [ ${DisplayManager} ]
@@ -279,7 +279,7 @@ then
   # Then install and enable new DM
   echo "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
-  CheckForError "Line ${LINENO} 'Install display manager'"
+  CheckForError "Line ${LINENO} 'Install display manager'" 2
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
 else
   echo "Not installing a Display Manager"
@@ -288,17 +288,17 @@ fi
 # Install Desktop Environment
 case ${DesktopEnvironment} in
   "LXDE") pacstrap ${MOUNTPOINT} lxde 2> error.log
-      CheckForError "Line ${LINENO} 'Installing lxde'"
+      CheckForError "Line ${LINENO} 'Installing lxde'" 1
       arch_chroot "systemctl enable lxdm.service" >/dev/null
       ;;
   "LXQt") pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
-      CheckForError "Line ${LINENO} 'Installing lxqt'"
+      CheckForError "Line ${LINENO} 'Installing lxqt'" 1
       ;;
   "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
-      CheckForError "Line ${LINENO} 'Install Mate'"
+      CheckForError "Line ${LINENO} 'Installing Mate'" 1
       ;;
   "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
-      CheckForError "Line ${LINENO} 'Install Xfce'"
+      CheckForError "Line ${LINENO} 'Installing Xfce'" 1
       ;;
 
   *) echo "Not installing a Desktop Environment"	

@@ -80,15 +80,29 @@ read_timed() {
 
 CheckForError() {
 # Check for stderr, display it, then exit script
+# Now receiving $2 to flag critical or non-critical error
 	if [[ $? -gt 0 ]]; then
     clear
 		echo "Error reported at Line: $1"
     cat error.log
-    echo "The script cannot continue"
-    read -n1 -p "Please press any key: "
-    echo ""
-		exit
-	fi
+    case $2 in
+      0) echo "The error is not critical, and you may ignore it"
+      ;;
+      1) echo "You may ignore the error if you choose"
+      echo "but this may have unexpected consequences"
+      read -p "Continue with installation? (y/N): " Response
+      case $Response in
+        "n" | "N" | "") exit
+        ;;
+        *) echo ""
+      esac
+      ;;
+      *) echo "The error is critical, and the script cannot continue"
+        read -n1 -p "Please press any key: "
+        exit
+    esac
+    echo "Continuing as though nothing has happened"
+  fi
 }
 
 # -----------------------
@@ -105,21 +119,21 @@ LocalMirrorList() {
 	
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
 	curl -so ${MirrorTemp} ${URL} 2> error.log
-	CheckForError "${LINENO}"
+	CheckForError "${LINENO}" 2
 	
 	# Use sed to filter entries
 	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
-	CheckForError "${LINENO}"
+	CheckForError "${LINENO}" 2
 	
 	# Make a safe copy of existing mirrorlist
 	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
-	CheckForError "${LINENO}"
+	CheckForError "${LINENO}" 2
 	
 	# Replace existing mirrorlist with new local mirrorlist
 	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
-	CheckForError "${LINENO} 'saving mirrorlist'"  
+	CheckForError "${LINENO} 'saving mirrorlist'" 2
 	chmod +r /etc/pacman.d/mirrorlist 2> error.log
-	CheckForError "${LINENO} 'saving mirrorlist'"
+	CheckForError "${LINENO} 'saving mirrorlist'" 2
 }
 
 # ------------
@@ -132,7 +146,7 @@ ManagePartitions() {
 	print_heading
 	ShowPartitions=""
 	PARTITIONS=""
-	ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+	ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
 	# Count the partitions
   for i in ${ShowPartitions[@]}; do
     PARTITIONS="${PARTITIONS} ${i} -"
@@ -155,7 +169,7 @@ ManagePartitions() {
     read -p "Would you like to open cfdisk now? [Y/n]: " Response
     case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
-      	CheckForError "${LINENO} 'cfdisk'"
+      	CheckForError "${LINENO} 'cfdisk'" 2
 			;;
 		*) exit
 		esac
@@ -167,14 +181,14 @@ ManagePartitions() {
 		read -p "Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
-            	CheckForError "${LINENO} 'cfdisk'"
+            	CheckForError "${LINENO} 'cfdisk'" 2
 			;;
       *) echo ""
 		esac
 	fi
   # After cfdisk, build new list of partitions
   PartitionList=" "
-  ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u)
+  ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//')
   for Part in ${ShowPartitions}
   do
     PartitionList="$PartitionList $Part"	# Add each partition
@@ -445,13 +459,13 @@ MakePartition() {
 		done 
 		# Add it to AddPartLabel list
 		AddPartLabel[$ExtraPartitions]="${PartLabel}"
-# Before going to select_filesystem, check the partition
-        CheckPartition
-        if [ ${CurrentType} ]; then
-          echo "You can choose to leave it as it is, by selecting 'Skip', but not"
-          echo "reformatting an existing partition can have unexpected consequences."
-          echo ""
-        fi
+    # Before going to select_filesystem, check the partition
+    CheckPartition
+    if [ ${CurrentType} ]; then
+      echo "You can choose to leave it as it is, by selecting 'Skip', but not"
+      echo "reformatting an existing partition can have unexpected consequences."
+      echo ""
+    fi
     TypeList="Skip ext2 ext3 ext4 btrfs"	
 		# Set format type for the selected partition
 		select_filesystem
@@ -476,7 +490,7 @@ SetGrubDevice() {
 	PS3="$prompt1"
 	print_info "Select the device where Grub is to be installed. Note that, if you"
   print_info "select the 'Skip' option, Grub will not be installed, and you will"
-  print_info "have to make alternative arrangements for booting your system."
+  print_info "have to make alternative arrangements for booting your new system."
 	select partition in ${DevicesList}
 	do
   Reply=$REPLY
@@ -773,7 +787,7 @@ arch_chroot() {
 # Taken directly from Lution AIS
 # Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
   arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
-  CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'"
+  CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'" 2
 }  
 
 # Unmount partitions (from Lution/AUI - Nice code)
@@ -784,10 +798,10 @@ umount_partitions(){
   MOUNTED=""
   MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
   swapoff -a 2> error.log
-  CheckForError "${LINENO} 'swapoff'"
+  CheckForError "${LINENO} 'swapoff'" 2
   for i in ${MOUNTED[@]}; do
     umount $i >/dev/null 2> error.log
-    CheckForError "${LINENO} 'umount $i >/dev/null'"
+    CheckForError "${LINENO} 'umount $i >/dev/null'" 2
   done
 
 }
@@ -801,27 +815,27 @@ MountPartitions() {
     ;;
     *) echo "Formatting /root partition"
     mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
-    CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'"
+    CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
   esac
   echo "Mounting /root partition"	
   mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
-  CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'"
+  CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
   # Swap
   if [ ${SwapPartition} ]
   then
     echo "Making /swap partition"
     mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
-    CheckForError "${LINENO} 'mkswap ${SwapPartition}'"
+    CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 2
     echo "Activating /swap"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
-    CheckForError "${LINENO} 'swapon ${SwapPartition}'"
+    CheckForError "${LINENO} 'swapon ${SwapPartition}'" 2
   elif [ ${SwapFile} ]; then
     fallocate -l ${SwapFile} /swapfile
     chmod 600 /swapfile
     mkswap /swapfile 2> error.log
-    CheckForError "${LINENO} 'mkswap /swapfile'"
+    CheckForError "${LINENO} 'mkswap /swapfile'" 2
     swapon /swapfile 2> error.log
-    CheckForError "${LINENO} 'swapon /swapfile'"
+    CheckForError "${LINENO} 'swapon /swapfile'" 2
     echo "/swapfile none swap defaults 0 0" >> ${MOUNTPOINT}/etc/fstab
   fi
   echo "Mounting additional partitions"
@@ -831,14 +845,14 @@ MountPartitions() {
   while [ $Counter -lt $Elements ]
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
-    # CheckForError "${LINENO}" !! Error-checking turned off here to allow for possible existing directory !!
+    CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     if [ ${AddPartType[$Counter]} != "Skip" ]
     then
       mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
-      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'"
+      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'"
+    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
 }
