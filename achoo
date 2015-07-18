@@ -121,8 +121,6 @@ UserAndRoot
 Repeat=1
 ChooseDE
 
-exit # Safety exit inserted here for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 # --------------
 # Auto from here
 # --------------
