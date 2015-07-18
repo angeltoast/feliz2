@@ -2,36 +2,84 @@
 
 testbed() {
 
-# Install Display Manager
-if [ ${DisplayManager} ]
-then
-  # First test for existing display manager and disable if necessary
-  arch_chroot "echo `systemctl list-unit-files | grep dm.service` > /etc/output.log"
-  DMLine=`cat ${MOUNTPOINT}/etc/output.log`
-  read -p "Test code at ${LINENO} : existing DM :${DMLine}:"
-  case ${DMLine} in
-    "") echo ""
-    ;;
-    *) ExDM=`echo $DMLine  | cut -f 1 -d ' '`
-      ExDMStatus=`echo $DMLine  | cut -f 2 -d ' '`
-      case ${ExDMStatus} in
-        "") echo ""
-        ;;
-        "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
-        ;;
-        *) echo ""
-      esac
-  esac
-  # Then enable new DM
-  #  echo "Installing Display Manager ${DisplayManager}"
-  #  pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
-  #  CheckForError "Line ${LINENO} 'Install display manager'"
-  #  arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-else
-  echo "Not installing a Display Manager"
-fi
+PartitionList="sda1 sda2 sda3"
+
+# AllocateSwap() {
+  print_heading
+  if [ -n ${#PartitionList[@]} ] # If there are remaining partitions from AllocateRoot ...
+  then
+    echo -e "Select the partition for /swap from the ones that remain."
+    Remaining=""
+    local Counter=0
+    PS3="$prompt1"
+    SwapPartition=""
+    PartitionList="$PartitionList Swapfile Skip"
+    SwapFile=""
+    echo -e "If you select the 'Skip' option, no swap will be allocated:\n"
+    select partition in ${PartitionList}
+    do
+    Reply=$REPLY
+    echo ""
+      for i in ${PartitionList}
+      do
+      Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          case $i in
+          "Skip") SwapPartition=""
+          ;;
+          "Swapfile") SetSwapFile
+                SwapPartition=""
+          ;;
+          *)  SwapPartition="/dev/$i"
+          esac          
+        else
+          if [ $i != Skip ]; then
+            Remaining="$Remaining $i"	# Add next available partition
+          fi
+        fi
+      done
+      break
+    done
+    if [ $SwapPartition ]; then
+        read -t 2 -p "$SwapPartition will be used for swap."
+    elif [ $SwapFile ]; then
+        read -t 2 -p "A swap file of ${SwapFile} will be allocated."
+    else
+        read -t 2 -p "No swap partition will be allocated."
+    fi
+    echo ""
+    PartitionList=$Remaining		# Replace original PartitionList with remaining options
+  fi
 
 }
+
+SetSwapFile() {
+
+LoopRepeat="Y"
+		while [ ${LoopRepeat} = "Y" ]
+		do
+			echo "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
+      read -p "Size of swap file [eg: 512M or 2G]: " Response
+      RESPONSE="${Response^^}"
+			# Check that entry includes 'M or G'
+			CheckInput=(`echo $RESPONSE | grep "G\|M"`)
+      echo ""
+			if [ -z ${CheckInput} ]; then
+        echo "You must include M or G"
+				SwapFile=""
+			else
+        SwapFile=$RESPONSE
+        LoopRepeat="N"
+      fi
+
+			if [ ${LoopRepeat} = "N" ]  
+			then
+				break
+			fi 
+		done 
+}
+
 
 # ~~~~~~~
 #	Execute

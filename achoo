@@ -146,13 +146,11 @@ CheckForError "${LINENO} 'installing kernel and base-devel'"
 arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
 echo "Generating fstab"
-genfstab -U -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab 2> error.log
+genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
 CheckForError "${LINENO} 'genfstab'"
-# cat ${MOUNTPOINT}/etc/fstab
-# CheckForError "Line ${LINENO}"
 
 echo "Setting hostname"
-echo ${HostName} >> ${MOUNTPOINT}/etc/hostname 2> error.log
+echo ${HostName} > ${MOUNTPOINT}/etc/hostname 2> error.log
 CheckForError "${LINENO} 'save hostname'"
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
 CheckForError "${LINENO} 'save to hosts'"
@@ -265,23 +263,20 @@ CheckForError "${LINENO} 'Install yaourt'"
 if [ ${DisplayManager} ]
 then
   # First test for existing display manager and disable if necessary
-  arch_chroot "echo `systemctl list-unit-files | grep dm.service` > /etc/output.log"
+  arch_chroot "`echo systemctl list-unit-files | grep dm.service > /etc/output.log`"
   DMLine=`cat ${MOUNTPOINT}/etc/output.log`
-  read -p "Test code at ${LINENO} : existing DM :${DMLine}:"
   case ${DMLine} in
     "") echo ""
     ;;
     *) ExDM=`echo $DMLine  | cut -f 1 -d ' '`
       ExDMStatus=`echo $DMLine  | cut -f 2 -d ' '`
       case ${ExDMStatus} in
-        "") echo ""
-        ;;
         "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
         ;;
         *) echo ""
       esac
   esac
-  # Then enable new DM
+  # Then install and enable new DM
   echo "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
   CheckForError "Line ${LINENO} 'Install display manager'"
@@ -313,4 +308,4 @@ print_heading
 print_info "Success! Finished installing"
 print_info "Press any key to reboot"
 read -n1 -p "(remember to remove the installation medium before restarting)"
-reboot
+systemctl reboot
