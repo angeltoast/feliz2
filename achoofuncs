@@ -862,17 +862,28 @@ TestExistingDM() {
   # Test for existing display manager and disable if necessary
   arch-chroot ${MOUNTPOINT} systemctl list-unit-files | grep dm.service > mnt/etc/output.log
   DMLine=`cat ${MOUNTPOINT}/etc/output.log`
-read -p "DMLine is ${DMLine}"
+  # Start a local counter to check for multiple entries
+  local Counter=1
   case ${DMLine} in
-    "") echo ""
+    "") echo "No previous DM discovered"
     ;;
-    *) ExDM=`echo $DMLine  | cut -f 1 -d ' '`
-      ExDMStatus=`echo $DMLine  | cut -f 2 -d ' '`
-      case ${ExDMStatus} in
-        "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
-        ;;
-        *) echo ""
-      esac
+    *) local Continue="Y"
+      while [ ${Continue} = "Y" ]
+      do
+        ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` # First of pair is DM
+        if [ -z ${ExDM} ]; then
+          Continue="N" # Quit if no further entries
+          break
+        fi
+        Counter=$((Counter+1))
+        ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` # Second is status
+        case ${ExDMStatus} in
+          "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+          ;;
+          *) echo "${ExDM} already disabled"
+        esac
+        Counter=$((Counter+1))
+      done
   esac
 }
 
