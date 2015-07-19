@@ -25,7 +25,7 @@
 # Input and output     34
 # Error-checking       77
 # Mirrorlist           94
-# Partitioning         125
+# Partitioning         140
 # User & Location      436
 # Desktop Environment  618
 # Running              704
@@ -282,7 +282,8 @@ AllocateSwap() {
 print_heading
 if [ -n ${#PartitionList[@]} ]
 then
-  echo -e "Select the partition for /swap from the ones that remain."
+  echo -e "Select the partition for /swap from the ones that remain,"
+  echo -e "or allocate a swap file."
   Remaining=""
   local Counter=0
   PS3="$prompt1"
@@ -855,6 +856,24 @@ MountPartitions() {
     CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
+}
+
+TestExistingDM() {
+  # Test for existing display manager and disable if necessary
+  arch-chroot ${MOUNTPOINT} systemctl list-unit-files | grep dm.service > mnt/etc/output.log
+  DMLine=`cat ${MOUNTPOINT}/etc/output.log`
+read -p "DMLine is ${DMLine}"
+  case ${DMLine} in
+    "") echo ""
+    ;;
+    *) ExDM=`echo $DMLine  | cut -f 1 -d ' '`
+      ExDMStatus=`echo $DMLine  | cut -f 2 -d ' '`
+      case ${ExDMStatus} in
+        "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+        ;;
+        *) echo ""
+      esac
+  esac
 }
 
 # ----------------

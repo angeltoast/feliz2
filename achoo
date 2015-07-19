@@ -143,7 +143,7 @@ pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diff
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
-arch_chroot "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
+arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
 echo "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
@@ -262,20 +262,8 @@ CheckForError "${LINENO} 'Install yaourt'" 1
 # Install Display Manager
 if [ ${DisplayManager} ]
 then
-  # First test for existing display manager and disable if necessary
-  arch_chroot "`echo systemctl list-unit-files | grep dm.service > /etc/output.log`"
-  DMLine=`cat ${MOUNTPOINT}/etc/output.log`
-  case ${DMLine} in
-    "") echo ""
-    ;;
-    *) ExDM=`echo $DMLine  | cut -f 1 -d ' '`
-      ExDMStatus=`echo $DMLine  | cut -f 2 -d ' '`
-      case ${ExDMStatus} in
-        "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
-        ;;
-        *) echo ""
-      esac
-  esac
+  # Test for existing display manager and disable if necessary
+  TestExistingDM
   # Then install and enable new DM
   echo "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
@@ -289,6 +277,9 @@ fi
 case ${DesktopEnvironment} in
   "LXDE") pacstrap ${MOUNTPOINT} lxde 2> error.log
       CheckForError "Line ${LINENO} 'Installing lxde'" 1
+      # Test for existing display manager and disable if necessary
+      TestExistingDM
+      # Then enable (included) new DM
       arch_chroot "systemctl enable lxdm.service" >/dev/null
       ;;
   "LXQt") pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
@@ -300,7 +291,6 @@ case ${DesktopEnvironment} in
   "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
       CheckForError "Line ${LINENO} 'Installing Xfce'" 1
       ;;
-
   *) echo "Not installing a Desktop Environment"	
 esac
 
