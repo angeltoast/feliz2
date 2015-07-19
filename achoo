@@ -269,6 +269,10 @@ then
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
   CheckForError "Line ${LINENO} 'Install display manager'" 2
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  if [ ${DisplayManager} = "LXDM" ] && [ ${DesktopEnvironment} = "Xfce" ]
+  then
+    echo "session=/usr/bin/startxfce4" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
+  fi
 else
   echo "Not installing a Display Manager"
 fi
@@ -281,6 +285,7 @@ case ${DesktopEnvironment} in
       TestExistingDM
       # Then enable (included) new DM
       arch_chroot "systemctl enable lxdm.service" >/dev/null
+      echo "session=/usr/bin/startlxde" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
       ;;
   "LXQt") pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
       CheckForError "Line ${LINENO} 'Installing lxqt'" 1

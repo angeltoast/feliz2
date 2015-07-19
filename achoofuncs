@@ -48,8 +48,8 @@ invalid_option() { # (from AUI scripts)
 
 print_heading() {
 	clear
-    printf "                 # - The Achoo! Arch Linux Installation Script - # \n"
-    print_title "    https://github.com/angeltoast/achoo   ~   https://wiki.archlinux.org/"
+    printf "                  # - The Achoo! Arch Linux Installation Script - # \n"
+    print_title "   https://www.facebook.com/groups/915936978471838/   ~   https://wiki.archlinux.org/"
 }
 
 print_line() { # (from AUI scripts)
