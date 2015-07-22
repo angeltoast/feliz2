@@ -1,8 +1,21 @@
 #!/bin/bash
 
+# First experiments in incorporating tput into Achoo to align text as required
+# Notes:
+# 1) The _read function uses a universal Response variable. Check the possible effects of this
+# 2) Can I redirect the system std output through _echo?
+
 testbed() {
 
-# Insert code to be tested here
+ExtraPartitions
+Counter=0
+for i in ${AddPartList[@]}	
+do
+  echo ${AddPartList[$Counter]}
+  echo ${AddPartLabel[$Counter]} 
+  echo ${AddPartType[$Counter]}
+  Counter=$((Counter+1))
+done
 
 }
 
@@ -25,5 +38,12 @@ else
   exit 1
 fi
 
-# Call the function being tested
+# Call the function being tested within function 'testbed' with variables
+
+TypeList="Skip ext2 ext3 ext4 btrfs"	
+PartitionList="sda1 sda2 sda3 sda4"
 testbed
+
+echo "Finished"
+
+exit
