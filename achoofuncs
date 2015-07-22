@@ -48,7 +48,6 @@ invalid_option() { # (from AUI scripts)
 
 print_heading() {
   clear
-  #_WINDOW_X=`tput lines`
   _WINDOW_Y=`tput cols`
   tput setf 6 # 0:Black 1:Blue 2:Green 3:Cyan 4:Red 5:Magenta 6:Yellow 7:White
   tput cup 1 $((($_WINDOW_Y/2)-20))
@@ -79,14 +78,17 @@ print_title() { # (from AUI scripts)
 }
 
 print_info() { # (from AUI scripts)
-    # Console width number
     T_COLS=`tput cols`
     echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
 }
 
+TPread() { 
+    T_COLS=`tput cols`
+    read -p "$1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/' Response
+
 read_timed() {
   echo $1
-  read -t 2 -p ""
+  read -t 2
 }
 
 # --------------
@@ -97,6 +99,7 @@ CheckForError() {
 # Check for stderr, display it, then exit script
 # Now receiving $2 to flag critical or non-critical error
 	if [[ $? -gt 0 ]]; then
+    tput setf 6 # 0:Black 1:Blue 2:Green 3:Cyan 4:Red 5:Magenta 6:Yellow 7:White
     clear
 		echo "Error reported at Line: $1"
     cat error.log
@@ -105,7 +108,7 @@ CheckForError() {
       ;;
       1) print_info "You may ignore the error if you choose"
       print_info "but this may have unexpected consequences"
-      read -p "   Continue with installation? (y/N): " Response
+      TPread "Continue with installation? (y/N): "
       case $Response in
         "n" | "N" | "") exit
         ;;
@@ -113,10 +116,12 @@ CheckForError() {
       esac
       ;;
       *) print_info "The error is critical, and the script cannot continue"
-        read -n1 -p "   Please press any key: "
+        "Please press any key: "
+        read -n1
         exit
     esac
     print_info "Continuing as though nothing has happened"
+    tput sgr0
   fi
 }
 
@@ -181,7 +186,7 @@ ManagePartitions() {
     print_info "  If you choose not to use 'cfdisk' now, the script will terminate, to"
     print_info "     allow you to partition in some other way."
     echo
-    read -p "   Would you like to open cfdisk now? [Y/n]: " Response
+    TPread "Would you like to open cfdisk now? [Y/n]: "
     case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
       	CheckForError "${LINENO} 'cfdisk'" 2
@@ -193,7 +198,7 @@ ManagePartitions() {
 		echo -e "   Here is a list of available partitions on all connected devices ... \n"
 		lsblk
 		echo ""
-		read -p "   Would you like to open cfdisk to manage those partitions now? [Y/n]: " Response
+		TPread "Would you like to open cfdisk to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
             	CheckForError "${LINENO} 'cfdisk'" 2
@@ -288,7 +293,7 @@ print_heading
 CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
 if [ ${CurrentType} ]; then
   print_info "The selected partition ${Partition} is currently formatted to ${CurrentType}"
-  echo -e "   Reformatting it will remove all data currently on it. \n"
+  print_info "Reformatting it will remove all data currently on it."
 fi
 }
 
@@ -349,7 +354,7 @@ LoopRepeat="Y"
 while [ ${LoopRepeat} = "Y" ]
 do
 	print_info "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
-  read -p "Size of swap file [eg: 512M or 2G]: " Response
+  TPread "Size of swap file [eg: 512M or 2G]: "
   RESPONSE="${Response^^}"
 	# Check that entry includes 'M or G'
 	CheckInput=(`echo $RESPONSE | grep "G\|M"`)
@@ -380,7 +385,7 @@ do
 	PS3="$prompt1"
   PartitionList="Skip $PartitionList"
 	print_info "The following partitions remain unallocated. If you wish to use one,"
-  echo -e "   select it from the list, or choose 'Skip' to exit. \n"
+  print_info "select it from the list, or choose 'Skip' to exit."
 	select partition in ${PartitionList} # User select an item from the list
 	do
   echo
@@ -437,7 +442,7 @@ MakePartition() {
 	while [ ${LoopRepeat} = "Y" ]
 	do
 		print_info "Enter a label for ${Partition} ... eg: '/home' ... "
-    read -p "  (you must include the '/'): " Response
+    TPread "(you must include the '/'): "
 		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
 		case ${CheckInput} in
@@ -535,7 +540,8 @@ SearchPrompt="enter the two-letter code for your country (eg: uk or us): "
 while [ $DoDoDo -eq 1 ]
 do
   PS3="$prompt1"
-  read -p "   $SearchPrompt" search_term
+  TPread "$SearchPrompt"
+  search_term=$Response
   echo
   SEARCHTERM="${search_term,,}"
   KeyboardList=('Try_Again' `localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` );
@@ -571,7 +577,8 @@ SearchPrompt="Enter the two-letter code for your country or language (eg: GB or 
 print_info "Next we will try to find your locale"
 while [ $DoDoDo -eq 1 ]
 do
-  read -p "   $SearchPrompt" search_term
+  TPread "$SearchPrompt"
+  search_term=$Response
   echo
   SEARCHTERM=${search_term}
   LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
@@ -625,7 +632,7 @@ print_info "Choose the World Zone of your location from the following list"
       local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
       print_heading
       PS3="$prompt1"
-      echo -e "   Now select your local city or Sub-Zone: \n"
+      print_info "Now select your local city or Sub-Zone:"
       select SUBZONE in "${_subzones[@]}"; do
         if contains_element "$SUBZONE" "${_subzones[@]}"; then
           break
@@ -650,7 +657,8 @@ UserAndRoot() {
 		print_info "A hostname is needed. This will be a unique name to identify"
 		print_info "your device on a network. If you do not enter one, the default"
 		print_info "hostname of 'ArchLinux' will be used."
-		read -p "Enter a hostname for your computer : " Entered
+		TPread "Enter a hostname for your computer : "
+    Entered=$Response
 		case $Entered in
 			"") Entered=$HostName
 			;;
@@ -664,7 +672,8 @@ UserAndRoot() {
 		print_line
 		print_info "If you don't create a username here, a default user called"
     print_info "'archie' will be set up"
-		read -p "   Enter a username (must be all lower case): " Entered
+		TPread "Enter a username (must be all lower case): "
+    Entered=$Response
 		case $Entered in
 			"") Entered=$UserName
 			;;
@@ -677,7 +686,8 @@ UserAndRoot() {
 		print_info "Passwords should be a mixture of upper- and lower-case letters"
 		print_info "plus numbers and special characters. If you do not enter"
 		print_info "a user password, the default of 'Linux' will be used."
-		read -p "Enter a password for $UserName: " Entered
+		TPread "Enter a password for $UserName: "
+    Entered=$Response
 		case $Entered in
 			"") Entered=$UserPassword
 			;;
@@ -689,7 +699,8 @@ UserAndRoot() {
 		Entered="Root"
 		print_info "Now set a password for root. If you do not enter one, a default"
     print_info "password of 'Root' will be used."
-		read -p "   Enter a password for root: " Entered
+		TPread "Enter a password for root: "
+    Entered=$Response
 		case $Entered in
 			"") Entered=$RootPassword
 			;;

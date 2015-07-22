@@ -60,7 +60,8 @@ do
   if [[ ! $(ping -c 3 google.com) ]]; then
     print_info "Unable to establish a connection. Ensure that your computer"
     print_info "is connected to the router via an ethernet cable."
-    read -p "Try again? (y/n): " Retry
+    TPread "Try again? (y/n): "
+    Retry=$Response
     if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
       $?=1    # Unable to continue without internet
       CheckForError "${LINENO} 'No internet'" 2
@@ -302,5 +303,5 @@ esac
 print_heading
 print_info "Success! Finished installing"
 print_info "Press any key to reboot"
-read -n1 -p "(remember to remove the installation medium before restarting)"
+read -n1
 systemctl reboot
