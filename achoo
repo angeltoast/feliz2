@@ -46,32 +46,8 @@ else
   exit 1
 fi
 
-# Check for internet connection (adapted from Lution)
-Retry="Y"
-while [ $Retry = "Y" ]
-do
-  print_heading
-  print_info "Welcome to the Achoo! Arch Linux installation scripts."
-  print_info "Achoo! is designed to perform with the minimum of fuss."
-  print_info "But you will have to provide some basic data to ensure"
-  print_info "that the installation meets your needs."
-  print_info "A working internet connection by ethernet cable is needed"
-  print_info "for installation. Checking your connection now ... "
-  if [[ ! $(ping -c 3 google.com) ]]; then
-    print_info "Unable to establish a connection. Ensure that your computer"
-    print_info "is connected to the router via an ethernet cable."
-    TPread "Try again? (y/n): "
-    Retry=$Response
-    if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
-      $?=1    # Unable to continue without internet
-      CheckForError "${LINENO} 'No internet'" 2
-    else
-      Retry="Y"
-    fi
-  else
-    Retry="N"
-  fi
-done
+# Test internet connection
+CheckInternet
 
 # Check partitioning, offer cfdisk
 ManagePartitions
@@ -127,10 +103,10 @@ ChooseDE
 # --------------
 
 print_heading
-echo "Entering automatic installation mode"
-echo "If you are re-using existing partitions, the system may ask you to confirm"
+TPecho "Entering automatic installation mode"
+TPecho "If you are re-using existing partitions, the system may ask you to confirm"
 read_timed "that you wish to mount them ... 'y' would be an appropriate response."
-echo ""
+echo
 
 # Set mirrorlist
 LocalMirrorList
@@ -139,18 +115,18 @@ LocalMirrorList
 umount_partitions
 MountPartitions
 
-echo "Installing LTS Kernel and base-devel"
+TPecho "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
-echo "Generating fstab"
+TPecho "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
 CheckForError "${LINENO} 'genfstab'" 2
 
-echo "Setting hostname"
+TPecho "Setting hostname"
 echo ${HostName} > ${MOUNTPOINT}/etc/hostname 2> error.log
 CheckForError "${LINENO} 'save hostname'" 2
 sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
@@ -159,23 +135,23 @@ sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
 CheckForError "${LINENO} 'save to hosts'" 2
 
 # Set up locale
-echo "Preparing locale.gen"
+TPecho "Preparing locale.gen"
 echo "${CountryLocale} UTF-8" > ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
 CheckForError "${LINENO} 'save full locale'" 2
 arch_chroot "locale-gen"
 
-echo "Preparing locale.conf"
+TPecho "Preparing locale.conf"
 echo "LANG=${CountryLocale}" > ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'set LANG'" 2
 
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'export LANG'" 2
 
-echo "Setting clock"
+TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
-echo "Configuring the network"
+TPecho "Configuring the network"
 arch_chroot "systemctl enable dhcpcd.service"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
 CheckForError "${LINENO} 'enable dhcpcd'" 2
@@ -191,16 +167,16 @@ CheckForError "${LINENO} 'rm temp passwd'" 0
 # Install Grub if selected
 if [ ${GrubDevice} ]
 then
-  echo "Installing GRUB to $GrubDevice"
+  TPecho "Installing GRUB to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
-  echo "Not installing GRUB"
+  TPecho "Not installing GRUB"
 fi
 
-echo "Running mkinitcpio"
+TPecho "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"
 
 # Set keyboard to selected language at next startup
@@ -215,38 +191,37 @@ CheckForError "${LINENO} 'vbox piix4 override'" 1
 CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
 if [ -z ${CheckUsers} ]
 then
-  echo "Adding user ${UserName} ... "
+  TPecho "Adding user ${UserName} ... "
   arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
   CheckForError "${LINENO} 'Could not add user'" 1
   echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
   arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
   rm /tmp/.passwd 2> error.log
   CheckForError "${LINENO} 'rm temp passwd'" 0
+  # Set up basic configuration files and permissions for user
+  TPecho "Setting up user configuration"
+  arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+  arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+  sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
+  CheckForError "${LINENO} 'User-configuration'" 1
 else
-  echo "User already exists"
+  TPecho "User already exists"
 fi
 
-# Set up basic configuration files and permissions for user
-echo "Setting up user configuration"
-arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
-arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
-CheckForError "${LINENO} 'User-configuration'" 1
-
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
-echo "Adding Flash and other Multimedia Codecs"
+TPecho "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
 CheckForError "${LINENO} 'Install codecs'" 1
 
 # Wireless tools
-echo "Installing wireless tools"
+TPecho "Installing wireless tools"
 pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
 CheckForError "${LINENO} 'Wireless firmware'" 1
 pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
 CheckForError "${LINENO} 'Wireless tools'" 1
 
 # Install X, graphics, etc
-echo "Installing X, graphics, etc"
+TPecho "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
 CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
@@ -266,7 +241,7 @@ then
   # Test for existing display manager and disable if necessary
   TestExistingDM
   # Then install and enable new DM
-  echo "Installing Display Manager ${DisplayManager}"
+  TPecho "Installing Display Manager ${DisplayManager}"
   pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
   CheckForError "Line ${LINENO} 'Install display manager'" 2
   arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
@@ -275,12 +250,13 @@ then
     echo "session=/usr/bin/startxfce4" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
   fi
 else
-  echo "Not installing a Display Manager"
+  TPecho "Not installing a Display Manager"
 fi
 
 # Install Desktop Environment
 case ${DesktopEnvironment} in
-  "LXDE") pacstrap ${MOUNTPOINT} lxde 2> error.log
+  "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
+      pacstrap ${MOUNTPOINT} lxde 2> error.log
       CheckForError "Line ${LINENO} 'Installing lxde'" 1
       # Test for existing display manager and disable if necessary
       TestExistingDM
@@ -288,16 +264,19 @@ case ${DesktopEnvironment} in
       arch_chroot "systemctl enable lxdm.service" >/dev/null
       echo "session=/usr/bin/startlxde" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
       ;;
-  "LXQt") pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
+  "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
+      pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
       CheckForError "Line ${LINENO} 'Installing lxqt'" 1
       ;;
-  "Mate") pacstrap ${MOUNTPOINT} mate mate-extra
+  "Mate") TPecho "Installing 'Mate' Desktop Environment"
+      pacstrap ${MOUNTPOINT} mate mate-extra
       CheckForError "Line ${LINENO} 'Installing Mate'" 1
       ;;
-  "Xfce") pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
+  "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
+      pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
       CheckForError "Line ${LINENO} 'Installing Xfce'" 1
       ;;
-  *) echo "Not installing a Desktop Environment"	
+  *) TPecho "Not installing a Desktop Environment"	
 esac
 
 print_heading

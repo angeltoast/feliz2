@@ -24,11 +24,12 @@
 # -------------------------
 # Input and output     35
 # Error-checking       88
-# Mirrorlist           119
-# Partitioning         150
-# User & Location      525
-# Desktop Environment  704
-# Running              789
+# Internet connection  138
+# Mirrorlist           193
+# Partitioning         224
+# User & Location      599
+# Desktop Environment  785
+# Running              871
 # ------------------------
 
 # ----------------
@@ -43,7 +44,7 @@ contains_element() { # (from AUI scripts)
 invalid_option() { # (from AUI scripts)
     print_line
     echo 
-    read -t 2 -p "Invalid option. Try another one."
+    read_timed "Invalid option. Try again."
 }
 
 print_heading() {
@@ -78,17 +79,26 @@ print_title() { # (from AUI scripts)
 }
 
 print_info() { # (from AUI scripts)
-    T_COLS=`tput cols`
-    echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  T_COLS=`tput cols`
+  echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+}
+
+TPecho() { # For displaying info while running on auto
+  T_COLS=`tput cols`
+  tput setf 6
+  echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  tput sgr0
 }
 
 TPread() { 
-    T_COLS=`tput cols`
-    read -p "$1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/' Response
+  T_COLS=`tput cols`
+  read -p "    $1" Response
+}
 
 read_timed() {
-  echo $1
-  read -t 2
+  T_COLS=`tput cols`
+  read -t 2 -p "    $1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  echo
 }
 
 # --------------
@@ -125,9 +135,64 @@ CheckForError() {
   fi
 }
 
-# -----------------------
+# --------------
+# Check internet
+# --------------
+
+CheckInternet() {
+print_heading
+print_info "Welcome to the Achoo! Arch Linux installation scripts."
+Retry="Y"
+Response=3
+while [ $Retry = "Y" ]
+do
+  print_info "A working internet connection is needed for installation."
+  print_info "Please choose which of the following apply: "
+  echo
+  print_info "1) My computer has a wired connection by ethernet cable;"
+  print_info "2) My computer has wifi;"
+  print_info "3) I am not connected to the internet;"
+  echo
+  TPread "$prompt1"
+  case $Response in
+    1) CheckConnection
+    ;;
+    2) wifi-menu
+      CheckConnection
+    ;;
+    3) read_timed "Sorry, installation cannot continue without an internet connection."
+      exit
+    ;;
+    *) invalid_option
+  esac
+  print_heading
+done
+}
+
+CheckConnection() {
+while [ $Retry = "Y" ]
+do
+  print_info " Checking your connection now ... "
+  if [[ ! $(ping -c 3 google.com) ]]; then
+    print_info "Unable to establish a connection. Ensure that your computer"
+    print_info "is connected to the router via an ethernet cable."
+    TPread "Try again? (y/n): "
+    Retry=$Response
+    if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
+      $?=1    # Unable to continue without internet
+      CheckForError "${LINENO} 'No internet'" 2
+    else
+      Retry="Y"
+    fi
+  else
+    Retry="N"
+  fi
+done
+}
+
+# ----------
 # Mirrorlist
-# -----------------------
+# ----------
 
 LocalMirrorList() {
 # Generate and save a shortened mirrorlist of only the mirrors defined
@@ -162,6 +227,10 @@ LocalMirrorList() {
 
 ManagePartitions() {
 # Check and show partitions ... call cfdisk
+  read_timed "Achoo! is designed to perform with the minimum of fuss."
+  read_timed "But you will have to provide some basic data to ensure"
+  read_timed "that the installation meets your needs, starting with"
+  read_timed "your computer's partitioning layout." 
 	# First test for existing partitions
 	print_heading
 	ShowPartitions=""
@@ -195,9 +264,9 @@ ManagePartitions() {
 		esac
  	else
     # Alternatively, offer cfdisk to edit existing partitions
-		echo -e "   Here is a list of available partitions on all connected devices ... \n"
+		print_info "Here is a list of available partitions on all connected devices ..."
 		lsblk
-		echo ""
+		echo
 		TPread "Would you like to open cfdisk to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
@@ -262,8 +331,9 @@ AllocateRoot() {
         # Before going to select_filesystem, check the partition
         CheckPartition
         if [ ${CurrentType} ]; then
-          print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
-          print_info "reformatting the root partition can have unexpected consequences."
+          print_info "You can choose to leave it as it is, by selecting 'Skip', but"
+          print_info "be aware that not reformatting the root partition can have"
+          print_info "unexpected consequences."
           echo
           TypeList="Skip ext2 ext3 ext4 btrfs"	
         else
@@ -302,19 +372,19 @@ AllocateSwap() {
 print_heading
 if [ -n ${#PartitionList[@]} ]
 then
-  echo -e "   Select the partition for /swap from the ones that remain,"
-  echo -e "   or allocate a swap file. \n"
+  print_info "Select the partition for /swap from the ones that remain,"
+  print_info "or allocate a swap file. \n"
   Remaining=""
   local Counter=0
   PS3="$prompt1"
   SwapPartition=""
   PartitionList="Skip $PartitionList Swapfile"
   SwapFile=""
-  echo -e "   If you select the 'Skip' option, no swap will be allocated: \n"
+  print_info "If you select the 'Skip' option, no swap will be allocated:"
   select partition in ${PartitionList}
   do
   Reply=$REPLY
-  echo ""
+  echo
     for i in ${PartitionList}
     do
       Counter=$((Counter+1))
@@ -337,11 +407,11 @@ then
     break
   done
   if [ $SwapPartition ]; then
-      read -t 2 -p "   $SwapPartition will be used for swap."
+      read_timed "$SwapPartition will be used for swap."
   elif [ $SwapFile ]; then
-      read -t 2 -p "   A swap file of ${SwapFile} will be allocated."
+      read_timed "A swap file of ${SwapFile} will be allocated."
   else
-      read -t 2 -p "   No swap partition will be allocated."
+      read_timed "No swap partition will be allocated."
   fi
   echo
   PartitionList=$Remaining		# Replace original PartitionList with remaining options
@@ -465,7 +535,7 @@ MakePartition() {
 			do 
 				LabelCounter=$((LabelCounter+1))
 				if [ $Label = $PartLabel ]; then
-					read -t 4 -p "  Label ${PartLabel} has already been used. Please use a different label."
+					read_timed "Label ${PartLabel} has already been used. Please use a different label."
 				else
 					LoopRepeat="N"
 					break
@@ -535,8 +605,9 @@ getkeymap() {
 print_heading
 DoDoDo=1
 print_info "Now we will try to find your keyboard from a list of all known"
-print_info "layouts. If you know your keyboard code, enter it now. Alternatively, "
-SearchPrompt="enter the two-letter code for your country (eg: uk or us): "
+print_info "layouts. If you know your keyboard code, enter it now."
+print_info "Alternatively, enter the two-letter code for your country ..."
+SearchPrompt="(eg: uk or us): "
 while [ $DoDoDo -eq 1 ]
 do
   PS3="$prompt1"
