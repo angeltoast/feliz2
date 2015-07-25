@@ -198,7 +198,7 @@ done
 LocalMirrorList() {
 # Generate and save a shortened mirrorlist of only the mirrors defined
 # in the CountryCode variable. Adapted from Lution AIS
-	print_info "Generating local mirrorlist"
+	TPecho "Generating local mirrorlist"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
 	CheckForError "${LINENO}"
@@ -923,13 +923,12 @@ MountPartitions() {
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 2
   elif [ ${SwapFile} ]; then
-    fallocate -l ${SwapFile} /swapfile
-    chmod 600 /swapfile
-    mkswap /swapfile 2> error.log
+    fallocate -l ${SwapFile} ${MOUNTPOINT}/swapfile
+    chmod 600 ${MOUNTPOINT}/swapfile
+    mkswap ${MOUNTPOINT}/swapfile 2> error.log
     CheckForError "${LINENO} 'mkswap /swapfile'" 2
-    swapon /swapfile 2> error.log
+    swapon ${MOUNTPOINT}/swapfile 2> error.log
     CheckForError "${LINENO} 'swapon /swapfile'" 2
-    echo "/swapfile none swap defaults 0 0" >> ${MOUNTPOINT}/etc/fstab
   fi
   echo "Mounting additional partitions"
   Counter=0
