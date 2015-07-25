@@ -104,9 +104,9 @@ ChooseDE
 
 print_heading
 TPecho "Entering automatic installation mode"
-TPecho "If you are re-using existing partitions, the system may ask you to confirm"
-read_timed "that you wish to mount them ... 'y' would be an appropriate response."
-echo
+TPecho "If you are re-using existing partitions, the system may ask you"
+TPecho "to confirm that you wish to mount them ... "
+read_timed "'y' would be an appropriate response."
 
 # Set mirrorlist
 LocalMirrorList

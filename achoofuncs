@@ -85,7 +85,7 @@ print_info() { # (from AUI scripts)
 
 TPecho() { # For displaying info while running on auto
   T_COLS=`tput cols`
-  tput setf 6
+  tput bold
   echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
   tput sgr0
 }

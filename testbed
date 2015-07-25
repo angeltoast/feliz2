@@ -7,16 +7,60 @@
 
 testbed() {
 
-ExtraPartitions
-Counter=0
-for i in ${AddPartList[@]}	
-do
-  echo ${AddPartList[$Counter]}
-  echo ${AddPartLabel[$Counter]} 
-  echo ${AddPartType[$Counter]}
-  Counter=$((Counter+1))
-done
 
+# CheckInternet() {
+print_heading
+print_info "Welcome to the Achoo! Arch Linux installation scripts."
+Retry="Y"
+Response=3
+while [ $Retry = "Y" ]
+do
+  print_info "A working internet connection is needed for installation."
+  print_info "Please choose which of the following apply: "
+  echo
+  print_info "1) My computer has a wired connection by ethernet cable;"
+  print_info "2) My computer has wifi;"
+  print_info "3) I am not connected to the internet;"
+  echo
+  TPread "$prompt1"
+  case $Response in
+    1) CheckConnection
+    ;;
+    2) wifi-menu
+      CheckConnection
+    ;;
+    3) read_timed "Sorry, installation cannot continue without an internet connection."
+      exit
+    ;;
+    *) invalid_option
+  esac
+  print_heading
+done
+}
+
+CheckConnection() {
+while [ $Retry = "Y" ]
+do
+  print_info " Checking your connection now ... "
+  if [[ ! $(ping -c 3 google.com) ]]; then
+    print_info "Unable to establish a connection. Ensure that your computer"
+    print_info "is connected to the router via an ethernet cable."
+    TPread "Try again? (y/n): "
+    Retry=$Response
+    if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
+      $?=1    # Unable to continue without internet
+      CheckForError "${LINENO} 'No internet'" 2
+    else
+      Retry="Y"
+    fi
+  else
+    Retry="N"
+  fi
+done
+  print_info "Achoo! is designed to perform with the minimum of fuss."
+  print_info "But you will have to provide some basic data to ensure"
+  print_info "that the installation meets your needs."
+  
 }
 
 # ~~~~~~~
@@ -38,12 +82,23 @@ else
   exit 1
 fi
 
-# Call the function being tested within function 'testbed' with variables
-
+# Various variables
 TypeList="Skip ext2 ext3 ext4 btrfs"	
 PartitionList="sda1 sda2 sda3 sda4"
+
+# Call the function 'testbed' holding code to be tested
 testbed
 
 echo "Finished"
 
 exit
+
+# Code for checking arrays
+Counter=0
+for i in ${AddPartList[@]}	
+do
+  echo ${AddPartList[$Counter]}
+  echo ${AddPartLabel[$Counter]} 
+  echo ${AddPartType[$Counter]}
+  Counter=$((Counter+1))
+done
