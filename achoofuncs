@@ -116,8 +116,9 @@ CheckForError() {
     case $2 in
       0) print_info "The error is not critical, and you may ignore it"
       ;;
-      1) print_info "You may ignore the error if you choose"
-      print_info "but this may have unexpected consequences"
+      1) print_info "You may ignore the error if you choose,"
+      print_info "and continue with the installation,"
+      print_info "but this may have unexpected consequences."
       TPread "Continue with installation? (y/N): "
       case $Response in
         "n" | "N" | "") exit
@@ -373,7 +374,9 @@ print_heading
 if [ -n ${#PartitionList[@]} ]
 then
   print_info "Select the partition for /swap from the ones that remain,"
-  print_info "or allocate a swap file. \n"
+  print_info "or allocate a swap file."
+  print_info "Warning: Btrfs does not support swap files. Failure to heed"
+  print_info "this warning may result in file system corruption."
   Remaining=""
   local Counter=0
   PS3="$prompt1"
@@ -454,9 +457,10 @@ do
 	Remaining=""
 	PS3="$prompt1"
   PartitionList="Skip $PartitionList"
-	print_info "The following partitions remain unallocated. If you wish to use one,"
-  print_info "select it from the list, or choose 'Skip' to exit."
-	select partition in ${PartitionList} # User select an item from the list
+	print_info "The following partitions remain unallocated."
+  print_info "If you wish to use one, select it from the list,"
+  print_info "or choose 'Skip' to finish partitioning."
+	select partition in ${PartitionList} 
 	do
   echo
   Selected=$REPLY

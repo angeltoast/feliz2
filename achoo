@@ -125,6 +125,9 @@ arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/u
 TPecho "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
 CheckForError "${LINENO} 'genfstab'" 2
+if [ ${SwapFile} ]; then
+  echo "/swapfile none swap defaults 0 0" >> ${MOUNTPOINT}/etc/fstab
+fi
 
 TPecho "Setting hostname"
 echo ${HostName} > ${MOUNTPOINT}/etc/hostname 2> error.log
@@ -157,7 +160,8 @@ pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.l
 CheckForError "${LINENO} 'enable dhcpcd'" 2
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 
-# Set root password (Reduced from Lution AIS)  
+# Set root password (Reduced from Lution AIS)
+TPecho "Setting root password"
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd 2> error.log
 CheckForError "${LINENO} 'Root password'" 2
 arch_chroot "passwd root" < /tmp/.passwd >/dev/null
@@ -226,6 +230,7 @@ pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-
 CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
 # Copy modified pacman.conf to new system and install Yaourt
+TPecho "Modifying pacman.conf and installing Yaourt"
 cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
 CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
 cp pacman.conf /etc 2> error.log
