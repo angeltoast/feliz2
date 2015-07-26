@@ -920,20 +920,11 @@ MountPartitions() {
   then
     TPecho "Making /swap partition"
     mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
-    CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 2
+    CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
     TPecho "Activating /swap"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
-    CheckForError "${LINENO} 'swapon ${SwapPartition}'" 2
-  elif [ ${SwapFile} ]; then
-    TPecho "Making /swapfile"
-    fallocate -l ${SwapFile} ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
-    CheckForError "${LINENO} 'mkswap /swapfile'" 2
-    chmod 600 ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
-    CheckForError "${LINENO} 'mkswap /swapfile'" 2
-    mkswap ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
-    CheckForError "${LINENO} 'mkswap /swapfile'" 2
-    swapon ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
-    CheckForError "${LINENO} 'swapon /swapfile'" 2
+    CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
+
   fi
   echo "Mounting additional partitions"
   Counter=0

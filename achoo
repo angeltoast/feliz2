@@ -126,7 +126,16 @@ TPecho "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
 CheckForError "${LINENO} 'genfstab'" 2
 if [ ${SwapFile} ]; then
-  echo "/swapfile none swap defaults 0 0" >> ${MOUNTPOINT}/etc/fstab
+  TPecho "Making /swapfile"
+  fallocate -l ${SwapFile} ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
+  CheckForError "${LINENO} 'mkswap /swapfile'" 1
+  chmod 600 ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
+  CheckForError "${LINENO} 'mkswap /swapfile'" 1
+  mkswap ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
+  CheckForError "${LINENO} 'mkswap /swapfile'" 1
+  swapon ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
+  CheckForError "${LINENO} 'swapon /swapfile'" 1
+  echo "/swapfile none  swap  defaults  0 0" >> ${MOUNTPOINT}/etc/fstab
 fi
 
 TPecho "Setting hostname"
