@@ -109,19 +109,20 @@ CheckForError() {
 # Check for stderr, display it, then exit script
 # Now receiving $2 to flag critical or non-critical error
 	if [[ $? -gt 0 ]]; then
-    tput setf 6 # 0:Black 1:Blue 2:Green 3:Cyan 4:Red 5:Magenta 6:Yellow 7:White
+    tput bold
     clear
 		echo "Error reported at Line: $1"
     cat error.log
     case $2 in
-      0) print_info "The error is not critical, and you may ignore it"
+      0) read_timed "The error is not critical, and you may ignore it"
       ;;
       1) print_info "You may ignore the error if you choose,"
       print_info "and continue with the installation,"
       print_info "but this may have unexpected consequences."
       TPread "Continue with installation? (y/N): "
       case $Response in
-        "n" | "N" | "") exit
+        "n" | "N" | "") tput sgr0
+          exit
         ;;
         *) echo ""
       esac
@@ -129,6 +130,7 @@ CheckForError() {
       *) print_info "The error is critical, and the script cannot continue"
         "Please press any key: "
         read -n1
+        tput sgr0
         exit
     esac
     print_info "Continuing as though nothing has happened"
@@ -916,18 +918,21 @@ MountPartitions() {
   # Swap
   if [ ${SwapPartition} ]
   then
-    echo "Making /swap partition"
+    TPecho "Making /swap partition"
     mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
     CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 2
-    echo "Activating /swap"
+    TPecho "Activating /swap"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 2
   elif [ ${SwapFile} ]; then
-    fallocate -l ${SwapFile} ${MOUNTPOINT}/swapfile
-    chmod 600 ${MOUNTPOINT}/swapfile
-    mkswap ${MOUNTPOINT}/swapfile 2> error.log
+    TPecho "Making /swapfile"
+    fallocate -l ${SwapFile} ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
     CheckForError "${LINENO} 'mkswap /swapfile'" 2
-    swapon ${MOUNTPOINT}/swapfile 2> error.log
+    chmod 600 ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
+    CheckForError "${LINENO} 'mkswap /swapfile'" 2
+    mkswap ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
+    CheckForError "${LINENO} 'mkswap /swapfile'" 2
+    swapon ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
     CheckForError "${LINENO} 'swapon /swapfile'" 2
   fi
   echo "Mounting additional partitions"
