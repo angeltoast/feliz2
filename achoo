@@ -47,12 +47,12 @@ else
 fi
 
 # Test internet connection
-Banner="https://wiki.archlinux.org/index.php/Beginners%27_guide#Establish_an_internet_connection
-CheckInternet"
+Banner="https://wiki.archlinux.org/index.php/Beginners%27_guide#Establish_an_internet_connection"
+CheckInternet
 
 # Check partitioning, offer cfdisk
-Banner="https://wiki.archlinux.org/index.php/Beginners%27_guide#Create_new_partition_table
-ManagePartitions"
+Banner="https://wiki.archlinux.org/index.php/Beginners%27_guide#Create_new_partition_table"
+ManagePartitions
 # Display partitions and allocate root
 if [ -n ${#PartitionList[@]} ]
 then
