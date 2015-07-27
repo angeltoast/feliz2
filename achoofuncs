@@ -54,15 +54,16 @@ print_heading() {
   tput cup 1 $((($_WINDOW_Y/2)-20))
   printf "~ The Achoo! Arch Linux Installation Script ~ \n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
+  Banner="~ https://wiki.archlinux.org/ ~"
   if [ $_WINDOW_Y -gt 90 ]; then
-    tput cup 3 $((($_WINDOW_Y/2)-45))
-    printf  "~  https://www.facebook.com/groups/915936978471838/ ~ https://wiki.archlinux.org/ ~ \n"
+    tput cup 3 $((($_WINDOW_Y/2)-50))
   elif [ $_WINDOW_Y -gt 40 ]; then
     tput cup 3 $((($_WINDOW_Y/2)-15))
-    printf  "~ https://wiki.archlinux.org/ ~ \n"
+      Banner="~ https://wiki.archlinux.org/ ~"
   else
-    printf  "https://wiki.archlinux.org/ \n"
+    Banner="https://wiki.archlinux.org/ \n"
   fi
+  echo $Banner
   printf "%$(tput cols)s\n"|tr ' ' '-'
   tput sgr0
 }
