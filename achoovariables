@@ -79,5 +79,5 @@ UserPassword="Linux"
 # ----------------------
 OutPrompt="Press [Enter] to continue."
 AnyPrompt="Press any key to continue."
-prompt1=$'\n   Enter the number of your choice : '
+prompt1=$'\n   Enter the number of your selection : '
 Response="" # Global user input variable

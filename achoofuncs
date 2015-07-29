@@ -54,12 +54,10 @@ print_heading() {
   tput cup 1 $((($_WINDOW_Y/2)-20))
   printf "~ The Achoo! Arch Linux Installation Script ~ \n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
-  Banner="~ https://wiki.archlinux.org/ ~"
   if [ $_WINDOW_Y -gt 90 ]; then
     tput cup 3 $((($_WINDOW_Y/2)-50))
   elif [ $_WINDOW_Y -gt 40 ]; then
     tput cup 3 $((($_WINDOW_Y/2)-15))
-      Banner="~ https://wiki.archlinux.org/ ~"
   else
     Banner="https://wiki.archlinux.org/ \n"
   fi
@@ -98,7 +96,7 @@ TPread() {
 
 read_timed() {
   T_COLS=`tput cols`
-  read -t 2 -p "    $1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  read -t 2 -p "$1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
   echo
 }
 
@@ -179,7 +177,7 @@ do
   print_info " Checking your connection now ... "
   if [[ ! $(ping -c 3 google.com) ]]; then
     print_info "Unable to establish a connection. Ensure that your computer"
-    print_info "is connected to the router via an ethernet cable."
+    print_info "is able to access the internet."
     TPread "Try again? (y/n): "
     Retry=$Response
     if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
