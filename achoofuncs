@@ -49,21 +49,20 @@ invalid_option() { # (from AUI scripts)
 
 print_heading() {
   clear
-  _WINDOW_Y=`tput cols`
-  tput setf 6 # 0:Black 1:Blue 2:Green 3:Cyan 4:Red 5:Magenta 6:Yellow 7:White
-  tput cup 1 $((($_WINDOW_Y/2)-20))
+  T_COLS=`tput cols`
+  tput cup 1 $((($T_COLS/2)-20))
   printf "~ The Achoo! Arch Linux Installation Script ~ \n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
-  if [ $_WINDOW_Y -gt 80 ]; then
-    tput cup 3 $((($_WINDOW_Y/2)-30))
-  elif [ $_WINDOW_Y -gt 40 ]; then
-    tput cup 3 $((($_WINDOW_Y/2)-15))
+  lov=${#Banner}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo -e "$EMPTY $Banner"
   else
-    Banner="https://wiki.archlinux.org/ \n"
+    echo -e "$Banner"
   fi
-  echo $Banner
   printf "%$(tput cols)s\n"|tr ' ' '-'
-  tput sgr0
+#  tput sgr0
 }
 
 print_line() { # (from AUI scripts)
@@ -77,15 +76,33 @@ print_title() { # (from AUI scripts)
     echo ""
 }
 
-print_info() { # (from AUI scripts)
+print_info() { # (adapted from AUI scripts)
   T_COLS=`tput cols`
-  echo -e "$1 \n" | fold -sw $(( $T_COLS - 15 )) | sed 's/^/\t/'
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo -e "$EMPTY $1 \n"
+  else
+    echo -e "$1 \n"
+  fi
+}
+
+print_list() { 
+   echo -e "$EMPTY $1 \n"
 }
 
 TPecho() { # For displaying info while running on auto
   T_COLS=`tput cols`
   tput bold
-  echo -e "$1 \n" | fold -sw $(( $T_COLS - 15 )) | sed 's/^/\t/'
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo -e "$EMPTY $1 \n"
+  else
+    echo -e "$1 \n"
+  fi
   tput sgr0
 }
 
@@ -96,7 +113,7 @@ TPread() {
 
 read_timed() {
   T_COLS=`tput cols`
-  read -t 2 -p "$1" | fold -sw $(( $T_COLS - 15 )) | sed 's/^/\t/'
+  read -t 2 -p "$1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
   echo
 }
 
@@ -143,7 +160,7 @@ CheckForError() {
 
 CheckInternet() {
 print_heading
-print_info "Welcome to the Achoo! Arch Linux installation scripts."
+print_info "Welcome to the Achoo! Arch Linux installation script."
 Retry="Y"
 Response=3
 while [ $Retry = "Y" ]
@@ -152,8 +169,8 @@ do
   print_info "Please choose which of the following apply: "
   echo
   print_info "1) My computer has a wired connection by ethernet cable;"
-  print_info "2) My computer has wifi;"
-  print_info "3) I am not connected to the internet;"
+  print_list "2) My computer has wifi;"
+  print_list "3) I am not connected to the internet;"
   echo
   TPread "$prompt1"
   case $Response in
