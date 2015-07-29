@@ -42,7 +42,6 @@ contains_element() { # (from AUI scripts)
 }
 
 invalid_option() { # (from AUI scripts)
-    print_line
     echo 
     read_timed "Invalid option. Try again."
 }
@@ -108,12 +107,26 @@ TPecho() { # For displaying info while running on auto
 
 TPread() { 
   T_COLS=`tput cols`
-  read -p "    $1" Response
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -p "$EMPTY $1" Response
 }
 
 read_timed() {
   T_COLS=`tput cols`
-  read -t 2 -p "$1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t 2 -p "$EMPTY $1"
   echo
 }
 
@@ -304,7 +317,6 @@ ManagePartitions() {
 }
 
 select_filesystem() {
-# Adapted from Lution
 # Allows user-selection of filesystem by entering a number
 # Returns enhanced selection via FILESYSTEM variable
 	local Counter=0
