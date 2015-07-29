@@ -54,8 +54,8 @@ print_heading() {
   tput cup 1 $((($_WINDOW_Y/2)-20))
   printf "~ The Achoo! Arch Linux Installation Script ~ \n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
-  if [ $_WINDOW_Y -gt 90 ]; then
-    tput cup 3 $((($_WINDOW_Y/2)-50))
+  if [ $_WINDOW_Y -gt 80 ]; then
+    tput cup 3 $((($_WINDOW_Y/2)-30))
   elif [ $_WINDOW_Y -gt 40 ]; then
     tput cup 3 $((($_WINDOW_Y/2)-15))
   else
@@ -79,13 +79,13 @@ print_title() { # (from AUI scripts)
 
 print_info() { # (from AUI scripts)
   T_COLS=`tput cols`
-  echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  echo -e "$1 \n" | fold -sw $(( $T_COLS - 15 )) | sed 's/^/\t/'
 }
 
 TPecho() { # For displaying info while running on auto
   T_COLS=`tput cols`
   tput bold
-  echo -e "$1 \n" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  echo -e "$1 \n" | fold -sw $(( $T_COLS - 15 )) | sed 's/^/\t/'
   tput sgr0
 }
 
@@ -96,7 +96,7 @@ TPread() {
 
 read_timed() {
   T_COLS=`tput cols`
-  read -t 2 -p "$1" | fold -sw $(( $T_COLS - 10 )) | sed 's/^/\t/'
+  read -t 2 -p "$1" | fold -sw $(( $T_COLS - 15 )) | sed 's/^/\t/'
   echo
 }
 
