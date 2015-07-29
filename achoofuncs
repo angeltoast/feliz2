@@ -140,7 +140,7 @@ CheckForError() {
 	if [[ $? -gt 0 ]]; then
     tput bold
     clear
-		echo "Error reported at Line: $1"
+		print_info "Error reported at Line: $1"
     cat error.log
     case $2 in
       0) read_timed "The error is not critical, and you may ignore it"
@@ -322,7 +322,7 @@ select_filesystem() {
 	local Counter=0
 	PS3="$prompt1"
 #	TypeList now passed by caller
-	echo -e "   Now select the file system for ${Partition} \n"
+	print_info "   Now select the file system for ${Partition}"
 	select type in ${TypeList}
 	do
     for i in ${TypeList}
@@ -347,8 +347,8 @@ AllocateRoot() {
   Partition=""
 	PartitionType=""
 	PS3="$prompt1"
-	echo -e "   Here are the partitions that are available. \n"
-	echo -e "   First you should select one to use for root: \n"
+	print_info "Here are the partitions that are available."
+	print_info "First you should select one to use for root:"
 	select partition in ${PartitionList}
 	do
     Reply=$REPLY
@@ -932,15 +932,29 @@ umount_partitions(){
 MountPartitions() {
   # Root
   case $RootType in
-    "") echo "Not formatting root partition"
+    "") TPecho "Not formatting root partition"
     ;;
-    "Skip") echo "Not formatting root partition"
+    "Skip") TPecho "Not formatting root partition"
     ;;
-    *) echo "Formatting /root partition"
-    mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
-    CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
+    *) TPecho "Formatting /root partition"
+
+    # New code block, for testing. Replace existing ext3/4 partition with btrfs
+    read -p "${LINENO} Entering new block"
+    CurrentType=`file -sL ${RootPartition} | grep "ext" | cut -c26-30`
+    if [ ${CurrentType} ] && [ $RootType = "btrfs" ]; then
+    read -p "${LINENO} Inside 'if' condition - condition met"
+     btrfs-convert ${RootPartition}
+     CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
+    else
+      # This was the original code
+      read -p "${LINENO} Inside 'if' condition - condition not met"
+      mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+      CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
+    fi
+    read -p "${LINENO} Exiting new block"
+    # End of new code block
   esac
-  echo "Mounting /root partition"	
+  TPecho "Mounting /root partition"	
   mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
   # Swap
@@ -954,7 +968,7 @@ MountPartitions() {
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
 
   fi
-  echo "Mounting additional partitions"
+  TPecho "Mounting additional partitions"
   Counter=0
   Elements=${#AddPartList[@]}
  	# Repeat $Elements times getting data from the three arrays
@@ -980,7 +994,7 @@ TestExistingDM() {
   # Start a local counter to check for multiple entries
   local Counter=1
   case ${DMLine} in
-    "") echo "No previous DM discovered"
+    "") TPecho "No previous DM discovered"
     ;;
     *) local Continue="Y"
       while [ ${Continue} = "Y" ]
@@ -995,7 +1009,7 @@ TestExistingDM() {
         case ${ExDMStatus} in
           "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
           ;;
-          *) echo "${ExDM} already disabled"
+          *) TPecho "${ExDM} already disabled"
         esac
         Counter=$((Counter+1))
       done
