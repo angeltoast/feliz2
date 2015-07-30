@@ -277,15 +277,14 @@ ManagePartitions() {
 	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
 		print_heading
     echo
-    print_info "There are no partitions on the device. 'cfdisk' is available for you to"
-    print_info "create a partition table now if you wish."
+    print_info "There are no partitions on the device. 'cfdisk' is available"
+    print_info "for you to create a partition table now if you wish."
     echo 
-    print_info "Please note:"
-    print_info "  At least one partition, for the / (root) directory, must be created."
-    print_info "  Achoo! does not, as yet, support the UEFI/GPT partition table."
-    print_info "  If you are uncertain about partitioning, you should read the Arch Wiki."
-    print_info "  If you choose not to use 'cfdisk' now, the script will terminate, to"
-    print_info "     allow you to partition in some other way."
+    print_info "Please note: At least one partition, for the / (root) directory,"
+    print_info "must be created. Extra care is needed if you are using UEFI, GPT"
+    print_info "or BTRFS partition tables. If you are uncertain about partitioning,"
+    print_info "you should read the Arch Wiki. If you choose not to use 'cfdisk' now,"
+    print_info "the script will terminate, to allow you to partition in some other way."
     echo
     TPread "Would you like to open cfdisk now? [Y/n]: "
     case $Response in
@@ -299,6 +298,8 @@ ManagePartitions() {
 		print_info "Here is a list of available partitions on all connected devices ..."
 		lsblk
 		echo
+    print_info "Please note: Extra care is needed if you are using UEFI, GPT or BTRFS"
+    print_info "partition tables, and installation can fail in some circumstances."
 		TPread "Would you like to open cfdisk to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
@@ -322,7 +323,9 @@ select_filesystem() {
 	local Counter=0
 	PS3="$prompt1"
 #	TypeList now passed by caller
-	print_info "   Now select the file system for ${Partition}"
+	print_info "Please select the file system for ${Partition}"
+	print_info "It is not recommended to mix the btrfs file-system with others."
+	print_info "Consult the Arch Wiki : https://wiki.archlinux.org/index.php/Btrfs"
 	select type in ${TypeList}
 	do
     for i in ${TypeList}
@@ -937,16 +940,16 @@ MountPartitions() {
     "Skip") TPecho "Not formatting root partition"
     ;;
     *) TPecho "Formatting /root partition"
-   # New code block. Replace existing ext3/4 partition with btrfs
+    # New code block. Replace existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${RootPartition} | grep "ext" | cut -c26-30`
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-     btrfs-convert ${RootPartition}
-     CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
-    elif [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} = "btrfs" ]; then
-      mkfs.${RootType} -f ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+      btrfs-convert ${RootPartition}
+      CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
+    elif [ ${CurrentType} ] && [ $RootType = "btrfs" ]; then
+      mkfs.btrfs -f ${RootPartition} 2> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     else
-      # This was the original code
+      # Original code for all ext types
       mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     fi
