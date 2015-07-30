@@ -763,8 +763,8 @@ UserAndRoot() {
 		Entered="ArchLinux"
 		print_heading
 		print_info "A hostname is needed. This will be a unique name to identify"
-		print_info "your device on a network. If you do not enter one, the default"
-		print_info "hostname of 'ArchLinux' will be used."
+		print_info "your device on a network. If you do not enter one, the"
+		print_info "default hostname of 'ArchLinux' will be used."
 		TPread "Enter a hostname for your computer : "
     Entered=$Response
 		case $Entered in
@@ -941,11 +941,11 @@ MountPartitions() {
     ;;
     *) TPecho "Formatting /root partition"
     # New code block. Replace existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${RootPartition} | grep "ext" | cut -c26-30`
+    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${RootPartition}
       CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
-    elif [ ${CurrentType} ] && [ $RootType = "btrfs" ]; then
+    elif [ $RootType = "btrfs" ]; then
       mkfs.btrfs -f ${RootPartition} 2> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     else
@@ -976,8 +976,16 @@ MountPartitions() {
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
-    if [ ${AddPartType[$Counter]} != "Skip" ]
-    then
+    # New code, as for /root ... replace existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${CurrentType} ] && [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${AddPartList[$Counter]}
+      CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+      mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
+      # End of new code
+    elif [ ${AddPartType[$Counter]} != "Skip" ];     then
       mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
       CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi

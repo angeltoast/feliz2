@@ -109,8 +109,8 @@ ChooseDE
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Select_a_mirror
 print_heading
 TPecho "Entering automatic installation mode"
-TPecho "If you are re-using existing partitions, the system may ask you"
-TPecho "to confirm that you wish to mount them ... "
+TPecho "If you are re-using existing partitions, the system may pause to"
+TPecho "ask you to confirm that you wish to mount them ... "
 read_timed "'y' would be an appropriate response."
 
 # Set mirrorlist
