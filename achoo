@@ -306,7 +306,7 @@ fi
 print_heading
 case ${DesktopEnvironment} in
   "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-      pacstrap ${MOUNTPOINT} lxde 2> error.log
+      pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
       CheckForError "Line ${LINENO} 'Installing lxde'" 1
       # Test for existing display manager and disable if necessary
       TestExistingDM

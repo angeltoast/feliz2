@@ -259,9 +259,9 @@ LocalMirrorList() {
 
 ManagePartitions() {
 # Check and show partitions ... call cfdisk
-  read_timed "Achoo! is designed to perform with the minimum of fuss."
+  print_info "Achoo! is designed to perform with the minimum of fuss."
   read_timed "But you will have to provide some basic data to ensure"
-  read_timed "that the installation meets your needs, starting with"
+  print_info "that the installation meets your needs, starting with"
   read_timed "your computer's partitioning layout." 
 	# First test for existing partitions
 	print_heading
