@@ -860,7 +860,7 @@ ChooseDE() {
         "Cinnamon") DMList="LightDM LXDM Skip"
               ChooseDM
           ;;
-        "Gnome") DisplayManager="GDM"
+        "Gnome") DisplayManager=""
               Greeter=""	
           ;;
         "LXDE") DisplayManager=""
