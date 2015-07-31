@@ -110,10 +110,12 @@ TPread() {
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
+  elif [ ${lov} -gt ${T_COLS} ]; then
+    stpt=0
   else
-    EMPTY=""
+    stpt=$(( ($T_COLS - 10) / 2 ))
   fi
+  EMPTY="$(printf '%*s' $stpt)"
   read -p "$EMPTY $1" Response
 }
 
@@ -265,9 +267,9 @@ LocalMirrorList() {
 ManagePartitions() {
 # Check and show partitions ... call cfdisk
   read_timed "Achoo! is designed to perform with the minimum of fuss." 1
-  read_timed "But you will have to provide some basic data to ensure" 1
+  read_timed "But you will have to provide some basic data to ensure" 2
   read_timed "that the installation meets your needs, starting with" 1
-  read_timed "your computer's partitioning layout." 1
+  read_timed "your computer's partitioning layout." 2
 	# First test for existing partitions
 	print_heading
 	ShowPartitions=""

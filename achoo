@@ -49,6 +49,7 @@ fi
 # Test internet connection
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Establish_an_internet_connection
 CheckInternet
+StartTime=$(date +%s)
 
 # Check partitioning, offer cfdisk
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Create_new_partition_table
@@ -111,7 +112,9 @@ print_heading
 TPecho "Entering automatic installation mode"
 TPecho "If you are re-using existing partitions, the system may pause to"
 TPecho "ask you to confirm that you wish to mount them ... "
+tput bold
 read_timed "'y' would be an appropriate response."
+tput sgr0
 
 # Set mirrorlist
 LocalMirrorList
@@ -148,7 +151,6 @@ if [ ${SwapFile} ]; then
 fi
 
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Hostname
-print_heading
 TPecho "Setting hostname"
 echo ${HostName} > ${MOUNTPOINT}/etc/hostname 2> error.log
 CheckForError "${LINENO} 'save hostname'" 2
@@ -247,7 +249,6 @@ fi
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
 # https://wiki.archlinux.org/index.php/Codecs
-print_heading
 TPecho "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
 CheckForError "${LINENO} 'Install codecs'" 1
@@ -306,7 +307,7 @@ fi
 print_heading
 case ${DesktopEnvironment} in
   "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
-      pacstrap ${MOUNTPOINT} cinnamon
+      pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
       CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
       ;;
   "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
@@ -338,7 +339,11 @@ case ${DesktopEnvironment} in
 esac
 
 print_heading
-print_info "Success! Finished installing"
+EndTime=$(date +%s)
+Difference=$(( $EndTime-$StartTime ))
+DIFFMIN=$(( $Difference/60 ))
+DIFFSEC=$(( $Difference % 60 ))
+print_info "Success! Finished installing in:" "$DIFFMIN minutes and $DIFFSEC seconds"
 print_info "Press any key to reboot"
 read -n1
 systemctl reboot
