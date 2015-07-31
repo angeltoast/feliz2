@@ -105,7 +105,7 @@ TPecho() { # For displaying info while running on auto
   tput sgr0
 }
 
-TPread() { 
+TPread() {
   T_COLS=`tput cols`
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
@@ -266,7 +266,7 @@ LocalMirrorList() {
 
 ManagePartitions() {
 # Check and show partitions ... call cfdisk
-  read_timed "Achoo! is designed to perform with the minimum of fuss." 1
+  read_timed "Achoo! is designed to perform with the minimum of fuss" 1
   read_timed "But you will have to provide some basic data to ensure" 2
   read_timed "that the installation meets your needs, starting with" 1
   read_timed "your computer's partitioning layout." 2
