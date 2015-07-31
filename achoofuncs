@@ -117,16 +117,21 @@ TPread() {
   read -p "$EMPTY $1" Response
 }
 
-read_timed() {
+read_timed() { # Now can receive second parameter to set duration
   T_COLS=`tput cols`
   lov=${#1}
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
   else
     EMPTY=""
   fi
-  read -t 2 -p "$EMPTY $1"
+  read -t ${tim} -p "$EMPTY $1"
   echo
 }
 
@@ -259,10 +264,10 @@ LocalMirrorList() {
 
 ManagePartitions() {
 # Check and show partitions ... call cfdisk
-  print_info "Achoo! is designed to perform with the minimum of fuss."
-  read_timed "But you will have to provide some basic data to ensure"
-  print_info "that the installation meets your needs, starting with"
-  read_timed "your computer's partitioning layout." 
+  read_timed "Achoo! is designed to perform with the minimum of fuss." 1
+  read_timed "But you will have to provide some basic data to ensure" 1
+  read_timed "that the installation meets your needs, starting with" 1
+  read_timed "your computer's partitioning layout." 1
 	# First test for existing partitions
 	print_heading
 	ShowPartitions=""
@@ -826,12 +831,16 @@ UserAndRoot() {
 ChooseDE() {
 	Counter=0
 	PS3="$prompt1"
-	DEList="LXDE LXQt Mate Xfce Skip"
+	DEList="Cinnamon Gnome LXDE LXQt Mate Xfce Skip"
   print_heading
-  print_info "This installer offers only the 'lightweight' Desktop Environments."
-  print_info "Mate and Xfce include many of the essential desktop tools, whereas LXDE and LXQt are basic desktops onto which you can add your choice of tools."
-  print_info "Note that LXDE and LXQt include the Openbox window manager - useful for building your own desktop."
-  print_info "Or you can choose to skip this option and install something else manually later."
+  print_info "Achoo! now has a wider choice of Desktop Environments."
+  print_info "Cinnamon, Gnome, Mate and Xfce include many useful desktop tools,"
+  print_info "whereas LXDE and LXQt are more basic desktops onto which you can"
+  print_info "add your choice of tools after installation."
+  print_info "Note that LXDE and LXQt include the Openbox window manager, handy"
+  print_info "for building your own desktop."
+  print_info "Alternatively, you can choose to skip this option, and install"
+  print_info "something else manually later."
   echo
 	print_info "Choose your Desktop Environment"
 	select type in ${DEList}
@@ -846,6 +855,12 @@ ChooseDE() {
 			then
       DesktopEnvironment=$Item
       case $Item in
+        "Cinnamon") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "Gnome") DisplayManager="GDM"
+              Greeter=""	
+          ;;
         "LXDE") DisplayManager=""
               Greeter=""
           ;;

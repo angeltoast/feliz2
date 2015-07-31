@@ -305,6 +305,14 @@ fi
 # https://wiki.archlinux.org/index.php/Desktop_Environment
 print_heading
 case ${DesktopEnvironment} in
+  "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
+      pacstrap ${MOUNTPOINT} cinnamon
+      CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
+      ;;
+  "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
+      pacstrap ${MOUNTPOINT} gnome gnome-extra
+      CheckForError "Line ${LINENO} 'Installing Gnome'" 1
+      ;;
   "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
       pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
       CheckForError "Line ${LINENO} 'Installing lxde'" 1
