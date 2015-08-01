@@ -200,7 +200,7 @@ do
   print_list "2) My computer has wifi;"
   print_list "3) I am not connected to the internet;"
   echo
-  TPread "$prompt1"
+  TPread "Enter the number of your selection : "
   case $Response in
     1) CheckConnection
     ;;
@@ -295,11 +295,11 @@ ManagePartitions() {
     print_info "There are no partitions on the device. 'cfdisk' is available"
     print_info "for you to create a partition table now if you wish."
     echo 
-    print_info "Please note: At least one partition, for the / (root) directory,"
-    print_info "must be created. Extra care is needed if you are using UEFI, GPT"
-    print_info "or BTRFS partition tables. If you are uncertain about partitioning,"
-    print_info "you should read the Arch Wiki. If you choose not to use 'cfdisk' now,"
-    print_info "the script will terminate, to allow you to partition in some other way."
+    print_info "Please note: At least one partition must be created for the /root"
+    print_info "directory. Extra care is needed if you are using UEFI, GPT or"
+    print_info "BTRFS partition tables. If you are uncertain about partitioning,"
+    print_info "you should read the Arch Wiki. If you choose not to use 'cfdisk' now"
+    print_info "the script will terminate to allow you to partition in some other way."
     echo
     TPread "Would you like to open cfdisk now? [Y/n]: "
     case $Response in
@@ -800,8 +800,7 @@ UserAndRoot() {
 		# Username
 		print_heading
 		Entered="Archie"
-		print_info "Next we have to deal with names and passwords."
-		print_line
+		print_info "Enter a name for the primary user of the new system."
 		print_info "If you don't create a username here, a default user called"
     print_info "'archie' will be set up"
     echo
@@ -816,9 +815,8 @@ UserAndRoot() {
   	# User password
 		print_heading
 		Entered="Linux"
-		print_info "Passwords should be a mixture of upper- and lower-case letters"
-		print_info "plus numbers and special characters. If you do not enter"
-		print_info "a user password, the default of 'Linux' will be used."
+		print_info "Next enter the password for that user. If you do not enter"
+		print_info "a user password, a default of 'Linux' will be used."
     echo
 		TPread "Enter a password for $UserName: "
     Entered=$Response
