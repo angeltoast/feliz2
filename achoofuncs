@@ -23,13 +23,13 @@
 # Functions           Line
 # -------------------------
 # Input and output     35
-# Error-checking       88
-# Internet connection  138
-# Mirrorlist           193
-# Partitioning         224
-# User & Location      599
-# Desktop Environment  785
-# Running              871
+# Error-checking       148
+# Internet connection  185
+# Mirrorlist           240
+# Partitioning         271
+# User & Location      651
+# Desktop Environment  837
+# Running              933
 # ------------------------
 
 # ----------------
@@ -81,14 +81,14 @@ print_info() { # (adapted from AUI scripts)
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
-    echo -e "$EMPTY $1 \n"
+    echo "$EMPTY $1"
   else
-    echo -e "$1 \n"
+    echo "$1"
   fi
 }
 
 print_list() { 
-   echo -e "$EMPTY $1 \n"
+   echo "$EMPTY $1"
 }
 
 TPecho() { # For displaying info while running on auto
@@ -135,6 +135,14 @@ read_timed() { # Now can receive second parameter to set duration
   fi
   read -t ${tim} -p "$EMPTY $1"
   echo
+}
+
+SetPS3() { 
+  T_COLS=`tput cols`
+  lov=40
+  stpt=$(( ($T_COLS - $lov) / 2 ))
+  EMPTY="$(printf '%*s' $stpt)"
+  PS3="${EMPTY} Enter the number of your selection : "
 }
 
 # --------------
@@ -328,11 +336,12 @@ select_filesystem() {
 # Allows user-selection of filesystem by entering a number
 # Returns enhanced selection via FILESYSTEM variable
 	local Counter=0
-	PS3="$prompt1"
+  SetPS3
 #	TypeList now passed by caller
 	print_info "Please select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
 	print_info "Consult the Arch Wiki : https://wiki.archlinux.org/index.php/Btrfs"
+  echo
 	select type in ${TypeList}
 	do
     for i in ${TypeList}
@@ -356,9 +365,10 @@ AllocateRoot() {
 	local Counter=0
   Partition=""
 	PartitionType=""
-	PS3="$prompt1"
+  SetPS3
 	print_info "Here are the partitions that are available."
 	print_info "First you should select one to use for root:"
+  echo
 	select partition in ${PartitionList}
 	do
     Reply=$REPLY
@@ -376,7 +386,7 @@ AllocateRoot() {
           print_info "be aware that not reformatting the root partition can have"
           print_info "unexpected consequences."
           echo
-          TypeList="Skip ext2 ext3 ext4 btrfs"	
+          TypeList="ext2 ext3 ext4 btrfs Skip"	
         else
         	TypeList="ext2 ext3 ext4 btrfs"	
         fi
@@ -414,16 +424,18 @@ print_heading
 if [ -n ${#PartitionList[@]} ]
 then
   print_info "Select the partition for /swap from the ones that remain,"
-  print_info "or allocate a swap file."
+  print_info "or you can allocate a swap file."
   print_info "Warning: Btrfs does not support swap files. Failure to heed"
   print_info "this warning may result in file system corruption."
+  echo
   Remaining=""
   local Counter=0
-  PS3="$prompt1"
+  SetPS3
   SwapPartition=""
-  PartitionList="Skip $PartitionList Swapfile"
+  PartitionList="$PartitionList Swapfile Skip"
   SwapFile=""
   print_info "If you select the 'Skip' option, no swap will be allocated:"
+  echo
   select partition in ${PartitionList}
   do
   Reply=$REPLY
@@ -495,11 +507,12 @@ while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option
 do
 	print_heading
 	Remaining=""
-	PS3="$prompt1"
-  PartitionList="Skip $PartitionList"
+	SetPS3
+  PartitionList="$PartitionList Skip"
 	print_info "The following partitions remain unallocated."
   print_info "If you wish to use one, select it from the list,"
   print_info "or choose 'Skip' to finish partitioning."
+  echo
 	select partition in ${PartitionList} 
 	do
   echo
@@ -598,7 +611,7 @@ MakePartition() {
     print_info "reformatting an existing partition can have unexpected consequences."
     echo
   fi
-  TypeList="Skip ext2 ext3 ext4 btrfs" # Set format types for the selected partition
+  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
 	select_filesystem
   if [ -z ${PartitionType} ]; then
 		PartitionType="Skip"
@@ -615,10 +628,11 @@ SetGrubDevice() {
 	print_heading
   GrubDevice=""
 	Counter=0
-	PS3="$prompt1"
+	SetPS3
 	print_info "Select the device where Grub is to be installed. Note that, if you"
   print_info "select the 'Skip' option, Grub will not be installed, and you will"
   print_info "have to make alternative arrangements for booting your new system."
+  echo
 	select partition in ${DevicesList}
 	do
   Reply=$REPLY
@@ -651,15 +665,16 @@ DoDoDo=1
 print_info "Now we will try to find your keyboard from a list of all known"
 print_info "layouts. If you know your keyboard code, enter it now."
 print_info "Alternatively, enter the two-letter code for your country ..."
+echo
 SearchPrompt="(eg: uk or us): "
 while [ $DoDoDo -eq 1 ]
 do
-  PS3="$prompt1"
+  SetPS3
   TPread "$SearchPrompt"
   search_term=$Response
   echo
   SEARCHTERM="${search_term,,}"
-  KeyboardList=('Try_Again' `localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` );
+  KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again' );
   echo
   print_info "Choose your keyboard, or 'Try_Again': "
   echo
@@ -686,10 +701,11 @@ done
 setlocale() {
 # New routine to enable user to input two-letter country-code to find locale
 print_heading
-PS3="$prompt1"
+SetPS3
 DoDoDo=1
 SearchPrompt="Enter the two-letter code for your country or language (eg: GB or en): "
 print_info "Next we will try to find your locale"
+echo
 while [ $DoDoDo -eq 1 ]
 do
   TPread "$SearchPrompt"
@@ -735,18 +751,18 @@ settimezone() {
 # Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"
 print_heading
 print_info "Now we have to set up the best mirrors for downloading your system"
-print_info "This will also be used for setting the clock during installation"
+print_info "This data will also be used for setting the clock during installation"
 print_info "Choose the World Zone of your location from the following list"
 # Set Zone and Sub-Zone from lists (from AUI)
   local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
-  PS3="$prompt1"
+  SetPS3
   print_info "Select zone:"
   select ZONE in "${_zones[@]}"
   do
     if contains_element "$ZONE" "${_zones[@]}"; then
       local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
       print_heading
-      PS3="$prompt1"
+      SetPS3
       print_info "Now select your local city or Sub-Zone:"
       select SUBZONE in "${_subzones[@]}"; do
         if contains_element "$SUBZONE" "${_subzones[@]}"; then
@@ -772,6 +788,7 @@ UserAndRoot() {
 		print_info "A hostname is needed. This will be a unique name to identify"
 		print_info "your device on a network. If you do not enter one, the"
 		print_info "default hostname of 'ArchLinux' will be used."
+    echo
 		TPread "Enter a hostname for your computer : "
     Entered=$Response
 		case $Entered in
@@ -787,6 +804,7 @@ UserAndRoot() {
 		print_line
 		print_info "If you don't create a username here, a default user called"
     print_info "'archie' will be set up"
+    echo
 		TPread "Enter a username (must be all lower case): "
     Entered=$Response
 		case $Entered in
@@ -801,6 +819,7 @@ UserAndRoot() {
 		print_info "Passwords should be a mixture of upper- and lower-case letters"
 		print_info "plus numbers and special characters. If you do not enter"
 		print_info "a user password, the default of 'Linux' will be used."
+    echo
 		TPread "Enter a password for $UserName: "
     Entered=$Response
 		case $Entered in
@@ -814,6 +833,7 @@ UserAndRoot() {
 		Entered="Root"
 		print_info "Now set a password for root. If you do not enter one, a default"
     print_info "password of 'Root' will be used."
+    echo
 		TPread "Enter a password for root: "
     Entered=$Response
 		case $Entered in
@@ -832,15 +852,13 @@ UserAndRoot() {
 
 ChooseDE() {
 	Counter=0
-	PS3="$prompt1"
-	DEList="Cinnamon Gnome LXDE LXQt Mate Xfce Skip"
+	SetPS3
+	DEList="Cinnamon Gnome LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
-  print_info "Achoo! now has a wider choice of Desktop Environments."
+  print_info "Desktop Environments & Window Manager."
   print_info "Cinnamon, Gnome, Mate and Xfce include many useful desktop tools,"
   print_info "whereas LXDE and LXQt are more basic desktops onto which you can"
   print_info "add your choice of tools after installation."
-  print_info "Note that LXDE and LXQt include the Openbox window manager, handy"
-  print_info "for building your own desktop."
   print_info "Alternatively, you can choose to skip this option, and install"
   print_info "something else manually later."
   echo
@@ -875,6 +893,9 @@ ChooseDE() {
         "Xfce") DMList="LightDM LXDM Skip"
               ChooseDM
           ;;
+        "Openbox") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
         *) DesktopEnvironment=""
             DisplayManager=""
               Greeter=""	
@@ -889,7 +910,7 @@ ChooseDE() {
 ChooseDM() {
   # Choice of Display Manager from list passed via DMList
   Counter=0
-  PS3="$prompt1"
+  SetPS3
   print_heading
   print_info "Choose one of the following Display Managers for "$Item
   print_info "Alternatively, you can choose to skip this option. Either way, you"

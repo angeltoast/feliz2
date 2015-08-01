@@ -173,14 +173,13 @@ CheckForError "${LINENO} 'set LANG'" 2
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'export LANG'" 2
 
-print_heading
 TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Configure_the_network
 print_heading
-TPecho "Configuring the network"
+TPecho "Installing and configuring network services"
 arch_chroot "systemctl enable dhcpcd.service"
 pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
 CheckForError "${LINENO} 'enable dhcpcd'" 2
@@ -307,11 +306,11 @@ case ${DesktopEnvironment} in
   "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
       pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
       CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
-      arch_chroot "systemctl enable gdm.service" >/dev/null
       ;;
   "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
       pacstrap ${MOUNTPOINT} gnome gnome-extra
       CheckForError "Line ${LINENO} 'Installing Gnome'" 1
+      arch_chroot "systemctl enable gdm.service" >/dev/null
       ;;
   "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
       pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
@@ -333,6 +332,10 @@ case ${DesktopEnvironment} in
   "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
       pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
       CheckForError "Line ${LINENO} 'Installing Xfce'" 1
+      ;;
+  "Openbox") TPecho "Installing 'Openbox' Window Manager"
+      pacstrap ${MOUNTPOINT} openbox
+      CheckForError "Line ${LINENO} 'Installing Openbox'" 1
       ;;
   *) TPecho "Not installing a Desktop Environment"	
 esac
