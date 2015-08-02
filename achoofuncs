@@ -499,7 +499,6 @@ done
 }
 
 ExtraPartitions() {
-# If partitions on the device remain unselected
 local PartCounter=0
 AddedToRemaining=0
 Elements=${#PartitionList[@]}
@@ -959,70 +958,68 @@ do
 print_heading
 print_info "These are the settings you have entered. Please check them ..."
 echo
-print_info "1) The root partition will be $RootPartition formatted to $RootType" 30
+print_info "1) The root partition will be $RootPartition formatted to $RootType" 20
 if [ $SwapPartition ] || [ $SwapFile ]; then
-  print_list "2) $SwapPartition $SwapFile will be used for swap"
+  print_list "   $SwapPartition $SwapFile will be used for swap"
 else
-  print_list "2) No provision has been made for swap"
+  print_list "   No provision has been made for swap"
 fi
 if [ ${AddPartList} ]; then
   Counter=0
-  print_list "3) Extra partitions ..."
+  print_list "   Extra partitions ..."
   for i in ${AddPartList[@]}	
   do
-    print_info "   ${AddPartList[$Counter]} formatted to ${AddPartType[$Counter]} is allocated to ${AddPartLabel[$Counter]}" 30
+    print_info "   ${AddPartList[$Counter]} formatted to ${AddPartType[$Counter]} is allocated to ${AddPartLabel[$Counter]}" 20
     Counter=$((Counter+1))
   done
 else
-  print_list "4) No additional partitions have been allocated"
+  print_list "   No additional partitions have been allocated"
 fi
 if [ $GrubDevice ]; then
-print_list "4) Grub will be installed to $GrubDevice" 30
+print_list "2) Grub will be installed to $GrubDevice" 20
 else
-  print_list "4) No provision has been made for grub"
+  print_list "2) No provision has been made for grub"
 fi
-print_list "5) Keyboard is $Countrykbd"
-print_list "6) Locale will be set to $CountryLocale"
-print_list "7) Zone/subZone will be $ZONE/$SUBZONE"
+print_list "3) Keyboard is $Countrykbd"
+print_list "4) Locale will be set to $CountryLocale"
+print_list "5) Zone/subZone will be $ZONE/$SUBZONE"
 if [ $DisplayManager ]; then
-  print_list "8) $DesktopEnvironment DE has been chosen, with $DisplayManager"
+  print_list "6) $DesktopEnvironment DE has been chosen, with $DisplayManager"
 else
-  print_list "8) $DesktopEnvironment DE has been chosen"
+  print_list "6) $DesktopEnvironment DE has been chosen"
 fi
-print_list "9) Root and user settings"
+print_list "7) Root and user settings"
 print_list "     The device Hostname will be $HostName"
 print_list "     Root password will be $RootPassword"
 print_list "     User $UserName will be created with password $UserPassword"
 print_list "0) Nothing to change"
 echo
+PartitionListAfterRoot=""
+PartitionListAfterSwap=""
+PartitionListAfterExtras=""
 TPread "If you wish to change any settings, enter the item number: "
 case $Response in
   1) PartitionList=$PartitionListBeforeRoot
     AllocateRoot
-    ;;
-  2) PartitionList=$PartitionListBeforeSwap
-    if [ -n ${#PartitionList[@]} ]
-    then
+    if [ -n ${#PartitionList[@]} ]; then
       AllocateSwap
     fi
-  ;;
-  3) PartitionList=$PartitionListBeforeExtras
     if [ -n ${#PartitionList[@]} ]
     then
       ExtraPartitions
     fi
   ;;
-  4) SetGrubDevice
+  2) SetGrubDevice
   ;;
-  5) getkeymap
+  3) getkeymap
   ;;
-  6) setlocale
+  4) setlocale
   ;;
-  7) settimezone
+  5) settimezone
   ;;
-  8) ChooseDE
+  6) ChooseDE
   ;;
-  9) ManualSettings
+  7) ManualSettings
   ;;
   *) Repeat=0
 esac
