@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/16
-# ------------------------------------------------
-# Developed by Elizabeth Mills, incorporating some code adapted from
-# the excellent Evo/Lution script by Carl Duff
-# -------------------------------------------------
-# Please read the following notes before proceeding!
-# -------------------------------------------------
+# Achoo! Arch Linux Installation Script
+# -------------------------------------
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# The achoovariables and achoofuncs scripts must be present in the same
+# directory when running this script.
 
 # The Achoo! scripts are still in development, and may contain bugs.
 # They were originally written for my own use, but are shared in the spirit of
@@ -14,18 +14,15 @@
 
 # Achoo!'s purpose is to speed up installation of Arch Linux, plus a desktop
 # environment and a greeter, with minimum user intervention. An initialising
-# "wizard" asks for only the essential data of location, username, and
-# passwords, and works with the user to set up their partitioning
+# phase asks for only the essential data of location, username, and passwords,
+# and works with the user to set up their partitioning and desktop environment
 # requirements. The script then runs without further intervention to the end.
 
 # Variables and functions are stored in separate scripts for easy access.
 # Some debugging code has been left in to keep the user informed during
-# installation. There is an error-trapping function which should exit
+# installation. There is also an error-trapping function which should exit
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
-
-# Users - You must plan your partition scheme and take care when entering
-# your details, or loss of data could occur.
 
 # -----
 # Setup
@@ -85,15 +82,12 @@ getkeymap
 # Set keyboard layout as defined in SetLocation
 loadkeys ${Countrykbd} 2> error.log
 CheckForError "${LINENO} 'Loadkeys'" 1
-read_timed "The keyboard is now set to: '$Countrykbd'"
 # Localisation
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Locale
 settimezone
-read_timed "Zone and Subzone are now set to: '$ZONE/$SUBZONE'"
 # Variable "CountryLocale" - Default = "en_GB.UTF-8"
 # Also sets CountryCode ("GB" in default)
 setlocale
-read_timed "Locale is now set to: `echo $CountryLocale | cut -c1-5`"
 
 # User input of names and passwords
 Repeat=1
@@ -102,6 +96,9 @@ UserAndRoot
 # User selection of desktop environment and display manager/greeter
 Repeat=1
 ChooseDE
+
+# New code to allow user to change any variables
+FinalCheck
 
 # --------------
 # Auto from here

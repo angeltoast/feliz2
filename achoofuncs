@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script 2015/07/16
 # achoofuncs - Functions called by the main Achoo! script
 # -----------------------------------------------------------
 # This script and the achoovariables script must be present in the same
@@ -10,31 +9,27 @@
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
 
-# The Achoo! script is still in development, and may contain bugs.
-# It was originally written for my own use, but it is shared in the spirit of
-# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
-# Its purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter, with minimum user intervention.
-
-# Users - You must plan your partition scheme and take care when entering
-# your details, or loss of data could occur.
+# ------------------------------------------------------
+# Please read the introduction in the main Achoo! script
+# ------------------------------------------------------
 
 # -------------------------
 # Functions           Line
 # -------------------------
-# Input and output     35
-# Error-checking       148
-# Internet connection  185
-# Mirrorlist           240
-# Partitioning         271
-# User & Location      651
-# Desktop Environment  837
-# Running              933
+# Input and output     39
+# Error-checking       151
+# Internet connection  188
+# Mirrorlist           244
+# Partitioning         275
+# User & Location      656
+# Desktop Environment  854
+# Check Data           951
+# Running              1081
 # ------------------------
 
-# ----------------
+#
 # Input and output 
-# ----------------
+#
 
 contains_element() { # (from AUI scripts)
 # check if an element exists in a string
@@ -77,7 +72,11 @@ print_title() { # (from AUI scripts)
 
 print_info() { # (adapted from AUI scripts)
   T_COLS=`tput cols`
-  lov=${#1}
+  if [ $2 ]; then
+    lov=$2
+  else
+    lov=${#1}
+  fi
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
@@ -87,7 +86,12 @@ print_info() { # (adapted from AUI scripts)
   fi
 }
 
-print_list() { 
+print_list() {
+    if [ $2 ]; then
+      lov=$2
+      stpt=$(( ($T_COLS - $lov) / 2 ))
+      EMPTY="$(printf '%*s' $stpt)"
+    fi
    echo "$EMPTY $1"
 }
 
@@ -145,9 +149,9 @@ SetPS3() {
   PS3="${EMPTY} Enter the number of your selection : "
 }
 
-# --------------
+#
 # Error-checking
-# --------------
+#
 
 CheckForError() {
 # Check for stderr, display it, then exit script
@@ -182,9 +186,9 @@ CheckForError() {
   fi
 }
 
-# --------------
+#
 # Check internet
-# --------------
+#
 
 CheckInternet() {
 print_heading
@@ -201,6 +205,7 @@ do
   print_list "3) I am not connected to the internet;"
   echo
   TPread "Enter the number of your selection : "
+  echo
   case $Response in
     1) CheckConnection
     ;;
@@ -237,9 +242,9 @@ do
 done
 }
 
-# ----------
+#
 # Mirrorlist
-# ----------
+#
 
 LocalMirrorList() {
 # Generate and save a shortened mirrorlist of only the mirrors defined
@@ -268,16 +273,12 @@ LocalMirrorList() {
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 }
 
-# ------------
+#
 # Partitioning
-# ------------
+#
 
 ManagePartitions() {
 # Check and show partitions ... call cfdisk
-  read_timed "Achoo! is designed to perform with the minimum of fuss" 1
-  read_timed "But you will have to provide some basic data to ensure" 2
-  read_timed "that the installation meets your needs, starting with" 1
-  read_timed "your computer's partitioning layout." 2
 	# First test for existing partitions
 	print_heading
 	ShowPartitions=""
@@ -311,10 +312,9 @@ ManagePartitions() {
  	else
     # Alternatively, offer cfdisk to edit existing partitions
 		print_info "Here is a list of available partitions on all connected devices ..."
+    echo
 		lsblk
 		echo
-    print_info "Please note: Extra care is needed if you are using UEFI, GPT or BTRFS"
-    print_info "partition tables, and installation can fail in some circumstances."
 		TPread "Would you like to open cfdisk to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
@@ -569,6 +569,7 @@ MakePartition() {
 	while [ ${LoopRepeat} = "Y" ]
 	do
 		print_info "Enter a label for ${Partition} ... eg: '/home' ... "
+    echo
     TPread "(you must include the '/'): "
 		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
@@ -621,10 +622,8 @@ MakePartition() {
 
 # User to choose device for grub installation
 SetGrubDevice() {
-  # Store available devices in a list	
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
-	# Display available devices and select one for Grub
 	print_heading
   GrubDevice=""
 	Counter=0
@@ -654,17 +653,18 @@ SetGrubDevice() {
   done
 }
 
-# ------------------------------
-# Locations, Names and Passwords
-# ------------------------------
+#
+# Locations, User and Passwords
+#
 
 getkeymap() {
-# New routine to enable user to input two-letter country-code to find keyboard
+# Enable user to input two-letter country-code to find keyboard
 print_heading
 DoDoDo=1
-print_info "Now we will try to find your keyboard from a list of all known"
-print_info "layouts. If you know your keyboard code, enter it now."
-print_info "Alternatively, enter the two-letter code for your country ..."
+print_info "Now we will try to find your keyboard from a list of all"
+print_info "known layouts. If you know your keyboard layout code, enter"
+print_info "it now. Alternatively, try entering a two-letter abbreviation"
+print_info "for your country or language ..."
 echo
 SearchPrompt="(eg: uk or us): "
 while [ $DoDoDo -eq 1 ]
@@ -696,14 +696,16 @@ do
     fi
   done
 done
+echo
+read_timed "The keyboard is now set to: '$Countrykbd'" 1
 }
 
 setlocale() {
-# New routine to enable user to input two-letter country-code to find locale
+# Enable user to input two-letter country-code to find locale
 print_heading
 SetPS3
 DoDoDo=1
-SearchPrompt="Enter the two-letter code for your country or language (eg: GB or en): "
+SearchPrompt="Enter a two-letter code for your country or language (eg: GB or en): "
 print_info "Next we will try to find your locale"
 echo
 while [ $DoDoDo -eq 1 ]
@@ -744,19 +746,23 @@ do
     fi
   done
 done
-
+echo
+read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
 }
 
 settimezone() {
-# Variables "ZONE" and "SUBZONE" - Defaults = "Europe/London"
+# Variables "ZONE" and "SUBZONE"
 print_heading
 print_info "Now we have to set up the best mirrors for downloading your system"
 print_info "This data will also be used for setting the clock during installation"
 print_info "Choose the World Zone of your location from the following list"
+echo
 # Set Zone and Sub-Zone from lists (from AUI)
   local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   SetPS3
+  echo
   print_info "Select zone:"
+  echo
   select ZONE in "${_zones[@]}"
   do
     if contains_element "$ZONE" "${_zones[@]}"; then
@@ -764,6 +770,7 @@ print_info "Choose the World Zone of your location from the following list"
       print_heading
       SetPS3
       print_info "Now select your local city or Sub-Zone:"
+      echo
       select SUBZONE in "${_subzones[@]}"; do
         if contains_element "$SUBZONE" "${_subzones[@]}"; then
           break
@@ -776,10 +783,13 @@ print_info "Choose the World Zone of your location from the following list"
       invalid_option
     fi
   done
+echo
+read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
 }
 
 UserAndRoot() {
 # Accept user input of hostname, username, user password and root password
+  Repeat=1
 	while [ $Repeat ]
 	do
 		# Hostname
@@ -792,14 +802,13 @@ UserAndRoot() {
 		TPread "Enter a hostname for your computer : "
     Entered=$Response
 		case $Entered in
-			"") Entered=$HostName
+			"") HostName="ArchLinux"
 			;;
 			*) HostName=${Entered}
 		esac
 		print_info "Hostname set to: $HostName"
 		# Username
 		print_heading
-		Entered="Archie"
 		print_info "Enter a name for the primary user of the new system."
 		print_info "If you don't create a username here, a default user called"
     print_info "'archie' will be set up"
@@ -807,46 +816,44 @@ UserAndRoot() {
 		TPread "Enter a username (must be all lower case): "
     Entered=$Response
 		case $Entered in
-			"") Entered=$UserName
+			"") UserName="archie"
 			;;
 			*) UserName=${Entered}
 		esac
-		print_info "Username set to: $UserName"
+		print_info "$UserName will be created"
   	# User password
 		print_heading
-		Entered="Linux"
 		print_info "Next enter the password for that user. If you do not enter"
 		print_info "a user password, a default of 'Linux' will be used."
     echo
 		TPread "Enter a password for $UserName: "
     Entered=$Response
 		case $Entered in
-			"") Entered=$UserPassword
+			"") UserPassword="Linux"
 			;;
 			*) UserPassword=${Entered}
 		esac
-		print_info "User password set to: $UserPassword}"
+		print_info "${UserName}'s password will be: ${UserPassword}"
 		# Root password
 		print_heading
-		Entered="Root"
 		print_info "Now set a password for root. If you do not enter one, a default"
     print_info "password of 'Root' will be used."
     echo
 		TPread "Enter a password for root: "
     Entered=$Response
 		case $Entered in
-			"") Entered=$RootPassword
+			"") RootPassword="Root"
 			;;
 			*) RootPassword=${Entered}
 		esac
-		print_info "Root password set to: $RootPassword"
+		print_info "Root password will be set to: $RootPassword"
 	break
 	done
 }
 
-# -------------------
+#
 # Desktop Environment
-# -------------------
+#
 
 ChooseDE() {
 	Counter=0
@@ -941,9 +948,139 @@ ChooseDM() {
   done
 }
 
-# -------
+#
+# Check Data
+#
+
+FinalCheck() {
+Repeat=1
+while [ $Repeat -gt 0 ]
+do
+print_heading
+print_info "These are the settings you have entered. Please check them ..."
+echo
+print_info "1) The root partition will be $RootPartition formatted to $RootType" 30
+if [ $SwapPartition ] || [ $SwapFile ]; then
+  print_list "2) $SwapPartition $SwapFile will be used for swap"
+else
+  print_list "2) No provision has been made for swap"
+fi
+if [ ${AddPartList} ]; then
+  Counter=0
+  print_list "3) Extra partitions ..."
+  for i in ${AddPartList[@]}	
+  do
+    print_info "   ${AddPartList[$Counter]} formatted to ${AddPartType[$Counter]} is allocated to ${AddPartLabel[$Counter]}" 30
+    Counter=$((Counter+1))
+  done
+else
+  print_list "4) No additional partitions have been allocated"
+fi
+if [ $GrubDevice ]; then
+print_list "4) Grub will be installed to $GrubDevice" 30
+else
+  print_list "4) No provision has been made for grub"
+fi
+print_list "5) Keyboard is $Countrykbd"
+print_list "6) Locale will be set to $CountryLocale"
+print_list "7) Zone/subZone will be $ZONE/$SUBZONE"
+if [ $DisplayManager ]; then
+  print_list "8) $DesktopEnvironment DE has been chosen, with $DisplayManager"
+else
+  print_list "8) $DesktopEnvironment DE has been chosen"
+fi
+print_list "9) Root and user settings"
+print_list "     The device Hostname will be $HostName"
+print_list "     Root password will be $RootPassword"
+print_list "     User $UserName will be created with password $UserPassword"
+print_list "0) Nothing to change"
+echo
+TPread "If you wish to change any settings, enter the item number: "
+case $Response in
+  1) PartitionList=$PartitionListBeforeRoot
+    AllocateRoot
+    ;;
+  2) PartitionList=$PartitionListBeforeSwap
+    if [ -n ${#PartitionList[@]} ]
+    then
+      AllocateSwap
+    fi
+  ;;
+  3) PartitionList=$PartitionListBeforeExtras
+    if [ -n ${#PartitionList[@]} ]
+    then
+      ExtraPartitions
+    fi
+  ;;
+  4) SetGrubDevice
+  ;;
+  5) getkeymap
+  ;;
+  6) setlocale
+  ;;
+  7) settimezone
+  ;;
+  8) ChooseDE
+  ;;
+  9) ManualSettings
+  ;;
+  *) Repeat=0
+esac
+done
+}
+
+ManualSettings() {
+IsDone="N"
+PS3=$'\n           Enter number for data to change, or 5 to finish: '
+local Counter=0
+HostName="Achoo"
+RootPassword="Root"
+UserName="Archie"
+UserPassword="Linux"
+ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
+  while [ $IsDone = "N" ]
+  do
+    print_heading
+    select Chosen in $ChooseList
+    do
+      echo
+      Reply=$REPLY
+      for i in ${ChooseList}
+      do
+        Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          case $Reply in
+            1) TPread "Enter new Hostname (currently $HostName) : "
+              HostName=$Response
+            ;;
+            2) TPread "Enter new Root password (currently $RootPassword) : "
+              RootPassword=$Response
+            ;;
+            3) TPread "Enter new username to be created (currently $UserName) : "
+              UserName=$Response
+            ;;
+            4) TPread "Enter new password for $UserName (currently $UserPassword) : "
+              UserPassword=$Response
+            ;;
+            5) IsDone="Y"
+              break
+              ;;
+            *) IsDone="Y"
+              break
+          esac
+          ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
+          break
+         fi
+      done
+      break
+    done
+  done
+}
+
+#
 # Running
-# -------
+#
 
 arch_chroot() {
 # Taken directly from Lution AIS
@@ -1060,6 +1197,6 @@ TestExistingDM() {
   esac
 }
 
-# ----------------
+#
 #	End of Functions
-# ----------------
+#

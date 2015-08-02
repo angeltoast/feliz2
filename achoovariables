@@ -1,84 +1,63 @@
 #!/bin/bash
 
-# Achoo! Arch Linux installation scripts 2015/07/16
-# achoovariables - Variables for Achoo! Arch Linux Installation Script
-# -------------------------------------
+# achoovariables - Variables for the Achoo! Arch Linux Installation Script
+# ------------------------------------------------------------------------
 # This script and the achoofuncs script must be present in the same directory
 # when running the main Achoo! script
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo/Lution script by Carl Duff
+# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
 
-# --------------------------------------------------
-# Please read the following notes before proceeding!
-# --------------------------------------------------
+# ------------------------------------------------------
+# Please read the introduction in the main Achoo! script
+# ------------------------------------------------------
 
-# The Achoo! script is still in development. As such, it may contain bugs.
-# It was originally written for my own use, but it is shared in the spirit of
-# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
-
-# Its purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter, with minimum user intervention.
-
-# Initial variables are set here as examples, with a UK English setup with Xfce
-# as the desktop environment and LXDM display manager. These are changed
-# through interaction as the Achoo! script runs.
-
-# If the script fails, check that all your data entries are correct and in the
-# correct format. You must plan your partition scheme and take care when
-# entering your details, or loss of data could occur.
-
-# --------------
-# Variables List
-# --------------
-
-# ------------------------------------------------------------------------------
-# Default partition variables - essential for correctly mounting the partitions.
-# Contents of these variables are critical and must be accurately defined.
-# ------------------------------------------------------------------------------
+# -------------------
+# Partition variables
+# -------------------
 declare -a AddPartList	# Array of additional partitions by system name. eg: /dev/sda5
 declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
-declare -a AddPartType	# Array of format type for the same partitions in the same order. eg: ext4
-DiskDrive="a"
-GrubDevice="/dev/sda"
-PartitionTable="msdos"
-SwapPartition="/dev/sda2"
-RootPartition="/dev/sda1"
-RootType="ext4"
-DefaultType="ext4"
-Partition="sda1"
+declare -a AddPartType	# Array of format type for the same partitions. eg: ext4
+GrubDevice=""     # "/dev/sda"
+SwapPartition=""  # "/dev/sda2"
+SwapFile=""       # "2G"
+RootPartition=""  # "/dev/sda1"
+RootType=""       # "ext4"
+Partition=""      # "sda1"
+PartitionListBeforeRoot=""   # For reviewing partitions
+PartitionListBeforeSwap=""   # For reviewing partitions
+PartitionListBeforeExtras="" # For reviewing partitions
 MOUNTPOINT="/mnt"
 
-# ----------------------------------------------------------
-# Default location variables.
-# these will be used for language, locale and clock settings
-# ----------------------------------------------------------
-CountryCode="GB"				      # Country code for mirrorlist
-CountryLocale="en_GB.UTF-8"		# Locale
-Countrykbd="uk"					      # Country for keyboard
-ZONE="Europe"             		# For time
-SUBZONE="London"				      # For time
+# ------------------
+# Location variables
+# ------------------
+CountryCode=""    # "GB" Country code for mirrorlist
+CountryLocale=""  # "en_GB.UTF-8"	Locale
+Countrykbd=""     # "uk" keyboard
+ZONE=""           # "Europe" For time
+SUBZONE=""        # "London" For time
 
-# ------------------------------------------------------------------
-# Default desktop environment, display manager and greeter variables
-# ------------------------------------------------------------------
-DesktopEnvironment="xfce4 xfce4-goodies polkit-gnome"
-DisplayManager="lightdm"
-Greeter="lightdm-gtk-greeter" # Not required for some DMs
+# ----------------------------------------------------------
+# Desktop environment, display manager and greeter variables
+# ----------------------------------------------------------
+DesktopEnvironment=""  # "xfce4"
+DisplayManager=""      # "lightdm"
+Greeter=""             # "lightdm-gtk-greeter" # Not required for some DMs
 
-# -------------------------------
-# Default root and user variables
-# -------------------------------
-HostName="ArchLinux"
-RootPassword="Root"
-UserName="archie"
-UserPassword="Linux"
+# -----------------------
+# Root and user variables
+# -----------------------
+HostName=""       # "ArchLinux"
+RootPassword=""   # "Root"
+UserName=""       # "archie"
+UserPassword=""   # "Linux"
 
 # ----------------------
 # Input/Output variables
 # ----------------------
 OutPrompt="Press [Enter] to continue."
 AnyPrompt="Press any key to continue."
-prompt1=$'\n   Enter the number of your selection : '
+prompt1="Enter the number of your selection : "
 Response="" # Global user input variable
 Banner="~ https://wiki.archlinux.org ~"
