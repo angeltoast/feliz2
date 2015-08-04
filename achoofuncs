@@ -704,11 +704,12 @@ setlocale() {
 print_heading
 SetPS3
 DoDoDo=1
-SearchPrompt="Enter a two-letter code for your country or language (eg: GB or en): "
+SearchPrompt=" (eg: GB or en): "
 print_info "Next we will try to find your locale"
 echo
 while [ $DoDoDo -eq 1 ]
 do
+  TPread "Enter a two-letter code for your country or language ..."
   TPread "$SearchPrompt"
   search_term=$Response
   echo
@@ -882,7 +883,7 @@ ChooseDE() {
         "Cinnamon") DMList="LightDM LXDM Skip"
               ChooseDM
           ;;
-        "Enlightenment") DMList="Entrance LightDM LXDM Skip"
+        "Enlightenment") DMList="LightDM LXDM Skip"
               ChooseDM
           ;;
         "Gnome") DisplayManager=""
@@ -934,9 +935,6 @@ ChooseDM() {
       then
         SelectedDM=$item
         case $SelectedDM in
-          "Entrance") DisplayManager="entrance"
-                Greeter=""
-              ;;
           "LightDM") DisplayManager="lightdm"
                 Greeter="lightdm-gtk-greeter"	
               ;;

@@ -106,7 +106,9 @@ FinalCheck
 
 # https://wiki.archlinux.org/index.php/Beginners%27_guide#Select_a_mirror
 print_heading
+tput bold
 read_timed "Entering automatic installation mode" 1
+tput sgr0
 read_timed "If you are re-using existing partitions, the system may pause to" 1
 read_timed "ask you to confirm that you wish to mount them ... " 1
 read_timed "'y' would be an appropriate response." 1
