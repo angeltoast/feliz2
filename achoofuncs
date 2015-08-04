@@ -23,7 +23,7 @@
 # Partitioning         275
 # User & Location      656
 # Desktop Environment  854
-# Check Data           951
+# Check Data           956
 # Running              1081
 # ------------------------
 
@@ -857,12 +857,12 @@ UserAndRoot() {
 ChooseDE() {
 	Counter=0
 	SetPS3
-	DEList="Cinnamon Gnome LXDE LXQt Mate Xfce Openbox Skip"
+	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
-  print_info "Desktop Environments & Window Manager."
+  print_info "Desktop Environments & Window Managers."
   print_info "Cinnamon, Gnome, Mate and Xfce include many useful desktop tools,"
-  print_info "whereas LXDE and LXQt are more basic desktops onto which you can"
-  print_info "add your choice of tools after installation."
+  print_info "whereas LXDE and LXQt and the Window Managers are more basic desktops"
+  print_info "onto which you can add your choice of tools after installation."
   print_info "Alternatively, you can choose to skip this option, and install"
   print_info "something else manually later."
   echo
@@ -880,6 +880,9 @@ ChooseDE() {
       DesktopEnvironment=$Item
       case $Item in
         "Cinnamon") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "Enlightenment") DMList="Entrance LightDM LXDM Skip"
               ChooseDM
           ;;
         "Gnome") DisplayManager=""
@@ -931,6 +934,9 @@ ChooseDM() {
       then
         SelectedDM=$item
         case $SelectedDM in
+          "Entrance") DisplayManager="entrance"
+                Greeter=""
+              ;;
           "LightDM") DisplayManager="lightdm"
                 Greeter="lightdm-gtk-greeter"	
               ;;
@@ -958,68 +964,66 @@ do
 print_heading
 print_info "These are the settings you have entered. Please check them ..."
 echo
-print_info "1) The root partition will be $RootPartition formatted to $RootType" 20
+print_info "1) Root partition ... $RootPartition : $RootType" 50
 if [ $SwapPartition ] || [ $SwapFile ]; then
-  print_list "   $SwapPartition $SwapFile will be used for swap"
+  print_list "2) Swap partition ... $SwapPartition $SwapFile"
 else
-  print_list "   No provision has been made for swap"
+  print_list "2) No provision has been made for swap"
 fi
 if [ ${AddPartList} ]; then
   Counter=0
-  print_list "   Extra partitions ..."
+  print_list "3) Extra partitions ..."
   for i in ${AddPartList[@]}	
   do
-    print_info "   ${AddPartList[$Counter]} formatted to ${AddPartType[$Counter]} is allocated to ${AddPartLabel[$Counter]}" 20
+    print_info "    ${AddPartLabel[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
     Counter=$((Counter+1))
   done
 else
-  print_list "   No additional partitions have been allocated"
+  print_list "3) No additional partitions have been allocated"
 fi
 if [ $GrubDevice ]; then
-print_list "2) Grub will be installed to $GrubDevice" 20
+print_list "4) Grub will be installed to $GrubDevice" 50
 else
-  print_list "2) No provision has been made for grub"
+  print_list "4) No provision has been made for grub"
 fi
-print_list "3) Keyboard is $Countrykbd"
-print_list "4) Locale will be set to $CountryLocale"
-print_list "5) Zone/subZone will be $ZONE/$SUBZONE"
-if [ $DisplayManager ]; then
-  print_list "6) $DesktopEnvironment DE has been chosen, with $DisplayManager"
+print_list "5) Keyboard is $Countrykbd"
+print_list "6) Locale will be set to $CountryLocale"
+print_list "7) Zone/subZone will be $ZONE/$SUBZONE"
+if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
+  print_list "8) DE = $DesktopEnvironment : $DisplayManager"
+elif [ $DesktopEnvironment ]; then
+  print_list "8) DE = $DesktopEnvironment"
 else
-  print_list "6) $DesktopEnvironment DE has been chosen"
+  print_list "8) No DE selected"
 fi
-print_list "7) Root and user settings"
-print_list "     The device Hostname will be $HostName"
-print_list "     Root password will be $RootPassword"
-print_list "     User $UserName will be created with password $UserPassword"
-print_list "0) Nothing to change"
+print_list "9) Root and user settings ..."
+print_list "     Hostname = '$HostName'"
+print_list "     Root password = '$RootPassword'"
+print_list "     User = '$UserName' : Password = '$UserPassword'"
+print_list "0) Save these settings and proceed with installation"
 echo
 PartitionListAfterRoot=""
 PartitionListAfterSwap=""
 PartitionListAfterExtras=""
 TPread "If you wish to change any settings, enter the item number: "
 case $Response in
-  1) PartitionList=$PartitionListBeforeRoot
-    AllocateRoot
-    if [ -n ${#PartitionList[@]} ]; then
-      AllocateSwap
-    fi
-    if [ -n ${#PartitionList[@]} ]
-    then
-      ExtraPartitions
-    fi
+  1) ChangeRootPartition
   ;;
-  2) SetGrubDevice
+  2) ChangeSwapPartition
   ;;
-  3) getkeymap
+  3) ChangeExtraPartitions
   ;;
-  4) setlocale
+  4) SetGrubDevice
   ;;
-  5) settimezone
+  5) getkeymap
   ;;
-  6) ChooseDE
+  6) setlocale
   ;;
-  7) ManualSettings
+  7) settimezone
+  ;;
+  8) ChooseDE
+  ;;
+  9) ManualSettings
   ;;
   *) Repeat=0
 esac
@@ -1074,6 +1078,136 @@ ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName Us
     done
   done
 }
+
+ChangeSwapPartition() {
+
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  local Counter=1
+
+# Next add each field from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+
+Ignores=${#Ignorelist[@]} # Save a count for later
+
+# Get a new list of all available partitions ...
+Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+# Make an array
+Counter=0
+for a in $Partitionlist; do
+  AllPartitions[$Counter]=$a
+  Counter=$((Counter+1))
+done
+
+# Parse through AllPartitions, comparing against each item in Ignorelist
+  PartitionList=""
+  use=1
+  for a in ${AllPartitions[@]}; do
+    for i in ${Ignorelist[@]}; do
+      if [ $i = $a ]; then
+        use=0
+        break
+      fi
+    done
+    if [ ${use} -eq 1 ]; then
+      PartitionList="${PartitionList} $a"
+    else
+      use=1
+    fi
+  done
+
+AllocateSwap
+
+}
+
+ChangeRootPartition() {
+  
+# Start array with SwapPartition
+  Ignorelist[0]=${SwapPartition}
+  local Counter=1
+  
+# Next add each field from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+
+Ignores=${#Ignorelist[@]} # Save a count for later
+
+# Get a new list of all available partitions ...
+Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+# Make an array
+Counter=0
+for a in $Partitionlist; do
+  AllPartitions[$Counter]=$a
+  Counter=$((Counter+1))
+done
+
+# Parse through AllPartitions, comparing against each item in Ignorelist
+  PartitionList=""
+  use=1
+  for a in ${AllPartitions[@]}; do
+    for i in ${Ignorelist[@]}; do
+      if [ $i = $a ]; then
+        use=0
+        break
+      fi
+    done
+    if [ ${use} -eq 1 ]; then
+      PartitionList="${PartitionList} $a"
+    else
+      use=1
+    fi
+  done
+  
+AllocateRoot
+
+}
+
+ChangeExtraPartitions() {
+
+# Copy RootPartition and SwapPartition into temporary array
+Ignorelist[0]=${RootPartition}
+local Counter=1
+if [ ${SwapPartition} ]; then
+  Ignorelist[1]=${SwapPartition}
+  Counter=2
+fi
+
+Ignores=${#Ignorelist[@]} # Save a count for later
+
+# Get a new list of all available partitions ...
+Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+# Make an array
+for a in $Partitionlist; do
+  AllPartitions[$Counter]=$a
+  Counter=$((Counter+1))
+done
+
+# Parse through AllPartitions, comparing against each item in Ignorelist
+  PartitionList=""
+  use=1
+  for a in ${AllPartitions[@]}; do
+    for i in ${Ignorelist[@]}; do
+      if [ $i = $a ]; then
+        use=0
+        break
+      fi
+    done
+    if [ ${use} -eq 1 ]; then
+      PartitionList="${PartitionList} $a"
+    else
+      use=1
+    fi
+  done
+  
+ExtraPartitions
+
+}
+
 
 #
 # Running
@@ -1148,16 +1282,17 @@ MountPartitions() {
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     # New code, as for /root ... replace existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
-    if [ ${CurrentType} ] && [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${AddPartList[$Counter]}
-      CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
-    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
-      CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
-      # End of new code
-    elif [ ${AddPartType[$Counter]} != "Skip" ];     then
-      mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
-      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
+    if [ ${CurrentType} ]; then
+      if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+        btrfs-convert ${AddPartList[$Counter]}
+        CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
+      elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+        mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
+        CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
+      elif [ ${AddPartType[$Counter]} != "Skip" ];     then
+        mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+        CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
+      fi
     fi
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
     CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'" 2

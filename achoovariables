@@ -15,6 +15,7 @@
 # -------------------
 # Partition variables
 # -------------------
+declare -a TempArray    # Can be used anywhere
 declare -a AddPartList	# Array of additional partitions by system name. eg: /dev/sda5
 declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
 declare -a AddPartType	# Array of format type for the same partitions. eg: ext4

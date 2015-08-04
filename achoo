@@ -304,6 +304,10 @@ case ${DesktopEnvironment} in
       pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
       CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
       ;;
+  "Enlightenment") TPecho "Installing 'Cinnamon' Desktop Environment"
+      pacstrap ${MOUNTPOINT} enlightenment
+      CheckForError "Line ${LINENO} 'Installing Enlightenment'" 1
+      ;;
   "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
       pacstrap ${MOUNTPOINT} gnome gnome-extra
       CheckForError "Line ${LINENO} 'Installing Gnome'" 1

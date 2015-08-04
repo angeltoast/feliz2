@@ -1,0 +1,4 @@
+Enlightenment Window Manager added, with Entrance Display Manager option.
+Review option added. This is offered after all data-entry, and allows
+user to check settings before installation begins. The partition review
+code is complex, but now seems to be accurate.
