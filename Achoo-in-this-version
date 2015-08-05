@@ -1,4 +1,5 @@
+Partition review code tightened; functions script is smaller.
 Enlightenment Window Manager added.
+The partition review code is complex, but now seems to be accurate.
 Review option added. This is offered after all data-entry, and allows
 user to check settings before installation begins.
-The partition review code is complex, but now seems to be accurate.

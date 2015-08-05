@@ -1,0 +1,3 @@
+Achoo! is a one-woman project. It started as a way to learn shell scripting by writing a script to automate my own Arch installations, but when I started to share it, I found myself adding features, until it has now become quite versatile.
+
+Achoo!'s objective is to always be light and fast - typically installing in about 8 minutes for LXDE and the other light desktop environments, to about 11 minutes for Gnome or Cinnamon. The design concept is to accept all the data entry at the start, through a series of simple screens and menus, then it runs on automatic to the end.

@@ -23,8 +23,8 @@
 # Partitioning         275
 # User & Location      656
 # Desktop Environment  854
-# Check Data           956
-# Running              1081
+# Check Data           954
+# Running              1150
 # ------------------------
 
 #
@@ -709,7 +709,7 @@ print_info "Next we will try to find your locale"
 echo
 while [ $DoDoDo -eq 1 ]
 do
-  TPread "Enter a two-letter code for your country or language ..."
+  read_timed "Enter a two-letter code for your country or language ..."
   TPread "$SearchPrompt"
   search_term=$Response
   echo
@@ -1006,10 +1006,13 @@ PartitionListAfterExtras=""
 TPread "If you wish to change any settings, enter the item number: "
 case $Response in
   1) ChangeRootPartition
+      AllocateRoot
   ;;
   2) ChangeSwapPartition
+      AllocateSwap
   ;;
   3) ChangeExtraPartitions
+      ExtraPartitions
   ;;
   4) SetGrubDevice
   ;;
@@ -1077,92 +1080,20 @@ ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName Us
   done
 }
 
-ChangeSwapPartition() {
-
-# Start array with RootPartition
-  Ignorelist[0]=${RootPartition}
-  local Counter=1
-
-# Next add each field from AddPartList into the array:
-  for a in ${AddPartList[@]}; do
-    Ignorelist[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-
-Ignores=${#Ignorelist[@]} # Save a count for later
-
-# Get a new list of all available partitions ...
-Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-# Make an array
-Counter=0
-for a in $Partitionlist; do
-  AllPartitions[$Counter]=$a
-  Counter=$((Counter+1))
-done
-
-# Parse through AllPartitions, comparing against each item in Ignorelist
-  PartitionList=""
-  use=1
-  for a in ${AllPartitions[@]}; do
-    for i in ${Ignorelist[@]}; do
-      if [ $i = $a ]; then
-        use=0
-        break
-      fi
-    done
-    if [ ${use} -eq 1 ]; then
-      PartitionList="${PartitionList} $a"
-    else
-      use=1
-    fi
-  done
-
-AllocateSwap
-
-}
-
 ChangeRootPartition() {
-  
 # Start array with SwapPartition
   Ignorelist[0]=${SwapPartition}
   local Counter=1
+  AddExtras
+  MakePartitionList
+}
   
-# Next add each field from AddPartList into the array:
-  for a in ${AddPartList[@]}; do
-    Ignorelist[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-
-Ignores=${#Ignorelist[@]} # Save a count for later
-
-# Get a new list of all available partitions ...
-Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-# Make an array
-Counter=0
-for a in $Partitionlist; do
-  AllPartitions[$Counter]=$a
-  Counter=$((Counter+1))
-done
-
-# Parse through AllPartitions, comparing against each item in Ignorelist
-  PartitionList=""
-  use=1
-  for a in ${AllPartitions[@]}; do
-    for i in ${Ignorelist[@]}; do
-      if [ $i = $a ]; then
-        use=0
-        break
-      fi
-    done
-    if [ ${use} -eq 1 ]; then
-      PartitionList="${PartitionList} $a"
-    else
-      use=1
-    fi
-  done
-  
-AllocateRoot
-
+ChangeSwapPartition() {
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  Counter=1
+  AddExtras
+  MakePartitionList
 }
 
 ChangeExtraPartitions() {
@@ -1174,18 +1105,31 @@ if [ ${SwapPartition} ]; then
   Ignorelist[1]=${SwapPartition}
   Counter=2
 fi
-
 Ignores=${#Ignorelist[@]} # Save a count for later
+MakePartitionList
+}
 
-# Get a new list of all available partitions ...
-Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-# Make an array
-for a in $Partitionlist; do
-  AllPartitions[$Counter]=$a
-  Counter=$((Counter+1))
-done
+AddExtras() {
+  # Called by ChangeSwapPartition and ChangeRootPartition with
+  # Ignorelist started and Counter set to next record number
+  # Add each field (extra partition) from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  Ignores=${#Ignorelist[@]} # Save a count for later
+}
 
-# Parse through AllPartitions, comparing against each item in Ignorelist
+MakePartitionList() {
+  # Get a new list of all available partitions ...
+  Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  # Make an array
+  Counter=0
+  for a in $Partitionlist; do
+    AllPartitions[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  # Parse through AllPartitions, comparing against each item in Ignorelist
   PartitionList=""
   use=1
   for a in ${AllPartitions[@]}; do
@@ -1201,11 +1145,7 @@ done
       use=1
     fi
   done
-  
-ExtraPartitions
-
 }
-
 
 #
 # Running
@@ -1218,11 +1158,7 @@ arch_chroot() {
   CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'" 2
 }  
 
-# Unmount partitions (from Lution/AUI - Nice code)
-# 1) Gets a list of all mounted partitions into MOUNTED
-# 2) Sets swap off for all devices marked as 'swap' in /etc/fstab
-# 3) Unmounts each mounted device in turn from MOUNTED
-umount_partitions(){
+umount_partitions(){ # from Lution/AUI - Nice code
   MOUNTED=""
   MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
   swapoff -a 2> error.log
@@ -1231,11 +1167,9 @@ umount_partitions(){
     umount $i >/dev/null 2> error.log
     CheckForError "${LINENO} 'umount $i >/dev/null'" 2
   done
-
 }
 
 MountPartitions() {
-  # Root
   case $RootType in
     "") TPecho "Not formatting root partition"
     ;;
@@ -1251,16 +1185,13 @@ MountPartitions() {
       mkfs.btrfs -f ${RootPartition} 2> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     else
-      # Original code for all ext types
       mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     fi
-   # End of new code block
   esac
   TPecho "Mounting /root partition"	
   mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
-  # Swap
   if [ ${SwapPartition} ]
   then
     TPecho "Making /swap partition"
