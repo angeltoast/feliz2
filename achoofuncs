@@ -248,27 +248,12 @@ done
 
 LocalMirrorList() {
   
-# Generate and save a shortened mirrorlist of only the mirrors defined
-# in the CountryCode variable. Adapted from Lution AIS
-TPecho "Generating local mirrorlist"
-#	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-#	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
-#	CheckForError "${LINENO}"
-#	curl -so ${MirrorTemp} ${URL} 2> error.log
-#	CheckForError "${LINENO}" 2
-#	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
-#	CheckForError "${LINENO} 'Editing temp mirror-list'" 2
-
-#	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
-#	CheckForError "${LINENO} 'Saving new mirrorlist'" 2
-  
 # Install reflector then use it to generate fast mirror list
+  TPecho "Generating local mirrorlist"
+  cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+  CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
   pacman -S --noconfirm -q reflector 2> error.log
   CheckForError "${LINENO} 'Installing Reflector'" 2
-  systemctl start reflector
-  CheckForError "${LINENO} 'Starting  reflector'" 2
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
-  CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
   CheckForError "${LINENO} 'Saving Reflector mirrorlist'" 2
   chmod +r /etc/pacman.d/mirrorlist 2> error.log
@@ -1001,11 +986,9 @@ print_list "9) Root and user settings ..."
 print_list "     Hostname = '$HostName'"
 print_list "     Root password = '$RootPassword'"
 print_list "     User = '$UserName' : Password = '$UserPassword'"
-print_list "0) Save these settings and proceed with installation"
 echo
-PartitionListAfterRoot=""
-PartitionListAfterSwap=""
-PartitionListAfterExtras=""
+print_list "Press [Enter] to install with these settings"
+echo
 TPread "If you wish to change any settings, enter the item number: "
 case $Response in
   1) ChangeRootPartition
