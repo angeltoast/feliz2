@@ -250,27 +250,32 @@ LocalMirrorList() {
 # Generate and save a shortened mirrorlist of only the mirrors defined
 # in the CountryCode variable. Adapted from Lution AIS
 	TPecho "Generating local mirrorlist"
-	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
-	CheckForError "${LINENO}"
+#	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+#	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
+#	CheckForError "${LINENO}"
 	
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} 2> error.log
-	CheckForError "${LINENO}" 2
+#	curl -so ${MirrorTemp} ${URL} 2> error.log
+#	CheckForError "${LINENO}" 2
 	
 	# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
-	CheckForError "${LINENO}" 2
+#	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
+#	CheckForError "${LINENO}" 2
 	
 	# Make a safe copy of existing mirrorlist
 	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
 	CheckForError "${LINENO}" 2
 	
 	# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+#	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+
+# Install reflector then use it to generat mirror list
+pacman -S reflector 2> error.log
+reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist
+
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 	chmod +r /etc/pacman.d/mirrorlist 2> error.log
-	CheckForError "${LINENO} 'saving mirrorlist'" 2
+	CheckForError "${LINENO} 'Sharing mirrorlist'" 2
 }
 
 #
@@ -665,7 +670,7 @@ print_info "known layouts. If you know your keyboard layout code, enter"
 print_info "it now. Alternatively, try entering a two-letter abbreviation"
 print_info "for your country or language ..."
 echo
-SearchPrompt="(eg: uk or us): "
+SearchPrompt="(eg: fr or us): "
 while [ $DoDoDo -eq 1 ]
 do
   SetPS3
