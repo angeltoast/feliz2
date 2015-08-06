@@ -242,20 +242,37 @@ do
 done
 }
 
-#
+# ----------
 # Mirrorlist
-#
+# ----------
 
 LocalMirrorList() {
-# Generate and save a shortened mirrorlist of fastest mirrors
-	TPecho "Generating local mirrorlist"
+  
+# Generate and save a shortened mirrorlist of only the mirrors defined
+# in the CountryCode variable. Adapted from Lution AIS
+#	TPecho "Generating local mirrorlist"
+#	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+#	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
+#	CheckForError "${LINENO}"
+#	curl -so ${MirrorTemp} ${URL} 2> error.log
+#	CheckForError "${LINENO}" 2
+#	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
+#	CheckForError "${LINENO} 'Editing temp mirror-list'" 2
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+#	CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
+#	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+#	CheckForError "${LINENO} 'Saving new mirrorlist'" 2
+  
+# Install reflector then use it to generate fast mirror list
+  pacman -S --noconfirm -q reflector 2> error.log
+  CheckForError "${LINENO} 'Installing Reflector'" 2
+  systemctl start reflector
+  CheckForError "${LINENO} 'Starting  reflector'" 2
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
+  CheckForError "${LINENO} 'Saving new mirrorlist'" 2
+  chmod +r /etc/pacman.d/mirrorlist 2> error.log
+  CheckForError "${LINENO} 'Sharing mirrorlist'" 2
 
-# Install reflector then use it to generate mirror list
-pacman -S reflector 2> error.log
-reflector --verbose -l 5 --sort rate --save ${MOUNTPOINT}/etc/pacman.d/mirrorlist
-CheckForError "${LINENO} 'saving mirrorlist'" 2
-chmod +r ${MOUNTPOINT}/etc/pacman.d/mirrorlist 2> error.log
-CheckForError "${LINENO} 'Sharing mirrorlist'" 2
 }
 
 #
