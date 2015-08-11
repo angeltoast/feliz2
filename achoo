@@ -204,8 +204,8 @@ CheckForError "${LINENO} 'rm temp passwd'" 0
 if [[ $UEFI -eq 1 ]]; then
   TPecho "Installing ${BootLoader} to $GrubDevice"
   # The mount command will likely result in an error due to it being loaded already
-  arch_chroot "mount -t efivarfs efivarfs /sys/firmware/efi/efivars" 2> error.log
-  pacstrap gummiboot
+  # arch_chroot "mount -t efivarfs efivarfs /sys/firmware/efi/efivars" 2> error.log
+  pacstrap ${MOUNTPOINT} gummiboot
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
   arch_chroot "gummiboot install" 2> error.log
   TPecho "Modifying arch.conf for gummiboot"
