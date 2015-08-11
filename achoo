@@ -91,6 +91,7 @@ print_heading
 print_info "Achoo! can be set to install a desktop environment, set up users,"
 print_info "and automatically install codecs, wifi tools, graphics and other "
 print_info "luxuries, or you can choose to have just a basic installation."
+echo
 TPread "Full (F) or Basic (B)? (Please enter F or B): "
   case $Response in
     "f" | "F" | "") Scope="Full"
@@ -203,11 +204,10 @@ CheckForError "${LINENO} 'rm temp passwd'" 0
 if [[ $UEFI -eq 1 ]]; then
   TPecho "Installing ${BootLoader} to $GrubDevice"
   # The mount command will likely result in an error due to it being loaded already
-  mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
+  arch_chroot "mount -t efivarfs efivarfs /sys/firmware/efi/efivars" 2> error.log
   pacstrap gummiboot
-  pacstrap /usr/bin/gummiboot install 2> error.log
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
-  # Copy modified arch.conf to new system
+  arch_chroot "gummiboot install" 2> error.log
   TPecho "Modifying arch.conf for gummiboot"
   cp arch.conf ${MOUNTPOINT}/boot/loader/entries/ 2> error.log
   CheckForError "${LINENO} 'Copying arch.conf to MOUNTPOINT'" 1
