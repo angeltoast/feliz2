@@ -24,9 +24,9 @@
 # the script if any critical errors are detected. If the script fails,
 # check that all your variables are correct and in the correct format.
 
-# -----
+#
 # Setup
-# -----
+#
 
 # Check for the external files
 if [[ -f `pwd`/achoovariables ]]; then
@@ -50,6 +50,10 @@ StartTime=$(date +%s)
 # Check partitioning, offer cfdisk
 ManagePartitions
 # Display partitions and allocate root
+
+# Test for UEFI/GPT and report appropriately
+TestUEFI
+
 if [ -n ${#PartitionList[@]} ]
 then
   AllocateRoot
@@ -70,9 +74,9 @@ fi
 # Select device for Grub
 SetGrubDevice
 
-# -------------------------------------------
+#
 # Display welcome text and set user-variables
-# -------------------------------------------
+#
 
 # Keyboard layout
 getkeymap
@@ -93,9 +97,9 @@ ChooseDE
 # New code to allow user to change any variables
 FinalCheck
 
-# --------------
+#
 # Auto from here
-# --------------
+#
 
 print_heading
 tput bold
@@ -114,7 +118,7 @@ LocalMirrorList
 
 print_heading
 TPecho "Installing LTS Kernel and base-devel"
-pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
+pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
 # Set the default PATH variable (copied from Lution to help with persistent errors)
@@ -171,7 +175,6 @@ CheckForError "${LINENO} 'enable dhcpcd'" 2
 arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 
 # Set root password (Reduced from Lution AIS)
-# https://wiki.archlinux.org/index.php/Beginners%27_guide#Set_the_root_password
 print_heading
 TPecho "Setting root password"
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd 2> error.log
@@ -180,11 +183,18 @@ arch_chroot "passwd root" < /tmp/.passwd >/dev/null
 rm /tmp/.passwd 2> error.log
 CheckForError "${LINENO} 'rm temp passwd'" 0
 
-# Install Grub if selected
-# https://wiki.archlinux.org/index.php/Beginners%27_guide#Install_and_configure_a_bootloader
-#print_heading
-if [ ${GrubDevice} ]
-then
+# Install bootloader
+if [[ $UEFI -eq 1 ]]; then
+  # The mount command will likely result in an error due to it being loaded already
+  mount -t efivarfs efivarfs ${MOUNTPOINT}/sys/firmware/efi/efivars 2> error.log
+  pacstrap ${MOUNTPOINT} gummiboot
+  pacstrap ${MOUNTPOINT}/usr/bin/gummiboot install
+  CheckForError "${LINENO} 'Installing Gummiboot'" 1
+  # Copy modified arch.conf to new system
+  TPecho "Modifying arch.conf for gummiboot"
+  cp arch.conf ${MOUNTPOINT}/boot/loader/entries/ 2> error.log
+  CheckForError "${LINENO} 'Copying arch.conf to MOUNTPOINT'" 1
+elif [ ${GrubDevice} ]; then
   TPecho "Installing GRUB to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2
@@ -207,7 +217,6 @@ echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.l
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
 # If not already exist, create user and set password
-# https://wiki.archlinux.org/index.php/Users_and_groups#Example_adding_a_user
 print_heading
 CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
 if [ -z ${CheckUsers} ]
@@ -230,13 +239,11 @@ else
 fi
 
 # Install Flash and other Multimedia Codecs (add/remove items as desired)
-# https://wiki.archlinux.org/index.php/Codecs
 TPecho "Adding Flash and other Multimedia Codecs"
 pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
 CheckForError "${LINENO} 'Install codecs'" 1
 
 # Wireless tools
-# https://wiki.archlinux.org/index.php/Wireless
 print_heading
 TPecho "Installing wireless tools"
 pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
@@ -245,14 +252,12 @@ pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> er
 CheckForError "${LINENO} 'Wireless tools'" 1
 
 # Install X, graphics, etc
-# https://wiki.archlinux.org/index.php/Xorg
 print_heading
 TPecho "Installing X, graphics, etc"
 pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
 CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
 # Copy modified pacman.conf to new system and install Yaourt
-# https://wiki.archlinux.org/index.php/Yaourt
 print_heading
 TPecho "Modifying pacman.conf and installing Yaourt"
 cp pacman.conf ${MOUNTPOINT}/etc 2> error.log

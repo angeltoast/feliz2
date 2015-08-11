@@ -12,51 +12,52 @@
 # Please read the introduction in the main Achoo! script
 # ------------------------------------------------------
 
-# -------------------
+#
 # Partition variables
-# -------------------
+#
 declare -a TempArray    # Can be used anywhere
 declare -a AddPartList	# Array of additional partitions by system name. eg: /dev/sda5
 declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
 declare -a AddPartType	# Array of format type for the same partitions. eg: ext4
 GrubDevice=""     # "/dev/sda"
-SwapPartition=""  # "/dev/sda2"
+SwapPartition=""  # "/dev/sda3"
 SwapFile=""       # "2G"
-RootPartition=""  # "/dev/sda1"
+RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
-PartitionListBeforeRoot=""   # For reviewing partitions
-PartitionListBeforeSwap=""   # For reviewing partitions
-PartitionListBeforeExtras="" # For reviewing partitions
 MOUNTPOINT="/mnt"
+# UEFI Architecture
+UEFI=0            # Is the system UEFI?
+EFIPartition=""   # "/dev/sda1"
+DualBoot="N"      # For formatting EFI partition
 
-# ------------------
+#
 # Location variables
-# ------------------
+#
 CountryCode=""    # "GB" Country code for mirrorlist
 CountryLocale=""  # "en_GB.UTF-8"	Locale
 Countrykbd=""     # "uk" keyboard
 ZONE=""           # "Europe" For time
 SUBZONE=""        # "London" For time
 
-# ----------------------------------------------------------
+#
 # Desktop environment, display manager and greeter variables
-# ----------------------------------------------------------
+#
 DesktopEnvironment=""  # "xfce4"
 DisplayManager=""      # "lightdm"
 Greeter=""             # "lightdm-gtk-greeter" # Not required for some DMs
 
-# -----------------------
+#
 # Root and user variables
-# -----------------------
+#
 HostName=""       # "ArchLinux"
 RootPassword=""   # "Root"
 UserName=""       # "archie"
 UserPassword=""   # "Linux"
 
-# ----------------------
+#
 # Input/Output variables
-# ----------------------
+#
 OutPrompt="Press [Enter] to continue."
 AnyPrompt="Press any key to continue."
 prompt1="Enter the number of your selection : "

@@ -19,12 +19,12 @@
 # Input and output     39
 # Error-checking       151
 # Internet connection  188
-# Mirrorlist           244
-# Partitioning         275
-# User & Location      656
-# Desktop Environment  854
-# Check Data           954
-# Running              1150
+# Mirrorlist           245
+# Partitioning         264
+# User & Location      700
+# Desktop Environment  900
+# Check Data           1000
+# Running              1192
 # ------------------------
 
 #
@@ -56,21 +56,20 @@ print_heading() {
     echo -e "$Banner"
   fi
   printf "%$(tput cols)s\n"|tr ' ' '-'
-#  tput sgr0
 }
 
-print_line() { # (from AUI scripts)
+print_line() { # from AUI scripts
     printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
-print_title() { # (from AUI scripts)
+print_title() { # from AUI scripts
     print_line
     echo -e " ${Bold}$1${Reset}"
     print_line
     echo ""
 }
 
-print_info() { # (adapted from AUI scripts)
+print_info() { # adapted from AUI scripts
   T_COLS=`tput cols`
   if [ $2 ]; then
     lov=$2
@@ -242,9 +241,9 @@ do
 done
 }
 
-# ----------
+#
 # Mirrorlist
-# ----------
+#
 
 LocalMirrorList() {
   
@@ -284,11 +283,11 @@ ManagePartitions() {
     print_info "There are no partitions on the device. 'cfdisk' is available"
     print_info "for you to create a partition table now if you wish."
     echo 
-    print_info "Please note: At least one partition must be created for the /root"
-    print_info "directory. Extra care is needed if you are using UEFI, GPT or"
-    print_info "BTRFS partition tables. If you are uncertain about partitioning,"
-    print_info "you should read the Arch Wiki. If you choose not to use 'cfdisk' now"
-    print_info "the script will terminate to allow you to partition in some other way."
+    print_info "Please note: At least one partition must be created for the"
+    print_info "/root directory. Extra care is needed if installing on UEFI"
+    print_info "systems. If you are uncertain about partitioning, you should"
+    print_info "read the Arch Wiki. If you choose not to use 'cfdisk' now the"
+    print_info "script will terminate to allow you to partition in some other way."
     echo
     TPread "Would you like to open cfdisk now? [Y/n]: "
     case $Response in
@@ -303,7 +302,10 @@ ManagePartitions() {
     echo
 		lsblk
 		echo
-		TPread "Would you like to open cfdisk to manage those partitions now? [Y/n]: "
+    print_info "Extra care is needed if installing on UEFI/GPT systems."
+    print_info "If you are uncertain about partitioning, you should read"
+    print_info "the Arch Wiki. Would you like to open Cfdisk"
+		TPread "to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
             	CheckForError "${LINENO} 'cfdisk'" 2
@@ -317,6 +319,68 @@ ManagePartitions() {
   for Part in ${ShowPartitions}
   do
     PartitionList="$PartitionList $Part"	# Add each partition
+  done
+}
+
+TestUEFI() {
+  # BIOS or UEFI Detection - from Lution
+  if [[ -d "/sys/firmware/efi/" ]]; then
+    # Mount efivarfs if it is not already mounted
+    if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+      mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+    fi
+    UEFI=1
+    SYSTEM="UEFI"
+  else
+    UEFI=0
+    SYSTEM="BIOS"
+  fi
+
+  if [ UEFI -eq 1 ]; then
+    print_info "UEFI detected. Achoo! can work with your UEFI system, but it"
+    print_info "is your responsibility to ensure that you have created the"
+    print_info "necessary partitions and to allocate them correctly."
+    read_timed "If in doubt, stop the installation and check the Arch Wiki."
+    AllocateEFI
+  fi
+}
+
+AllocateEFI() {
+# Display partitions for user-selection	
+	# Uses list of all available partitions in PartitionList created in ManagePartitions
+	print_heading
+	Remaining=""
+	local Counter=0
+  Partition=""
+	PartitionType=""
+  SetPS3
+	print_info "Here are the partitions that are available."
+	print_info "First you should select one to use for EFI"
+  echo
+	select partition in ${PartitionList}
+	do
+    Reply=$REPLY
+    for i in ${PartitionList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]
+			then
+				Partition="/dev/$i"
+				EFIPartition="${Partition}"
+        print_info "Are other operating systems (eg: Windows) dual-booting"
+      TPread "with this installation? (y/N): "
+      case $Response in
+        "n" | "N" | "") DualBoot="N"
+          exit
+        ;;
+        *) DualBoot="Y"
+      esac
+			else
+				Remaining="$Remaining $i"	# Add next available partition
+			fi
+		done
+    PartitionList=$Remaining			# Replace original PartitionList with remaining options
+		break
   done
 }
 
@@ -615,7 +679,7 @@ SetGrubDevice() {
   GrubDevice=""
 	Counter=0
 	SetPS3
-	print_info "Select the device where Grub is to be installed. Note that, if you"
+	print_info "Select the device where bootloader is to be installed. Note that, if you"
   print_info "select the 'Skip' option, Grub will not be installed, and you will"
   print_info "have to make alternative arrangements for booting your new system."
   echo
@@ -1083,7 +1147,6 @@ ChangeSwapPartition() {
 }
 
 ChangeExtraPartitions() {
-
 # Copy RootPartition and SwapPartition into temporary array
 Ignorelist[0]=${RootPartition}
 local Counter=1
@@ -1156,6 +1219,12 @@ umount_partitions(){ # from Lution/AUI - Nice code
 }
 
 MountPartitions() {
+  if [ UEFI -eq 1 ] && [ DualBoot = "N" ]; then
+    mkfs.fat -F32 ${EFIPartition} 2> error.log
+    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
+    mkdir /mnt/boot
+    mount ${EFIPartition} /mnt/boot
+  fi
   case $RootType in
     "") TPecho "Not formatting root partition"
     ;;
