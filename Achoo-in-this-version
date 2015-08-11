@@ -1,6 +1,8 @@
-Added reflector to generate faster mirrors.
-Partition review code tightened; functions script is smaller.
+11 August 2015
+UEFI capability added.
+New otion added for either full or basic installation.
+'Reflector' added for better mirror-list.
+Previous ...
 Enlightenment Window Manager added.
-The partition review code is complex, but now seems to be accurate.
 Review option added. This is offered after all data-entry, and allows
 user to check settings before installation begins.

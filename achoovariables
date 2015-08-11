@@ -12,7 +12,6 @@
 # Please read the introduction in the main Achoo! script
 # ------------------------------------------------------
 
-#
 # Partition variables
 #
 declare -a TempArray    # Can be used anywhere
@@ -27,11 +26,11 @@ RootType=""       # "ext4"
 Partition=""      # "sda1"
 MOUNTPOINT="/mnt"
 # UEFI Architecture
-UEFI=0            # Is the system UEFI?
+UEFI=0            # 1 = UEFI; 0 = BIOS
 EFIPartition=""   # "/dev/sda1"
 DualBoot="N"      # For formatting EFI partition
+BootLoader="Grub" # For displaying
 
-#
 # Location variables
 #
 CountryCode=""    # "GB" Country code for mirrorlist
@@ -40,14 +39,12 @@ Countrykbd=""     # "uk" keyboard
 ZONE=""           # "Europe" For time
 SUBZONE=""        # "London" For time
 
-#
 # Desktop environment, display manager and greeter variables
 #
 DesktopEnvironment=""  # "xfce4"
 DisplayManager=""      # "lightdm"
-Greeter=""             # "lightdm-gtk-greeter" # Not required for some DMs
+Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
 
-#
 # Root and user variables
 #
 HostName=""       # "ArchLinux"
@@ -55,7 +52,10 @@ RootPassword=""   # "Root"
 UserName=""       # "archie"
 UserPassword=""   # "Linux"
 
+# Installation scope
 #
+Scope="Basic"     # 'Full' or 'Basic'
+
 # Input/Output variables
 #
 OutPrompt="Press [Enter] to continue."

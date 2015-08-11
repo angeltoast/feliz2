@@ -86,13 +86,29 @@ CheckForError "${LINENO} 'Loadkeys'" 1
 settimezone
 setlocale
 
+# Set scope of installation
+print_heading
+print_info "Achoo! can be set to install a desktop environment, set up users,"
+print_info "and automatically install codecs, wifi tools, graphics and other "
+print_info "luxuries, or you can choose to have just a basic installation."
+TPread "Full (F) or Basic (B)? (Please enter F or B): "
+  case $Response in
+    "f" | "F" | "") Scope="Full"
+    ;;
+    *) Scope="Basic"
+  esac  
+
 # Names and passwords
-Repeat=1
-UserAndRoot
+RootPassword
+if [ $Scope = "Full" ]; then
+  UserPassword
+fi
 
 # Desktop environment and display manager/greeter
-Repeat=1
-ChooseDE
+if [ $Scope = "Full" ]; then
+  Repeat=1
+  ChooseDE
+fi
 
 # New code to allow user to change any variables
 FinalCheck
@@ -185,23 +201,24 @@ CheckForError "${LINENO} 'rm temp passwd'" 0
 
 # Install bootloader
 if [[ $UEFI -eq 1 ]]; then
+  TPecho "Installing ${BootLoader} to $GrubDevice"
   # The mount command will likely result in an error due to it being loaded already
-  mount -t efivarfs efivarfs ${MOUNTPOINT}/sys/firmware/efi/efivars 2> error.log
+  mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
   pacstrap ${MOUNTPOINT} gummiboot
-  pacstrap ${MOUNTPOINT}/usr/bin/gummiboot install
+  pacstrap ${MOUNTPOINT}/usr/bin/gummiboot install 2> error.log
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
   # Copy modified arch.conf to new system
   TPecho "Modifying arch.conf for gummiboot"
   cp arch.conf ${MOUNTPOINT}/boot/loader/entries/ 2> error.log
   CheckForError "${LINENO} 'Copying arch.conf to MOUNTPOINT'" 1
 elif [ ${GrubDevice} ]; then
-  TPecho "Installing GRUB to $GrubDevice"
+  TPecho "Installing ${BootLoader} to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
-  TPecho "Not installing GRUB"
+  TPecho "Not installing ${BootLoader}"
 fi
 
 print_heading
@@ -216,123 +233,121 @@ CheckForError "${LINENO} 'Saving persistent keymap'" 1
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
-# If not already exist, create user and set password
-print_heading
-CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
-if [ -z ${CheckUsers} ]
-then
-  TPecho "Adding user ${UserName} ... "
-  arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
-  CheckForError "${LINENO} 'Could not add user'" 1
-  echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
-  arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-  rm /tmp/.passwd 2> error.log
-  CheckForError "${LINENO} 'rm temp passwd'" 0
-  # Set up basic configuration files and permissions for user
-  TPecho "Setting up user configuration"
-  arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
-  arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-  sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
-  CheckForError "${LINENO} 'User-configuration'" 1
-else
-  TPecho "User already exists"
-fi
-
-# Install Flash and other Multimedia Codecs (add/remove items as desired)
-TPecho "Adding Flash and other Multimedia Codecs"
-pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
-CheckForError "${LINENO} 'Install codecs'" 1
-
-# Wireless tools
-print_heading
-TPecho "Installing wireless tools"
-pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
-CheckForError "${LINENO} 'Wireless firmware'" 1
-pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
-CheckForError "${LINENO} 'Wireless tools'" 1
-
-# Install X, graphics, etc
-print_heading
-TPecho "Installing X, graphics, etc"
-pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
-CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
-
-# Copy modified pacman.conf to new system and install Yaourt
-print_heading
-TPecho "Modifying pacman.conf and installing Yaourt"
-cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
-CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
-cp pacman.conf /etc 2> error.log
-CheckForError "${LINENO} 'Copying pacman.conf local'" 1
-pacman -Sy 2> error.log
-CheckForError "${LINENO} 'Update Arch" 1
-pacstrap ${MOUNTPOINT} yaourt 2> error.log
-CheckForError "${LINENO} 'Install yaourt'" 1
-
-# Install Display Manager
-# https://wiki.archlinux.org/index.php/Display_manager
-print_heading
-if [ ${DisplayManager} ]
-then
-  # Test for existing display manager and disable if necessary
-  TestExistingDM
-  # Then install and enable new DM
-  TPecho "Installing Display Manager ${DisplayManager}"
-  pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
-  CheckForError "Line ${LINENO} 'Install display manager'" 2
-  arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  if [ ${DisplayManager} = "LXDM" ] && [ ${DesktopEnvironment} = "Xfce" ]
-  then
-    echo "session=/usr/bin/startxfce4" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
+# Extra processes for 'Full' installation
+if [ $Scope = "Full" ]; then
+  print_heading
+  CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
+  # If not already exist, create user and set password
+  if [ -z ${CheckUsers} ]; then
+    TPecho "Adding user ${UserName} ... "
+    arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
+    CheckForError "${LINENO} 'Could not add user'" 1
+    echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
+    arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+    rm /tmp/.passwd 2> error.log
+    CheckForError "${LINENO} 'rm temp passwd'" 0
+    # Set up basic configuration files and permissions for user
+    TPecho "Setting up user configuration"
+    arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
+    CheckForError "${LINENO} 'User-configuration'" 1
+  else
+    TPecho "User already exists"
   fi
-else
-  TPecho "Not installing a Display Manager"
-fi
 
-# Install Desktop Environment
-# https://wiki.archlinux.org/index.php/Desktop_Environment
-print_heading
-case ${DesktopEnvironment} in
-  "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
-      pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
-      CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
-      ;;
-  "Enlightenment") TPecho "Installing 'Cinnamon' Desktop Environment"
-      pacstrap ${MOUNTPOINT} enlightenment
-      CheckForError "Line ${LINENO} 'Installing Enlightenment'" 1
-      ;;
-  "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-      pacstrap ${MOUNTPOINT} gnome gnome-extra
-      CheckForError "Line ${LINENO} 'Installing Gnome'" 1
-      arch_chroot "systemctl enable gdm.service" >/dev/null
-      ;;
-  "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-      pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
-      CheckForError "Line ${LINENO} 'Installing lxde'" 1
-      # Test for existing display manager and disable if necessary
-      TestExistingDM
-      # Then enable (included) new DM
-      arch_chroot "systemctl enable lxdm.service" >/dev/null
-      echo "session=/usr/bin/startlxde" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
-      ;;
-  "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
-      pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
-      CheckForError "Line ${LINENO} 'Installing lxqt'" 1
-      ;;
-  "Mate") TPecho "Installing 'Mate' Desktop Environment"
-      pacstrap ${MOUNTPOINT} mate mate-extra
-      CheckForError "Line ${LINENO} 'Installing Mate'" 1
-      ;;
-  "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
-      pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
-      CheckForError "Line ${LINENO} 'Installing Xfce'" 1
-      ;;
-  "Openbox") TPecho "Installing 'Openbox' Window Manager"
-      pacstrap ${MOUNTPOINT} openbox xterm
-      CheckForError "Line ${LINENO} 'Installing Openbox'" 1
-      ;;
+  # Install Flash and other Multimedia Codecs (add/remove items as desired)
+  TPecho "Adding Flash and other Multimedia Codecs"
+  pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
+  CheckForError "${LINENO} 'Install codecs'" 1
+
+  # Wireless tools
+  print_heading
+  TPecho "Installing wireless tools"
+  pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
+  CheckForError "${LINENO} 'Wireless firmware'" 1
+  pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
+  CheckForError "${LINENO} 'Wireless tools'" 1
+
+  # Install X, graphics, etc
+  print_heading
+  TPecho "Installing X, graphics, etc"
+  pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
+  CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
+
+  # Copy modified pacman.conf to new system and install Yaourt
+  print_heading
+  TPecho "Modifying pacman.conf and installing Yaourt"
+  cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
+  CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
+  cp pacman.conf /etc 2> error.log
+  CheckForError "${LINENO} 'Copying pacman.conf local'" 1
+  pacman -Sy 2> error.log
+  CheckForError "${LINENO} 'Update Arch" 1
+  pacstrap ${MOUNTPOINT} yaourt 2> error.log
+  CheckForError "${LINENO} 'Install yaourt'" 1
+
+  # Install Display Manager
+  print_heading
+  if [ ${DisplayManager} ]; then
+    # Test for existing display manager and disable if necessary
+    TestExistingDM
+    # Then install and enable new DM
+    TPecho "Installing Display Manager ${DisplayManager}"
+    pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
+    CheckForError "Line ${LINENO} 'Install display manager'" 2
+    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+    if [ ${DisplayManager} = "LXDM" ] && [ ${DesktopEnvironment} = "Xfce" ]; then
+      echo "session=/usr/bin/startxfce4" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
+    fi
+  else
+    TPecho "Not installing a Display Manager"
+  fi
+
+  # Install Desktop Environment
+  print_heading
+  case ${DesktopEnvironment} in
+    "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
+        pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
+        CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
+        ;;
+    "Enlightenment") TPecho "Installing 'Cinnamon' Desktop Environment"
+        pacstrap ${MOUNTPOINT} enlightenment
+        CheckForError "Line ${LINENO} 'Installing Enlightenment'" 1
+        ;;
+    "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
+        pacstrap ${MOUNTPOINT} gnome gnome-extra
+        CheckForError "Line ${LINENO} 'Installing Gnome'" 1
+        arch_chroot "systemctl enable gdm.service" >/dev/null
+        ;;
+    "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
+        pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
+        CheckForError "Line ${LINENO} 'Installing lxde'" 1
+        # Test for existing display manager and disable if necessary
+        TestExistingDM
+        # Then enable (included) new DM
+        arch_chroot "systemctl enable lxdm.service" >/dev/null
+        echo "session=/usr/bin/startlxde" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
+        ;;
+    "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
+        pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
+        CheckForError "Line ${LINENO} 'Installing lxqt'" 1
+        ;;
+    "Mate") TPecho "Installing 'Mate' Desktop Environment"
+        pacstrap ${MOUNTPOINT} mate mate-extra
+        CheckForError "Line ${LINENO} 'Installing Mate'" 1
+        ;;
+    "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
+        pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Xfce'" 1
+        ;;
+    "Openbox") TPecho "Installing 'Openbox' Window Manager"
+        pacstrap ${MOUNTPOINT} openbox xterm
+        CheckForError "Line ${LINENO} 'Installing Openbox'" 1
+        ;;
   *) TPecho "Not installing a Desktop Environment"	
-esac
+  esac
+fi
 
 print_heading
 EndTime=$(date +%s)

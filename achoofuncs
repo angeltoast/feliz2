@@ -304,7 +304,7 @@ ManagePartitions() {
 		echo
     print_info "Extra care is needed if installing on UEFI/GPT systems."
     print_info "If you are uncertain about partitioning, you should read"
-    print_info "the Arch Wiki. Would you like to open Cfdisk"
+    print_info "the Arch Wiki. Would you like to open cfdisk"
 		TPread "to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
@@ -331,24 +331,21 @@ TestUEFI() {
     fi
     UEFI=1
     SYSTEM="UEFI"
-  else
-    UEFI=0
-    SYSTEM="BIOS"
-  fi
-
-  if [ UEFI -eq 1 ]; then
     print_info "UEFI detected. Achoo! can work with your UEFI system, but it"
     print_info "is your responsibility to ensure that you have created the"
     print_info "necessary partitions and to allocate them correctly."
-    read_timed "If in doubt, stop the installation and check the Arch Wiki."
+    print_info "If in doubt, stop the installation and check the Arch Wiki."
     AllocateEFI
+  else
+    UEFI=0
+    SYSTEM="BIOS"
   fi
 }
 
 AllocateEFI() {
 # Display partitions for user-selection	
 	# Uses list of all available partitions in PartitionList created in ManagePartitions
-	print_heading
+	#print_heading
 	Remaining=""
 	local Counter=0
   Partition=""
@@ -367,11 +364,11 @@ AllocateEFI() {
 			then
 				Partition="/dev/$i"
 				EFIPartition="${Partition}"
+        echo
         print_info "Are other operating systems (eg: Windows) dual-booting"
       TPread "with this installation? (y/N): "
       case $Response in
         "n" | "N" | "") DualBoot="N"
-          exit
         ;;
         *) DualBoot="Y"
       esac
@@ -418,8 +415,7 @@ AllocateRoot() {
   Partition=""
 	PartitionType=""
   SetPS3
-	print_info "Here are the partitions that are available."
-	print_info "First you should select one to use for root:"
+	print_info "Please select a partition to use for root:"
   echo
 	select partition in ${PartitionList}
 	do
@@ -475,7 +471,7 @@ AllocateSwap() {
 print_heading
 if [ -n ${#PartitionList[@]} ]
 then
-  print_info "Select the partition for /swap from the ones that remain,"
+  print_info "Select a partition for /swap from the ones that remain,"
   print_info "or you can allocate a swap file."
   print_info "Warning: Btrfs does not support swap files. Failure to heed"
   print_info "this warning may result in file system corruption."
@@ -671,7 +667,7 @@ MakePartition() {
 	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list
 }
 
-# User to choose device for grub installation
+# User to choose device for bootloader installation
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
@@ -679,9 +675,11 @@ SetGrubDevice() {
   GrubDevice=""
 	Counter=0
 	SetPS3
-	print_info "Select the device where bootloader is to be installed. Note that, if you"
-  print_info "select the 'Skip' option, Grub will not be installed, and you will"
-  print_info "have to make alternative arrangements for booting your new system."
+	print_info "A bootloader can be installed (Grub for BIOS systems, Gummiboot for UEFI)"
+	print_info "Select the device where the bootloader is to be installed."
+  print_info "Note that if you select the 'Skip' option, no bootloader"
+  print_info "will be installed, and you will have to make"
+  print_info "alternative arrangements for booting your new system."
   echo
 	select partition in ${DevicesList}
 	do
@@ -690,14 +688,18 @@ SetGrubDevice() {
 		do
     Item=$i
   	Counter=$((Counter+1))
-			if [ $Counter -eq $Reply ]
-			then
+			if [ $Counter -eq $Reply ]; then
         if [ $Item = Skip ]; then
-        GrubDevice=""
+          GrubDevice=""
         else
-        GrubDevice=$Item
+          GrubDevice=$Item
+          if [ $UEFI -eq 0 ]; then
+            BootLoader="Grub"
+          else
+            BootLoader="Gummiboot"
+          fi
         fi
-      break
+        break
     	fi
  		done
     break
@@ -839,68 +841,62 @@ echo
 read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
 }
 
-UserAndRoot() {
-# Accept user input of hostname, username, user password and root password
-  Repeat=1
-	while [ $Repeat ]
-	do
-		# Hostname
-		Entered="ArchLinux"
-		print_heading
-		print_info "A hostname is needed. This will be a unique name to identify"
-		print_info "your device on a network. If you do not enter one, the"
-		print_info "default hostname of 'ArchLinux' will be used."
-    echo
-		TPread "Enter a hostname for your computer : "
-    Entered=$Response
-		case $Entered in
-			"") HostName="ArchLinux"
-			;;
-			*) HostName=${Entered}
-		esac
-		print_info "Hostname set to: $HostName"
-		# Username
-		print_heading
-		print_info "Enter a name for the primary user of the new system."
-		print_info "If you don't create a username here, a default user called"
-    print_info "'archie' will be set up"
-    echo
-		TPread "Enter a username (must be all lower case): "
-    Entered=$Response
-		case $Entered in
-			"") UserName="archie"
-			;;
-			*) UserName=${Entered}
-		esac
-		print_info "$UserName will be created"
-  	# User password
-		print_heading
-		print_info "Next enter the password for that user. If you do not enter"
-		print_info "a user password, a default of 'Linux' will be used."
-    echo
-		TPread "Enter a password for $UserName: "
-    Entered=$Response
-		case $Entered in
-			"") UserPassword="Linux"
-			;;
-			*) UserPassword=${Entered}
-		esac
-		print_info "${UserName}'s password will be: ${UserPassword}"
-		# Root password
-		print_heading
-		print_info "Now set a password for root. If you do not enter one, a default"
-    print_info "password of 'Root' will be used."
-    echo
-		TPread "Enter a password for root: "
-    Entered=$Response
-		case $Entered in
-			"") RootPassword="Root"
-			;;
-			*) RootPassword=${Entered}
-		esac
-		print_info "Root password will be set to: $RootPassword"
-	break
-	done
+UserPassword() {
+	print_heading
+	print_info "Enter a name for the primary user of the new system."
+  print_info "If you don't create a username here, a default user called"
+  print_info "'archie' will be set up"
+  echo
+	TPread "Enter a username (must be all lower case): "
+  Entered=$Response
+	case $Entered in
+		"") UserName="archie"
+		;;
+		*) UserName=${Entered}
+	esac
+	print_info "$UserName will be created"
+	print_heading
+	print_info "Next enter the password for that user. If you do not enter"
+	print_info "a user password, a default of 'Linux' will be used."
+  echo
+	TPread "Enter a password for $UserName: "
+  Entered=$Response
+	case $Entered in
+		"") UserPassword="Linux"
+		;;
+		*) UserPassword=${Entered}
+	esac
+	print_info "${UserName}'s password will be: ${UserPassword}"
+
+}
+
+RootPassword() {
+	Entered="ArchLinux"
+	print_heading
+	print_info "A hostname is needed. This will be a unique name to identify"
+	print_info "your device on a network. If you do not enter one, the"
+	print_info "default hostname of 'ArchLinux' will be used."
+   echo
+	TPread "Enter a hostname for your computer : "
+  Entered=$Response
+	case $Entered in
+		"") HostName="ArchLinux"
+		;;
+		*) HostName=${Entered}
+	esac
+	print_info "Hostname set to: $HostName"
+	print_heading
+	print_info "Now set a password for root. If you do not enter one, a default"
+  print_info "password of 'Root' will be used."
+  echo
+	TPread "Enter a password for root: "
+  Entered=$Response
+	case $Entered in
+		"") RootPassword="Root"
+		;;
+		*) RootPassword=${Entered}
+	esac
+	print_info "Root password will be set to: $RootPassword"
 }
 
 #
@@ -1032,9 +1028,9 @@ else
   print_list "3) No additional partitions have been allocated"
 fi
 if [ $GrubDevice ]; then
-print_list "4) Grub will be installed to $GrubDevice" 50
+print_list "4) ${BootLoader} will be installed to $GrubDevice" 50
 else
-  print_list "4) No provision has been made for grub"
+  print_list "4) No provision has been made for a ${BootLoader}"
 fi
 print_list "5) Keyboard is $Countrykbd"
 print_list "6) Locale will be set to $CountryLocale"
@@ -1051,9 +1047,9 @@ print_list "     Hostname = '$HostName'"
 print_list "     Root password = '$RootPassword'"
 print_list "     User = '$UserName' : Password = '$UserPassword'"
 echo
-print_list "Press [Enter] to install with these settings"
+print_list "Press [Enter] to install with these settings, or enter an"
 echo
-TPread "If you wish to change any settings, enter the item number: "
+TPread "item number if you wish to change it: "
 case $Response in
   1) ChangeRootPartition
       AllocateRoot
@@ -1219,7 +1215,7 @@ umount_partitions(){ # from Lution/AUI - Nice code
 }
 
 MountPartitions() {
-  if [ UEFI -eq 1 ] && [ DualBoot = "N" ]; then
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
     mkfs.fat -F32 ${EFIPartition} 2> error.log
     CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
     mkdir /mnt/boot
