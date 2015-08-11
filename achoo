@@ -204,8 +204,8 @@ if [[ $UEFI -eq 1 ]]; then
   TPecho "Installing ${BootLoader} to $GrubDevice"
   # The mount command will likely result in an error due to it being loaded already
   mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
-  pacstrap ${MOUNTPOINT} gummiboot
-  pacstrap ${MOUNTPOINT}/usr/bin/gummiboot install 2> error.log
+  pacstrap gummiboot
+  pacstrap /usr/bin/gummiboot install 2> error.log
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
   # Copy modified arch.conf to new system
   TPecho "Modifying arch.conf for gummiboot"

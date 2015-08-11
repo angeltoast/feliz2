@@ -351,8 +351,9 @@ AllocateEFI() {
   Partition=""
 	PartitionType=""
   SetPS3
-	print_info "Here are the partitions that are available."
-	print_info "First you should select one to use for EFI"
+  echo
+	print_info "Here are the partitions that are available, and"
+	print_info "you should now select one to use for EFI"
   echo
 	select partition in ${PartitionList}
 	do
@@ -387,7 +388,7 @@ select_filesystem() {
 	local Counter=0
   SetPS3
 #	TypeList now passed by caller
-	print_info "Please select the file system for ${Partition}"
+	print_info "Please now select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
 	print_info "Consult the Arch Wiki : https://wiki.archlinux.org/index.php/Btrfs"
   echo
@@ -415,7 +416,7 @@ AllocateRoot() {
   Partition=""
 	PartitionType=""
   SetPS3
-	print_info "Please select a partition to use for root:"
+	print_info "Please now select a partition to use for root:"
   echo
 	select partition in ${PartitionList}
 	do
@@ -1203,14 +1204,14 @@ arch_chroot() {
   CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'" 2
 }  
 
-umount_partitions(){ # from Lution/AUI - Nice code
+umount_partitions(){ # from Lution/AUI
   MOUNTED=""
   MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
   swapoff -a 2> error.log
-  CheckForError "${LINENO} 'swapoff'" 2
+  CheckForError "${LINENO} 'swapoff'" 1
   for i in ${MOUNTED[@]}; do
     umount $i >/dev/null 2> error.log
-    CheckForError "${LINENO} 'umount $i >/dev/null'" 2
+    CheckForError "${LINENO} 'umount $i >/dev/null'" 1
   done
 }
 
@@ -1262,7 +1263,7 @@ MountPartitions() {
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     # New code, as for /root ... replace existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
-    if [ ${CurrentType} ]; then
+    if [ -n ${CurrentType} ]; then
       if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
         btrfs-convert ${AddPartList[$Counter]}
         CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
