@@ -331,9 +331,10 @@ TestUEFI() {
     fi
     UEFI=1
     SYSTEM="UEFI"
-    print_info "UEFI detected. Achoo! can work with your UEFI system, but it"
-    print_info "is your responsibility to ensure that you have created the"
-    print_info "necessary partitions and to allocate them correctly."
+    print_info "Achoo! can work with your UEFI system, but it is your"
+    print_info "responsibility to ensure that you have created the necessary"
+    print_info "GPT and partitions and to allocate them correctly."
+    echo
     print_info "If in doubt, stop the installation and check the Arch Wiki."
     AllocateEFI
   else
@@ -352,8 +353,8 @@ AllocateEFI() {
 	PartitionType=""
   SetPS3
   echo
-	print_info "Here are the partitions that are available, and"
-	print_info "you should now select one to use for EFI"
+	print_info "The following partitions are available, and you should"
+	print_info "now select the one to use for the EFI /boot partition"
   echo
 	select partition in ${PartitionList}
 	do
@@ -1219,8 +1220,8 @@ MountPartitions() {
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
     mkfs.fat -F32 ${EFIPartition} 2> error.log
     CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
-    mkdir /mnt/boot
-    mount ${EFIPartition} /mnt/boot
+    mkdir ${MOUNTPOINT}/boot
+    mount ${EFIPartition} ${MOUNTPOINT}/boot
   fi
   case $RootType in
     "") TPecho "Not formatting root partition"

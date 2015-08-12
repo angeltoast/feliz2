@@ -47,6 +47,19 @@ fi
 CheckInternet
 StartTime=$(date +%s)
 
+# Set scope of installation
+print_heading
+print_info "Achoo! can be set to install a desktop environment, set up users,"
+print_info "and automatically install codecs, wifi tools, graphics and other"
+print_info "luxuries, or you can choose to have just a basic installation."
+echo
+TPread "Full (F) or Basic (B)? (Please enter F or B): "
+  case $Response in
+    "f" | "F" | "") Scope="Full"
+    ;;
+    *) Scope="Basic"
+  esac  
+
 # Check partitioning, offer cfdisk
 ManagePartitions
 # Display partitions and allocate root
@@ -85,19 +98,6 @@ CheckForError "${LINENO} 'Loadkeys'" 1
 # Localisation
 settimezone
 setlocale
-
-# Set scope of installation
-print_heading
-print_info "Achoo! can be set to install a desktop environment, set up users,"
-print_info "and automatically install codecs, wifi tools, graphics and other "
-print_info "luxuries, or you can choose to have just a basic installation."
-echo
-TPread "Full (F) or Basic (B)? (Please enter F or B): "
-  case $Response in
-    "f" | "F" | "") Scope="Full"
-    ;;
-    *) Scope="Basic"
-  esac  
 
 # Names and passwords
 RootPassword
@@ -203,8 +203,6 @@ CheckForError "${LINENO} 'rm temp passwd'" 0
 # Install bootloader
 if [[ $UEFI -eq 1 ]]; then
   TPecho "Installing ${BootLoader} to $GrubDevice"
-  # The mount command will likely result in an error due to it being loaded already
-  # arch_chroot "mount -t efivarfs efivarfs /sys/firmware/efi/efivars" 2> error.log
   pacstrap ${MOUNTPOINT} gummiboot
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
   arch_chroot "gummiboot install" 2> error.log
