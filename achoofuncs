@@ -759,7 +759,7 @@ print_info "Next we will try to find your locale"
 echo
 while [ $DoDoDo -eq 1 ]
 do
-  read_timed "Enter a two-letter code for your country or language ..."
+  print_info "Enter a two-letter code for your country or language ..."
   TPread "$SearchPrompt"
   search_term=$Response
   echo
@@ -1248,6 +1248,7 @@ MountPartitions() {
     TPecho "Mounting EFI partition"
     mkfs.vfat ${EFIPartition} 2> error.log
     CheckForError "${LINENO} 'mkfs.vfat ${EFIPartition}'" 2
+    mkdir ${MOUNTPOINT}/boot
     mkdir ${MOUNTPOINT}/boot/efi
     CheckForError "${LINENO} 'Making /boot partition'" 2
     mount ${EFIPartition} ${MOUNTPOINT}/boot/efi
