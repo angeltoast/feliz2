@@ -331,6 +331,7 @@ TestUEFI() {
     fi
     UEFI=1
     SYSTEM="UEFI"
+    print_heading
     print_info "Achoo! can work with your UEFI system, but it is your"
     print_info "responsibility to ensure that you have created the necessary"
     print_info "GPT and partitions and to allocate them correctly."
@@ -346,7 +347,7 @@ TestUEFI() {
 AllocateEFI() {
 # Display partitions for user-selection	
 	# Uses list of all available partitions in PartitionList created in ManagePartitions
-	#print_heading
+	print_heading
 	Remaining=""
 	local Counter=0
   Partition=""
@@ -368,12 +369,12 @@ AllocateEFI() {
 				EFIPartition="${Partition}"
         echo
         print_info "Are other operating systems (eg: Windows) dual-booting"
-      TPread "with this installation? (y/N): "
-      case $Response in
-        "n" | "N" | "") DualBoot="N"
-        ;;
-        *) DualBoot="Y"
-      esac
+        TPread "with this installation? (y/N): "
+        case $Response in
+          "n" | "N" | "") DualBoot="N"
+          ;;
+          *) DualBoot="Y"
+        esac
 			else
 				Remaining="$Remaining $i"	# Add next available partition
 			fi
@@ -605,7 +606,6 @@ then
   AddPartLabel=""
   AddPartType=""
 fi
-
 }
 
 MakePartition() {
@@ -676,10 +676,9 @@ SetGrubDevice() {
   GrubDevice=""
 	Counter=0
 	SetPS3
-	print_info "A bootloader can be installed (Grub for BIOS systems, Gummiboot for UEFI)"
-	print_info "Select the device where the bootloader is to be installed."
-  print_info "Note that if you select the 'Skip' option, no bootloader"
-  print_info "will be installed, and you will have to make"
+	print_info "Select the device where Grub is to be installed."
+  print_info "Note that if you select the 'Skip' option, Grub will"
+  print_info "not be installed, and you will have to make"
   print_info "alternative arrangements for booting your new system."
   echo
 	select partition in ${DevicesList}
@@ -694,11 +693,7 @@ SetGrubDevice() {
           GrubDevice=""
         else
           GrubDevice=$Item
-          if [ $UEFI -eq 0 ]; then
-            BootLoader="Grub"
-          else
-            BootLoader="Gummiboot"
-          fi
+          BootLoader="Grub"
         fi
         break
     	fi
@@ -717,8 +712,8 @@ print_heading
 DoDoDo=1
 print_info "Now we will try to find your keyboard from a list of all"
 print_info "known layouts. If you know your keyboard layout code, enter"
-print_info "it now. Alternatively, try entering a two-letter abbreviation"
-print_info "for your country or language ..."
+print_info "it now, or try entering a two-letter abbreviation for your"
+print_info "country or language and a list will be displayed ..."
 echo
 SearchPrompt="(eg: fr or us): "
 while [ $DoDoDo -eq 1 ]
@@ -1251,10 +1246,12 @@ MountPartitions() {
 
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
     TPecho "Mounting EFI partition"
-    mkfs.fat -F32 ${EFIPartition} 2> error.log
-    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
-    mkdir ${MOUNTPOINT}/boot
-    mount ${EFIPartition} ${MOUNTPOINT}/boot
+    mkfs.vfat ${EFIPartition} 2> error.log
+    CheckForError "${LINENO} 'mkfs.vfat ${EFIPartition}'" 2
+    mkdir ${MOUNTPOINT}/boot/efi
+    CheckForError "${LINENO} 'Making /boot partition'" 2
+    mount ${EFIPartition} ${MOUNTPOINT}/boot/efi
+    CheckForError "${LINENO} 'Mounting /boot partition'" 2
   fi
   
   TPecho "Mounting additional partitions"

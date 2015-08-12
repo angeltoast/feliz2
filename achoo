@@ -184,15 +184,17 @@ TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
-print_heading
-TPecho "Installing and configuring network services"
+TPecho "Enabling dhcpcd"
 arch_chroot "systemctl enable dhcpcd.service"
-pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
-CheckForError "${LINENO} 'enable dhcpcd'" 2
-arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+
+if [ $Scope = "Full" ]; then
+  TPecho "Installing and configuring network services"
+  pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
+  CheckForError "${LINENO} 'Installing network manager'" 2
+  arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+fi
 
 # Set root password (Reduced from Lution AIS)
-print_heading
 TPecho "Setting root password"
 echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd 2> error.log
 CheckForError "${LINENO} 'Root password'" 2
@@ -201,22 +203,24 @@ rm /tmp/.passwd 2> error.log
 CheckForError "${LINENO} 'rm temp passwd'" 0
 
 # Install bootloader
-if [[ $UEFI -eq 1 ]]; then
-  TPecho "Installing ${BootLoader} to $GrubDevice"
-  pacstrap ${MOUNTPOINT} gummiboot
-  CheckForError "${LINENO} 'Installing Gummiboot'" 1
-  arch_chroot "gummiboot install" 2> error.log
-  TPecho "Modifying arch.conf for gummiboot"
-  cp arch.conf ${MOUNTPOINT}/boot/loader/entries/ 2> error.log
-  CheckForError "${LINENO} 'Copying arch.conf to MOUNTPOINT'" 1
+if [ $UEFI -eq 1 ] && [ ${GrubDevice} ]; then
+  TPecho "Installing Grub to $GrubDevice"
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck --debug 2> error.log
+  CheckForError "${LINENO} 'grub-install'" 1
+  grub-mkconfig -o /boot/grub/grub.cfg 2> error.log
+  CheckForError "${LINENO} 'grub-mkconfig'" 1
+  mkdir /boot/efi/EFI/boot 2> error.log
+  CheckForError "${LINENO} 'mkdir /boot/efi/EFI/boot'" 1
+  cp /boot/efi/EFI/arch_grub/grubx64.efi /boot/efi/EFI/boot/bootx64.efi 2> error.log
+  CheckForError "${LINENO} 'Installing Grub'" 1 # hack for some BIOSes which expect the boot bits in a specific place:
 elif [ ${GrubDevice} ]; then
-  TPecho "Installing ${BootLoader} to $GrubDevice"
+  TPecho "Installing Grub to $GrubDevice"
   pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
-  TPecho "Not installing ${BootLoader}"
+  TPecho "Not installing Grub"
 fi
 
 print_heading
