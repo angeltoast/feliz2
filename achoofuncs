@@ -1216,16 +1216,6 @@ umount_partitions(){ # from Lution/AUI
 }
 
 MountPartitions() {
-echo "Entering MountPartitions"
-  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
-read -p "In UEFI block"
-    mkfs.fat -F32 ${EFIPartition} 2> error.log
-    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
-    mkdir ${MOUNTPOINT}/boot
-    mount ${EFIPartition} ${MOUNTPOINT}/boot
-else
-read -p "Not in UEFI block"
-  fi
   case $RootType in
     "") TPecho "Not formatting root partition"
     ;;
@@ -1248,6 +1238,7 @@ read -p "Not in UEFI block"
   TPecho "Mounting /root partition"	
   mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
+
   if [ ${SwapPartition} ]
   then
     TPecho "Making /swap partition"
@@ -1257,6 +1248,15 @@ read -p "Not in UEFI block"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
   fi
+
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
+    TPecho "Mounting EFI partition"
+    mkfs.fat -F32 ${EFIPartition} 2> error.log
+    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
+    mkdir ${MOUNTPOINT}/boot
+    mount ${EFIPartition} ${MOUNTPOINT}/boot
+  fi
+  
   TPecho "Mounting additional partitions"
   local Counter=0
   Elements=${#AddPartList[@]}
