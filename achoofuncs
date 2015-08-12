@@ -391,7 +391,6 @@ select_filesystem() {
 #	TypeList now passed by caller
 	print_info "Please now select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
-	print_info "Consult the Arch Wiki : https://wiki.archlinux.org/index.php/Btrfs"
   echo
 	select type in ${TypeList}
 	do
@@ -1217,11 +1216,15 @@ umount_partitions(){ # from Lution/AUI
 }
 
 MountPartitions() {
+echo "Entering MountPartitions"
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
+read -p "In UEFI block"
     mkfs.fat -F32 ${EFIPartition} 2> error.log
     CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
     mkdir ${MOUNTPOINT}/boot
     mount ${EFIPartition} ${MOUNTPOINT}/boot
+else
+read -p "Not in UEFI block"
   fi
   case $RootType in
     "") TPecho "Not formatting root partition"
