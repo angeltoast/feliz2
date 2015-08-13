@@ -1,7 +1,4 @@
 12 August 2015
-UEFI capability modified to try with Grub.
-11 August 2015
-UEFI capability added, with Gummiboot.
 New otion added for either full or basic installation.
 'Reflector' added for better mirror-list.
 Previous ...

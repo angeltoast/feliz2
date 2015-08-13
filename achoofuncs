@@ -284,8 +284,7 @@ ManagePartitions() {
     print_info "for you to create a partition table now if you wish."
     echo 
     print_info "Please note: At least one partition must be created for the"
-    print_info "/root directory. Extra care is needed if installing on UEFI"
-    print_info "systems. If you are uncertain about partitioning, you should"
+    print_info "/root directory. If you are uncertain about partitioning, you should"
     print_info "read the Arch Wiki. If you choose not to use 'cfdisk' now the"
     print_info "script will terminate to allow you to partition in some other way."
     echo
@@ -302,7 +301,6 @@ ManagePartitions() {
     echo
 		lsblk
 		echo
-    print_info "Extra care is needed if installing on UEFI/GPT systems."
     print_info "If you are uncertain about partitioning, you should read"
     print_info "the Arch Wiki. Would you like to open cfdisk"
 		TPread "to manage those partitions now? [Y/n]: "
@@ -319,68 +317,6 @@ ManagePartitions() {
   for Part in ${ShowPartitions}
   do
     PartitionList="$PartitionList $Part"	# Add each partition
-  done
-}
-
-TestUEFI() {
-  # BIOS or UEFI Detection - from Lution
-  if [[ -d "/sys/firmware/efi/" ]]; then
-    # Mount efivarfs if it is not already mounted
-    if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
-      mount -t efivarfs efivarfs /sys/firmware/efi/efivars
-    fi
-    UEFI=1
-    SYSTEM="UEFI"
-    print_heading
-    print_info "Achoo! can work with your UEFI system, but it is your"
-    print_info "responsibility to ensure that you have created the necessary"
-    print_info "GPT and partitions and to allocate them correctly."
-    echo
-    print_info "If in doubt, stop the installation and check the Arch Wiki."
-    AllocateEFI
-  else
-    UEFI=0
-    SYSTEM="BIOS"
-  fi
-}
-
-AllocateEFI() {
-# Display partitions for user-selection	
-	# Uses list of all available partitions in PartitionList created in ManagePartitions
-	print_heading
-	Remaining=""
-	local Counter=0
-  Partition=""
-	PartitionType=""
-  SetPS3
-  echo
-	print_info "The following partitions are available, and you should"
-	print_info "now select the one to use for the EFI /boot partition"
-  echo
-	select partition in ${PartitionList}
-	do
-    Reply=$REPLY
-    for i in ${PartitionList}
-		do
-		Counter=$((Counter+1))
-			if [ $Counter -eq $Reply ]
-			then
-				Partition="/dev/$i"
-				EFIPartition="${Partition}"
-        echo
-        print_info "Are other operating systems (eg: Windows) dual-booting"
-        TPread "with this installation? (y/N): "
-        case $Response in
-          "n" | "N" | "") DualBoot="N"
-          ;;
-          *) DualBoot="Y"
-        esac
-			else
-				Remaining="$Remaining $i"	# Add next available partition
-			fi
-		done
-    PartitionList=$Remaining			# Replace original PartitionList with remaining options
-		break
   done
 }
 
@@ -1242,17 +1178,6 @@ MountPartitions() {
     TPecho "Activating /swap"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
-  fi
-
-  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
-    TPecho "Mounting EFI partition"
-    mkfs.vfat ${EFIPartition} 2> error.log
-    CheckForError "${LINENO} 'mkfs.vfat ${EFIPartition}'" 2
-    mkdir ${MOUNTPOINT}/boot
-    mkdir ${MOUNTPOINT}/boot/efi
-    CheckForError "${LINENO} 'Making /boot partition'" 2
-    mount ${EFIPartition} ${MOUNTPOINT}/boot/efi
-    CheckForError "${LINENO} 'Mounting /boot partition'" 2
   fi
   
   TPecho "Mounting additional partitions"
