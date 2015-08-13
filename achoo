@@ -205,7 +205,7 @@ CheckForError "${LINENO} 'rm temp passwd'" 0
 # Install bootloader
 if [ $UEFI -eq 1 ] && [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
-  pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
+  pacstrap ${MOUNTPOINT} grub os-prober efibootmgr 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2
   arch_chroot "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck --debug" 2> error.log
   CheckForError "${LINENO} 'grub-install'" 1
