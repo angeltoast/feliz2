@@ -1136,10 +1136,10 @@ arch_chroot() {
 }  
 
 umount_partitions(){ # from Lution/AUI
-  MOUNTED=""
-  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
   swapoff -a 2> error.log
   CheckForError "${LINENO} 'swapoff'" 1
+  MOUNTED=""
+  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
   for i in ${MOUNTED[@]}; do
     umount $i >/dev/null 2> error.log
     CheckForError "${LINENO} 'umount $i >/dev/null'" 1
@@ -1187,12 +1187,11 @@ MountPartitions() {
   while [ $Counter -lt $Elements ]
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
-    CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
-    # New code, as for /root ... replace existing ext3/4 partition with btrfs
+    CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ -n ${CurrentType} ]; then
       if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-        btrfs-convert ${AddPartList[$Counter]}
+        btrfs-convert ${AddPartList[$Counter]} # In case replacing existing ext3/4 partition with btrfs
         CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
       elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
         mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
