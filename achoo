@@ -128,7 +128,7 @@ umount_partitions
 MountPartitions
 
 # Set mirrorlist
-LocalMirrorList
+ReflectorMirrorList
 
 print_heading
 TPecho "Installing LTS Kernel and base-devel"
