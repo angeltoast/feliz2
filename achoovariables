@@ -54,7 +54,7 @@ UserPassword=""   # "Linux"
 
 # Installation scope
 #
-Scope="Basic"     # 'Full' or 'Basic'
+Scope=1     # 1 = Basic; 2 = Full
 
 # Input/Output variables
 #

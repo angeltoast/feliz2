@@ -47,18 +47,7 @@ fi
 CheckInternet
 StartTime=$(date +%s)
 
-# Set scope of installation
-print_heading
-print_info "Achoo! can be set to install a desktop environment, set up users,"
-print_info "and automatically install codecs, wifi tools, graphics and other"
-print_info "luxuries, or you can choose to have just a basic installation."
-echo
-TPread "Full (F) or Basic (B)? (Please enter F or B): "
-  case $Response in
-    "f" | "F" | "") Scope="Full"
-    ;;
-    *) Scope="Basic"
-  esac  
+SetScope
 
 # Check partitioning, offer cfdisk
 ManagePartitions
@@ -98,12 +87,12 @@ setlocale
 
 # Names and passwords
 RootPassword
-if [ $Scope = "Full" ]; then
+if [ $Scope -gt 1 ]; then
   UserPassword
 fi
 
 # Desktop environment and display manager/greeter
-if [ $Scope = "Full" ]; then
+if [ $Scope -gt 1 ]; then
   Repeat=1
   ChooseDE
 fi
@@ -184,7 +173,7 @@ arch_chroot "hwclock --systohc --utc"
 TPecho "Enabling dhcpcd"
 arch_chroot "systemctl enable dhcpcd.service"
 
-if [ $Scope = "Full" ]; then
+if [ $Scope -gt 1 ]; then
   TPecho "Installing and configuring network services"
   pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
   CheckForError "${LINENO} 'Installing network manager'" 2
@@ -222,8 +211,8 @@ CheckForError "${LINENO} 'Saving persistent keymap'" 1
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
-# Extra processes for 'Full' installation
-if [ $Scope = "Full" ]; then
+# Extra processes for 'extended' installation
+if [ $Scope -gt 1 ]; then
   print_heading
   CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
   # If not already exist, create user and set password
@@ -336,6 +325,18 @@ if [ $Scope = "Full" ]; then
         ;;
   *) TPecho "Not installing a Desktop Environment"	
   esac
+fi
+
+if [ $Scope -gt 2 ]; then # Internet pack
+  TPecho "Installing internet pack"
+  pacstrap ${MOUNTPOINT} firefox thunderbird 2> error.log
+  CheckForError "${LINENO} 'Installing internet pack'" 2
+fi
+
+if [ $Scope -gt 3 ]; then # Office pack
+  TPecho "Installing office pack"
+  pacstrap ${MOUNTPOINT} libreoffice-fresh gimp 2> error.log
+  CheckForError "${LINENO} 'Installing office pack'" 2
 fi
 
 print_heading

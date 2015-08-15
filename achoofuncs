@@ -71,7 +71,7 @@ print_title() { # from AUI scripts
 
 print_info() { # adapted from AUI scripts
   T_COLS=`tput cols`
-  if [ $2 ]; then
+  if [ $2 ]; then # Second value is characters left of centre
     lov=$2
   else
     lov=${#1}
@@ -662,6 +662,45 @@ SetGrubDevice() {
   done
 }
 
+SetScope() { # Establish the scope of the installation
+  print_heading
+  Retry="Y"
+  Response=1
+  while [ $Retry = "Y" ]
+  do
+    print_info "Achoo! can be set to add a choice of desktop environment,"
+    print_info "set up a user, and automatically install codecs, wifi"
+    print_info "tools, graphics and other luxuries."
+  #  print_info "If selected, the internet pack consists of Firefox and Thunderbird,"
+  #  print_info "and the office pack installs the LibreOffice suite."
+  #  print_info " Of course, adding these extras will increase the installation time."
+    echo
+    print_info "1) Just basic Arch command line;" 50
+    print_list "2) Basic Arch plus desktop environment, etc;"
+  #  print_list "3) Basic plus desktop environment and internet pack;"
+  #  print_list "4) As option 3) plus office pack;"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) Scope=1
+        Retry="N"
+      ;;
+      2) Scope=2
+        Retry="N"
+      ;;
+    #  3) Scope=3
+    #    Retry="N"
+    #  ;;
+    #  4) Scope=4
+    #    Retry="N"
+    #  ;;
+      *) invalid_option
+    esac
+    print_heading
+  done
+}
+
 #
 # Locations, User and Passwords
 #
@@ -1177,7 +1216,7 @@ MountPartitions() {
     "Skip") TPecho "Not formatting root partition"
     ;;
     *) TPecho "Formatting /root partition"
-    # New code block. Replace existing ext3/4 partition with btrfs
+    # If replacing existing partition
     CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${RootPartition}
@@ -1213,8 +1252,9 @@ MountPartitions() {
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    # If replacing existing partition
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${AddPartList[$Counter]} # In case replacing existing ext3/4 partition with btrfs
+      btrfs-convert ${AddPartList[$Counter]}
       CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
