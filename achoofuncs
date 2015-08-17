@@ -20,8 +20,9 @@
 # Error-checking       151
 # Internet connection  188
 # Mirrorlist           245
-# Partitioning         264
-# User & Location      700
+# Set scope            287
+# Partitioning         327
+# User & Location      705
 # Desktop Environment  900
 # Check Data           1000
 # Running              1192
@@ -45,7 +46,7 @@ print_heading() {
   clear
   T_COLS=`tput cols`
   tput cup 1 $((($T_COLS/2)-20))
-  printf "~ The Achoo! Arch Linux Installation Script ~ \n"
+  printf "~ Achoo! The Arch Linux Installation Script ~ \n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
   lov=${#Banner}
   if [ ${lov} -lt ${T_COLS} ]; then
@@ -246,11 +247,11 @@ done
 #
 
 ReflectorMirrorList() {
-# Install reflector then use it to generate fast mirror list
+# Install reflector and use it to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
   cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
   CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
-  pacman -S --noconfirm -q reflector 2> error.log
+  pacman -Sy --noconfirm -q reflector 2> error.log
   CheckForError "${LINENO} 'Installing Reflector'" 2
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
   if [[ $? -gt 0 ]]; then
@@ -262,9 +263,9 @@ ReflectorMirrorList() {
 }
 
 LocalMirrorList() {
-# Generate and save a shortened mirrorlist of only the mirrors defined
-# in the CountryCode variable. Adapted from Lution AIS
-	TPecho "Generating local mirrorlist"
+# In case Reflector fails, generate and save a shortened mirrorlist of only 
+# the mirrors defined in the CountryCode variable. Adapted from Lution AIS
+	TPecho "Reflector failed - generating local mirrorlist instead"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
 	CheckForError "${LINENO}"
@@ -282,6 +283,34 @@ LocalMirrorList() {
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 	chmod +r /etc/pacman.d/mirrorlist 2> error.log
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
+}
+
+SetScope() { # Establish the scope of the installation
+  print_heading
+  Retry="Y"
+  Response=1
+  while [ $Retry = "Y" ]
+  do
+    print_info "Achoo! can be set to add a choice of desktop environment,"
+    print_info "set up a user, and automatically install codecs, wifi"
+    print_info "tools, graphics and other luxuries."
+    echo
+    print_info "1) Just basic Arch command line" 50
+    print_list "2) Basic Arch plus desktop environment, etc"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) Scope=1
+        Retry="N"
+      ;;
+      2) Scope=2
+        Retry="N"
+      ;;
+      *) invalid_option
+    esac
+    print_heading
+  done
 }
 
 #
@@ -570,38 +599,50 @@ fi
 
 MakePartition() {
   # 1) When selected, first save to AddPartList (eg: /dev/sda5)
-	ExtraPartitions=${#AddPartList[@]}
-	AddPartList[$ExtraPartitions]="${Partition}"
-  # 2) Then get a label for selected partition (eg: /home)
+    ExtraPartitions=${#AddPartList[@]}
+    AddPartList[$ExtraPartitions]="${Partition}"
+  # 2) Set the filesystem
+  CheckPartition   # Before going to select_filesystem, check the partition
+  if [ ${CurrentType} ]; then
+    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
+    print_info "reformatting an existing partition can have unexpected consequences."
+    echo
+  fi
+  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
+  select_filesystem
+  if [ -z ${PartitionType} ]; then
+    PartitionType="Skip"
+  fi
+  AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list	
+  # 3) Then get a label for selected partition (eg: /home)
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
-		print_info "Enter a label for ${Partition} ... eg: '/home' ... "
     echo
-    TPread "(you must include the '/'): "
-		# Check that entry includes '/'
-		CheckInput=(`echo $Response | cut -c1`)
-		case ${CheckInput} in
-      "") print_info "You must enter a valid name"
-					PartLabel=""
+	print_info "Enter a label for ${Partition} ..."
+	TPread "Default is '/home': "
+	# Check that entry includes '/'
+	CheckInput=(`echo $Response | cut -c1`)
+	case ${CheckInput} in
+      "") PartLabel="/home"
           ;;
-			*) if [ ${CheckInput} != "/" ]; then
-						PartLabel="/${Response}"
-				else
-						PartLabel="${Response}"
-				fi
-    esac
-    # Check that the label has not already been used
-		LabelCounter=0
-		if [ -z ${AddPartLabel} ]; then
-			LoopRepeat="N"
-		else
-      # Go through AddPartLabel checking each item against PartLabel
-			for Label in ${AddPartLabel}
-			do 
-				LabelCounter=$((LabelCounter+1))
-				if [ $Label = $PartLabel ]; then
-					read_timed "Label ${PartLabel} has already been used. Please use a different label."
+       *) if [ ${CheckInput} != "/" ]; then
+		PartLabel="/${Response}"
+	  else
+		PartLabel="${Response}"
+	  fi
+       esac
+	# Check that the label has not already been used
+	LabelCounter=0
+	if [ -z ${AddPartLabel} ]; then
+		LoopRepeat="N"
+	else
+		# Go through AddPartLabel checking each item against PartLabel
+		for Label in ${AddPartLabel}
+		do 
+			LabelCounter=$((LabelCounter+1))
+			if [ $Label = $PartLabel ]; then
+				read_timed "Label ${PartLabel} has already been used. Please use a different label."
 				else
 					LoopRepeat="N"
 					break
@@ -614,18 +655,6 @@ MakePartition() {
 		fi 
 	done 
 	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
-  CheckPartition   # Before going to select_filesystem, check the partition
-  if [ ${CurrentType} ]; then
-    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
-    print_info "reformatting an existing partition can have unexpected consequences."
-    echo
-  fi
-  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
-	select_filesystem
-  if [ -z ${PartitionType} ]; then
-		PartitionType="Skip"
-	fi
-	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list
 }
 
 # User to choose device for bootloader installation
@@ -659,45 +688,6 @@ SetGrubDevice() {
     	fi
  		done
     break
-  done
-}
-
-SetScope() { # Establish the scope of the installation
-  print_heading
-  Retry="Y"
-  Response=1
-  while [ $Retry = "Y" ]
-  do
-    print_info "Achoo! can be set to add a choice of desktop environment,"
-    print_info "set up a user, and automatically install codecs, wifi"
-    print_info "tools, graphics and other luxuries."
-  #  print_info "If selected, the internet pack consists of Firefox and Thunderbird,"
-  #  print_info "and the office pack installs the LibreOffice suite."
-  #  print_info " Of course, adding these extras will increase the installation time."
-    echo
-    print_info "1) Just basic Arch command line;" 50
-    print_list "2) Basic Arch plus desktop environment, etc;"
-  #  print_list "3) Basic plus desktop environment and internet pack;"
-  #  print_list "4) As option 3) plus office pack;"
-    echo
-    TPread "Enter the number of your selection : "
-    echo
-    case $Response in
-      1) Scope=1
-        Retry="N"
-      ;;
-      2) Scope=2
-        Retry="N"
-      ;;
-    #  3) Scope=3
-    #    Retry="N"
-    #  ;;
-    #  4) Scope=4
-    #    Retry="N"
-    #  ;;
-      *) invalid_option
-    esac
-    print_heading
   done
 }
 
