@@ -1,0 +1,129 @@
+#!/bin/bash
+
+testbed() {
+
+# MakePartition() {
+  # 1) When selected, first save to AddPartList (eg: /dev/sda5)
+	ExtraPartitions=${#AddPartList[@]}
+	AddPartList[$ExtraPartitions]="${Partition}"
+
+# Experimental move of partition type before partition label
+	CheckPartition   # Before going to select_filesystem, check the partition
+	if [ ${CurrentType} ]; then
+		print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
+		print_info "reformatting an existing partition can have unexpected consequences."
+		echo
+	fi
+	TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
+	select_filesystem
+	if [ -z ${PartitionType} ]; then
+		PartitionType="Skip"
+	fi
+	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list	
+# End of experiment code move
+	
+  # 2) Then get a label for selected partition (eg: /home)
+	LoopRepeat="Y"
+	while [ ${LoopRepeat} = "Y" ]
+	do
+		print_info "Enter a label for ${Partition} ... eg: '/home' ... "
+		echo
+		TPread "(you must include the '/'): "
+		# Check that entry includes '/'
+		CheckInput=(`echo $Response | cut -c1`)
+		case ${CheckInput} in
+      "") print_info "You must enter a valid name"
+					PartLabel=""
+          ;;
+			*) if [ ${CheckInput} != "/" ]; then
+						PartLabel="/${Response}"
+				else
+						PartLabel="${Response}"
+				fi
+		esac
+		# Check that the label has not already been used
+		LabelCounter=0
+		if [ -z ${AddPartLabel} ]; then
+			LoopRepeat="N"
+		else
+			# Go through AddPartLabel checking each item against PartLabel
+			for Label in ${AddPartLabel}
+			do 
+				LabelCounter=$((LabelCounter+1))
+				if [ $Label = $PartLabel ]; then
+					read_timed "Label ${PartLabel} has already been used. Please use a different label."
+				else
+					LoopRepeat="N"
+					break
+				fi
+			done 
+		fi 
+		if [ ${LoopRepeat} = "N" ]  
+		then
+			break
+		fi 
+	done 
+	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
+
+}
+
+
+# ~~~~~~~
+#	Execute
+# ~~~~~~~
+
+# First check for external functions and variables files
+if [[ -f `pwd`/achoovariables ]]; then
+  source achoovariables
+else
+  echo "missing file: achoovariables"
+  exit 1
+fi
+
+if [[ -f `pwd`/achoofuncs ]]; then
+  source achoofuncs
+else
+  echo "missing file: achoofuncs"
+  exit 1
+fi
+
+# Various variables
+RootPartition="sda10"
+RootType="ext4"
+SwapPartition="sda7"
+AddPartList[0]="sda9"
+AddPartLabel[0]="/home"
+AddPartType[0]="ext4"
+AddPartList[1]="sda5"
+AddPartLabel[1]="/spare"
+AddPartType[1]="ext4"
+GrubDevice="/dev/sda"
+CountryCode="GB"
+CountryLocale="en_GB.UTF-8"
+Countrykbd="uk"
+ZONE="Europe"
+SUBZONE="London"
+DesktopEnvironment="xfce4"
+DisplayManager="lightdm"
+Greeter="lightdm-gtk-greeter"
+HostName="ArchLinux"
+RootPassword="Root"
+UserName="archie"
+UserPassword="Linux"
+
+# Call the function 'testbed' holding code to be tested
+testbed
+
+echo "Finished"
+
+exit
+
+# Code for checking arrays
+Counter=0
+for i in ${AddPartList[@]}	
+do
+  echo ${AddPartList[$Counter]}
+  echo ${AddPartLabel[$Counter]} 
+  echo ${AddPartType[$Counter]}
+  Counter=$((Counter+1))
+done

@@ -1,0 +1,1298 @@
+#!/bin/bash
+
+# achoofuncs - Functions called by the main Achoo! script
+# -----------------------------------------------------------
+# This script and the achoovariables script must be present in the same
+# directory when running the main Achoo! script
+# -----------------------------------------------------------
+
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
+
+# ------------------------------------------------------
+# Please read the introduction in the main Achoo! script
+# ------------------------------------------------------
+
+# -------------------------
+# Functions           Line
+# -------------------------
+# Input and output     39
+# Error-checking       151
+# Internet connection  188
+# Mirrorlist           245
+# Set scope            287
+# Partitioning         327
+# User & Location      705
+# Desktop Environment  900
+# Check Data           1000
+# Running              1192
+# ------------------------
+
+#
+# Input and output 
+#
+
+contains_element() { # (from AUI scripts)
+# check if an element exists in a string
+    for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
+}
+
+invalid_option() { # (from AUI scripts)
+    echo 
+    read_timed "Invalid option. Try again."
+}
+
+print_heading() {
+  clear
+  T_COLS=`tput cols`
+  tput cup 1 $((($T_COLS/2)-20))
+  printf "~ Achoo! The Arch Linux Installation Script ~ \n"
+  printf "%$(tput cols)s\n"|tr ' ' '-'
+  lov=${#Banner}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo -e "$EMPTY $Banner"
+  else
+    echo -e "$Banner"
+  fi
+  printf "%$(tput cols)s\n"|tr ' ' '-'
+}
+
+print_line() { # from AUI scripts
+    printf "%$(tput cols)s\n"|tr ' ' '-'
+}
+
+print_title() { # from AUI scripts
+    print_line
+    echo -e " ${Bold}$1${Reset}"
+    print_line
+    echo ""
+}
+
+print_info() { # adapted from AUI scripts
+  T_COLS=`tput cols`
+  if [ $2 ]; then # Second value is characters left of centre
+    lov=$2
+  else
+    lov=${#1}
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo "$EMPTY $1"
+  else
+    echo "$1"
+  fi
+}
+
+print_list() {
+    if [ $2 ]; then
+      lov=$2
+      stpt=$(( ($T_COLS - $lov) / 2 ))
+      EMPTY="$(printf '%*s' $stpt)"
+    fi
+   echo "$EMPTY $1"
+}
+
+TPecho() { # For displaying info while running on auto
+  T_COLS=`tput cols`
+  tput bold
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo -e "$EMPTY $1 \n"
+  else
+    echo -e "$1 \n"
+  fi
+  tput sgr0
+}
+
+TPread() {
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+  elif [ ${lov} -gt ${T_COLS} ]; then
+    stpt=0
+  else
+    stpt=$(( ($T_COLS - 10) / 2 ))
+  fi
+  EMPTY="$(printf '%*s' $stpt)"
+  read -p "$EMPTY $1" Response
+}
+
+read_timed() { # Now can receive second parameter to set duration
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
+  echo
+}
+
+SetPS3() { 
+  T_COLS=`tput cols`
+  lov=40
+  stpt=$(( ($T_COLS - $lov) / 2 ))
+  EMPTY="$(printf '%*s' $stpt)"
+  PS3="${EMPTY} Enter the number of your selection : "
+}
+
+#
+# Error-checking
+#
+
+CheckForError() {
+# Check for stderr, display it, then exit script
+# Now receiving $2 to flag critical or non-critical error
+	if [[ $? -gt 0 ]]; then
+    tput bold
+    clear
+		print_info "Error reported at Line: $1"
+    cat error.log
+    case $2 in
+      0) read_timed "The error is not critical, and you may ignore it"
+      ;;
+      1) print_info "You may ignore the error if you choose,"
+      print_info "and continue with the installation,"
+      print_info "but this may have unexpected consequences."
+      TPread "Continue with installation? (y/N): "
+      case $Response in
+        "n" | "N" | "") tput sgr0
+          exit
+        ;;
+        *) echo ""
+      esac
+      ;;
+      *) print_info "The error is critical, and the script cannot continue"
+        "Please press any key: "
+        read -n1
+        tput sgr0
+        exit
+    esac
+    print_info "Continuing as though nothing has happened"
+    tput sgr0
+  fi
+}
+
+#
+# Check internet
+#
+
+CheckInternet() {
+print_heading
+print_info "Welcome to the Achoo! Arch Linux installation script."
+Retry="Y"
+Response=3
+while [ $Retry = "Y" ]
+do
+  print_info "A working internet connection is needed for installation."
+  print_info "Please choose which of the following apply: "
+  echo
+  print_info "1) My computer has a wired connection by ethernet cable;"
+  print_list "2) My computer has wifi;"
+  print_list "3) I am not connected to the internet;"
+  echo
+  TPread "Enter the number of your selection : "
+  echo
+  case $Response in
+    1) CheckConnection
+    ;;
+    2) wifi-menu
+      CheckConnection
+    ;;
+    3) read_timed "Sorry, installation cannot continue without an internet connection."
+      exit
+    ;;
+    *) invalid_option
+  esac
+  print_heading
+done
+}
+
+CheckConnection() {
+while [ $Retry = "Y" ]
+do
+  print_info " Checking your connection now ... "
+  if [[ ! $(ping -c 3 google.com) ]]; then
+    print_info "Unable to establish a connection. Ensure that your computer"
+    print_info "is able to access the internet."
+    TPread "Try again? (y/n): "
+    Retry=$Response
+    if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
+      $?=1    # Unable to continue without internet
+      CheckForError "${LINENO} 'No internet'" 2
+    else
+      Retry="Y"
+    fi
+  else
+    Retry="N"
+  fi
+done
+}
+
+#
+# Mirrorlist
+#
+
+ReflectorMirrorList() {
+# Install reflector and use it to generate fast mirror list
+  TPecho "Using Reflector to generate mirrorlist"
+  cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+  CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
+  pacman -Sy --noconfirm -q reflector 2> error.log
+  CheckForError "${LINENO} 'Installing Reflector'" 2
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
+  if [[ $? -gt 0 ]]; then
+    LocalMirrorlist
+  else
+    chmod +r /etc/pacman.d/mirrorlist 2> error.log
+    CheckForError "${LINENO} 'Sharing mirrorlist'" 2
+  fi
+}
+
+LocalMirrorList() {
+# In case Reflector fails, generate and save a shortened mirrorlist of only 
+# the mirrors defined in the CountryCode variable. Adapted from Lution AIS
+	TPecho "Reflector failed - generating local mirrorlist instead"
+	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
+	CheckForError "${LINENO}"
+	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL} 2> error.log
+	CheckForError "${LINENO}" 2
+	# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
+	CheckForError "${LINENO}" 2
+	# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+	CheckForError "${LINENO}" 2
+	# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+	CheckForError "${LINENO} 'saving mirrorlist'" 2
+	chmod +r /etc/pacman.d/mirrorlist 2> error.log
+	CheckForError "${LINENO} 'saving mirrorlist'" 2
+}
+
+SetScope() { # Establish the scope of the installation
+  print_heading
+  Retry="Y"
+  Response=1
+  while [ $Retry = "Y" ]
+  do
+    print_info "Achoo! can be set to add a choice of desktop environment,"
+    print_info "set up a user, and automatically install codecs, wifi"
+    print_info "tools, graphics and other luxuries."
+    echo
+    print_info "1) Just basic Arch command line" 50
+    print_list "2) Arch plus desktop environment, etc"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) Scope=1
+        Retry="N"
+      ;;
+      2) Scope=2
+        Retry="N"
+      ;;
+      *) invalid_option
+    esac
+    print_heading
+  done
+}
+
+#
+# Partitioning
+#
+
+ManagePartitions() {
+# Check and show partitions ... call cfdisk
+	# First test for existing partitions
+	print_heading
+	ShowPartitions=""
+	PARTITIONS=""
+	ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+	# Count the partitions
+  for i in ${ShowPartitions[@]}; do
+    PARTITIONS="${PARTITIONS} ${i} -"
+    NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
+  done	
+	# If no partitions exist, offer cfdisk to create (or exit)
+	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
+		print_heading
+    echo
+    print_info "There are no partitions on the device. 'cfdisk' is available"
+    print_info "for you to create a partition table now if you wish."
+    echo 
+    print_info "Please note: At least one partition must be created for the"
+    print_info "/root directory. If you are uncertain about partitioning, you should"
+    print_info "read the Arch Wiki. If you choose not to use 'cfdisk' now the"
+    print_info "script will terminate to allow you to partition in some other way."
+    echo
+    TPread "Would you like to open cfdisk now? [Y/n]: "
+    case $Response in
+		  "y"|"Y"|"") cfdisk 2> error.log
+      	CheckForError "${LINENO} 'cfdisk'" 2
+			;;
+		*) exit
+		esac
+ 	else
+    # Alternatively, offer cfdisk to edit existing partitions
+		print_info "Here is a list of available partitions on all connected devices ..."
+    echo
+		lsblk
+		echo
+    print_info "If you are uncertain about partitioning, you should read"
+    print_info "the Arch Wiki. Would you like to open cfdisk"
+		TPread "to manage those partitions now? [Y/n]: "
+		case $Response in
+		  "y"|"Y"|"") cfdisk 2> error.log
+            	CheckForError "${LINENO} 'cfdisk'" 2
+			;;
+      *) echo ""
+		esac
+	fi
+  # After cfdisk, build new list of partitions
+  PartitionList=" "
+  ShowPartitions=$(lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//')
+  for Part in ${ShowPartitions}
+  do
+    PartitionList="$PartitionList $Part"	# Add each partition
+  done
+}
+
+select_filesystem() {
+# Allows user-selection of filesystem by entering a number
+# Returns enhanced selection via FILESYSTEM variable
+	local Counter=0
+  SetPS3
+#	TypeList now passed by caller
+	print_info "Please now select the file system for ${Partition}"
+	print_info "It is not recommended to mix the btrfs file-system with others."
+  echo
+	select type in ${TypeList}
+	do
+    for i in ${TypeList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $REPLY ]
+			then
+				PartitionType=$i
+        break
+			fi
+		done
+		break
+  done
+}
+
+AllocateRoot() {
+# Display partitions for user-selection	
+	# Uses list of all available partitions in PartitionList created in ManagePartitions
+	print_heading
+	Remaining=""
+	local Counter=0
+  Partition=""
+	PartitionType=""
+  SetPS3
+	print_info "Please now select a partition to use for root:"
+  echo
+	select partition in ${PartitionList}
+	do
+    Reply=$REPLY
+    for i in ${PartitionList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]
+			then
+				Partition="/dev/$i"
+				RootPartition="${Partition}"
+        # Before going to select_filesystem, check the partition
+        CheckPartition
+        if [ ${CurrentType} ]; then
+          print_info "You can choose to leave it as it is, by selecting 'Skip', but"
+          print_info "be aware that not reformatting the root partition can have"
+          print_info "unexpected consequences."
+          echo
+          TypeList="ext2 ext3 ext4 btrfs Skip"	
+        else
+        	TypeList="ext2 ext3 ext4 btrfs"	
+        fi
+        # Now select a filesystem
+ 				select_filesystem
+				if [ -z ${PartitionType} ]
+				then
+					RootType="ext4"
+				else
+          RootType="${PartitionType}"
+        fi
+			else
+				Remaining="$Remaining $i"	# Add next available partition
+			fi
+		done
+    PartitionList=$Remaining			# Replace original PartitionList with remaining options
+		break
+  done
+}
+
+CheckPartition() {
+# Finds if there is an existing file system on the selected partition
+print_heading
+# CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
+CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
+if [ ${CurrentType} ]; then
+  print_info "The selected partition ${Partition} is currently formatted to ${CurrentType}"
+  print_info "Reformatting it will remove all data currently on it."
+fi
+}
+
+AllocateSwap() {
+# Checks if there are remaining partitions from AllocateRoot, and allows selection for swap
+print_heading
+if [ -n ${#PartitionList[@]} ]
+then
+  print_info "Select a partition for /swap from the ones that remain,"
+  print_info "or you can allocate a swap file."
+  print_info "Warning: Btrfs does not support swap files. Failure to heed"
+  print_info "this warning may result in file system corruption."
+  echo
+  Remaining=""
+  local Counter=0
+  SetPS3
+  SwapPartition=""
+  PartitionList="$PartitionList Swapfile Skip"
+  SwapFile=""
+  print_info "If you select the 'Skip' option, no swap will be allocated:"
+  echo
+  select partition in ${PartitionList}
+  do
+  Reply=$REPLY
+  echo
+    for i in ${PartitionList}
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]
+      then
+        case $i in
+          "Skip") SwapPartition=""
+          ;;
+          "Swapfile") SetSwapFile
+                SwapPartition=""
+          ;;
+          *)  SwapPartition="/dev/$i"
+        esac          
+      else
+        if [ $i != Skip ] && [ $i != Swapfile ]; then
+          Remaining="$Remaining $i"	# Add next available partition
+        fi
+      fi
+    done
+    break
+  done
+  if [ $SwapPartition ]; then
+      read_timed "$SwapPartition will be used for swap."
+  elif [ $SwapFile ]; then
+      read_timed "A swap file of ${SwapFile} will be allocated."
+  else
+      read_timed "No swap partition will be allocated."
+  fi
+  echo
+  PartitionList=$Remaining		# Replace original PartitionList with remaining options
+fi
+}
+
+SetSwapFile() {
+# If user chooses to have a swap file instead of swap partition
+LoopRepeat="Y"
+while [ ${LoopRepeat} = "Y" ]
+do
+	print_info "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
+  TPread "Size of swap file [eg: 512M or 2G]: "
+  RESPONSE="${Response^^}"
+	# Check that entry includes 'M or G'
+	CheckInput=(`echo $RESPONSE | grep "G\|M"`)
+  echo ""
+	if [ -z ${CheckInput} ]; then
+    print_info "You must include M or G"
+		SwapFile=""
+	else
+    SwapFile=$RESPONSE
+    LoopRepeat="N"
+  fi
+  if [ ${LoopRepeat} = "N" ]  
+  then
+    break
+  fi 
+done 
+}
+
+ExtraPartitions() {
+local PartCounter=0
+AddedToRemaining=0
+Elements=${#PartitionList[@]}
+while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option) 
+do
+	print_heading
+	Remaining=""
+	SetPS3
+  PartitionList="$PartitionList Skip"
+	print_info "The following partitions remain unallocated."
+  print_info "If you wish to use one, select it from the list,"
+  print_info "or choose 'Skip' to finish partitioning."
+  echo
+	select partition in ${PartitionList} 
+	do
+  echo
+  Selected=$REPLY
+		for Part in ${PartitionList} # Iterate through the list
+		do
+      Partition=""
+      PartitionType=""
+      PartCounter=$((PartCounter+1))
+			if [ $PartCounter -eq $Selected ]
+			then
+        Item=$Part  # Selected item
+        if [ $Item = Skip ]; then
+          break
+        else                        # If item is not 'Skip'
+        	Partition="/dev/$Item"
+          MakePartition # Call MakePartition to complete details
+        fi
+      else                          # If $Counter is not equal to $Selected
+        if [ $Part != Skip ]; then   # (and not 'Skip')
+          Remaining="$Remaining $Part" # Add unused partition to temp list
+          AddedToRemaining=$(($AddedToRemaining+1))
+        fi
+			fi
+    done
+    if [ $Part = Skip ] || [ ${AddedToRemaining} -eq 0 ]; then  # If skip or there are no more to allocate
+      break
+    fi
+    break
+  done
+  if [ $Item = Skip ] || [ ${AddedToRemaining} -eq 0 ]; then
+    break
+  fi
+  PartCounter=0 # Final breakpoint, when all required partitions have been selected
+  PartitionList=$Remaining	# Replace original PartitionList with temp list
+  Elements=${#PartitionList[@]}
+done
+# Ensure that if AddPartList (the defining array) is empty, all others are too
+if [ -z ${#AddPartList[@]} ]
+then
+  AddPartList=""
+  AddPartLabel=""
+  AddPartType=""
+fi
+}
+
+MakePartition() {
+  # 1) When selected, first save to AddPartList (eg: /dev/sda5)
+    ExtraPartitions=${#AddPartList[@]}
+    AddPartList[$ExtraPartitions]="${Partition}"
+  # 2) Set the filesystem
+  CheckPartition   # Before going to select_filesystem, check the partition
+  if [ ${CurrentType} ]; then
+    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
+    print_info "reformatting an existing partition can have unexpected consequences."
+    echo
+  fi
+  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
+  select_filesystem
+  if [ -z ${PartitionType} ]; then
+    PartitionType="Skip"
+  fi
+  AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list	
+  # 3) Then get a label for selected partition (eg: /home)
+	LoopRepeat="Y"
+	while [ ${LoopRepeat} = "Y" ]
+	do
+    echo
+	print_info "Enter a label for ${Partition} ..."
+	TPread "Default is '/home': "
+	# Check that entry includes '/'
+	CheckInput=(`echo $Response | cut -c1`)
+	case ${CheckInput} in
+      "") PartLabel="/home"
+          ;;
+       *) if [ ${CheckInput} != "/" ]; then
+		PartLabel="/${Response}"
+	  else
+		PartLabel="${Response}"
+	  fi
+       esac
+	# Check that the label has not already been used
+	LabelCounter=0
+	if [ -z ${AddPartLabel} ]; then
+		LoopRepeat="N"
+	else
+		# Go through AddPartLabel checking each item against PartLabel
+		for Label in ${AddPartLabel}
+		do 
+			LabelCounter=$((LabelCounter+1))
+			if [ $Label = $PartLabel ]; then
+				read_timed "Label ${PartLabel} has already been used. Please use a different label."
+				else
+					LoopRepeat="N"
+					break
+				fi
+			done 
+		fi 
+		if [ ${LoopRepeat} = "N" ]  
+		then
+			break
+		fi 
+	done 
+	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
+}
+
+# User to choose device for bootloader installation
+SetGrubDevice() {
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
+	print_heading
+  GrubDevice=""
+	Counter=0
+	SetPS3
+	print_info "Select the device where Grub is to be installed."
+  print_info "Note that if you select the 'Skip' option, Grub will"
+  print_info "not be installed, and you will have to make"
+  print_info "alternative arrangements for booting your new system."
+  echo
+	select partition in ${DevicesList}
+	do
+  Reply=$REPLY
+    for i in ${DevicesList}
+		do
+    Item=$i
+  	Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]; then
+        if [ $Item = Skip ]; then
+          GrubDevice=""
+        else
+          GrubDevice=$Item
+          BootLoader="Grub"
+        fi
+        break
+    	fi
+ 		done
+    break
+  done
+}
+
+#
+# Locations, User and Passwords
+#
+
+getkeymap() {
+# Enable user to input two-letter country-code to find keyboard
+print_heading
+DoDoDo=1
+print_info "Now we will try to find your keyboard from a list of all"
+print_info "known layouts. If you know your keyboard layout code, enter"
+print_info "it now, or try entering a two-letter abbreviation for your"
+print_info "country or language and a list will be displayed ..."
+echo
+SearchPrompt="(eg: fr or us): "
+while [ $DoDoDo -eq 1 ]
+do
+  SetPS3
+  TPread "$SearchPrompt"
+  search_term=$Response
+  echo
+  SEARCHTERM="${search_term,,}"
+  KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again' );
+  echo
+  print_info "Choose your keyboard, or 'Try_Again': "
+  echo
+  select KEYMAP in "${KeyboardList[@]}"; do
+    if contains_element "$KEYMAP" "${KeyboardList[@]}"
+    then
+      if [ $KEYMAP = "Try_Again" ]
+      then
+        print_heading
+        print_info "Try a different two-letter code: "
+        break
+      else
+        Countrykbd=$KEYMAP
+        DoDoDo=0
+        break
+      fi
+    else
+      invalid_option
+    fi
+  done
+done
+echo
+read_timed "The keyboard is now set to: '$Countrykbd'" 1
+}
+
+setlocale() {
+# Enable user to input two-letter country-code to find locale
+print_heading
+SetPS3
+DoDoDo=1
+SearchPrompt=" (eg: GB or en): "
+print_info "Next we will try to find your locale"
+echo
+while [ $DoDoDo -eq 1 ]
+do
+  print_info "Enter a two-letter code for your country or language ..."
+  TPread "$SearchPrompt"
+  search_term=$Response
+  echo
+  SEARCHTERM=${search_term}
+  LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+ Counter=${#LocaleList[@]}
+  if [ $Counter -eq 0 ]
+  then 
+    SEARCHTERM="${search_term^^}"
+    LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+    Counter=${#LocaleList[@]}
+  fi
+  Counter=$((Counter+1))
+  LocaleList[$Counter]='Try_Again'
+  echo
+  print_info "Choose your locale, or 'Try_Again': "
+  echo
+  select LOCALE in "${LocaleList[@]}"; do
+    if contains_element "$LOCALE" "${LocaleList[@]}"
+    then
+      if [ $LOCALE = "Try_Again" ]
+      then
+        print_heading
+        print_info "Try a different two-letter code (try UPPER CASE): "
+        break
+      else
+        CountryLocale="${LOCALE}.UTF-8"
+        CountryCode=(`echo $LOCALE | cut -c4-6`)
+        DoDoDo=0
+        break
+      fi
+    else
+      invalid_option
+    fi
+  done
+done
+echo
+read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
+}
+
+settimezone() {
+# Variables "ZONE" and "SUBZONE"
+print_heading
+print_info "Now we have to set up the best mirrors for downloading your system"
+print_info "This data will also be used for setting the clock during installation"
+print_info "Choose the World Zone of your location from the following list"
+echo
+# Set Zone and Sub-Zone from lists (from AUI)
+  local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
+  SetPS3
+  echo
+  print_info "Select zone:"
+  echo
+  select ZONE in "${_zones[@]}"
+  do
+    if contains_element "$ZONE" "${_zones[@]}"; then
+      local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
+      print_heading
+      SetPS3
+      print_info "Now select your local city or Sub-Zone:"
+      echo
+      select SUBZONE in "${_subzones[@]}"; do
+        if contains_element "$SUBZONE" "${_subzones[@]}"; then
+          break
+        else
+          invalid_option
+        fi
+      done
+      break
+    else
+      invalid_option
+    fi
+  done
+echo
+read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
+}
+
+UserPassword() {
+	print_heading
+	print_info "Enter a name for the primary user of the new system."
+  print_info "If you don't create a username here, a default user called"
+  print_info "'archie' will be set up"
+  echo
+	TPread "Enter a username (must be all lower case): "
+  Entered=$Response
+	case $Entered in
+		"") UserName="archie"
+		;;
+		*) UserName=${Entered}
+	esac
+	print_info "$UserName will be created"
+	print_heading
+	print_info "Next enter the password for that user. If you do not enter"
+	print_info "a user password, a default of 'Linux' will be used."
+  echo
+	TPread "Enter a password for $UserName: "
+  Entered=$Response
+	case $Entered in
+		"") UserPassword="Linux"
+		;;
+		*) UserPassword=${Entered}
+	esac
+	print_info "${UserName}'s password will be: ${UserPassword}"
+
+}
+
+RootPassword() {
+	Entered="ArchLinux"
+	print_heading
+	print_info "A hostname is needed. This will be a unique name to identify"
+	print_info "your device on a network. If you do not enter one, the"
+	print_info "default hostname of 'ArchLinux' will be used."
+   echo
+	TPread "Enter a hostname for your computer : "
+  Entered=$Response
+	case $Entered in
+		"") HostName="ArchLinux"
+		;;
+		*) HostName=${Entered}
+	esac
+	print_info "Hostname set to: $HostName"
+	print_heading
+	print_info "Now set a password for root. If you do not enter one, a default"
+  print_info "password of 'Root' will be used."
+  echo
+	TPread "Enter a password for root: "
+  Entered=$Response
+	case $Entered in
+		"") RootPassword="Root"
+		;;
+		*) RootPassword=${Entered}
+	esac
+	print_info "Root password will be set to: $RootPassword"
+}
+
+#
+# Desktop Environment
+#
+
+ChooseDE() {
+	Counter=0
+	SetPS3
+	DEList="Cinnamon Enlightenment Gnome Plasma5 LXDE LXQt Mate Xfce Openbox Skip"
+  print_heading
+  print_info "Desktop Environments & Window Managers."
+  print_info "Cinnamon, Gnome, KDE, Mate and Xfce include many useful desktop"
+  print_info "tools, whereas LXDE, LXQt and the Window Managers are more basic."
+  print_info "A testing installation of KDE Plasma 5 desktop is now included."
+  print_info "Alternatively, you can choose to skip this option, and install"
+  print_info "something else manually later."
+  echo
+	print_info "Choose your Desktop Environment"
+	select type in ${DEList}
+	do
+  Reply=$REPLY
+  SelectedDE=type
+    for i in ${DEList}
+    do
+      Item=$i
+      Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]
+			then
+      DesktopEnvironment=$Item
+      case $Item in
+        "Cinnamon") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "Enlightenment") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "Gnome") DisplayManager=""
+              Greeter=""	
+          ;;
+        "Plasma5") DisplayManager="sddm"
+              Greeter=""
+          ;;
+        "LXDE") DisplayManager=""
+              Greeter=""
+          ;;
+        "LXQt") DisplayManager="sddm"
+              Greeter=""
+          ;;
+        "Mate") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "Xfce") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        "Openbox") DMList="LightDM LXDM Skip"
+              ChooseDM
+          ;;
+        *) DesktopEnvironment=""
+            DisplayManager=""
+              Greeter=""	
+ 			esac
+      break
+			fi
+		done
+		break
+  done
+}
+
+ChooseDM() {
+  # Choice of Display Manager from list passed via DMList
+  Counter=0
+  SetPS3
+  print_heading
+  print_info "Choose one of the following Display Managers for "$Item
+  print_info "Alternatively, you can choose to skip this option. Either way, you"
+  print_info "can always install something else manually later."
+  echo
+  print_info "Choose your Display Manager"
+  select type in ${DMList}
+  do
+  Reply=$REPLY
+    for item in ${DMList}
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]
+      then
+        SelectedDM=$item
+        case $SelectedDM in
+          "LightDM") DisplayManager="lightdm"
+                Greeter="lightdm-gtk-greeter"	
+              ;;
+          "LXDM") DisplayManager="lxdm"
+                Greeter=""
+              ;;
+          *) DisplayManager=""
+                Greeter=""
+        esac	
+        break
+      fi
+    done
+		break
+  done
+}
+
+#
+# Check Data
+#
+
+FinalCheck() {
+Repeat=1
+while [ $Repeat -gt 0 ]
+do
+print_heading
+print_info "These are the settings you have entered. Please check them ..."
+echo
+print_info "1) Root partition ... $RootPartition : $RootType" 50
+if [ $SwapPartition ] || [ $SwapFile ]; then
+  print_list "2) Swap partition ... $SwapPartition $SwapFile"
+else
+  print_list "2) No provision has been made for swap"
+fi
+if [ ${AddPartList} ]; then
+  Counter=0
+  print_list "3) Extra partitions ..."
+  for i in ${AddPartList[@]}	
+  do
+    print_info "    ${AddPartLabel[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+    Counter=$((Counter+1))
+  done
+else
+  print_list "3) No additional partitions have been allocated"
+fi
+if [ $GrubDevice ]; then
+print_list "4) ${BootLoader} will be installed to $GrubDevice" 50
+else
+  print_list "4) No provision has been made for a ${BootLoader}"
+fi
+print_list "5) Keyboard is $Countrykbd"
+print_list "6) Locale will be set to $CountryLocale"
+print_list "7) Zone/subZone will be $ZONE/$SUBZONE"
+if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
+  print_list "8) DE = $DesktopEnvironment : $DisplayManager"
+elif [ $DesktopEnvironment ]; then
+  print_list "8) DE = $DesktopEnvironment"
+else
+  print_list "8) No DE selected"
+fi
+print_list "9) Root and user settings ..."
+print_list "     Hostname = '$HostName'"
+print_list "     Root password = '$RootPassword'"
+print_list "     User = '$UserName' : Password = '$UserPassword'"
+echo
+print_list "Press [Enter] to install with these settings, or enter an"
+echo
+TPread "item number if you wish to change it: "
+case $Response in
+  1) ChangeRootPartition
+      AllocateRoot
+  ;;
+  2) ChangeSwapPartition
+      AllocateSwap
+  ;;
+  3) ChangeExtraPartitions
+      ExtraPartitions
+  ;;
+  4) SetGrubDevice
+  ;;
+  5) getkeymap
+  ;;
+  6) setlocale
+  ;;
+  7) settimezone
+  ;;
+  8) ChooseDE
+  ;;
+  9) ManualSettings
+  ;;
+  *) Repeat=0
+esac
+done
+}
+
+ManualSettings() {
+IsDone="N"
+PS3=$'\n           Enter number for data to change, or 5 to finish: '
+local Counter=0
+HostName="Achoo"
+RootPassword="Root"
+UserName="Archie"
+UserPassword="Linux"
+ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
+  while [ $IsDone = "N" ]
+  do
+    print_heading
+    select Chosen in $ChooseList
+    do
+      echo
+      Reply=$REPLY
+      for i in ${ChooseList}
+      do
+        Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          case $Reply in
+            1) TPread "Enter new Hostname (currently $HostName) : "
+              HostName=$Response
+            ;;
+            2) TPread "Enter new Root password (currently $RootPassword) : "
+              RootPassword=$Response
+            ;;
+            3) TPread "Enter new username to be created (currently $UserName) : "
+              UserName=$Response
+            ;;
+            4) TPread "Enter new password for $UserName (currently $UserPassword) : "
+              UserPassword=$Response
+            ;;
+            5) IsDone="Y"
+              break
+              ;;
+            *) IsDone="Y"
+              break
+          esac
+          ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
+          break
+         fi
+      done
+      break
+    done
+  done
+}
+
+ChangeRootPartition() {
+# Start array with SwapPartition
+  Ignorelist[0]=${SwapPartition}
+  local Counter=1
+  AddExtras
+  MakePartitionList
+}
+  
+ChangeSwapPartition() {
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangeExtraPartitions() {
+# Copy RootPartition and SwapPartition into temporary array
+Ignorelist[0]=${RootPartition}
+local Counter=1
+if [ ${SwapPartition} ]; then
+  Ignorelist[1]=${SwapPartition}
+  Counter=2
+fi
+Ignores=${#Ignorelist[@]} # Save a count for later
+MakePartitionList
+}
+
+AddExtras() {
+  # Called by ChangeSwapPartition and ChangeRootPartition with
+  # Ignorelist started and Counter set to next record number
+  # Add each field (extra partition) from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  Ignores=${#Ignorelist[@]} # Save a count for later
+}
+
+MakePartitionList() {
+  # Get a new list of all available partitions ...
+  Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  # Make an array
+  Counter=0
+  for a in $Partitionlist; do
+    AllPartitions[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  # Parse through AllPartitions, comparing against each item in Ignorelist
+  PartitionList=""
+  use=1
+  for a in ${AllPartitions[@]}; do
+    for i in ${Ignorelist[@]}; do
+      if [ $i = $a ]; then
+        use=0
+        break
+      fi
+    done
+    if [ ${use} -eq 1 ]; then
+      PartitionList="${PartitionList} $a"
+    else
+      use=1
+    fi
+  done
+}
+
+#
+# Running
+#
+
+arch_chroot() {
+# Taken directly from Lution AIS
+# Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
+  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
+  CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'" 2
+}  
+
+umount_partitions(){ # from Lution/AUI
+  swapoff -a 2> error.log
+  CheckForError "${LINENO} 'swapoff'" 1
+  MOUNTED=""
+  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
+  for i in ${MOUNTED[@]}; do
+    umount $i >/dev/null 2> error.log
+    CheckForError "${LINENO} 'umount $i >/dev/null'" 1
+  done
+}
+
+MountPartitions() {
+  case $RootType in
+    "") TPecho "Not formatting root partition"
+    ;;
+    "Skip") TPecho "Not formatting root partition"
+    ;;
+    *) TPecho "Formatting /root partition"
+    # If replacing existing partition
+    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${RootPartition}
+      CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
+    elif [ $RootType = "btrfs" ]; then
+      mkfs.btrfs -f ${RootPartition} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
+    else
+      mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+      CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
+    fi
+  esac
+  TPecho "Mounting /root partition"	
+  mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
+  CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
+
+  if [ ${SwapPartition} ]
+  then
+    TPecho "Making /swap partition"
+    mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
+    CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
+    TPecho "Activating /swap"
+    swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
+    CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
+  fi
+  
+  TPecho "Mounting additional partitions"
+  local Counter=0
+  Elements=${#AddPartList[@]}
+ 	# Repeat $Elements times getting data from the three arrays
+  while [ $Counter -lt $Elements ]
+  do
+    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory
+    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    # If replacing existing partition
+    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${AddPartList[$Counter]}
+      CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+      mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} != "Skip" ];     then
+      mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
+    fi
+    if [ ${AddPartType[$Counter]} != "Skip" ];     then
+      mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+      CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'" 2
+    fi
+		Counter=$((Counter+1))
+	done
+}
+
+TestExistingDM() {
+  # Test for existing display manager and disable if necessary
+  arch-chroot ${MOUNTPOINT} systemctl list-unit-files | grep dm.service > mnt/etc/output.log
+  DMLine=`cat ${MOUNTPOINT}/etc/output.log`
+  # Start a local counter to check for multiple entries
+  local Counter=1
+  case ${DMLine} in
+    "") TPecho "No previous DM discovered"
+    ;;
+    *) local Continue="Y"
+      while [ ${Continue} = "Y" ]
+      do
+        ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` # First of pair is DM
+        if [ -z ${ExDM} ]; then
+          Continue="N" # Quit if no further entries
+          break
+        fi
+        Counter=$((Counter+1))
+        ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` # Second is status
+        case ${ExDMStatus} in
+          "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+          ;;
+          *) TPecho "${ExDM} already disabled"
+        esac
+        Counter=$((Counter+1))
+      done
+  esac
+}
+
+#
+#	End of Functions
+#
