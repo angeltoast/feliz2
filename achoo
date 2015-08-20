@@ -299,7 +299,7 @@ if [ $Scope -gt 1 ]; then
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
     "Plasma5") TPecho "Installing 'KDE Plasma 5' Desktop Environment"
-        pacstrap ${MOUNTPOINT} plasma-meta
+        pacstrap ${MOUNTPOINT} plasma kde-applications
         CheckForError "Line ${LINENO} 'Installing Plasma5'" 1
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
