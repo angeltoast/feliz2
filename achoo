@@ -47,7 +47,18 @@ fi
 CheckInternet
 StartTime=$(date +%s)
 
-SetScope
+# Set scope of installation
+print_heading
+print_info "Achoo! can be set to install a desktop environment, set up users,"
+print_info "and automatically install codecs, wifi tools, graphics and other"
+print_info "luxuries, or you can choose to have just a basic installation."
+echo
+TPread "Full (F) or Basic (B)? (Please enter F or B): "
+  case $Response in
+    "f" | "F" | "") Scope="Full"
+    ;;
+    *) Scope="Basic"
+  esac  
 
 # Check partitioning, offer cfdisk
 ManagePartitions
@@ -87,12 +98,12 @@ setlocale
 
 # Names and passwords
 RootPassword
-if [ $Scope -gt 1 ]; then
+if [ $Scope = "Full" ]; then
   UserPassword
 fi
 
 # Desktop environment and display manager/greeter
-if [ $Scope -gt 1 ]; then
+if [ $Scope = "Full" ]; then
   Repeat=1
   ChooseDE
 fi
@@ -117,7 +128,7 @@ umount_partitions
 MountPartitions
 
 # Set mirrorlist
-ReflectorMirrorList
+LocalMirrorList
 
 print_heading
 TPecho "Installing LTS Kernel and base-devel"
@@ -173,7 +184,7 @@ arch_chroot "hwclock --systohc --utc"
 TPecho "Enabling dhcpcd"
 arch_chroot "systemctl enable dhcpcd.service"
 
-if [ $Scope -gt 1 ]; then
+if [ $Scope = "Full" ]; then
   TPecho "Installing and configuring network services"
   pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
   CheckForError "${LINENO} 'Installing network manager'" 2
@@ -211,8 +222,8 @@ CheckForError "${LINENO} 'Saving persistent keymap'" 1
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
-# Extra processes for 'extended' installation
-if [ $Scope -gt 1 ]; then
+# Extra processes for 'Full' installation
+if [ $Scope = "Full" ]; then
   print_heading
   CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
   # If not already exist, create user and set password
@@ -298,10 +309,6 @@ if [ $Scope -gt 1 ]; then
         CheckForError "Line ${LINENO} 'Installing Gnome'" 1
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
-    "Plasma5") TPecho "Installing 'KDE Plasma 5' Desktop Environment"
-        pacstrap ${MOUNTPOINT} plasma kde-applications
-        CheckForError "Line ${LINENO} 'Installing Plasma5'" 1
-        ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
@@ -329,18 +336,6 @@ if [ $Scope -gt 1 ]; then
         ;;
   *) TPecho "Not installing a Desktop Environment"	
   esac
-fi
-
-if [ $Scope -gt 2 ]; then # Internet pack
-  TPecho "Installing internet pack"
-  pacstrap ${MOUNTPOINT} firefox thunderbird 2> error.log
-  CheckForError "${LINENO} 'Installing internet pack'" 2
-fi
-
-if [ $Scope -gt 3 ]; then # Office pack
-  TPecho "Installing office pack"
-  pacstrap ${MOUNTPOINT} libreoffice-fresh gimp 2> error.log
-  CheckForError "${LINENO} 'Installing office pack'" 2
 fi
 
 print_heading
