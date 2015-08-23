@@ -221,7 +221,7 @@ done
 CheckConnection() {
 while [ $Retry = "Y" ]
 do
-  print_info " Checking your connection now ... "
+  TPecho "Checking your connection now ..."
   if [[ ! $(ping -c 3 google.com) ]]; then
     print_info "Unable to establish a connection. Ensure that your computer"
     print_info "is able to access the internet."
@@ -548,10 +548,8 @@ MakePartition() {
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
-		print_info "Enter a label for ${Partition} ... eg: '/home' ... "
-    echo
-    TPread "(you must include the '/'): "
-		# Check that entry includes '/'
+		TPread "Enter a label for ${Partition} ... eg: '/home' ... "
+ 		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
 		case ${CheckInput} in
       "") print_info "You must enter a valid name"
@@ -1168,7 +1166,6 @@ MountPartitions() {
   TPecho "Mounting /root partition"	
   mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
-
   if [ ${SwapPartition} ]
   then
     TPecho "Making /swap partition"
@@ -1178,7 +1175,6 @@ MountPartitions() {
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
   fi
-  
   TPecho "Mounting additional partitions"
   local Counter=0
   Elements=${#AddPartList[@]}
@@ -1189,17 +1185,15 @@ MountPartitions() {
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     # New code, as for /root ... replace existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
-    if [ -n ${CurrentType} ]; then
-      if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-        btrfs-convert ${AddPartList[$Counter]}
-        CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
-      elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-        mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
-        CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
-      elif [ ${AddPartType[$Counter]} != "Skip" ];     then
-        mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
-        CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
-      fi
+    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${AddPartList[$Counter]}
+      CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+      mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} != "Skip" ];     then
+      mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi
     mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
     CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'" 2
