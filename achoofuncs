@@ -5,26 +5,24 @@
 # This script and the achoovariables script must be present in the same
 # directory when running the main Achoo! script
 # -----------------------------------------------------------
-
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
-
-# ------------------------------------------------------
+# -----------------------------------------------------------
 # Please read the introduction in the main Achoo! script
 # ------------------------------------------------------
 
 # -------------------------
 # Functions           Line
 # -------------------------
-# Input and output     39
+# Input and output     30
 # Error-checking       151
 # Internet connection  188
 # Mirrorlist           245
-# Partitioning         264
-# User & Location      700
-# Desktop Environment  900
-# Check Data           1000
-# Running              1192
+# Partitioning         261
+# User & Location      639
+# Desktop Environment  832
+# Check Data           932
+# Running              1125
 # ------------------------
 
 #
@@ -602,7 +600,7 @@ MakePartition() {
 	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list
 }
 
-# User to choose device for bootloader installation
+# User to choose device for grub installation
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
@@ -627,7 +625,6 @@ SetGrubDevice() {
           GrubDevice=""
         else
           GrubDevice=$Item
-          BootLoader="Grub"
         fi
         break
     	fi
@@ -838,12 +835,13 @@ ChooseDE() {
 	SetPS3
 	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
-  print_info "Desktop Environments & Window Managers."
-  print_info "Cinnamon, Gnome, Mate and Xfce include many useful desktop tools,"
-  print_info "whereas LXDE and LXQt and the Window Managers are more basic desktops"
-  print_info "onto which you can add your choice of tools after installation."
-  print_info "Alternatively, you can choose to skip this option, and install"
-  print_info "something else manually later."
+  print_info "Desktop Environments & Window Managers"
+  print_info "KDE Plasma 5 is a complete desktop, with web browser and office"
+  print_info "software included. Cinnamon, Gnome, Mate and Xfce include many"
+  print_info "useful tools, whereas LXDE and LXQt and the Window Managers are"
+  print_info "more basic desktops onto which you can add your choice of tools"
+  print_info "after installation. Alternatively, you can choose to skip this"
+  print_info "option, and install something else manually later."
   echo
 	print_info "Choose your Desktop Environment"
 	select type in ${DEList}
@@ -865,6 +863,9 @@ ChooseDE() {
               ChooseDM
           ;;
         "Gnome") DisplayManager=""
+              Greeter=""	
+          ;;
+        "KDE") DisplayManager="SDDM"
               Greeter=""	
           ;;
         "LXDE") DisplayManager=""
@@ -958,9 +959,9 @@ else
   print_list "3) No additional partitions have been allocated"
 fi
 if [ $GrubDevice ]; then
-print_list "4) ${BootLoader} will be installed to $GrubDevice" 50
+print_list "4) Grub will be installed to $GrubDevice" 50
 else
-  print_list "4) No provision has been made for a ${BootLoader}"
+  print_list "4) No provision has been made for Grub"
 fi
 print_list "5) Keyboard is $Countrykbd"
 print_list "6) Locale will be set to $CountryLocale"

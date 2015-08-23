@@ -309,6 +309,10 @@ if [ $Scope = "Full" ]; then
         CheckForError "Line ${LINENO} 'Installing Gnome'" 1
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
+    "KDE") TPecho "Installing 'KDE Plasma 5' Desktop Environment"
+        pacstrap ${MOUNTPOINT} plasma kde-applications
+        CheckForError "Line ${LINENO} 'Installing KDE Plasma5'" 1
+        ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
