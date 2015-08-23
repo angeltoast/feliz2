@@ -834,7 +834,7 @@ ChooseDE() {
 	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
   print_info "Desktop Environments & Window Managers"
-  print_info "KDE Plasma 5 is a complete desktop, with web browser and office"
+  print_info "KDE Plasma 5 is a complete system, with web browser and office"
   print_info "software included. Cinnamon, Gnome, Mate and Xfce include many"
   print_info "useful tools, whereas LXDE and LXQt and the Window Managers are"
   print_info "more basic desktops onto which you can add your choice of tools"
@@ -863,7 +863,7 @@ ChooseDE() {
         "Gnome") DisplayManager=""
               Greeter=""	
           ;;
-        "KDE") DisplayManager="SDDM"
+        "KDE") DisplayManager="sddm"
               Greeter=""	
           ;;
         "LXDE") DisplayManager=""
