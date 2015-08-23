@@ -204,9 +204,11 @@ do
   TPread "Enter the number of your selection : "
   echo
   case $Response in
-    1) CheckConnection
+    1) TPecho "Checking your connection now ..."
+      CheckConnection
     ;;
-    2) wifi-menu
+    2) TPecho "Checking your connection now ..."
+      wifi-menu
       CheckConnection
     ;;
     3) read_timed "Sorry, installation cannot continue without an internet connection."
@@ -221,7 +223,6 @@ done
 CheckConnection() {
 while [ $Retry = "Y" ]
 do
-  TPecho "Checking your connection now ..."
   if [[ ! $(ping -c 3 google.com) ]]; then
     print_info "Unable to establish a connection. Ensure that your computer"
     print_info "is able to access the internet."
@@ -548,7 +549,7 @@ MakePartition() {
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
-		TPread "Enter a label for ${Partition} ... eg: '/home' ... "
+		TPread "Enter a label for ${Partition} ... eg: '/home' ... /"
  		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
 		case ${CheckInput} in
@@ -831,7 +832,7 @@ RootPassword() {
 ChooseDE() {
 	Counter=0
 	SetPS3
-	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
+	DEList="Cinnamon Enlightenment Gnome KDE LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
   print_info "Desktop Environments & Window Managers"
   print_info "KDE Plasma 5 is a complete system, with web browser and office"
