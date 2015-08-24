@@ -43,7 +43,7 @@ print_heading() {
   clear
   T_COLS=`tput cols`
   tput cup 1 $((($T_COLS/2)-20))
-  printf "~ The Achoo! Arch Linux Installation Script ~ \n"
+  printf "~ Achoo! The Arch Linux Installation Script ~ \n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
   lov=${#Banner}
   if [ ${lov} -lt ${T_COLS} ]; then
@@ -62,7 +62,7 @@ print_line() { # from AUI scripts
 
 print_info() { # adapted from AUI scripts
   T_COLS=`tput cols`
-  if [ $2 ]; then
+  if [ $2 ]; then # Second parameter is characters left of centre
     lov=$2
   else
     lov=${#1}
@@ -236,20 +236,43 @@ done
 # Mirrorlists
 #
 
-LocalMirrorList() {
-# Install reflector then use it to generate fast mirror list
-  TPecho "Generating local mirrorlist"
+ReflectorMirrorList() {
+# Install reflector and use it to generate fast mirror list
+  TPecho "Using Reflector to generate mirrorlist"
   cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
   CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
-  pacman -S --noconfirm -q reflector 2> error.log
+  pacman -Sy --noconfirm -q reflector 2> error.log
   CheckForError "${LINENO} 'Installing Reflector'" 2
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
-  CheckForError "${LINENO} 'Saving Reflector mirrorlist'" 2
-  
-  # Re-enter original mirrorlist code here in case Reflector fails 
-  
-  chmod +r /etc/pacman.d/mirrorlist 2> error.log
-  CheckForError "${LINENO} 'Sharing mirrorlist'" 2
+  if [[ $? -gt 0 ]]; then
+    LocalMirrorlist
+  else
+    chmod +r /etc/pacman.d/mirrorlist 2> error.log
+    CheckForError "${LINENO} 'Sharing mirrorlist'" 2
+  fi
+}
+
+LocalMirrorList() {
+# In case Reflector fails, generate and save a shortened mirrorlist of only 
+# the mirrors defined in the CountryCode variable. Adapted from Lution AIS
+	TPecho "Reflector failed - generating local mirrorlist instead"
+	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
+	CheckForError "${LINENO}"
+	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL} 2> error.log
+	CheckForError "${LINENO}" 2
+	# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
+	CheckForError "${LINENO}" 2
+	# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+	CheckForError "${LINENO}" 2
+	# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+	CheckForError "${LINENO} 'saving mirrorlist'" 2
+	chmod +r /etc/pacman.d/mirrorlist 2> error.log
+	CheckForError "${LINENO} 'saving mirrorlist'" 2
 }
 
 #
@@ -1147,7 +1170,7 @@ MountPartitions() {
     "Skip") TPecho "Not formatting root partition"
     ;;
     *) TPecho "Formatting /root partition"
-    # New code block. Replace existing ext3/4 partition with btrfs
+    # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${RootPartition}
@@ -1180,7 +1203,7 @@ MountPartitions() {
   do
     mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
-    # New code, as for /root ... replace existing ext3/4 partition with btrfs
+    # As for /root ... check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${AddPartList[$Counter]}
