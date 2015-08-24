@@ -8,8 +8,8 @@
 # The achoovariables and achoofuncs scripts must be present in the same
 # directory when running this script.
 
-# The Achoo! scripts are still in development, and may contain bugs.
-# They were originally written for my own use, but are shared in the spirit of
+# The Achoo! scripts are still in development, and may contain bugs. They
+# were originally written for my own use, but are shared in the spirit of
 # the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
 # Achoo!'s purpose is to speed up installation of Arch Linux, plus a desktop
@@ -17,16 +17,8 @@
 # phase asks for only the essential data of location, username, and passwords,
 # and works with the user to set up their partitioning and desktop environment
 # requirements. The script then runs without further intervention to the end.
-
-# Variables and functions are stored in separate scripts for easy access.
-# Some debugging code has been left in to keep the user informed during
-# installation. There is also an error-trapping function which should exit
-# the script if any critical errors are detected. If the script fails,
-# check that all your variables are correct and in the correct format.
-
-#
-# Setup
-#
+# There is an error-trapping function which will report if any critical
+# errors are detected.
 
 # Check for the external files
 if [[ -f `pwd`/achoovariables ]]; then
@@ -84,10 +76,6 @@ fi
 # Select device for Grub
 SetGrubDevice
 
-#
-# Display welcome text and set user-variables
-#
-
 # Keyboard layout
 getkeymap
 loadkeys ${Countrykbd} 2> error.log
@@ -108,7 +96,7 @@ if [ $Scope = "Full" ]; then
   ChooseDE
 fi
 
-# New code to allow user to change any variables
+# Allow user to change any variables
 FinalCheck
 
 #
@@ -121,24 +109,23 @@ read_timed "Entering automatic installation mode" 1
 tput sgr0
 read_timed "If you are re-using existing partitions, the system may pause to" 1
 read_timed "ask you to confirm that you wish to mount them ... " 1
+read_timed "this may happen more than once ... " 1
 read_timed "'y' would be an appropriate response." 1
 
-# Unmount any existing partitions and mount as required as defined in setup
+# Unmount any existing partitions and mount as defined in setup
 umount_partitions
 MountPartitions
 
 # Set mirrorlist
 LocalMirrorList
 
-print_heading
 TPecho "Installing LTS Kernel and base-devel"
 pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
-# Set the default PATH variable (copied from Lution to help with persistent errors)
+# Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
-print_heading
 TPecho "Generating fstab"
 genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
 CheckForError "${LINENO} 'genfstab'" 2
@@ -169,11 +156,9 @@ echo "${CountryLocale} UTF-8" > ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: 
 CheckForError "${LINENO} 'save full locale'" 2
 arch_chroot "locale-gen"
 
-print_heading
 TPecho "Preparing locale.conf"
 echo "LANG=${CountryLocale}" > ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'set LANG'" 2
-
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'export LANG'" 2
 
@@ -210,7 +195,6 @@ else
   TPecho "Not installing Grub"
 fi
 
-print_heading
 TPecho "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"
 
@@ -224,7 +208,6 @@ CheckForError "${LINENO} 'vbox piix4 override'" 1
 
 # Extra processes for 'Full' installation
 if [ $Scope = "Full" ]; then
-  print_heading
   CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
   # If not already exist, create user and set password
   if [ -z ${CheckUsers} ]; then
@@ -251,7 +234,6 @@ if [ $Scope = "Full" ]; then
   CheckForError "${LINENO} 'Install codecs'" 1
 
   # Wireless tools
-  print_heading
   TPecho "Installing wireless tools"
   pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
   CheckForError "${LINENO} 'Wireless firmware'" 1
@@ -259,13 +241,11 @@ if [ $Scope = "Full" ]; then
   CheckForError "${LINENO} 'Wireless tools'" 1
 
   # Install X, graphics, etc
-  print_heading
   TPecho "Installing X, graphics, etc"
   pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
   # Copy modified pacman.conf to new system and install Yaourt
-  print_heading
   TPecho "Modifying pacman.conf and installing Yaourt"
   cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
   CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
@@ -277,7 +257,6 @@ if [ $Scope = "Full" ]; then
   CheckForError "${LINENO} 'Install yaourt'" 1
 
   # Install Display Manager
-  print_heading
   if [ ${DisplayManager} ]; then
     # Test for existing display manager and disable if necessary
     TestExistingDM
@@ -294,7 +273,6 @@ if [ $Scope = "Full" ]; then
   fi
 
   # Install Desktop Environment
-  print_heading
   case ${DesktopEnvironment} in
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
         pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
@@ -310,7 +288,7 @@ if [ $Scope = "Full" ]; then
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
     "KDE") TPecho "Installing 'KDE Plasma 5' Desktop Environment"
-        pacstrap ${MOUNTPOINT} plasma kde-applications
+        pacstrap ${MOUNTPOINT} plasma kde-applications kscreen
         CheckForError "Line ${LINENO} 'Installing KDE Plasma5'" 1
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"

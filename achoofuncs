@@ -5,8 +5,8 @@
 # This script and the achoovariables script must be present in the same
 # directory when running the main Achoo! script
 # -----------------------------------------------------------
-# Developed by Elizabeth Mills, incorporating some code adapted from the
-# Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
 # -----------------------------------------------------------
 # Please read the introduction in the main Achoo! script
 # ------------------------------------------------------
@@ -60,13 +60,6 @@ print_line() { # from AUI scripts
     printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
-print_title() { # from AUI scripts
-    print_line
-    echo -e " ${Bold}$1${Reset}"
-    print_line
-    echo ""
-}
-
 print_info() { # adapted from AUI scripts
   T_COLS=`tput cols`
   if [ $2 ]; then
@@ -92,7 +85,7 @@ print_list() {
    echo "$EMPTY $1"
 }
 
-TPecho() { # For displaying info while running on auto
+TPecho() { # For displaying status while running on auto
   T_COLS=`tput cols`
   tput bold
   lov=${#1}
@@ -154,16 +147,15 @@ CheckForError() {
 # Check for stderr, display it, then exit script
 # Now receiving $2 to flag critical or non-critical error
 	if [[ $? -gt 0 ]]; then
+    print_heading
     tput bold
-    clear
 		print_info "Error reported at Line: $1"
     cat error.log
     case $2 in
       0) read_timed "The error is not critical, and you may ignore it"
       ;;
-      1) print_info "You may ignore the error if you choose,"
-      print_info "and continue with the installation,"
-      print_info "but this may have unexpected consequences."
+      1) print_info "You may ignore the error if you choose, and continue with"
+      print_info "the installation, but this may have unexpected consequences."
       TPread "Continue with installation? (y/N): "
       case $Response in
         "n" | "N" | "") tput sgr0
@@ -241,7 +233,7 @@ done
 }
 
 #
-# Mirrorlist
+# Mirrorlists
 #
 
 LocalMirrorList() {
@@ -253,6 +245,9 @@ LocalMirrorList() {
   CheckForError "${LINENO} 'Installing Reflector'" 2
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
   CheckForError "${LINENO} 'Saving Reflector mirrorlist'" 2
+  
+  # Re-enter original mirrorlist code here in case Reflector fails 
+  
   chmod +r /etc/pacman.d/mirrorlist 2> error.log
   CheckForError "${LINENO} 'Sharing mirrorlist'" 2
 }
@@ -280,10 +275,10 @@ ManagePartitions() {
 		print_info "There are no partitions on the device. 'cfdisk' is available"
 		print_info "for you to create a partition table now if you wish."
 		echo 
-		print_info "Please note: At least one partition must be created for the"
-		print_info "/root directory. If you are uncertain about partitioning, you should"
-		print_info "read the Arch Wiki. If you choose not to use 'cfdisk' now the"
-		print_info "script will terminate to allow you to partition in some other way."
+		print_info "At least one partition must be created for the root directory."
+		print_info "If you are uncertain about partitioning, you should read the"
+		print_info "Arch Wiki. If you choose not to use 'cfdisk' now the script"
+		print_info "will terminate to allow you to partition in some other way."
 		echo
 		TPread "Would you like to open cfdisk now? [Y/n]: "
     case $Response in
@@ -545,7 +540,20 @@ MakePartition() {
   # 1) When selected, first save to AddPartList (eg: /dev/sda5)
 	ExtraPartitions=${#AddPartList[@]}
 	AddPartList[$ExtraPartitions]="${Partition}"
-  # 2) Then get a label for selected partition (eg: /home)
+  CheckPartition   # Before going to select_filesystem, check the partition
+  if [ ${CurrentType} ]; then
+    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
+    print_info "reformatting an existing partition can have unexpected consequences."
+    echo
+  fi
+  # 2) Select filesystem
+  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
+	select_filesystem
+  if [ -z ${PartitionType} ]; then
+		PartitionType="Skip"
+	fi
+	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list  
+  # 3) Then get a label for it
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
@@ -585,18 +593,6 @@ MakePartition() {
 		fi 
 	done 
 	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
-  CheckPartition   # Before going to select_filesystem, check the partition
-  if [ ${CurrentType} ]; then
-    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
-    print_info "reformatting an existing partition can have unexpected consequences."
-    echo
-  fi
-  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
-	select_filesystem
-  if [ -z ${PartitionType} ]; then
-		PartitionType="Skip"
-	fi
-	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list
 }
 
 # User to choose device for grub installation
