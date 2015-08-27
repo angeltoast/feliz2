@@ -15,14 +15,15 @@
 # Functions           Line
 # -------------------------
 # Input and output     30
-# Error-checking       151
-# Internet connection  188
-# Mirrorlist           245
-# Partitioning         261
-# User & Location      639
-# Desktop Environment  832
-# Check Data           932
-# Running              1125
+# Error-checking       135
+# Internet connection  170
+# Mirrorlist           228
+# Set scope            271
+# Partitioning         309
+# User & Location      685
+# Desktop Environment  878
+# Check Data           1041
+# Running              1234
 # ------------------------
 
 #
@@ -44,15 +45,6 @@ print_heading() {
   T_COLS=`tput cols`
   tput cup 1 $((($T_COLS/2)-20))
   printf "~ Achoo! The Arch Linux Installation Script ~ \n"
-  printf "%$(tput cols)s\n"|tr ' ' '-'
-  lov=${#Banner}
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
-    echo -e "$EMPTY $Banner"
-  else
-    echo -e "$Banner"
-  fi
   printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
@@ -273,6 +265,44 @@ LocalMirrorList() {
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 	chmod +r /etc/pacman.d/mirrorlist 2> error.log
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
+}
+
+#
+# Set scope of installation
+#
+
+SetScope() {
+print_heading
+Retry="Y"
+Response=1
+while [ $Retry = "Y" ]
+do
+print_info "You can choose to have just a basic Arch Linux installation,"
+print_info "or Achoo can include a desktop environment, set up users, and"
+print_info "automatically install codecs, wifi tools, graphics and other"
+print_info "luxuries for you. Or you can have all the above and also choose"
+print_info "from a list of extras, such as web browsers, office software, etc."
+echo
+  print_info "1) Just a basic Arch installation;"
+  print_list "2) Arch plus DE, codecs, user setup, etc;"
+  print_list "3) As above, plus choice of extras;"
+  echo
+  TPread "Enter the number of your selection : "
+  echo
+  case $Response in
+    1) Scope="Basic"
+      Retry="N"
+    ;;
+    2) Scope="Full"
+      Retry="N"
+    ;;
+    3) Scope="Extras"
+      Retry="N"
+    ;;
+    *) invalid_option
+  esac
+  print_heading
+done
 }
 
 #
@@ -851,12 +881,12 @@ RootPassword() {
 ChooseDE() {
 	Counter=0
 	SetPS3
-	DEList="Cinnamon Enlightenment Gnome KDE LXDE LXQt Mate Xfce Openbox Skip"
+	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
   print_info "Desktop Environments & Window Managers"
-  print_info "KDE Plasma 5 is a complete system, with web browser and office"
-  print_info "software included. Cinnamon, Gnome, Mate and Xfce include many"
-  print_info "useful tools, whereas LXDE and LXQt and the Window Managers are"
+  print_info "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
+  print_info "may need, such as file manager, terminal emulator and text"
+  print_info "editor, whereas LXDE and LXQt and the Window Managers are"
   print_info "more basic desktops onto which you can add your choice of tools"
   print_info "after installation. Alternatively, you can choose to skip this"
   print_info "option, and install something else manually later."
@@ -881,9 +911,6 @@ ChooseDE() {
               ChooseDM
           ;;
         "Gnome") DisplayManager=""
-              Greeter=""	
-          ;;
-        "KDE") DisplayManager="sddm"
               Greeter=""	
           ;;
         "LXDE") DisplayManager=""
@@ -948,6 +975,65 @@ ChooseDM() {
   done
 }
 
+PickLuxuries() {
+# User selects any combination from a list of luxuries
+print_heading
+Retry="Y"
+Response=""
+while [ $Retry = "Y" ]
+do
+  print_info "You can choose any of the following extras. Just enter the numbers"
+  print_info "of each you want, separated by a single space [ eg: 2 3 6 8 9 ]"
+  print_info "Of course, adding these items will increase the installation time."
+  print_info "If you don't want any of them, just hit [Enter] without any numbers."
+  echo
+  print_info "1) Firefox web browser                             "
+  print_list "2) Google Chrome web browser"
+  print_list "3) LibreOffice - full office suite"
+  print_list "4) Gparted - partitioning tool"
+  print_list "5) Geany - advanced text editor and IDE"
+  print_list "6) Terminator - advanced terminal emulator"
+  print_list "7) Pamac - GUI front-end for Pacman package manager"
+  print_list "8) GIMP - advanced image manipulation"
+  print_list "9) Thunderbird - email client"
+  echo
+  TPread "Enter the numbers of your selections : "
+  if [ -z ${#Response[@]} ]; then
+    Retry="N"
+    break
+  fi
+  echo
+  local Counter=0
+  LuxuriesList=""
+  for i in ${Response} # Iterate through the list to check validity of each item
+	do
+    case $i in
+      "1") LuxuriesList="${LuxuriesList} firefox"
+      ;;
+      "2") LuxuriesList="${LuxuriesList} chromium"
+      ;;
+      "3") LuxuriesList="${LuxuriesList} libreoffice-still"
+      ;;
+      "4") LuxuriesList="${LuxuriesList} gparted"
+      ;;
+      "5") LuxuriesList="${LuxuriesList} geany"
+      ;;
+      "6") LuxuriesList="${LuxuriesList} terminator"
+      ;;
+      "7") LuxuriesList="${LuxuriesList} pamac-aur"
+      ;;
+      "8") LuxuriesList="${LuxuriesList} gimp"
+      ;;
+      "9") LuxuriesList="${LuxuriesList} thunderbird"
+      ;;
+      *) echo "$i is not a valid item"
+    esac
+  done
+  Retry="N"
+done
+LuxuriesList=`echo $LuxuriesList | cut -c1-` # Remove leading space
+}
+
 #
 # Check Data
 #
@@ -956,73 +1042,76 @@ FinalCheck() {
 Repeat=1
 while [ $Repeat -gt 0 ]
 do
-print_heading
-print_info "These are the settings you have entered. Please check them ..."
-echo
-print_info "1) Root partition ... $RootPartition : $RootType" 50
-if [ $SwapPartition ] || [ $SwapFile ]; then
-  print_list "2) Swap partition ... $SwapPartition $SwapFile"
-else
-  print_list "2) No provision has been made for swap"
-fi
-if [ ${AddPartList} ]; then
-  Counter=0
-  print_list "3) Extra partitions ..."
-  for i in ${AddPartList[@]}	
-  do
-    print_info "    ${AddPartLabel[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
-    Counter=$((Counter+1))
-  done
-else
-  print_list "3) No additional partitions have been allocated"
-fi
-if [ $GrubDevice ]; then
-print_list "4) Grub will be installed to $GrubDevice" 50
-else
-  print_list "4) No provision has been made for Grub"
-fi
-print_list "5) Keyboard is $Countrykbd"
-print_list "6) Locale will be set to $CountryLocale"
-print_list "7) Zone/subZone will be $ZONE/$SUBZONE"
-if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
-  print_list "8) DE = $DesktopEnvironment : $DisplayManager"
-elif [ $DesktopEnvironment ]; then
-  print_list "8) DE = $DesktopEnvironment"
-else
-  print_list "8) No DE selected"
-fi
-print_list "9) Root and user settings ..."
-print_list "     Hostname = '$HostName'"
-print_list "     Root password = '$RootPassword'"
-print_list "     User = '$UserName' : Password = '$UserPassword'"
-echo
-print_list "Press [Enter] to install with these settings, or enter an"
-echo
-TPread "item number if you wish to change it: "
-case $Response in
-  1) ChangeRootPartition
-      AllocateRoot
-  ;;
-  2) ChangeSwapPartition
-      AllocateSwap
-  ;;
-  3) ChangeExtraPartitions
-      ExtraPartitions
-  ;;
-  4) SetGrubDevice
-  ;;
-  5) getkeymap
-  ;;
-  6) setlocale
-  ;;
-  7) settimezone
-  ;;
-  8) ChooseDE
-  ;;
-  9) ManualSettings
-  ;;
-  *) Repeat=0
-esac
+  print_heading
+  print_info "These are the settings you have entered. Please check them ..."
+  echo
+  print_info "1)  Root partition ... $RootPartition : $RootType" 50
+  if [ $SwapPartition ] || [ $SwapFile ]; then
+    print_list "2)  Swap partition ... $SwapPartition $SwapFile"
+  else
+    print_list "2)  No provision has been made for swap"
+  fi
+  if [ ${AddPartList} ]; then
+    Counter=0
+    print_list "3)  Extra partitions ..."
+    for i in ${AddPartList[@]}	
+    do
+      print_info "     ${AddPartLabel[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+      Counter=$((Counter+1))
+    done
+  else
+    print_list "3)  No additional partitions have been allocated"
+  fi
+  if [ $GrubDevice ]; then
+  print_list "4)  Grub will be installed to $GrubDevice" 50
+  else
+    print_list "4)  No provision has been made for Grub"
+  fi
+  print_list "5)  Keyboard is $Countrykbd"
+  print_list "6)  Locale will be set to $CountryLocale"
+  print_list "7)  Zone/subZone will be $ZONE/$SUBZONE"
+  if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
+    print_list "8)  DE = $DesktopEnvironment : $DisplayManager"
+  elif [ $DesktopEnvironment ]; then
+    print_list "8)  DE = $DesktopEnvironment"
+  else
+    print_list "8)  No DE selected"
+  fi
+  print_list "9)  Root and user settings ..."
+  print_list "     Hostname = '$HostName'"
+  print_list "     Root password = '$RootPassword'"
+  print_list "     User = '$UserName' : Password = '$UserPassword'"
+  print_list "10) The following extras have been selected ..."
+  print_list "     ${LuxuriesList}"
+  echo
+  print_list "Press [Enter] to install with these settings, or"
+  TPread "enter an item number if you wish to change it: "
+  case $Response in
+    1) ChangeRootPartition
+        AllocateRoot
+    ;;
+    2) ChangeSwapPartition
+        AllocateSwap
+    ;;
+    3) ChangeExtraPartitions
+        ExtraPartitions
+    ;;
+    4) SetGrubDevice
+    ;;
+    5) getkeymap
+    ;;
+    6) setlocale
+    ;;
+    7) settimezone
+    ;;
+    8) ChooseDE
+    ;;
+    9) ManualSettings
+    ;;
+    10) PickLuxuries
+    ;;
+    *) Repeat=0
+  esac
 done
 }
 

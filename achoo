@@ -40,17 +40,7 @@ CheckInternet
 StartTime=$(date +%s)
 
 # Set scope of installation
-print_heading
-print_info "Achoo! can be set to install a desktop environment, set up users,"
-print_info "and automatically install codecs, wifi tools, graphics and other"
-print_info "luxuries, or you can choose to have just a basic installation."
-echo
-TPread "Full (F) or Basic (B)? (Please enter F or B): "
-  case $Response in
-    "f" | "F" | "") Scope="Full"
-    ;;
-    *) Scope="Basic"
-  esac  
+SetScope
 
 # Check partitioning, offer cfdisk
 ManagePartitions
@@ -119,8 +109,8 @@ MountPartitions
 # Set mirrorlist
 ReflectorMirrorList
 
-TPecho "Installing LTS Kernel and base-devel"
-pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
+TPecho "Installing LTS Kernel, base-devel & cli tools"
+pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
 # Set the default PATH variable
@@ -286,10 +276,6 @@ if [ $Scope = "Full" ]; then
         pacstrap ${MOUNTPOINT} gnome gnome-extra
         CheckForError "Line ${LINENO} 'Installing Gnome'" 1
         arch_chroot "systemctl enable gdm.service" >/dev/null
-        ;;
-    "KDE") TPecho "Installing 'KDE Plasma 5' Desktop Environment"
-        pacstrap ${MOUNTPOINT} plasma kde-applications kscreen
-        CheckForError "Line ${LINENO} 'Installing KDE Plasma5'" 1
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
