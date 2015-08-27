@@ -846,16 +846,16 @@ UserPassword() {
 }
 
 RootPassword() {
-	Entered="ArchLinux"
+	Entered="arch-linux"
 	print_heading
 	print_info "A hostname is needed. This will be a unique name to identify"
 	print_info "your device on a network. If you do not enter one, the"
-	print_info "default hostname of 'ArchLinux' will be used."
+	print_info "default hostname of 'arch-linux' will be used."
    echo
 	TPread "Enter a hostname for your computer : "
   Entered=$Response
 	case $Entered in
-		"") HostName="ArchLinux"
+		"") HostName="arch-linux"
 		;;
 		*) HostName=${Entered}
 	esac
@@ -1119,9 +1119,9 @@ ManualSettings() {
 IsDone="N"
 PS3=$'\n           Enter number for data to change, or 5 to finish: '
 local Counter=0
-HostName="Achoo"
+HostName="arch-linux"
 RootPassword="Root"
-UserName="Archie"
+UserName="archie"
 UserPassword="Linux"
 ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
   while [ $IsDone = "N" ]

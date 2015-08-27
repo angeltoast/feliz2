@@ -76,7 +76,8 @@ setlocale
 
 # Names and passwords
 RootPassword
-if [ $Scope = "Full" ]; then
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
   UserPassword
 fi
 

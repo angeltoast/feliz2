@@ -41,7 +41,7 @@ Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
 #
 # Root and user variables
 #
-HostName=""       # "ArchLinux"
+HostName=""       # "arch-linux"
 RootPassword=""   # "Root"
 UserName=""       # "archie"
 UserPassword=""   # "Linux"
