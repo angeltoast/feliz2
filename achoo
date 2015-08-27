@@ -166,7 +166,8 @@ arch_chroot "hwclock --systohc --utc"
 TPecho "Enabling dhcpcd"
 arch_chroot "systemctl enable dhcpcd.service"
 
-if [ $Scope = "Full" ]; then
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
   TPecho "Installing and configuring network services"
   pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
   CheckForError "${LINENO} 'Installing network manager'" 2
@@ -204,7 +205,8 @@ echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.l
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
 # Extra processes for 'Full' installation
-if [ $Scope = "Full" ]; then
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
   CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
   # If not already exist, create user and set password
   if [ -z ${CheckUsers} ]; then
