@@ -306,6 +306,11 @@ if [ $Scope = "Full" ]; then
   esac
 fi
 
+if [ -n ${#LuxuriesList[@]} ]; then
+  TPecho "Installing ${LuxuriesList}"
+  pacstrap ${MOUNTPOINT} ${LuxuriesList}
+fi
+
 print_heading
 EndTime=$(date +%s)
 Difference=$(( $EndTime-$StartTime ))
