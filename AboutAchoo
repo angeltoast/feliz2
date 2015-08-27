@@ -1,3 +1,7 @@
-Achoo! is a one-woman project. It started as a way for me to learn shell scripting by writing a script to automate my own Arch installations, but when I started to share it, I found myself adding features, until it has now become quite versatile.
+Achoo! is a one-woman project. It started as a way for me to automate my own Arch installations, but when I started to share it I found myself adding features, until it has now become quite versatile.
 
-Achoo!'s objective is to always be light and fast - typically installing in about 8 minutes for LXDE and the other light desktop environments, to about 11 minutes for Gnome or Cinnamon (less than 6 minutes for a basic installation). The design concept is to accept all the data entry at the start, through a series of simple screens and menus, then it runs automatically on the fast track to the end.
+Achoo!'s objective is to always be light and fast - in Virtuablox, with a good internet connection, it can complete a basic installation in 5 minutes, or about 8 minutes for LXDE and the other light desktop environments, to about 11 minutes for Gnome or Cinnamon.
+
+Now featuring an option to add luxuries such as web browser and office suite
+
+The design concept of Achoo! is to accept all the data entry at the start, through a series of simple screens and menus, then it runs automatically on the fast track to the end.

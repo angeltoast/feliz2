@@ -45,7 +45,7 @@ HostName=""       # "ArchLinux"
 RootPassword=""   # "Root"
 UserName=""       # "archie"
 UserPassword=""   # "Linux"
-Scope="Basic"     # Installation scope ... 'Full' or 'Basic'
+Scope="Basic"     # Installation scope ... 'Extras' 'Full' or 'Basic'
 #
 # Input/Output variables
 #

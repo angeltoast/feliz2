@@ -80,11 +80,17 @@ if [ $Scope = "Full" ]; then
   UserPassword
 fi
 
-# Desktop environment and display manager/greeter
-if [ $Scope = "Full" ]; then
-  Repeat=1
-  ChooseDE
-fi
+# Desktop environment, display manager & luxuries
+case $Scope in
+  "Full") Repeat=1
+    ChooseDE
+    ;;
+  "Extras") Repeat=1
+    ChooseDE
+    PickLuxuries
+    ;;
+  *) 
+esac
 
 # Allow user to change any variables
 FinalCheck
