@@ -1156,38 +1156,28 @@ done
 }
 
 ManualSettings() {
-IsDone="N"
-PS3=$'\n           Enter number for data to change, or [Enter] to finish: '
-local Counter=0
-ChooseList="Hostname=$HostName Username=$UserName"
-  while [ $IsDone = "N" ]
+  Retry="Y"
+  Response=3
+  while [ $Retry = "Y" ]
   do
     print_heading
-    select Chosen in $ChooseList
-    do
-      echo
-      Reply=$REPLY
-      for i in ${ChooseList}
-      do
-        Counter=$((Counter+1))
-        if [ $Counter -eq $Reply ]
-        then
-          case $Reply in
-            1) TPread "Enter new Hostname (currently $HostName) : "
-              HostName=$Response
-            ;;
-            2) TPread "Enter new username to be created (currently $UserName) : "
-              UserName=$Response
-            ;;
-            *) IsDone="Y"
-              break
-          esac
-          ChooseList="Hostname=$HostName Username=$UserName"
-          break
-         fi
-      done
-      break
-    done
+    print_info "Enter number for data to change, or [Enter] to finish:"
+    echo
+    print_info "1) Hostname (currently $HostName)"
+    print_list "2) Username (currently $UserName)"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) TPread "Enter new Hostname (currently $HostName) : "
+         HostName=$Response
+        ;;
+      2) TPread "Enter new username to be created (currently $UserName) : "
+         UserName=$Response
+        ;;
+      *) Retry="N"
+         break
+    esac
   done
 }
 
