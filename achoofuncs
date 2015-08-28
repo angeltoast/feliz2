@@ -311,19 +311,14 @@ done
 #
 
 ManagePartitions() {
-# Check and show partitions ... call cfdisk
 	# First test for existing partitions
 	print_heading
 	ShowPartitions=""
-	PARTITIONS=""
+	PARTITIONS=0
 	ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-	# Count the partitions
-  for i in ${ShowPartitions[@]}; do
-    PARTITIONS="${PARTITIONS} ${i} -"
-    NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
-  done	
+  PARTITIONS=${#ShowPartitions}
 	# If no partitions exist, offer cfdisk to create (or exit)
-	if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
+	if [[ $PARTITIONS -eq 0 ]]; then
 		echo
 		print_info "There are no partitions on the device, and at least one"
     print_info "partition is needed for the root directory. If you are"
@@ -333,24 +328,22 @@ ManagePartitions() {
 		print_info "if you wish. If you choose not to use 'cfdisk' now, the script"
 		print_info "will terminate to allow you to partition in some other way."
 		echo
-    while [ $NUMBER_PARTITIONS -eq 0 ]
+    while [ $PARTITIONS -eq 0 ]
     do
       TPread "Would you like to open cfdisk now? [Y/n]: "
       case $Response in
       "y"|"Y"|"") cfdisk 2> error.log
-          CheckForError "${LINENO} 'cfdisk'" 2
-      ;;
-        *) exit
+           CheckForError "${LINENO} 'cfdisk'" 2
+        ;;
+        *) print_info "Exiting Achoo! Hurry back, y'hear?"
+        exit
       esac
       # Recheck the partitions
       ShowPartitions=""
-      PARTITIONS=""
+      PARTITIONS=0
       ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-      for i in ${ShowPartitions[@]}; do
-        PARTITIONS="${PARTITIONS} ${i} -"
-        NUMBER_PARTITIONS=$(( NUMBER_PARTITIONS + 1 ))
-      done
-      if [[ $NUMBER_PARTITIONS -eq 0 ]]; then
+      PARTITIONS=${#ShowPartitions}
+      if [[ $PARTITIONS -eq 0 ]]; then
         print_heading
       	print_info "There are still no partitions on the device. At least"
         print_info "one partition must be created for the root directory."
