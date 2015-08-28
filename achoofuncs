@@ -1340,16 +1340,8 @@ SetRootPassword() { # New function, to be called at end of installation
   echo
 	print_info "Finally we need to set passwords."
 	print_info "Please enter a password for root: "
-  PasswordMatch=1
-  while [ $PasswordMatch = 1 ]
-  do
-  passwd
-  if [ $? -gt 0 ]; then
-    print_info "Passwords did not match - please enter a password for root"
-  else
-    PasswordMatch=0
-  fi
-  done
+  echo
+  arch_chroot passwd
   if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
   then
     SetUserPassword
@@ -1359,16 +1351,8 @@ SetRootPassword() { # New function, to be called at end of installation
 SetUserPassword() {
   echo
 	print_info   "And now a password for $UserName: "
-  PasswordMatch=1
-  while [ $PasswordMatch = 1 ]
-  do
-  passwd $UserName
-  if [ $? -gt 0 ]; then
-    print_info "Passwords did not match - please enter a password for $UserName: "
-  else
-    PasswordMatch=0
-  fi
-  done
+  echo
+  arch_chroot passwd $UserName
 }
 
 #
