@@ -75,12 +75,11 @@ settimezone
 setlocale
 
 SetHostname
-# Names and passwords
-#RootPassword
-#if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
-#then
-UserName
-#fi
+# Add user
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
+  UserName
+fi
 
 # Desktop environment, display manager & luxuries
 case $Scope in

@@ -800,6 +800,7 @@ echo
       print_heading
       SetPS3
       print_info "Now select your local city or Sub-Zone:"
+      print_info "(If the list scrolls off the screen, use Shift/PageUp Shift/PageDown)"
       echo
       select SUBZONE in "${_subzones[@]}"; do
         if contains_element "$SUBZONE" "${_subzones[@]}"; then
@@ -1022,7 +1023,7 @@ Retry="Y"
 Response=""
 while [ $Retry = "Y" ]
 do
-  print_info "You can choose any of the following extras. Just enter the numbers"
+  print_info "You can also add any of the following extras. Just enter the numbers"
   print_info "of each you want, separated by a single space [ eg: 2 3 6 8 9 ]"
   print_info "Of course, adding these items will increase the installation time."
   print_info "If you don't want any of them, just hit [Enter] without any numbers."
@@ -1119,8 +1120,7 @@ do
   fi
   print_list "9)  Root and user settings ..."
   print_list "     Hostname = '$HostName'"
-  print_list "     Root password = '$RootPassword'"
-  print_list "     User = '$UserName' : Password = '$UserPassword'"
+  print_list "     User = '$UserName'"
   print_list "10) The following extras have been selected ..."
   print_list "     ${LuxuriesList}"
   echo
@@ -1157,13 +1157,9 @@ done
 
 ManualSettings() {
 IsDone="N"
-PS3=$'\n           Enter number for data to change, or 5 to finish: '
+PS3=$'\n           Enter number for data to change, or [Enter] to finish: '
 local Counter=0
-HostName="arch-linux"
-RootPassword="Root"
-UserName="archie"
-UserPassword="Linux"
-ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
+ChooseList="Hostname=$HostName Username=$UserName"
   while [ $IsDone = "N" ]
   do
     print_heading
@@ -1180,22 +1176,13 @@ ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName Us
             1) TPread "Enter new Hostname (currently $HostName) : "
               HostName=$Response
             ;;
-            2) TPread "Enter new Root password (currently $RootPassword) : "
-              RootPassword=$Response
-            ;;
-            3) TPread "Enter new username to be created (currently $UserName) : "
+            2) TPread "Enter new username to be created (currently $UserName) : "
               UserName=$Response
             ;;
-            4) TPread "Enter new password for $UserName (currently $UserPassword) : "
-              UserPassword=$Response
-            ;;
-            5) IsDone="Y"
-              break
-              ;;
             *) IsDone="Y"
               break
           esac
-          ChooseList="Hostname=$HostName Root_Password=$RootPassword Username=$UserName User_Password=$UserPassword Finished"
+          ChooseList="Hostname=$HostName Username=$UserName"
           break
          fi
       done
