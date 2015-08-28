@@ -214,8 +214,6 @@ then
   else
     TPecho "User already exists"
   fi
-  
-  read -p "User"
 
   # Install Flash and other Multimedia Codecs (add/remove items as desired)
   TPecho "Adding Flash and other Multimedia Codecs"

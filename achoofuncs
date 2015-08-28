@@ -1341,7 +1341,8 @@ SetRootPassword() { # New function, to be called at end of installation
 	print_info "Finally we need to set passwords."
 	print_info "Please enter a password for root: "
   echo
-  arch_chroot passwd
+  arch-chroot /mnt
+  passwd
   if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
   then
     SetUserPassword
@@ -1352,7 +1353,8 @@ SetUserPassword() {
   echo
 	print_info   "And now a password for $UserName: "
   echo
-  arch_chroot passwd $UserName
+  passwd $UserName
+  exit
 }
 
 #
