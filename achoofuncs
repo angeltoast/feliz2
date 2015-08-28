@@ -277,11 +277,12 @@ Retry="Y"
 Response=1
 while [ $Retry = "Y" ]
 do
-print_info "You can choose to have just a basic Arch Linux installation,"
+print_info "You can choose to have just a basic Arch Linux installation, "
 print_info "or Achoo can include a desktop environment, set up users, and"
-print_info "automatically install codecs, wifi tools, graphics and other"
-print_info "luxuries for you. Or you can have all the above and also choose"
-print_info "from a list of extras, such as web browsers, office software, etc."
+print_info "automatically install codecs, wifi tools, graphics and other "
+print_info "luxuries for you, including Yaourt. Or you can have all the above"
+print_info "and also choose from a list of extras, such as web browsers, "
+print_info "office software, Pamac, etc."
 echo
   print_info "1) Just a basic Arch installation;"
   print_list "2) Arch plus DE, codecs, user setup, etc;"
@@ -691,8 +692,8 @@ print_heading
 DoDoDo=1
 print_info "Now we will try to find your keyboard from a list of all"
 print_info "known layouts. If you know your keyboard layout code, enter"
-print_info "it now, or try entering a two-letter abbreviation for your"
-print_info "country or language and a list will be displayed ..."
+print_info "it now. If not, try entering a two-letter abbreviation for"
+print_info "your country or language and a list will be displayed ..."
 echo
 SearchPrompt="(eg: fr or us): "
 while [ $DoDoDo -eq 1 ]
@@ -816,7 +817,7 @@ echo
 read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
 }
 
-UserPassword() {
+UserName() {
 	print_heading
 	print_info "Enter a name for the primary user of the new system."
   print_info "If you don't create a username here, a default user called"
@@ -830,22 +831,32 @@ UserPassword() {
 		*) UserName=${Entered}
 	esac
 	print_info "$UserName will be created"
-	print_heading
-	print_info "Next enter the password for that user. If you do not enter"
-	print_info "a user password, a default of 'Linux' will be used."
-  echo
-	TPread "Enter a password for $UserName: "
-  Entered=$Response
-	case $Entered in
-		"") UserPassword="Linux"
-		;;
-		*) UserPassword=${Entered}
-	esac
-	print_info "${UserName}'s password will be: ${UserPassword}"
-
 }
 
-RootPassword() {
+SetRootPassword() { # New function, to be called at end of installation
+  print_heading
+  print_info $1
+  echo
+	print_info "Finally we need to set passwords."
+	print_info "Please enter a password for root: "
+  passwd
+  if [ "$?" -gt "0" ]; then
+    SetRootPassword "Passwords did not match - please enter a root password: "
+  fi
+  SetUserPassword "And now a password for $UserName: "
+}
+
+SetUserPassword() {
+  echo
+	print_info "$1"
+  passwd $UserName
+  if [ "$?" -gt "0" ]; then
+    print_heading
+    SetUserPassword "Passwords did not match - please enter a password for $UserName: "
+  fi
+}
+
+SetHostname() {
 	Entered="arch-linux"
 	print_heading
 	print_info "A hostname is needed. This will be a unique name to identify"
@@ -860,18 +871,7 @@ RootPassword() {
 		*) HostName=${Entered}
 	esac
 	print_info "Hostname set to: $HostName"
-	print_heading
-	print_info "Now set a password for root. If you do not enter one, a default"
-  print_info "password of 'Root' will be used."
-  echo
-	TPread "Enter a password for root: "
-  Entered=$Response
-	case $Entered in
-		"") RootPassword="Root"
-		;;
-		*) RootPassword=${Entered}
-	esac
-	print_info "Root password will be set to: $RootPassword"
+
 }
 
 #
@@ -911,7 +911,13 @@ ChooseDE() {
               ChooseDM
           ;;
         "Gnome") DisplayManager=""
-              Greeter=""	
+            Greeter=""
+            AddDEextras "gnome-extra"
+            case $response in
+              "Y" | "y") GoodiesGnome="gnome-extra"
+              ;;
+              *) GoodiesGnome=""
+            esac
           ;;
         "LXDE") DisplayManager=""
               Greeter=""
@@ -922,11 +928,23 @@ ChooseDE() {
         "Mate") DMList="LightDM LXDM Skip"
               ChooseDM
           ;;
-        "Xfce") DMList="LightDM LXDM Skip"
+        "Openbox") DMList="LightDM LXDM Skip"
+            AddDEextras "tint2"
+            case $response in
+              "Y" | "y") GoodiesOpenbox="tint2"
+              ;;
+              *) GoodiesOpenbox=""
+            esac
               ChooseDM
           ;;
-        "Openbox") DMList="LightDM LXDM Skip"
-              ChooseDM
+        "Xfce") DMList="LightDM LXDM Skip"
+            AddDEextras "xfce4-goodies"
+            case $response in
+              "Y" | "y") GoodiesXfce="xfce4-goodies"
+              ;;
+              *) GoodiesXfce=""
+            esac
+            ChooseDM
           ;;
         *) DesktopEnvironment=""
             DisplayManager=""
@@ -937,6 +955,28 @@ ChooseDE() {
 		done
 		break
   done
+}
+
+AddDEextras() {
+ local Extras="$1"
+ print_heading
+ case $DesktopEnvironment in
+  "Gnome") print_info "The gnome-extra pack includes an archive manager,"
+  print_info "disk manager, text editor, and a set of games"
+  echo
+  ;;
+  "Openbox") print_info "tint2 is a system panel/taskbar that can be configured"
+ print_info "to include a system tray, task list, battery monitor, clock, etc."
+ echo
+  ;;
+ "Xfce") print_info "The xfce4-goodies pack includes includes the Whisker menu,"
+ print_info "extra plugins and a number of utilities such as the mousepad editor"
+ echo
+ ;;
+ *) echo
+ esac
+ TPread "Include the $Extras pack? [y/N] : "
+  
 }
 
 ChooseDM() {
@@ -987,8 +1027,8 @@ do
   print_info "Of course, adding these items will increase the installation time."
   print_info "If you don't want any of them, just hit [Enter] without any numbers."
   echo
-  print_info "1) Firefox web browser                             "
-  print_list "2) Google Chrome web browser"
+  print_info "1) Firefox - web browser                             "
+  print_list "2) Chromium - web browser"
   print_list "3) LibreOffice - full office suite"
   print_list "4) Gparted - partitioning tool"
   print_list "5) Geany - advanced text editor and IDE"

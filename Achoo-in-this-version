@@ -1,3 +1,8 @@
+28 August 2015
+Additions for the Gnome and Xfce DEs are now optional, and an option to
+add tint2 has been added to Openbox. Password-entry has now been moved
+to the ned of the script for better security.
+
 27 August 2015
 Extended functionality to 'scope' option - now adds luxuries such as web
 browser, office suite, etc

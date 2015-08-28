@@ -36,15 +36,16 @@ SUBZONE=""        # "London" For time
 # Desktop environment, display manager and greeter variables
 #
 DesktopEnvironment=""  # "xfce4"
+GoodiesXfce=""
+GoodiesGnome=""
+GoodiesOpenbox=""
 DisplayManager=""      # "lightdm"
 Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
 #
 # Root and user variables
 #
 HostName=""       # "arch-linux"
-RootPassword=""   # "Root"
 UserName=""       # "archie"
-UserPassword=""   # "Linux"
 Scope="Basic"     # Installation scope ... 'Extras' 'Full' or 'Basic'
 #
 # Input/Output variables

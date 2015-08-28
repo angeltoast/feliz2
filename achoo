@@ -74,12 +74,13 @@ CheckForError "${LINENO} 'Loadkeys'" 1
 settimezone
 setlocale
 
+SetHostname
 # Names and passwords
-RootPassword
-if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
-then
-  UserPassword
-fi
+#RootPassword
+#if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+#then
+UserName
+#fi
 
 # Desktop environment, display manager & luxuries
 case $Scope in
@@ -174,14 +175,6 @@ then
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 fi
 
-# Set root password (Reduced from Lution AIS)
-TPecho "Setting root password"
-echo -e "${RootPassword}\n${RootPassword}" > /tmp/.passwd 2> error.log
-CheckForError "${LINENO} 'Root password'" 2
-arch_chroot "passwd root" < /tmp/.passwd >/dev/null
-rm /tmp/.passwd 2> error.log
-CheckForError "${LINENO} 'rm temp passwd'" 0
-
 # Install bootloader
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
@@ -213,10 +206,6 @@ then
     TPecho "Adding user ${UserName} ... "
     arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
     CheckForError "${LINENO} 'Could not add user'" 1
-    echo -e "${UserPassword}\n${UserPassword}" > /tmp/.passwd 2> error.log
-    arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-    rm /tmp/.passwd 2> error.log
-    CheckForError "${LINENO} 'rm temp passwd'" 0
     # Set up basic configuration files and permissions for user
     TPecho "Setting up user configuration"
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
@@ -282,7 +271,7 @@ then
         CheckForError "Line ${LINENO} 'Installing Enlightenment'" 1
         ;;
     "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-        pacstrap ${MOUNTPOINT} gnome gnome-extra
+        pacstrap ${MOUNTPOINT} gnome ${GoodiesGnome}
         CheckForError "Line ${LINENO} 'Installing Gnome'" 1
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
@@ -303,13 +292,13 @@ then
         pacstrap ${MOUNTPOINT} mate mate-extra
         CheckForError "Line ${LINENO} 'Installing Mate'" 1
         ;;
-    "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
-        pacstrap ${MOUNTPOINT} xfce4 xfce4-goodies polkit-gnome 2> error.log
-        CheckForError "Line ${LINENO} 'Installing Xfce'" 1
-        ;;
     "Openbox") TPecho "Installing 'Openbox' Window Manager"
-        pacstrap ${MOUNTPOINT} openbox xterm
+        pacstrap ${MOUNTPOINT} openbox xterm ${GoodiesOpenbox}
         CheckForError "Line ${LINENO} 'Installing Openbox'" 1
+        ;;
+    "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
+        pacstrap ${MOUNTPOINT} xfce4 polkit-gnome ${GoodiesXfce} 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Xfce'" 1
         ;;
   *) TPecho "Not installing a Desktop Environment"	
   esac
@@ -320,12 +309,13 @@ if [ -n ${#LuxuriesList[@]} ]; then
   pacstrap ${MOUNTPOINT} ${LuxuriesList}
 fi
 
-print_heading
 EndTime=$(date +%s)
 Difference=$(( $EndTime-$StartTime ))
 DIFFMIN=$(( $Difference/60 ))
 DIFFSEC=$(( $Difference % 60 ))
-print_info "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+
+SetRootPassword "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds" 
+
 print_info "Press any key to reboot"
 read -n1
 systemctl reboot
