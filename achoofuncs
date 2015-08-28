@@ -21,7 +21,7 @@
 # Set scope            271
 # Partitioning         309
 # User & Location      685
-# Desktop Environment  878
+# Desktop Environment  856
 # Check Data           1056
 # Running              1227
 # ------------------------
@@ -1092,7 +1092,7 @@ do
   if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
     print_list "8)  DE = $DesktopEnvironment : $DisplayManager"
   elif [ $DesktopEnvironment ]; then
-    print_list "8)  DE = $DesktopEnvironment"
+    print_list "8)  DE = $DesktopEnvironment $GoodiesGnome $GoodiesOpenbox $GoodiesXfce"
   else
     print_list "8)  No DE selected"
   fi
@@ -1338,11 +1338,27 @@ SetRootPassword() { # New function, to be called at end of installation
   print_heading
  	print_info  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
   echo
-	print_info "Finally we need to set passwords."
-	print_info "Please enter a password for root: "
+ 	print_info "Finally we need to set passwords ..."
   echo
-  arch-chroot /mnt
-  passwd
+  Repeat="Y"
+  while [ $Repeat = "Y" ]
+  do
+    read -s -p "Enter a password for root: " Pass1
+    echo
+    read -s -p "Re-enter root password: " Pass2
+    echo
+    if [ $Pass1 = $Pass2 ]; then
+     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
+     CheckForError "${LINENO} 'Root password'" 2
+     arch_chroot "passwd root" < /tmp/.passwd >/dev/null
+     rm /tmp/.passwd 2> error.log
+     CheckForError "${LINENO} 'rm temp passwd'" 0
+      Repeat="N"
+    else
+      print_heading
+      print_info "Passwords don't match. Try again"
+    fi
+  done
   if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
   then
     SetUserPassword
@@ -1350,11 +1366,28 @@ SetRootPassword() { # New function, to be called at end of installation
 }
 
 SetUserPassword() {
+  print_heading
   echo
 	print_info   "And now a password for $UserName: "
   echo
-  passwd $UserName
-  exit
+  Repeat="Y"
+  while [ $Repeat = "Y" ]
+  do
+    read -s -p "Enter a password for $UserName: " Pass1
+    echo
+    read -s -p "Re-enter password for $UserName: " Pass2
+    echo
+    if [ $Pass1 = $Pass2 ]; then
+      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
+      CheckForError "${LINENO} 'save temp passwd'" 0
+      arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+      rm /tmp/.passwd 2> error.log
+      CheckForError "${LINENO} 'rm temp passwd'" 0
+      Repeat="N"
+    else
+      echo "Passwords don't match. Try again"
+    fi
+  done
 }
 
 #
