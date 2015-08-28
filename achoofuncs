@@ -22,8 +22,8 @@
 # Partitioning         309
 # User & Location      685
 # Desktop Environment  878
-# Check Data           1041
-# Running              1234
+# Check Data           1056
+# Running              1227
 # ------------------------
 
 #
@@ -683,7 +683,7 @@ SetGrubDevice() {
 }
 
 #
-# Locations, User and Passwords
+# Locations and User
 #
 
 getkeymap() {
@@ -832,29 +832,6 @@ UserName() {
 		*) UserName=${Entered}
 	esac
 	print_info "$UserName will be created"
-}
-
-SetRootPassword() { # New function, to be called at end of installation
-  print_heading
-  print_info $1
-  echo
-	print_info "Finally we need to set passwords."
-	print_info "Please enter a password for root: "
-  passwd
-  if [ "$?" -gt "0" ]; then
-    SetRootPassword "Passwords did not match - please enter a root password: "
-  fi
-  SetUserPassword "And now a password for $UserName: "
-}
-
-SetUserPassword() {
-  echo
-	print_info "$1"
-  passwd $UserName
-  if [ "$?" -gt "0" ]; then
-    print_heading
-    SetUserPassword "Passwords did not match - please enter a password for $UserName: "
-  fi
 }
 
 SetHostname() {
@@ -1354,6 +1331,40 @@ TestExistingDM() {
         Counter=$((Counter+1))
       done
   esac
+}
+
+SetRootPassword() { # New function, to be called at end of installation
+  print_heading
+ 	print_info  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+  echo
+	print_info "Finally we need to set passwords."
+	print_info "Please enter a password for root: "
+  PasswordMatch=1
+  while [ $PasswordMatch = 1 ]
+  do
+  passwd
+  if [ $? -gt 0 ]; then
+    print_info "Passwords did not match - please enter a password for $UserName: "
+  else
+    PasswordMatch=0
+  fi
+  done
+  SetUserPassword
+}
+
+SetUserPassword() {
+  echo
+	print_info   "And now a password for $UserName: "
+  PasswordMatch=1
+  while [ $PasswordMatch = 1 ]
+  do
+  passwd $UserName
+  if [ $? -gt 0 ]; then
+    print_info "Passwords did not match - please enter a password for $UserName: "
+  else
+    PasswordMatch=0
+  fi
+  done
 }
 
 #
