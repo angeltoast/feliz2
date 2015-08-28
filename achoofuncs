@@ -611,6 +611,7 @@ MakePartition() {
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
+    echo
 		TPread "Enter a label for ${Partition} ... eg: '/home' ... /"
  		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
@@ -1344,12 +1345,15 @@ SetRootPassword() { # New function, to be called at end of installation
   do
   passwd
   if [ $? -gt 0 ]; then
-    print_info "Passwords did not match - please enter a password for $UserName: "
+    print_info "Passwords did not match - please enter a password for root"
   else
     PasswordMatch=0
   fi
   done
-  SetUserPassword
+  if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+  then
+    SetUserPassword
+  fi
 }
 
 SetUserPassword() {

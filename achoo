@@ -196,11 +196,11 @@ CheckForError "${LINENO} 'Saving persistent keymap'" 1
 echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
-# Extra processes for 'Full' installation
+# Extra processes for 'Full' or 'Extras' installation
 if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
 then
   CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
-  # If not already exist, create user and set password
+  # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
     TPecho "Adding user ${UserName} ... "
     arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
@@ -214,6 +214,8 @@ then
   else
     TPecho "User already exists"
   fi
+  
+  read -p "User"
 
   # Install Flash and other Multimedia Codecs (add/remove items as desired)
   TPecho "Adding Flash and other Multimedia Codecs"
