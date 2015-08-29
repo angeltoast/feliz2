@@ -54,7 +54,7 @@ print_line() { # from AUI scripts
 
 print_info() { # adapted from AUI scripts
   T_COLS=`tput cols`
-  if [ $2 ]; then # Second parameter is characters left of centre
+  if [ $2 ]; then # Second parameter is number of characters left of centre
     lov=$2
   else
     lov=${#1}
@@ -140,9 +140,12 @@ CheckForError() {
 # Now receiving $2 to flag critical or non-critical error
 	if [[ $? -gt 0 ]]; then
     print_heading
+    echo
     tput bold
 		print_info "Error reported at Line: $1"
+    echo
     cat error.log
+    echo
     case $2 in
       0) read_timed "The error is not critical, and you may ignore it"
       ;;
@@ -335,7 +338,9 @@ ManagePartitions() {
       "y"|"Y"|"") cfdisk 2> error.log
            CheckForError "${LINENO} 'cfdisk'" 2
         ;;
-        *) print_info "Exiting Achoo! Hurry back, y'hear?"
+        *) 
+       echo print_info "Exiting Achoo! Hurry back, y'hear?"
+       echo
         exit
       esac
       # Recheck the partitions
@@ -357,8 +362,8 @@ ManagePartitions() {
     echo
 		lsblk
 		echo
-    print_info "If you are uncertain about partitioning, you should read"
-    print_info "the Arch Wiki. Would you like to open cfdisk"
+    print_info "If you are uncertain about partitioning, you should"
+    print_info "read the Arch Wiki. Would you like to open cfdisk"
 		TPread "to manage those partitions now? [Y/n]: "
 		case $Response in
 		  "y"|"Y"|"") cfdisk 2> error.log
@@ -370,9 +375,13 @@ ManagePartitions() {
   # After cfdisk, build new list of partitions
   PartitionList=" "
   ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  PARTITIONS=${#ShowPartitions} # Test to make sure partitions have not been deleted
+  if [[ $PARTITIONS -eq 0 ]]; then
+    ManagePartitions
+  fi
   for Part in ${ShowPartitions}
   do
-    PartitionList="$PartitionList $Part"	# Add each partition
+    PartitionList="$PartitionList $Part"	# Add each partition for next functions
   done
 }
 
@@ -381,7 +390,7 @@ select_filesystem() {
 # Returns enhanced selection via FILESYSTEM variable
 	local Counter=0
   SetPS3
-#	TypeList now passed by caller
+  #	TypeList now passed as string by caller
 	print_info "Please now select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
   echo
