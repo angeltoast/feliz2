@@ -21,7 +21,7 @@
 # Set scope            271
 # Partitioning         309
 # User & Location      685
-# Desktop Environment  856
+# Desktop Environment  875
 # Check Data           1056
 # Running              1227
 # ------------------------
@@ -910,12 +910,7 @@ ChooseDE() {
           ;;
         "Gnome") DisplayManager=""
             Greeter=""
-            AddDEextras "gnome-extra"
-            case $response in
-              "Y" | "y") GoodiesGnome="gnome-extra"
-              ;;
-              *) GoodiesGnome=""
-            esac
+            GnomeOptions
           ;;
         "LXDE") DisplayManager=""
               Greeter=""
@@ -955,23 +950,52 @@ ChooseDE() {
   done
 }
 
+GnomeOptions() {
+
+Redo="Y"
+Response=1
+GoodiesGnome=""
+while [ $Redo = "Y" ]
+do
+  print_heading
+  print_info "If in doubt, choose 'Standard Gnome'"
+  print_info "'Gnome with extras' adds a text editor, disk"
+  print_info "manager, archive manager and a set of games"
+  echo
+  print_info "1) Minimal Gnome (gnome-shell)"
+  print_list "2) Standard Gnome"
+  print_list "3) Gnome with extras"
+  echo
+  TPread "Enter the number of your selection : "
+  echo
+  case $Response in
+    1) DesktopEnvironment="gnome-shell"
+      Redo="N"
+    ;;
+    2) Redo="N"
+    ;;
+    3) GoodiesGnome="gnome-extra"
+      Redo="N"
+    ;;
+    *) invalid_option
+  esac
+done
+  
+}
+
 AddDEextras() {
  local Extras="$1"
  print_heading
  case $DesktopEnvironment in
-  "Gnome") print_info "The gnome-extra pack includes an archive manager,"
-  print_info "disk manager, text editor, and a set of games"
-  echo
-  ;;
   "Openbox") print_info "tint2 is a system panel/taskbar that can be configured"
- print_info "to include a system tray, task list, battery monitor, clock, etc."
- echo
-  ;;
- "Xfce") print_info "The xfce4-goodies pack includes includes the Whisker menu,"
- print_info "extra plugins and a number of utilities such as the mousepad editor"
- echo
- ;;
- *) echo
+    print_info "to include a system tray, task list, battery monitor, clock, etc."
+    echo
+    ;;
+  "Xfce") print_info "The xfce4-goodies pack includes includes the Whisker menu,"
+    print_info "extra plugins and a number of utilities such as the mousepad editor"
+    echo
+    ;;
+  *) echo
  esac
  TPread "Include the $Extras pack? [y/N] : "
   
