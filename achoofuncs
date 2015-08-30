@@ -74,17 +74,23 @@ print_list() { # Subsequent item in an aligned list (menu)
 }
 
 TPecho() { # For displaying status while running on auto
+  echo
+  CurrentTime=$(date +%s)
+  Difference=$(( $EndTime-$CurrentTime ))
+  DIFFMIN=$(( $Difference/60 ))
+  DIFFSEC=$(( $Difference % 60 ))
   T_COLS=`tput cols`
   tput bold
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
-    echo -e "$EMPTY $1 \n"
+    echo -e "$EMPTY ${DIFFMIN}.${DIFFSEC} $1 \n"
   else
-    echo -e "$1 \n"
+    echo -e "${DIFFMIN}.${DIFFSEC} $1 \n"
   fi
   tput sgr0
+  echo
 }
 
 TPread() { # Aligned prompt for user-entry - returns result through $Response
@@ -1026,7 +1032,7 @@ do
   echo
   local Counter=0
   LuxuriesList=""
-  for i in ${Response} # Iterate through the list to check validity of each item
+  for i in ${Response} # Iterate through the list to check validity of each item and add it
 	do
     case $i in
       "1") LuxuriesList="${LuxuriesList} firefox"

@@ -285,7 +285,7 @@ then
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
         # Test for existing display manager and disable if necessary
         TestExistingDM
-        # Then enable (included) new DM
+        # Then enable LXDM
         arch_chroot "systemctl enable lxdm.service" >/dev/null
         echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
         ;;
@@ -311,8 +311,13 @@ fi
 
 if [ -n ${#LuxuriesList[@]} ]; then
   TPecho "Installing ${LuxuriesList}"
-  pacstrap /mnt ${LuxuriesList}
+  pacstrap /mnt ${LuxuriesList} 2> error.log
+  CheckForError "Line ${LINENO} 'Installing LuxuriesList'" 1
 fi
+
+# Copy these scripts to new system
+cp achoo achoofuncs achoovariables /mnt/etc 2> error.log
+CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
 
 EndTime=$(date +%s)
 Difference=$(( $EndTime-$StartTime ))
