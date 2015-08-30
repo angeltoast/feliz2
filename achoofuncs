@@ -1,34 +1,30 @@
 #!/bin/bash
 
 # achoofuncs - Functions called by the main Achoo! script
-# -----------------------------------------------------------
+# 
 # This script and the achoovariables script must be present in the same
 # directory when running the main Achoo! script
-# -----------------------------------------------------------
+# 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
-# -----------------------------------------------------------
+# 
 # Please read the introduction in the main Achoo! script
-# ------------------------------------------------------
+# 
 
 # -------------------------
 # Functions           Line
 # -------------------------
-# Input and output     30
+# Input and output     29
 # Error-checking       135
 # Internet connection  170
-# Mirrorlist           228
-# Set scope            271
-# Partitioning         309
-# User & Location      685
-# Desktop Environment  875
-# Check Data           1056
+# Mirrorlist           222
+# Set scope            261
+# Partitioning         296
+# Location             685
+# Desktop Environment  851
+# Check Data           1069
 # Running              1227
-# ------------------------
-
-#
-# Input and output 
-#
+# -------------------------
 
 contains_element() { # (from AUI scripts)
 # check if an element exists in a string
@@ -52,9 +48,9 @@ print_line() { # from AUI scripts
     printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
-print_info() { # adapted from AUI scripts
+print_info() { # Aligned text according to screen size
   T_COLS=`tput cols`
-  if [ $2 ]; then # Second parameter is number of characters left of centre
+  if [ $2 ]; then # Second parameter is number of characters to left of centre
     lov=$2
   else
     lov=${#1}
@@ -68,7 +64,7 @@ print_info() { # adapted from AUI scripts
   fi
 }
 
-print_list() {
+print_list() { # Subsequent item in an aligned list (menu)
     if [ $2 ]; then
       lov=$2
       stpt=$(( ($T_COLS - $lov) / 2 ))
@@ -91,7 +87,7 @@ TPecho() { # For displaying status while running on auto
   tput sgr0
 }
 
-TPread() {
+TPread() { # Aligned prompt for user-entry - returns result through $Response
   T_COLS=`tput cols`
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
@@ -123,17 +119,13 @@ read_timed() { # Now can receive second parameter to set duration
   echo
 }
 
-SetPS3() { 
+SetPS3() { # Aligned prompt for 'select' command
   T_COLS=`tput cols`
   lov=40
   stpt=$(( ($T_COLS - $lov) / 2 ))
   EMPTY="$(printf '%*s' $stpt)"
   PS3="${EMPTY} Enter the number of your selection : "
 }
-
-#
-# Error-checking
-#
 
 CheckForError() {
 # Check for stderr, display it, then exit script
@@ -169,10 +161,6 @@ CheckForError() {
     tput sgr0
   fi
 }
-
-#
-# Check internet
-#
 
 CheckInternet() {
 print_heading
@@ -227,10 +215,6 @@ do
 done
 }
 
-#
-# Mirrorlists
-#
-
 ReflectorMirrorList() {
 # Install reflector and use it to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
@@ -270,10 +254,6 @@ LocalMirrorList() {
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 }
 
-#
-# Set scope of installation
-#
-
 SetScope() {
 print_heading
 Retry="Y"
@@ -308,10 +288,6 @@ echo
   print_heading
 done
 }
-
-#
-# Partitioning
-#
 
 ManagePartitions() {
 	# First test for existing partitions
@@ -669,7 +645,6 @@ MakePartition() {
 	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
 }
 
-# User to choose device for grub installation
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
@@ -702,12 +677,7 @@ SetGrubDevice() {
   done
 }
 
-#
-# Locations and User
-#
-
 getkeymap() {
-# Enable user to input two-letter country-code to find keyboard
 print_heading
 DoDoDo=1
 print_info "Now we will try to find your keyboard from a list of all"
@@ -750,7 +720,6 @@ read_timed "The keyboard is now set to: '$Countrykbd'" 1
 }
 
 setlocale() {
-# Enable user to input two-letter country-code to find locale
 print_heading
 SetPS3
 DoDoDo=1
@@ -801,13 +770,11 @@ read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
 }
 
 settimezone() {
-# Variables "ZONE" and "SUBZONE"
-print_heading
-print_info "Now we have to set up the best mirrors for downloading your system"
-print_info "This data will also be used for setting the clock during installation"
-print_info "Choose the World Zone of your location from the following list"
-echo
-# Set Zone and Sub-Zone from lists (from AUI)
+  print_heading
+  print_info "Now we have to set up the best mirrors for downloading your system"
+  print_info "This data will also be used for setting the clock during installation"
+  print_info "Choose the World Zone of your location from the following list"
+  echo
   local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   SetPS3
   echo
@@ -834,8 +801,8 @@ echo
       invalid_option
     fi
   done
-echo
-read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
+  echo
+  read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
 }
 
 UserName() {
@@ -869,12 +836,7 @@ SetHostname() {
 		*) HostName=${Entered}
 	esac
 	print_info "Hostname set to: $HostName"
-
 }
-
-#
-# Desktop Environment
-#
 
 ChooseDE() {
 	Counter=0
@@ -951,9 +913,9 @@ ChooseDE() {
 }
 
 GnomeOptions() {
-Redo="Y"
-Response=1
-GoodiesGnome=""
+  Redo="Y"
+  Response=1
+  GoodiesGnome=""
 while [ $Redo = "Y" ]
 do
   print_heading
@@ -996,7 +958,6 @@ AddDEextras() {
   *) echo
  esac
  TPread "Include the $Extras pack? [y/N] : "
-  
 }
 
 ChooseDM() {
@@ -1093,10 +1054,6 @@ do
 done
 LuxuriesList=`echo $LuxuriesList | cut -c1-` # Remove leading space
 }
-
-#
-# Check Data
-#
 
 FinalCheck() {
 Repeat=1
@@ -1266,13 +1223,7 @@ MakePartitionList() {
   done
 }
 
-#
-# Running
-#
-
-arch_chroot() {
-# Taken directly from Lution AIS
-# Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
+arch_chroot() {  # Taken directly from Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2> error.log
   CheckForError "${LINENO} 'arch-chroot /mnt ${1}'" 2
 }  
@@ -1430,7 +1381,3 @@ SetUserPassword() {
     fi
   done
 }
-
-#
-#	End of Functions
-#
