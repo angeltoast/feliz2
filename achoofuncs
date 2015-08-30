@@ -951,7 +951,6 @@ ChooseDE() {
 }
 
 GnomeOptions() {
-
 Redo="Y"
 Response=1
 GoodiesGnome=""
@@ -980,7 +979,6 @@ do
     *) invalid_option
   esac
 done
-  
 }
 
 AddDEextras() {
@@ -1275,13 +1273,13 @@ MakePartitionList() {
 arch_chroot() {
 # Taken directly from Lution AIS
 # Function chroots to MOUNTPOINT (/mnt) for parameter passed from caller
-  arch-chroot ${MOUNTPOINT} /bin/bash -c "${1}" 2> error.log
-  CheckForError "${LINENO} 'arch-chroot ${MOUNTPOINT} ${1}'" 2
+  arch-chroot /mnt /bin/bash -c "${1}" 2> error.log
+  CheckForError "${LINENO} 'arch-chroot /mnt ${1}'" 2
 }  
 
 umount_partitions(){ # from Lution/AUI
   MOUNTED=""
-  MOUNTED=$(mount | grep "${MOUNTPOINT}" | awk '{print $3}' | sort -r)
+  MOUNTED=$(mount | grep "/mnt" | awk '{print $3}' | sort -r)
   swapoff -a 2> error.log
   CheckForError "${LINENO} 'swapoff'" 1
   for i in ${MOUNTED[@]}; do
@@ -1311,8 +1309,8 @@ MountPartitions() {
     fi
   esac
   TPecho "Mounting /root partition"	
-  mount ${RootPartition} ${MOUNTPOINT} 2> error.log # eg: mount /dev/sda1 /mnt
-  CheckForError "${LINENO} 'mount ${RootPartition} ${MOUNTPOINT}'" 2
+  mount ${RootPartition} /mnt 2> error.log # eg: mount /dev/sda1 /mnt
+  CheckForError "${LINENO} 'mount ${RootPartition} /mnt'" 2
   if [ ${SwapPartition} ]
   then
     TPecho "Making /swap partition"
@@ -1328,7 +1326,7 @@ MountPartitions() {
  	# Repeat $Elements times getting data from the three arrays
   while [ $Counter -lt $Elements ]
   do
-    mkdir -p ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    mkdir -p /mnt${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     # As for /root ... check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
@@ -1342,16 +1340,16 @@ MountPartitions() {
       mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
       CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi
-    mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} ${MOUNTPOINT}${AddPartLabel[$Counter]}'" 2
+    mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
 }
 
 TestExistingDM() {
   # Test for existing display manager and disable if necessary
-  arch-chroot ${MOUNTPOINT} systemctl list-unit-files | grep dm.service > mnt/etc/output.log
-  DMLine=`cat ${MOUNTPOINT}/etc/output.log`
+  arch-chroot /mnt systemctl list-unit-files | grep dm.service > mnt/etc/output.log
+  DMLine=`cat /mnt/etc/output.log`
   # Start a local counter to check for multiple entries
   local Counter=1
   case ${DMLine} in

@@ -117,44 +117,44 @@ MountPartitions
 ReflectorMirrorList
 
 TPecho "Installing LTS Kernel, base-devel & cli tools"
-pacstrap ${MOUNTPOINT} bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
+pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
 
 # Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
 
 TPecho "Generating fstab"
-genfstab -U -p ${MOUNTPOINT} > ${MOUNTPOINT}/etc/fstab 2> error.log
+genfstab -U -p /mnt > /mnt/etc/fstab 2> error.log
 CheckForError "${LINENO} 'genfstab'" 2
 if [ ${SwapFile} ]; then
   TPecho "Making /swapfile"
-  fallocate -l ${SwapFile} ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
+  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2> error.log
   CheckForError "${LINENO} 'mkswap /swapfile'" 1
-  chmod 600 ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
+  chmod 600 /mnt/swapfile >/dev/null 2>> error.log
   CheckForError "${LINENO} 'mkswap /swapfile'" 1
-  mkswap ${MOUNTPOINT}/swapfile >/dev/null 2>> error.log
+  mkswap /mnt/swapfile >/dev/null 2>> error.log
   CheckForError "${LINENO} 'mkswap /swapfile'" 1
-  swapon ${MOUNTPOINT}/swapfile >/dev/null 2> error.log
+  swapon /mnt/swapfile >/dev/null 2> error.log
   CheckForError "${LINENO} 'swapon /swapfile'" 1
-  echo "/swapfile none  swap  defaults  0 0" >> ${MOUNTPOINT}/etc/fstab
+  echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab
 fi
 
 TPecho "Setting hostname"
-echo ${HostName} > ${MOUNTPOINT}/etc/hostname 2> error.log
+echo ${HostName} > /mnt/etc/hostname 2> error.log
 CheckForError "${LINENO} 'save hostname'" 2
-sed -i "/127.0.0.1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
+sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2> error.log
 CheckForError "${LINENO} 'save to hosts'" 2
-sed -i "/::1/s/$/ ${HostName}/" ${MOUNTPOINT}/etc/hosts 2> error.log
+sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2> error.log
 CheckForError "${LINENO} 'save to hosts'" 2
 
 # Set up locale
 TPecho "Preparing locale.gen"
-echo "${CountryLocale} UTF-8" > ${MOUNTPOINT}/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
 CheckForError "${LINENO} 'save full locale'" 2
 arch_chroot "locale-gen"
 
 TPecho "Preparing locale.conf"
-echo "LANG=${CountryLocale}" > ${MOUNTPOINT}/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'set LANG'" 2
 export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
 CheckForError "${LINENO} 'export LANG'" 2
@@ -169,7 +169,7 @@ arch_chroot "systemctl enable dhcpcd.service"
 if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
 then
   TPecho "Installing and configuring network services"
-  pacstrap ${MOUNTPOINT} networkmanager network-manager-applet rp-pppoe 2> error.log
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2> error.log
   CheckForError "${LINENO} 'Installing network manager'" 2
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 fi
@@ -177,7 +177,7 @@ fi
 # Install bootloader
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
-  pacstrap ${MOUNTPOINT} grub os-prober 2> error.log
+  pacstrap /mnt grub os-prober 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -189,17 +189,17 @@ TPecho "Running mkinitcpio"
 arch_chroot "mkinitcpio -p linux-lts"
 
 # Set keyboard to selected language at next startup
-echo KEYMAP=${Countrykbd} > ${MOUNTPOINT}/etc/vconsole.conf 2> error.log
+echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
 CheckForError "${LINENO} 'Saving persistent keymap'" 1
 
 # Required for Virtualbox installations
-echo blacklist i2c_piix4 > ${MOUNTPOINT}/etc/modprobe.d/modprobe.conf 2> error.log
+echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
 CheckForError "${LINENO} 'vbox piix4 override'" 1
 
 # Extra processes for 'Full' or 'Extras' installation
 if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
 then
-  CheckUsers=`cat ${MOUNTPOINT}/etc/passwd | grep ${UserName}`
+  CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
     TPecho "Adding user ${UserName} ... "
@@ -209,7 +209,7 @@ then
     TPecho "Setting up user configuration"
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' ${MOUNTPOINT}/etc/sudoers 2> error.log
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2> error.log
     CheckForError "${LINENO} 'User-configuration'" 1
   else
     TPecho "User already exists"
@@ -217,30 +217,30 @@ then
 
   # Install Flash and other Multimedia Codecs (add/remove items as desired)
   TPecho "Adding Flash and other Multimedia Codecs"
-  pacstrap ${MOUNTPOINT} a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
+  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
   CheckForError "${LINENO} 'Install codecs'" 1
 
   # Wireless tools
   TPecho "Installing wireless tools"
-  pacstrap ${MOUNTPOINT} b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
   CheckForError "${LINENO} 'Wireless firmware'" 1
-  pacstrap ${MOUNTPOINT} iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
+  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
   CheckForError "${LINENO} 'Wireless tools'" 1
 
   # Install X, graphics, etc
   TPecho "Installing X, graphics, etc"
-  pacstrap ${MOUNTPOINT} xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
+  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
   # Copy modified pacman.conf to new system and install Yaourt
   TPecho "Modifying pacman.conf and installing Yaourt"
-  cp pacman.conf ${MOUNTPOINT}/etc 2> error.log
+  cp pacman.conf /mnt/etc 2> error.log
   CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
   cp pacman.conf /etc 2> error.log
   CheckForError "${LINENO} 'Copying pacman.conf local'" 1
   pacman -Sy 2> error.log
   CheckForError "${LINENO} 'Update Arch" 1
-  pacstrap ${MOUNTPOINT} yaourt 2> error.log
+  pacstrap /mnt yaourt 2> error.log
   CheckForError "${LINENO} 'Install yaourt'" 1
 
   # Install Display Manager
@@ -249,11 +249,11 @@ then
     TestExistingDM
     # Then install and enable new DM
     TPecho "Installing Display Manager ${DisplayManager}"
-    pacstrap ${MOUNTPOINT} ${DisplayManager} ${Greeter} 2> error.log
+    pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
     CheckForError "Line ${LINENO} 'Install display manager'" 2
     arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
     if [ ${DisplayManager} = "LXDM" ] && [ ${DesktopEnvironment} = "Xfce" ]; then
-      echo "session=/usr/bin/startxfce4" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
+      echo "session=/usr/bin/startxfce4" >> /mnt/etc/lxdm/lxdm.conf
     fi
   else
     TPecho "Not installing a Display Manager"
@@ -262,46 +262,46 @@ then
   # Install Desktop Environment
   case ${DesktopEnvironment} in
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
-        pacstrap ${MOUNTPOINT} cinnamon gnome-terminal
+        pacstrap /mnt cinnamon gnome-terminal 2> error.log
         CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
         ;;
     "Enlightenment") TPecho "Installing 'Cinnamon' Desktop Environment"
-        pacstrap ${MOUNTPOINT} enlightenment
+        pacstrap /mnt enlightenment 2> error.log
         CheckForError "Line ${LINENO} 'Installing Enlightenment'" 1
         ;;
     "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-        pacstrap ${MOUNTPOINT} gnome ${GoodiesGnome}
+        pacstrap /mnt gnome ${GoodiesGnome} 2> error.log
         CheckForError "Line ${LINENO} 'Installing Gnome'" 1
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
     "gnome-shell") TPecho "Installing 'gnome-shell'"
-        pacstrap ${MOUNTPOINT} gnome-shell
+        pacstrap /mnt gnome-shell 2> error.log
         CheckForError "Line ${LINENO} 'Installing gnome-shell'" 1
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-        pacstrap ${MOUNTPOINT} lxde gedit 2> error.log
+        pacstrap /mnt lxde gedit 2> error.log
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
         # Test for existing display manager and disable if necessary
         TestExistingDM
         # Then enable (included) new DM
         arch_chroot "systemctl enable lxdm.service" >/dev/null
-        echo "session=/usr/bin/startlxde" >> ${MOUNTPOINT}/etc/lxdm/lxdm.conf
+        echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
         ;;
     "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
-        pacstrap ${MOUNTPOINT} lxqt xterm 2> error.log
+        pacstrap /mnt lxqt xterm 2> error.log
         CheckForError "Line ${LINENO} 'Installing lxqt'" 1
         ;;
     "Mate") TPecho "Installing 'Mate' Desktop Environment"
-        pacstrap ${MOUNTPOINT} mate mate-extra
+        pacstrap /mnt mate mate-extra 2> error.log
         CheckForError "Line ${LINENO} 'Installing Mate'" 1
         ;;
     "Openbox") TPecho "Installing 'Openbox' Window Manager"
-        pacstrap ${MOUNTPOINT} openbox xterm ${GoodiesOpenbox}
+        pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2> error.log
         CheckForError "Line ${LINENO} 'Installing Openbox'" 1
         ;;
     "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
-        pacstrap ${MOUNTPOINT} xfce4 polkit-gnome ${GoodiesXfce} 2> error.log
+        pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2> error.log
         CheckForError "Line ${LINENO} 'Installing Xfce'" 1
         ;;
   *) TPecho "Not installing a Desktop Environment"	
@@ -310,7 +310,7 @@ fi
 
 if [ -n ${#LuxuriesList[@]} ]; then
   TPecho "Installing ${LuxuriesList}"
-  pacstrap ${MOUNTPOINT} ${LuxuriesList}
+  pacstrap /mnt ${LuxuriesList}
 fi
 
 EndTime=$(date +%s)

@@ -23,7 +23,6 @@ SwapFile=""       # "2G"
 RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
-MOUNTPOINT="/mnt"
 #
 # Location variables
 #
