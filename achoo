@@ -119,6 +119,7 @@ ReflectorMirrorList
 TPecho "Installing LTS Kernel, base-devel & cli tools"
 pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
 CheckForError "${LINENO} 'installing kernel and base-devel'" 2
+arch_chroot "systemctl enable sshd.service" >/dev/null
 
 # Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
