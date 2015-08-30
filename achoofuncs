@@ -85,7 +85,7 @@ TPecho() { # For displaying status while running on auto
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 3 ))
     EMPTY="$(printf '%*s' $stpt)"
-    echo -e "$EMPTY ${DIFFMIN}.${DIFFSEC} $1 \n"
+    echo -e "$EMPTY ${DIFFMIN}m${DIFFSEC}s $1 \n"
   else
     echo -e "${DIFFMIN}.${DIFFSEC} $1 \n"
   fi
@@ -1020,7 +1020,7 @@ do
   print_list "4) Gparted - partitioning tool"
   print_list "5) Geany - advanced text editor and IDE"
   print_list "6) Terminator - advanced terminal emulator"
-  print_list "7) Pamac - GUI front-end for Pacman package manager"
+  print_list "7) Transmission - BitTorrent client"
   print_list "8) GIMP - advanced image manipulation"
   print_list "9) Thunderbird - email client"
   echo
@@ -1047,7 +1047,7 @@ do
       ;;
       "6") LuxuriesList="${LuxuriesList} terminator"
       ;;
-      "7") LuxuriesList="${LuxuriesList} pamac-aur"
+      "7") LuxuriesList="${LuxuriesList} transmission-gtk"
       ;;
       "8") LuxuriesList="${LuxuriesList} gimp"
       ;;
