@@ -110,6 +110,7 @@ HostName="ArchLinux"
 RootPassword="Root"
 UserName="archie"
 UserPassword="Linux"
+LuxuriesList="firefox libreoffice-still gparted geany terminator pamac-aur thunderbird"
 
 # Call the function 'testbed' holding code to be tested
 testbed

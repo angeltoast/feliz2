@@ -76,14 +76,14 @@ print_list() { # Subsequent item in an aligned list (menu)
 TPecho() { # For displaying status while running on auto
   echo
   CurrentTime=$(date +%s)
-  Difference=$(( $EndTime-$CurrentTime ))
+  Difference=$(( $CurrentTime-$StartTime ))
   DIFFMIN=$(( $Difference/60 ))
   DIFFSEC=$(( $Difference % 60 ))
   T_COLS=`tput cols`
   tput bold
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
+    stpt=$(( ($T_COLS - $lov) / 3 ))
     EMPTY="$(printf '%*s' $stpt)"
     echo -e "$EMPTY ${DIFFMIN}.${DIFFSEC} $1 \n"
   else
@@ -185,10 +185,10 @@ do
   TPread "Enter the number of your selection : "
   echo
   case $Response in
-    1) TPecho "Checking your connection now ..."
+    1) print_info "Checking your connection now ..."
       CheckConnection
     ;;
-    2) TPecho "Checking your connection now ..."
+    2) print_info "Checking your connection now ..."
       wifi-menu
       CheckConnection
     ;;
