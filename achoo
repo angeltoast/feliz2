@@ -310,9 +310,12 @@ then
 fi
 
 if [ -n ${#LuxuriesList[@]} ]; then
-  TPecho "Installing ${LuxuriesList}"
-  pacstrap /mnt ${LuxuriesList} 2> error.log
-  CheckForError "Line ${LINENO} 'Installing LuxuriesList'" 1
+  for i in ${LuxuriesList}
+  do
+    TPecho "Installing $i"
+    pacstrap /mnt $i 2> error.log
+    CheckForError "Line ${LINENO} 'Installing $i'" 1
+	done
 fi
 
 # Copy these scripts to new system
