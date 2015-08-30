@@ -923,7 +923,7 @@ ChooseDE() {
           ;;
         "Openbox") DMList="LightDM LXDM Skip"
             AddDEextras "tint2"
-            case $response in
+            case $Response in
               "Y" | "y") GoodiesOpenbox="tint2"
               ;;
               *) GoodiesOpenbox=""
@@ -932,7 +932,7 @@ ChooseDE() {
           ;;
         "Xfce") DMList="LightDM LXDM Skip"
             AddDEextras "xfce4-goodies"
-            case $response in
+            case $Response in
               "Y" | "y") GoodiesXfce="xfce4-goodies"
               ;;
               *) GoodiesXfce=""
