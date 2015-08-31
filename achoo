@@ -5,8 +5,8 @@
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
-# The achoovariables and achoofuncs scripts must be present in the same
-# directory when running this script.
+# The achoovariables, achoodesktop and achoofuncs scripts must be
+# present in the same directory when running this script.
 
 # The Achoo! scripts are still in development, and may contain bugs. They
 # were originally written for my own use, but are shared in the spirit of
@@ -32,6 +32,13 @@ if [[ -f `pwd`/achoofuncs ]]; then
   source achoofuncs
 else
   echo "missing file: achoofuncs"
+  exit 1
+fi
+
+if [[ -f `pwd`/achoodesktop ]]; then
+  source achoodesktop
+else
+  echo "missing file: achoodesktop"
   exit 1
 fi
 
