@@ -1039,7 +1039,7 @@ do
       ;;
       "2") LuxuriesList="${LuxuriesList} chromium"
       ;;
-      "3") LuxuriesList="${LuxuriesList} libreoffice-still"
+      "3") LuxuriesList="${LuxuriesList} libreoffice-fresh"
       ;;
       "4") LuxuriesList="${LuxuriesList} gparted"
       ;;
