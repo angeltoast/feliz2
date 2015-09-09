@@ -19,8 +19,9 @@
 # Internet connection  170
 # Mirrorlist           222
 # UEFI detection       260
-# Set scope            283
-# Partitioning         296
+# Set scope            278
+# Partitioning         312
+# AutoPartition        416
 # -------------------------
 
 contains_element() { # (from AUI scripts)
@@ -454,56 +455,56 @@ AutoPartition() {
   # read -p "$DiskDetails" # For testing only ##############################
   # Proceed to create partitions and set variables for mounting
   if [ $UEFI -eq 1 ]; then
-    echo "arch_chroot 'parted /dev/${UseDisk} mklabel gpt'"
+    arch_chroot "parted /dev/${UseDisk} mklabel gpt"
     if [ $DiskDetails -gt 18 ]; then
-      echo "arch_chroot 'parted mkpart ESP fat32 1MiB 1GiB'"
+      arch_chroot "parted mkpart ESP fat32 1MiB 1GiB"
       EFIPartition="/dev/sda1"
-      echo "arch_chroot 'parted set 1 boot on'"
-      echo "arch_chroot 'parted mkpart primary linux-swap 1GiB 4GiB'"
+      arch_chroot "parted set 1 boot on"
+      arch_chroot "parted mkpart primary linux-swap 1GiB 4GiB"
       SwapPartition="/dev/sda2"
-      echo "arch_chroot 'parted mkpart primary ext4 4GiB 100%'"
+      arch_chroot "parted mkpart primary ext4 4GiB 100%"
       RootPartition="/dev/sda3"
       RootType="ext4"
     elif [ $DiskDetails -gt 10 ]; then
-      echo "arch_chroot 'parted mkpart ESP fat32 1MiB 1GiB'"
+      arch_chroot "parted mkpart ESP fat32 1MiB 1GiB"
       EFIPartition="/dev/sda1"
-      echo "arch_chroot 'parted set 1 boot on'"
-      echo "arch_chroot 'parted mkpart primary ext4 1GiB 100%'"
+      arch_chroot "parted set 1 boot on"
+      arch_chroot "parted mkpart primary ext4 1GiB 100%"
       RootPartition="/dev/sda2"
       RootType="ext4"
       SwapFile="2G"
       SwapPartition=""
     else # If disk < 10 Gb
-      echo "arch_chroot 'parted mkpart ESP fat32 1MiB 500MiB'"
+      arch_chroot "parted mkpart ESP fat32 1MiB 500MiB"
       EFIPartition="/dev/sda1"
-      echo "arch_chroot 'parted set 1 boot on'"
-      echo "arch_chroot 'parted mkpart primary ext4 500MiB 100%'"
+      arch_chroot "parted set 1 boot on"
+      arch_chroot "parted mkpart primary ext4 500MiB 100%"
       RootPartition="/dev/sda2"
       RootType="ext4"
       SwapFile="2G"
       SwapPartition=""
     fi
   else
-    echo "parted /mnt/dev/${UseDisk} mklabel msdos"
+    arch_chroot "parted /mnt/dev/${UseDisk} mklabel msdos"
     if [ $DiskDetails -gt 18 ]; then
-      echo "arch_chroot 'parted mkpart primary linux-swap 1MiB 4GiB'"
+      arch_chroot "parted mkpart primary linux-swap 1MiB 4GiB"
       SwapPartition="/dev/sda1"
-      echo "arch_chroot 'parted mkpart primary ext4 4GiB 100%'"
-      echo "arch_chroot 'parted set 2 boot on'"
+      arch_chroot "parted mkpart primary ext4 4GiB 100%"
+      arch_chroot "parted set 2 boot on'"
       RootPartition="/dev/sda2"
       RootType="ext4"
     elif [ $DiskDetails -gt 10 ]; then
-      echo "arch_chroot 'parted mkpart primary linux-swap 1MiB 2GiB'"
+      arch_chroot "parted mkpart primary linux-swap 1MiB 2GiB"
       SwapPartition="/dev/sda1"
-      echo "arch_chroot 'parted mkpart primary ext4 2GiB 100%'"
-      echo "arch_chroot 'parted set 2 boot on'"
+      arch_chroot "parted mkpart primary ext4 2GiB 100%"
+      arch_chroot "parted set 2 boot on"
       RootPartition="/dev/sda2"
       RootType="ext4"   
       SwapFile="2G"
       SwapPartition=""
     else # If disk < 10 Gb
-      echo "arch_chroot 'parted mkpart primary ext4 1MiB 100%'"
-      echo "arch_chroot 'parted set 1 boot on'"
+      arch_chroot "parted mkpart primary ext4 1MiB 100%"
+      arch_chroot "parted set 1 boot on"
       RootPartition="/dev/sda1"
       RootType="ext4"
       SwapFile="2G"
@@ -518,7 +519,7 @@ AutoPartition() {
     Counter=$((Counter+1))
   done
   PARTITIONS=${Counter}
-  read -p "$PARTITIONS $ShowPartitions" # For testing only ##############################
+  read -p "Partitions: $PARTITIONS $ShowPartitions" # For testing only ##############################
  
 }
 
