@@ -51,7 +51,7 @@ TestUEFI
 ManagePartitions
 # Display partitions and allocate root
 
-if [ -n ${#PartitionList[@]} ]
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
 then
   AllocateRoot
 else
@@ -59,17 +59,19 @@ else
   CheckForError "${LINENO} 'No partitions'" 2
 fi
 # Display remaining partitions and allocate swap
-if [ -n ${#PartitionList[@]} ]
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
 then
   AllocateSwap
 fi
 # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
-if [ -n ${#PartitionList[@]} ]
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
 then
   ExtraPartitions
 fi
 # Select device for Grub
-SetGrubDevice
+if [ $AutoPart -eq 0 ]; then
+  SetGrubDevice
+fi
 
 # Set scope of installation
 SetScope
@@ -183,7 +185,18 @@ then
 fi
 
 # Install bootloader
-if [ ${GrubDevice} ]; then
+if [[ $UEFI -eq 1 ]]; then
+  TPecho "Installing ${BootLoader} to $GrubDevice"
+  # The mount command will likely result in an error due to it being loaded already
+  mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
+  pacstrap ${MOUNTPOINT} gummiboot
+  pacstrap ${MOUNTPOINT}/usr/bin/gummiboot install 2> error.log
+  CheckForError "${LINENO} 'Installing Gummiboot'" 1
+  # Copy modified arch.conf to new system
+  TPecho "Modifying arch.conf for gummiboot"
+  cp arch.conf ${MOUNTPOINT}/boot/loader/entries/ 2> error.log
+  CheckForError "${LINENO} 'Copying arch.conf to MOUNTPOINT'" 1
+elif [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
   pacstrap /mnt grub os-prober 2> error.log
   CheckForError "${LINENO} 'Install grub'" 2

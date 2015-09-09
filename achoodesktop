@@ -631,6 +631,14 @@ umount_partitions(){ # from Lution/AUI
 }
 
 MountPartitions() {
+  
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
+    mkfs.fat -F32 ${EFIPartition} 2> error.log
+    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
+    mkdir /mnt/boot
+    mount ${EFIPartition} /mnt/boot
+  fi
+  
   case $RootType in
     "") TPecho "Not formatting root partition"
     ;;

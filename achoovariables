@@ -25,8 +25,11 @@ IsSwap=""         # Result of lsblk test
 RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
-EFIPartition=""
-AutoPart=0
+DualBoot="N"      # Ready for dual-booting option
+EFIPartition=""   # Will hold partition label for mounting
+AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
+UseDisk="sda"     # Used if more than one disk
+DiskDetails=0     # Size of selected disk
 
 #
 # Location variables
