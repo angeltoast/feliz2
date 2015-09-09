@@ -160,8 +160,8 @@ UserName() {
   print_info "If you don't create a username here, a default user called"
   print_info "'archie' will be set up"
   echo
-	TPread "Enter a username (must be all lower case): "
-  Entered=$Response
+	TPread "Enter a username: "
+  Entered=${Response,,}
 	case $Entered in
 		"") UserName="archie"
 		;;
@@ -169,7 +169,6 @@ UserName() {
 	esac
 	print_info "$UserName will be created"
 }
-
 SetHostname() {
 	Entered="arch-linux"
 	print_heading
@@ -656,9 +655,11 @@ MountPartitions() {
   CheckForError "${LINENO} 'mount ${RootPartition} /mnt'" 2
   if [ ${SwapPartition} ]
   then
-    TPecho "Making /swap partition"
-    mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
-    CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
+    if [ $MakeSwap = "Y" ]; then
+      TPecho "Making /swap partition"
+      mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
+      CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
+    fi
     TPecho "Activating /swap"
     swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1

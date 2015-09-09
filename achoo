@@ -46,7 +46,8 @@ fi
 CheckInternet
 StartTime=$(date +%s)
 
-# Check partitioning, offer cfdisk
+# Check partition table and partitions, offer cfdisk
+TestUEFI
 ManagePartitions
 # Display partitions and allocate root
 
@@ -171,11 +172,10 @@ TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
-TPecho "Enabling dhcpcd"
-arch_chroot "systemctl enable dhcpcd.service"
-
 if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
 then
+  TPecho "Enabling dhcpcd"
+  arch_chroot "systemctl enable dhcpcd.service"
   TPecho "Installing and configuring network services"
   pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2> error.log
   CheckForError "${LINENO} 'Installing network manager'" 2
@@ -200,9 +200,19 @@ arch_chroot "mkinitcpio -p linux-lts"
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
 CheckForError "${LINENO} 'Saving persistent keymap'" 1
 
-# Required for Virtualbox installations
-echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
-CheckForError "${LINENO} 'vbox piix4 override'" 1
+# Use dmidecode to check for Virtualbox installation
+# pacman -S --noconfirm -q dmidecode 2> error.log
+# CheckForError "${LINENO} 'Installing dmidecode'" 2
+IsInVbox=`dmidecode --type 1 | grep VirtualBox`
+if [[ -z ${IsInVbox} ]]; then
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
+else
+  # Add code to overcome piix4 Virtualbox error
+  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+  CheckForError "${LINENO} 'vbox piix4 override'" 1
+  # Install Virtualbox video modules
+  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+fi
 
 # Extra processes for 'Full' or 'Extras' installation
 if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
@@ -235,18 +245,29 @@ then
   pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
   CheckForError "${LINENO} 'Wireless tools'" 1
 
-  # Install X, graphics, etc
+  # Install X, graphics, Virtualbox guest modules, etc
   TPecho "Installing X, graphics, etc"
-  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-video-vesa xf86-video-nouveau 2> error.log
+  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
+  if [[ -z ${IsInVbox} ]]; then
+    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
+    CheckForError "${LINENO} 'Installing nouveau'" 1
+  else
+    # Add code to overcome piix4 Virtualbox error
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+    CheckForError "${LINENO} 'vbox piix4 override'" 1
+    # Install Virtualbox video modules
+    pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+    CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
+  fi
 
   # Copy modified pacman.conf to new system and install Yaourt
   TPecho "Modifying pacman.conf and installing Yaourt"
-  cp pacman.conf /mnt/etc 2> error.log
+  cp pacman.conf /mnt/etc 2> error.log # For installed system
   CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
-  cp pacman.conf /etc 2> error.log
+  cp pacman.conf /etc 2> error.log # For installer
   CheckForError "${LINENO} 'Copying pacman.conf local'" 1
-  pacman -Sy 2> error.log
+  pacman -Sy 2> error.log # Update
   CheckForError "${LINENO} 'Update Arch" 1
   pacstrap /mnt yaourt 2> error.log
   CheckForError "${LINENO} 'Install yaourt'" 1
@@ -324,10 +345,6 @@ if [ -n ${#LuxuriesList[@]} ]; then
     CheckForError "Line ${LINENO} 'Installing $i'" 1
 	done
 fi
-
-# Copy these scripts to new system
-cp achoo achoofuncs achoovariables /mnt/etc 2> error.log
-CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
 
 EndTime=$(date +%s)
 Difference=$(( $EndTime-$StartTime ))

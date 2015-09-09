@@ -18,7 +18,8 @@
 # Error-checking       135
 # Internet connection  170
 # Mirrorlist           222
-# Set scope            261
+# UEFI detection       260
+# Set scope            283
 # Partitioning         296
 # -------------------------
 
@@ -81,9 +82,9 @@ TPecho() { # For displaying status while running on auto
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 3 ))
     EMPTY="$(printf '%*s' $stpt)"
-    echo -e "$EMPTY ${DIFFMIN}m${DIFFSEC}s $1 \n"
+    echo -e "$EMPTY ${DIFFMIN}m ${DIFFSEC}s - $1 \n"
   else
-    echo -e "${DIFFMIN}.${DIFFSEC} $1 \n"
+    echo -e "${DIFFMIN}m ${DIFFSEC}s - $1 \n"
   fi
   tput sgr0
   echo
@@ -218,15 +219,15 @@ done
 }
 
 ReflectorMirrorList() {
-# Install reflector and use it to generate fast mirror list
+ # Use reflector to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
-  cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
-  CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
-  pacman -Sy --noconfirm -q reflector 2> error.log
-  CheckForError "${LINENO} 'Installing Reflector'" 2
+ # cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+ # CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
+ # pacman -Sy --noconfirm -q reflector 2> error.log
+ # CheckForError "${LINENO} 'Installing Reflector'" 2
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
   if [[ $? -gt 0 ]]; then
-    LocalMirrorlist
+    LocalMirrorList
   else
     chmod +r /etc/pacman.d/mirrorlist 2> error.log
     CheckForError "${LINENO} 'Sharing mirrorlist'" 2
@@ -254,6 +255,23 @@ LocalMirrorList() {
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 	chmod +r /etc/pacman.d/mirrorlist 2> error.log
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
+}
+
+TestUEFI() { # Called immediately after establishing internet connection
+ dmesg | grep -q "EFI v" # Test for EFI (-q tells grep to output nothing)
+ if [ $? -eq 0 ]         # check exit code; 0 = EFI, else BIOS
+ then
+  # Mount efivarfs if it is not already mounted ..... why here?
+  #  if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+  #    mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+  #  fi
+    UEFI=1
+    System="UEFI"
+  else
+    UEFI=0
+    System="BIOS"
+ fi
+
 }
 
 SetScope() {
@@ -293,74 +311,215 @@ done
 
 ManagePartitions() {
 	# First test for existing partitions
-	print_heading
 	ShowPartitions=""
-	PARTITIONS=0
 	ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-  PARTITIONS=${#ShowPartitions}
+  local Counter=0
+  for i in $ShowPartitions
+  do
+    Counter=$((Counter+1))
+  done
+  PARTITIONS=${Counter}
 	# If no partitions exist, offer cfdisk to create (or exit)
-	if [[ $PARTITIONS -eq 0 ]]; then
-		echo
-		print_info "There are no partitions on the device, and at least one"
-    print_info "partition is needed for the root directory. If you are"
-    print_info "uncertain about partitioning, you should read the Arch Wiki."
-    echo
-    print_info "'cfdisk' is available for you to create a partition table now"
-		print_info "if you wish. If you choose not to use 'cfdisk' now, the script"
-		print_info "will terminate to allow you to partition in some other way."
-		echo
+  if [ $PARTITIONS -eq 0 ]
+  then
+  	print_heading
     while [ $PARTITIONS -eq 0 ]
     do
-      TPread "Would you like to open cfdisk now? [Y/n]: "
-      case $Response in
-      "y"|"Y"|"") cfdisk 2> error.log
-           CheckForError "${LINENO} 'cfdisk'" 2
-        ;;
-        *) 
-       echo print_info "Exiting Achoo! Hurry back, y'hear?"
-       echo
+      echo
+      if [ $UEFI -eq 1 ]; then
+        print_info "There are no partitions on the device, and your UEFI device"
+        print_info "requires at least two. If you partition manually you must ensure"
+        print_info "that you create and allocate the necessary partitions correctly."
+      else
+        print_info "There are no partitions on the device, and at least one"
+        print_info "partition is needed for the root directory. If you are"
+        print_info "uncertain about partitioning, you should read the Arch Wiki."
+      fi
+      echo
+      print_info "Achoo can create a partition table for you, if you wish."
+      print_info "Alternatively, 'cfdisk' is available for you to create one"
+      print_info "yourself. If you choose 'Do nothing', the script"
+      print_info "will terminate to allow you to partition in some other way."
+      echo
+      Partitioning # New function of partitioning options
+      if [ $Response -eq 3 ]; then
+        read_timed "Exiting Achoo! Hurry back, y'hear?"
         exit
-      esac
+      fi
       # Recheck the partitions
       ShowPartitions=""
-      PARTITIONS=0
       ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-      PARTITIONS=${#ShowPartitions}
-      if [[ $PARTITIONS -eq 0 ]]; then
-        print_heading
-      	print_info "There are still no partitions on the device. At least"
-        print_info "one partition must be created for the root directory."
-        print_info "If you choose not to use 'cfdisk' now the script will"
-        print_info "terminate to allow you to partition in some other way."
-      fi
+      Counter=0
+      for i in $ShowPartitions
+      do
+        Counter=$((Counter+1))
+      done
+      PARTITIONS=${Counter}
     done
- 	else
+  else
     # Alternatively, offer cfdisk to edit existing partitions
+    print_heading
 		print_info "Here is a list of available partitions on all connected devices ..."
     echo
 		lsblk
 		echo
-    print_info "If you are uncertain about partitioning, you should"
-    print_info "read the Arch Wiki. Would you like to open cfdisk"
-		TPread "to manage those partitions now? [Y/n]: "
-		case $Response in
-		  "y"|"Y"|"") cfdisk 2> error.log
-       	CheckForError "${LINENO} 'cfdisk'" 2
-			;;
-      *) echo ""
-		esac
+    print_info "'cfdisk' is available for you to edit them, or Achoo can"
+    print_info "overwrite them with a new partition table if you wish."
+    print_info "If you choose the 'Do nothing' option, the script"
+    print_info "will continue with the existing partitions."
+    echo
+    Partitioning # New function of partitioning options
 	fi
-  # After cfdisk, build new list of partitions
+  # Build new list of partitions
   PartitionList=" "
   ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-  PARTITIONS=${#ShowPartitions} # Test to make sure partitions have not been deleted
-  if [[ $PARTITIONS -eq 0 ]]; then
+  Counter=0
+  for i in $ShowPartitions
+  do
+    Counter=$((Counter+1))
+  done
+  PARTITIONS=${Counter}
+  if [[ $PARTITIONS -eq 0 ]]; then # Make sure partitions have not been deleted
     ManagePartitions
   fi
   for Part in ${ShowPartitions}
   do
     PartitionList="$PartitionList $Part"	# Add each partition for next functions
   done
+}
+
+Partitioning() {
+  Response=""
+  while [ -z $Response ]
+  do
+    print_info "1) Open cfdisk so I can partition manually"
+    print_list "2) Auto-partition"
+    print_list "3) Do nothing"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) cfdisk 2> error.log
+        CheckForError "${LINENO} 'cfdisk'" 2
+      ;;
+      2) AutoPartition
+      ;;
+      3) echo
+      ;;
+      *) invalid_option
+        Response=""
+        print_heading
+    esac
+  done
+}
+
+AutoPartition() {
+  # This function called from options within Partitioning via MakePartitions
+  AutoPart=1 # Set flag to 'on' for mounting 
+  DiskDetails=`lsblk -l | grep disk | awk '{print $1}'`
+  # DiskDetails="sda sdb" # For testing only ##############################
+  # Count lines. If more than one disk, ask user which to use
+  local Counter=0
+  CountDisks=0
+  for i in $DiskDetails
+  do
+    Counter=$((Counter+1))
+    Drives[$Counter]=$i
+  done
+  if [ $Counter -gt 1 ]
+  then
+    UseDisk=""
+    while [ -z $UseDisk ]
+    do
+      print_heading
+      print_info "There are $Counter devices available"
+      print_info "Which do you wish to use for installation?"
+      print_info "(Remember, this is auto-partition, and any data"
+      print_info "on the chosen device will be lost)"
+      echo
+      Counter=0
+      for i in $DiskDetails
+      do
+        Counter=$((Counter+1))
+        print_info "$Counter) $i"
+      done
+      echo
+      TPread "Enter the number of your selection: "
+      UseDisk="${Drives[$Response]}"
+    done
+  fi
+  GrubDevice="/dev/${UseDisk}"     # "/dev/sda"
+	# Get disk size
+  DiskDetails=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
+  # read -p "$DiskDetails" # For testing only ##############################
+  # Proceed to create partitions and set variables for mounting
+  if [ $UEFI -eq 1 ]; then
+    echo "arch_chroot 'parted /dev/${UseDisk} mklabel gpt'"
+    if [ $DiskDetails -gt 18 ]; then
+      echo "arch_chroot 'parted mkpart ESP fat32 1MiB 1GiB'"
+      EFIPartition="/dev/sda1"
+      echo "arch_chroot 'parted set 1 boot on'"
+      echo "arch_chroot 'parted mkpart primary linux-swap 1GiB 4GiB'"
+      SwapPartition="/dev/sda2"
+      echo "arch_chroot 'parted mkpart primary ext4 4GiB 100%'"
+      RootPartition="/dev/sda3"
+      RootType="ext4"
+    elif [ $DiskDetails -gt 10 ]; then
+      echo "arch_chroot 'parted mkpart ESP fat32 1MiB 1GiB'"
+      EFIPartition="/dev/sda1"
+      echo "arch_chroot 'parted set 1 boot on'"
+      echo "arch_chroot 'parted mkpart primary ext4 1GiB 100%'"
+      RootPartition="/dev/sda2"
+      RootType="ext4"
+      SwapFile="2G"
+      SwapPartition=""
+    else # If disk < 10 Gb
+      echo "arch_chroot 'parted mkpart ESP fat32 1MiB 500MiB'"
+      EFIPartition="/dev/sda1"
+      echo "arch_chroot 'parted set 1 boot on'"
+      echo "arch_chroot 'parted mkpart primary ext4 500MiB 100%'"
+      RootPartition="/dev/sda2"
+      RootType="ext4"
+      SwapFile="2G"
+      SwapPartition=""
+    fi
+  else
+    echo "parted /mnt/dev/${UseDisk} mklabel msdos"
+    if [ $DiskDetails -gt 18 ]; then
+      echo "arch_chroot 'parted mkpart primary linux-swap 1MiB 4GiB'"
+      SwapPartition="/dev/sda1"
+      echo "arch_chroot 'parted mkpart primary ext4 4GiB 100%'"
+      echo "arch_chroot 'parted set 2 boot on'"
+      RootPartition="/dev/sda2"
+      RootType="ext4"
+    elif [ $DiskDetails -gt 10 ]; then
+      echo "arch_chroot 'parted mkpart primary linux-swap 1MiB 2GiB'"
+      SwapPartition="/dev/sda1"
+      echo "arch_chroot 'parted mkpart primary ext4 2GiB 100%'"
+      echo "arch_chroot 'parted set 2 boot on'"
+      RootPartition="/dev/sda2"
+      RootType="ext4"   
+      SwapFile="2G"
+      SwapPartition=""
+    else # If disk < 10 Gb
+      echo "arch_chroot 'parted mkpart primary ext4 1MiB 100%'"
+      echo "arch_chroot 'parted set 1 boot on'"
+      RootPartition="/dev/sda1"
+      RootType="ext4"
+      SwapFile="2G"
+      SwapPartition=""
+    fi
+  fi
+  # Check partitions after creation
+  ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  Counter=0
+  for i in $ShowPartitions
+  do
+    Counter=$((Counter+1))
+  done
+  PARTITIONS=${Counter}
+  read -p "$PARTITIONS $ShowPartitions" # For testing only ##############################
+ 
 }
 
 select_filesystem() {
@@ -439,7 +598,6 @@ AllocateRoot() {
 CheckPartition() {
 # Finds if there is an existing file system on the selected partition
 print_heading
-# CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
 CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
 if [ ${CurrentType} ]; then
   print_info "The selected partition ${Partition} is currently formatted to ${CurrentType}"
@@ -448,7 +606,7 @@ fi
 }
 
 AllocateSwap() {
-# Checks if there are remaining partitions from AllocateRoot, and allows selection for swap
+# Checks if remaining partitions and allows selection for swap
 print_heading
 if [ -n ${#PartitionList[@]} ]
 then
@@ -461,15 +619,15 @@ then
   local Counter=0
   SetPS3
   SwapPartition=""
-  PartitionList="$PartitionList Swapfile Skip"
+  PickFrom="$PartitionList Swapfile Skip"
   SwapFile=""
   print_info "If you select the 'Skip' option, no swap will be allocated:"
   echo
-  select partition in ${PartitionList}
+  select partition in ${PickFrom}
   do
   Reply=$REPLY
   echo
-    for i in ${PartitionList}
+    for i in ${PickFrom}
     do
       Counter=$((Counter+1))
       if [ $Counter -eq $Reply ]
@@ -478,9 +636,17 @@ then
           "Skip") SwapPartition=""
           ;;
           "Swapfile") SetSwapFile
-                SwapPartition=""
+              SwapPartition=""
           ;;
-          *)  SwapPartition="/dev/$i"
+          *) SwapPartition="/dev/$i"
+            IsSwap=$(lsblk -l | grep $i | sed 's/ \+/ \t/g' | cut -d ' ' -f7 | cut -c3-6)
+            case ${IsSwap} in
+              "SWAP") print_info "$i is already formatted as a swap partition"
+              TPread "Do you wish to reformat it? (y/n) : "
+              FormatSwap="${Response^^}"
+              ;;
+              *) FormatSwap="Y"
+            esac
         esac          
       else
         if [ $i != Skip ] && [ $i != Swapfile ]; then
@@ -491,14 +657,14 @@ then
     break
   done
   if [ $SwapPartition ]; then
-      read_timed "$SwapPartition will be used for swap."
+    read_timed "$SwapPartition will be used for swap" 1
   elif [ $SwapFile ]; then
-      read_timed "A swap file of ${SwapFile} will be allocated."
+    read_timed "A swap file of ${SwapFile} will be allocated." 1
   else
-      read_timed "No swap partition will be allocated."
+    read_timed "No swap option has been allocated." 1
   fi
   echo
-  PartitionList=$Remaining		# Replace original PartitionList with remaining options
+  PartitionList=$Remaining	# Replace original PartitionList with remaining options
 fi
 }
 
@@ -609,7 +775,8 @@ MakePartition() {
 	while [ ${LoopRepeat} = "Y" ]
 	do
     echo
-		TPread "Enter a label for ${Partition} ... eg: '/home' ... /"
+		print_info "Enter a mount-point for ${Partition} ..."
+    TPread "eg: '/home' ... /"
  		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
 		case ${CheckInput} in

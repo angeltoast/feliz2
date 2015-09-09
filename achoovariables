@@ -19,10 +19,15 @@ declare -a AddPartLabel # Array of labels for the same partitions in the same or
 declare -a AddPartType	# Array of format type for the same partitions. eg: ext4
 GrubDevice=""     # "/dev/sda"
 SwapPartition=""  # "/dev/sda3"
+FormatSwap="N"    # User selects whether to reuse swap
 SwapFile=""       # "2G"
+IsSwap=""         # Result of lsblk test
 RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
+EFIPartition=""
+AutoPart=0
+
 #
 # Location variables
 #
