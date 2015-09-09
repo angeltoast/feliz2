@@ -415,25 +415,16 @@ Partitioning() {
 }
 
 Parted() {
-<<<<<<< HEAD
   parted /dev/${UseDisk} "$1" 2> error.log
   CheckForError "${LINENO} 'Parted ${1}'" 2
-=======
-  parted /mnt/dev/${UseDisk} "$1" 2> error.log
-  CheckForError "${LINENO} 'arch-chroot /mnt ${1}'" 2
->>>>>>> 1406d1530c0c8765797b5bcb7a650590fc2b1914
 }
 
 AutoPartition() {
   # This function called from options within Partitioning via MakePartitions
   AutoPart=1 # Set flag to 'on' for mounting 
   DiskDetails=`lsblk -l | grep disk | awk '{print $1}'`
-<<<<<<< HEAD
   UseDisk=$DiskDetails # If more than one, UseDisk will be first
   read -p "$LINENO $DiskDetails" # For testing only ##############################
-=======
-  # DiskDetails="sda sdb" # For testing only ##############################
->>>>>>> 1406d1530c0c8765797b5bcb7a650590fc2b1914
   # Count lines. If more than one disk, ask user which to use
   local Counter=0
   CountDisks=0
@@ -444,11 +435,7 @@ AutoPartition() {
   done
   if [ $Counter -gt 1 ]
   then
-<<<<<<< HEAD
     UseDisk="" # Reset for user choice
-=======
-    UseDisk=""
->>>>>>> 1406d1530c0c8765797b5bcb7a650590fc2b1914
     while [ -z $UseDisk ]
     do
       print_heading
@@ -468,16 +455,9 @@ AutoPartition() {
       UseDisk="${Drives[$Response]}"
     done
   fi
-<<<<<<< HEAD
   GrubDevice="/dev/${UseDisk}"
 	# Get disk size
   DiskDetails=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
-=======
-  GrubDevice="/dev/${UseDisk}"     # "/dev/sda"
-	# Get disk size
-  DiskDetails=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
-  # read -p "$DiskDetails" # For testing only ##############################
->>>>>>> 1406d1530c0c8765797b5bcb7a650590fc2b1914
   # Proceed to create partitions and set variables for mounting
   if [ $UEFI -eq 1 ]; then
     Parted "mklabel gpt"
