@@ -71,8 +71,8 @@ ManagePartitions() {
       print_info "will terminate to allow you to partition in some other way."
       echo
       Partitioning # New function of partitioning options
-      if [ $1 -eq 3 ]; then
-        read_timed "Exiting Achoo! Hurry back, y'hear?"
+      case $1 in
+        3) read_timed "Exiting Achoo! Hurry back, y'hear?"
         exit
       fi
     done
