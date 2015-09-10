@@ -35,7 +35,10 @@ print_heading() {
   clear
   T_COLS=`tput cols`
   tput cup 1 $((($T_COLS/2)-20))
-  printf "~ Achoo! The Arch Linux Installation Script ~ \n"
+  printf "~ Achoo! The Arch Linux Installation Script ~\n"
+  printf "%$(tput cols)s\n"|tr ' ' '-'
+  printf "(Press Ctrl+C to exit the script at any time)\n"
+  printf "~ (then enter './achoo' to restart it)\n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
