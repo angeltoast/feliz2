@@ -23,7 +23,7 @@
 # -------------------------
 
 TestUEFI() { # Called immediately after establishing internet connection
- dmesg | grep -q "EFI v" # Test for EFI (-q tells grep to output nothing)
+ dmesg | grep -q "EFI v" # -q tells grep to output nothing
  if [ $? -eq 0 ]         # check exit code; 0 = EFI, else BIOS
  then
   # Mount efivarfs if it is not already mounted ..... why here?
@@ -75,15 +75,6 @@ ManagePartitions() {
         read_timed "Exiting Achoo! Hurry back, y'hear?"
         exit
       fi
-      # Recheck the partitions
-      ShowPartitions=""
-      ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-      Counter=0
-      for i in $ShowPartitions
-      do
-        Counter=$((Counter+1))
-      done
-      PARTITIONS=${Counter}
     done
   else
     # Alternatively, offer cfdisk to edit existing partitions
@@ -97,7 +88,7 @@ ManagePartitions() {
     print_info "If you choose the 'Do nothing' option, the script"
     print_info "will continue with the existing partitions."
     echo
-    Partitioning # New function of partitioning options
+    Partitioning # New function offering partitioning options
 	fi
   # Build new list of partitions
   PartitionList=" "
@@ -111,21 +102,22 @@ ManagePartitions() {
   if [[ $PARTITIONS -eq 0 ]]; then # Make sure partitions have not been deleted
     ManagePartitions
   fi
-  for Part in ${ShowPartitions}
+  for Part in ${ShowPartitions}	# Build PartitionList for next functions
   do
-    PartitionList="$PartitionList $Part"	# Add each partition for next functions
+    PartitionList="$PartitionList $Part"
   done
 }
 
 Partitioning() {
-  Response=""
-  while [ -z $Response ]
+  local Proceed=""
+  while [ -z $Proceed ]
   do
     print_info "1) Open cfdisk so I can partition manually"
     print_list "2) Auto-partition"
     print_list "3) Do nothing"
     echo
     TPread "Enter the number of your selection : "
+    Proceed=$Response
     echo
     case $Response in
       1) cfdisk 2> error.log
@@ -136,14 +128,14 @@ Partitioning() {
       3) echo
       ;;
       *) invalid_option
-        Response=""
+        Proceed=""
         print_heading
     esac
   done
 }
 
 Parted() {
-  parted /dev/${UseDisk} "$1" 2> error.log
+  parted --script /dev/${UseDisk} "$1" 2> error.log
   CheckForError "${LINENO} 'Parted ${1}'" 2
 }
 
@@ -246,7 +238,11 @@ AutoPartition() {
     fi
   fi
   # Check partitions after creation
-  ManagePartitions
+  lsblk
+  TPread "Does this look ok?"
+  if [ $Response = "n" ]; then
+    ManagePartitions
+  fi
 }
 
 select_filesystem() {
