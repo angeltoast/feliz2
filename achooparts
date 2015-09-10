@@ -101,11 +101,12 @@ ManagePartitions() {
   PARTITIONS=${Counter}
   if [[ $PARTITIONS -eq 0 ]]; then # Make sure partitions have not been deleted
     ManagePartitions
+  else
+    for Part in ${ShowPartitions}	# Build PartitionList for next functions
+    do
+      PartitionList="$PartitionList $Part"
+    done
   fi
-  for Part in ${ShowPartitions}	# Build PartitionList for next functions
-  do
-    PartitionList="$PartitionList $Part"
-  done
 }
 
 Partitioning() {
@@ -239,12 +240,6 @@ AutoPartition() {
       SwapFile="2G"
       SwapPartition=""
     fi
-  fi
-  # Check partitions after creation
-  lsblk
-  TPread "Does this look ok?"
-  if [ $Response = "n" ]; then
-    ManagePartitions
   fi
 }
 

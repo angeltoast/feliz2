@@ -59,10 +59,9 @@ TestUEFI
 ManagePartitions
 # Display partitions and allocate root
 
-if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
-then
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]; then
   AllocateRoot
-else
+elif [ -z ${#PartitionList[@]} ]; then
   ManagePartitions
 fi
 # Display remaining partitions and allocate swap
