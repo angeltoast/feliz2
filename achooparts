@@ -1,0 +1,583 @@
+#!/bin/bash
+
+# achooparts - Partitioning functions called by the main achoo script
+# 
+# This script and the achoorunning, achoofuncs and achoodesktop scripts must
+# all be present in the same directory as the main achoo script when running.
+# 
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
+# 
+# Please read the introduction in the main Achoo! script
+# 
+
+# -------------------------
+# Functions           Line
+# -------------------------
+# TestUEFI              29
+# ManagePartitions      46
+# Partitioning         125
+# Parted               147
+# AutoPartition        152
+# select_filesystem    261
+# -------------------------
+
+TestUEFI() { # Called immediately after establishing internet connection
+ dmesg | grep -q "EFI v" # Test for EFI (-q tells grep to output nothing)
+ if [ $? -eq 0 ]         # check exit code; 0 = EFI, else BIOS
+ then
+  # Mount efivarfs if it is not already mounted ..... why here?
+  #  if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+  #    mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+  #  fi
+    UEFI=1
+    System="UEFI"
+  else
+    UEFI=0
+    System="BIOS"
+ fi
+}
+
+ManagePartitions() {
+	# First test for existing partitions
+	ShowPartitions=""
+	ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  local Counter=0
+  for i in $ShowPartitions
+  do
+    Counter=$((Counter+1))
+  done
+  PARTITIONS=${Counter}
+	# If no partitions exist, offer cfdisk to create (or exit)
+  if [ $PARTITIONS -eq 0 ]
+  then
+  	print_heading
+    while [ $PARTITIONS -eq 0 ]
+    do
+      echo
+      if [ $UEFI -eq 1 ]; then
+        print_info "There are no partitions on the device, and your UEFI device"
+        print_info "requires at least two. If you partition manually you must ensure"
+        print_info "that you create and allocate the necessary partitions correctly."
+      else
+        print_info "There are no partitions on the device, and at least one"
+        print_info "partition is needed for the root directory. If you are"
+        print_info "uncertain about partitioning, you should read the Arch Wiki."
+      fi
+      echo
+      print_info "Achoo can create a partition table for you, if you wish."
+      print_info "Alternatively, 'cfdisk' is available for you to create one"
+      print_info "yourself. If you choose 'Do nothing', the script"
+      print_info "will terminate to allow you to partition in some other way."
+      echo
+      Partitioning # New function of partitioning options
+      if [ $Response -eq 3 ]; then
+        read_timed "Exiting Achoo! Hurry back, y'hear?"
+        exit
+      fi
+      # Recheck the partitions
+      ShowPartitions=""
+      ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+      Counter=0
+      for i in $ShowPartitions
+      do
+        Counter=$((Counter+1))
+      done
+      PARTITIONS=${Counter}
+    done
+  else
+    # Alternatively, offer cfdisk to edit existing partitions
+    print_heading
+		print_info "Here is a list of available partitions on all connected devices ..."
+    echo
+		lsblk
+		echo
+    print_info "'cfdisk' is available for you to edit them, or Achoo can"
+    print_info "overwrite them with a new partition table if you wish."
+    print_info "If you choose the 'Do nothing' option, the script"
+    print_info "will continue with the existing partitions."
+    echo
+    Partitioning # New function of partitioning options
+	fi
+  # Build new list of partitions
+  PartitionList=" "
+  ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  Counter=0
+  for i in $ShowPartitions
+  do
+    Counter=$((Counter+1))
+  done
+  PARTITIONS=${Counter}
+  if [[ $PARTITIONS -eq 0 ]]; then # Make sure partitions have not been deleted
+    ManagePartitions
+  fi
+  for Part in ${ShowPartitions}
+  do
+    PartitionList="$PartitionList $Part"	# Add each partition for next functions
+  done
+}
+
+Partitioning() {
+  Response=""
+  while [ -z $Response ]
+  do
+    print_info "1) Open cfdisk so I can partition manually"
+    print_list "2) Auto-partition"
+    print_list "3) Do nothing"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) cfdisk 2> error.log
+        CheckForError "${LINENO} 'cfdisk'" 2
+      ;;
+      2) AutoPartition
+      ;;
+      3) echo
+      ;;
+      *) invalid_option
+        Response=""
+        print_heading
+    esac
+  done
+}
+
+Parted() {
+  parted /dev/${UseDisk} "$1" 2> error.log
+  CheckForError "${LINENO} 'Parted ${1}'" 2
+}
+
+AutoPartition() {
+  # This function called from options within Partitioning via MakePartitions
+  AutoPart=1 # Set flag to 'on' for mounting 
+  DiskDetails=`lsblk -l | grep disk | awk '{print $1}'`
+  UseDisk=$DiskDetails # If more than one, UseDisk will be first
+  read -p "$LINENO $DiskDetails" # For testing only ##############################
+  # Count lines. If more than one disk, ask user which to use
+  local Counter=0
+  CountDisks=0
+  for i in $DiskDetails
+  do
+    Counter=$((Counter+1))
+    Drives[$Counter]=$i
+  done
+  if [ $Counter -gt 1 ]
+  then
+    UseDisk="" # Reset for user choice
+    while [ -z $UseDisk ]
+    do
+      print_heading
+      print_info "There are $Counter devices available"
+      print_info "Which do you wish to use for installation?"
+      print_info "(Remember, this is auto-partition, and any data"
+      print_info "on the chosen device will be lost)"
+      echo
+      Counter=0
+      for i in $DiskDetails
+      do
+        Counter=$((Counter+1))
+        print_info "$Counter) $i"
+      done
+      echo
+      TPread "Enter the number of your selection: "
+      UseDisk="${Drives[$Response]}"
+    done
+  fi
+  GrubDevice="/dev/${UseDisk}"
+	# Get disk size
+  DiskDetails=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
+  # Proceed to create partitions and set variables for mounting
+  if [ $UEFI -eq 1 ]; then
+    Parted "mklabel gpt"
+    if [ $DiskDetails -gt 18 ]; then
+      Parted "mkpart ESP fat32 1MiB 1GiB"
+      EFIPartition="/dev/sda1"
+      Parted "set 1 boot on"
+      Parted "mkpart primary linux-swap 1GiB 4GiB"
+      SwapPartition="/dev/sda2"
+      MakeSwap="Y"
+      Parted "mkpart primary ext4 4GiB 100%"
+      RootPartition="/dev/sda3"
+      RootType="ext4"
+    elif [ $DiskDetails -gt 10 ]; then
+      Parted "mkpart ESP fat32 1MiB 1GiB"
+      EFIPartition="/dev/sda1"
+      Parted "set 1 boot on"
+      Parted "mkpart primary ext4 1GiB 100%"
+      RootPartition="/dev/sda2"
+      RootType="ext4"
+      SwapFile="2G"
+      SwapPartition=""
+    else # If disk < 10 Gb
+      Parted "mkpart ESP fat32 1MiB 500MiB"
+      EFIPartition="/dev/sda1"
+      Parted "set 1 boot on"
+      Parted "mkpart primary ext4 500MiB 100%"
+      RootPartition="/dev/sda2"
+      RootType="ext4"
+      SwapFile="2G"
+      SwapPartition=""
+    fi
+  else
+    Parted "mklabel msdos"
+    if [ $DiskDetails -gt 18 ]; then
+      Parted "mkpart primary linux-swap 1MiB 4GiB"
+      SwapPartition="/dev/sda1"
+      MakeSwap="Y"
+      Parted "mkpart primary ext4 4GiB 100%"
+      Parted "parted set 2 boot on"
+      RootPartition="/dev/sda2"
+      RootType="ext4"
+    elif [ $DiskDetails -gt 10 ]; then
+      Parted "mkpart primary linux-swap 1MiB 2GiB"
+      SwapPartition="/dev/sda1"
+      Parted "mkpart primary ext4 2GiB 100%"
+      Parted "set 2 boot on"
+      RootPartition="/dev/sda2"
+      RootType="ext4"   
+      SwapFile="2G"
+      SwapPartition=""
+    else # If disk < 10 Gb
+      Parted "mkpart primary ext4 1MiB 100%"
+      Parted "set 1 boot on"
+      RootPartition="/dev/sda1"
+      RootType="ext4"
+      SwapFile="2G"
+      SwapPartition=""
+    fi
+  fi
+  # Check partitions after creation
+  ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  Counter=0
+  for i in $ShowPartitions
+  do
+    Counter=$((Counter+1))
+  done
+  PARTITIONS=${Counter}
+}
+
+select_filesystem() {
+# Allows user-selection of filesystem by entering a number
+# Returns enhanced selection via FILESYSTEM variable
+	local Counter=0
+  SetPS3
+  #	TypeList now passed as string by caller
+	print_info "Please now select the file system for ${Partition}"
+	print_info "It is not recommended to mix the btrfs file-system with others."
+  echo
+	select type in ${TypeList}
+	do
+    for i in ${TypeList}
+		do
+		Counter=$((Counter+1))
+			if [ $Counter -eq $REPLY ]
+			then
+				PartitionType=$i
+        break
+			fi
+		done
+		break
+  done
+}
+
+AllocateRoot() {
+# Display partitions for user-selection	
+	# Uses list of all available partitions in PartitionList created in ManagePartitions
+	print_heading
+  PartitionList="${PartitionList} Skip"
+	Remaining=""
+	local Counter=0
+  Partition=""
+	PartitionType=""
+  SetPS3
+	print_info "Please now select a partition to use for root"
+  print_info "You should not choose the 'Skip' option unless you"
+  print_info "are using Achoo to edit an existing Arch installation."
+  echo
+	select partition in ${PartitionList}
+	do
+    Reply=$REPLY
+    for i in ${PartitionList}
+		do
+		Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ] && [ $i != "Skip" ]; then
+				Partition="/dev/$i"
+				RootPartition="${Partition}"
+        # Before going to select_filesystem, check the partition
+        CheckPartition
+        if [ ${CurrentType} ]; then
+          print_info "You can choose to leave it as it is, by selecting 'Skip', but"
+          print_info "be aware that not reformatting the root partition can have"
+          print_info "unexpected consequences."
+          echo
+          TypeList="ext2 ext3 ext4 btrfs Skip"	
+        else
+        	TypeList="ext2 ext3 ext4 btrfs"	
+        fi
+        # Now select a filesystem
+ 				select_filesystem
+				if [ -z ${PartitionType} ]
+				then
+					RootType="ext4"
+				else
+          RootType="${PartitionType}"
+        fi
+			else
+				Remaining="$Remaining $i"	# Add next available partition
+			fi
+		done
+    PartitionList=$Remaining			# Replace original PartitionList with remaining options
+		break
+  done
+}
+
+CheckPartition() {
+# Finds if there is an existing file system on the selected partition
+print_heading
+CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
+if [ ${CurrentType} ]; then
+  print_info "The selected partition ${Partition} is currently formatted to ${CurrentType}"
+  print_info "Reformatting it will remove all data currently on it."
+fi
+}
+
+AllocateSwap() {
+# Checks if remaining partitions and allows selection for swap
+print_heading
+if [ -n ${#PartitionList[@]} ]
+then
+  print_info "Select a partition for /swap from the ones that remain,"
+  print_info "or you can allocate a swap file."
+  print_info "Warning: Btrfs does not support swap files. Failure to heed"
+  print_info "this warning may result in file system corruption."
+  echo
+  Remaining=""
+  local Counter=0
+  SetPS3
+  SwapPartition=""
+  PickFrom="$PartitionList Swapfile Skip"
+  SwapFile=""
+  print_info "If you select the 'Skip' option, no swap will be allocated:"
+  echo
+  select partition in ${PickFrom}
+  do
+  Reply=$REPLY
+  echo
+    for i in ${PickFrom}
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]
+      then
+        case $i in
+          "Skip") SwapPartition=""
+          ;;
+          "Swapfile") SetSwapFile
+              SwapPartition=""
+          ;;
+          *) SwapPartition="/dev/$i"
+            IsSwap=$(lsblk -l | grep $i | sed 's/ \+/ \t/g' | cut -d ' ' -f7 | cut -c3-6)
+            case ${IsSwap} in
+              "SWAP") print_info "$i is already formatted as a swap partition"
+              TPread "Do you wish to reformat it? (y/n) : "
+              FormatSwap="${Response^^}"
+              ;;
+              *) FormatSwap="Y"
+            esac
+        esac          
+      else
+        if [ $i != Skip ] && [ $i != Swapfile ]; then
+          Remaining="$Remaining $i"	# Add next available partition
+        fi
+      fi
+    done
+    break
+  done
+  if [ $SwapPartition ]; then
+    read_timed "$SwapPartition will be used for swap" 1
+  elif [ $SwapFile ]; then
+    read_timed "A swap file of ${SwapFile} will be allocated." 1
+  else
+    read_timed "No swap option has been allocated." 1
+  fi
+  echo
+  PartitionList=$Remaining	# Replace original PartitionList with remaining options
+fi
+}
+
+SetSwapFile() {
+# If user chooses to have a swap file instead of swap partition
+LoopRepeat="Y"
+while [ ${LoopRepeat} = "Y" ]
+do
+	print_info "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
+  TPread "Size of swap file [eg: 512M or 2G]: "
+  RESPONSE="${Response^^}"
+	# Check that entry includes 'M or G'
+	CheckInput=(`echo $RESPONSE | grep "G\|M"`)
+  echo ""
+	if [ -z ${CheckInput} ]; then
+    print_info "You must include M or G"
+		SwapFile=""
+	else
+    SwapFile=$RESPONSE
+    LoopRepeat="N"
+  fi
+  if [ ${LoopRepeat} = "N" ]  
+  then
+    break
+  fi 
+done 
+}
+
+ExtraPartitions() {
+local PartCounter=0
+AddedToRemaining=0
+Elements=${#PartitionList[@]}
+while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option) 
+do
+	print_heading
+	Remaining=""
+	SetPS3
+  PartitionList="$PartitionList Skip"
+	print_info "The following partitions remain unallocated."
+  print_info "If you wish to use one, select it from the list,"
+  print_info "or choose 'Skip' to finish partitioning."
+  echo
+	select partition in ${PartitionList} 
+	do
+  echo
+  Selected=$REPLY
+		for Part in ${PartitionList} # Iterate through the list
+		do
+      Partition=""
+      PartitionType=""
+      PartCounter=$((PartCounter+1))
+			if [ $PartCounter -eq $Selected ]
+			then
+        Item=$Part  # Selected item
+        if [ $Item = Skip ]; then
+          break
+        else                        # If item is not 'Skip'
+        	Partition="/dev/$Item"
+          MakePartition # Call MakePartition to complete details
+        fi
+      else                          # If $Counter is not equal to $Selected
+        if [ $Part != Skip ]; then   # (and not 'Skip')
+          Remaining="$Remaining $Part" # Add unused partition to temp list
+          AddedToRemaining=$(($AddedToRemaining+1))
+        fi
+			fi
+    done
+    if [ $Part = Skip ] || [ ${AddedToRemaining} -eq 0 ]; then  # If skip or there are no more to allocate
+      break
+    fi
+    break
+  done
+  if [ $Item = Skip ] || [ ${AddedToRemaining} -eq 0 ]; then
+    break
+  fi
+  PartCounter=0 # Final breakpoint, when all required partitions have been selected
+  PartitionList=$Remaining	# Replace original PartitionList with temp list
+  Elements=${#PartitionList[@]}
+done
+# Ensure that if AddPartList (the defining array) is empty, all others are too
+if [ -z ${#AddPartList[@]} ]
+then
+  AddPartList=""
+  AddPartLabel=""
+  AddPartType=""
+fi
+}
+
+MakePartition() {
+  # 1) When selected, first save to AddPartList (eg: /dev/sda5)
+	ExtraPartitions=${#AddPartList[@]}
+	AddPartList[$ExtraPartitions]="${Partition}"
+  CheckPartition   # Before going to select_filesystem, check the partition
+  if [ ${CurrentType} ]; then
+    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
+    print_info "reformatting an existing partition can have unexpected consequences."
+    echo
+  fi
+  # 2) Select filesystem
+  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
+	select_filesystem
+  if [ -z ${PartitionType} ]; then
+		PartitionType="Skip"
+	fi
+	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list  
+  # 3) Then get a label for it
+	LoopRepeat="Y"
+	while [ ${LoopRepeat} = "Y" ]
+	do
+    echo
+		print_info "Enter a mount-point for ${Partition} ..."
+    TPread "eg: '/home' ... /"
+ 		# Check that entry includes '/'
+		CheckInput=(`echo $Response | cut -c1`)
+		case ${CheckInput} in
+      "") print_info "You must enter a valid name"
+					PartLabel=""
+          ;;
+			*) if [ ${CheckInput} != "/" ]; then
+						PartLabel="/${Response}"
+				else
+						PartLabel="${Response}"
+				fi
+    esac
+    # Check that the label has not already been used
+		LabelCounter=0
+		if [ -z ${AddPartLabel} ]; then
+			LoopRepeat="N"
+		else
+      # Go through AddPartLabel checking each item against PartLabel
+			for Label in ${AddPartLabel}
+			do 
+				LabelCounter=$((LabelCounter+1))
+				if [ $Label = $PartLabel ]; then
+					read_timed "Label ${PartLabel} has already been used. Please use a different label."
+				else
+					LoopRepeat="N"
+					break
+				fi
+			done 
+		fi 
+		if [ ${LoopRepeat} = "N" ]  
+		then
+			break
+		fi 
+	done 
+	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
+}
+
+SetGrubDevice() {
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
+	print_heading
+  GrubDevice=""
+	Counter=0
+	SetPS3
+	print_info "Select the device where Grub is to be installed."
+  print_info "Note that if you select the 'Skip' option, Grub will"
+  print_info "not be installed, and you will have to make"
+  print_info "alternative arrangements for booting your new system."
+  echo
+	select partition in ${DevicesList}
+	do
+  Reply=$REPLY
+    for i in ${DevicesList}
+		do
+    Item=$i
+  	Counter=$((Counter+1))
+			if [ $Counter -eq $Reply ]; then
+        if [ $Item = Skip ]; then
+          GrubDevice=""
+        else
+          GrubDevice=$Item
+        fi
+        break
+    	fi
+ 		done
+    break
+  done
+}

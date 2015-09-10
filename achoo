@@ -1,0 +1,381 @@
+#!/bin/bash
+
+# Achoo! Arch Linux Installation Script
+# -------------------------------------
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# The achoodesktop, achoorunning and achoofuncs scripts
+# must be present in the same directory when running this script.
+
+# The Achoo! scripts are still in development, and may contain bugs. They
+# were originally written for my own use, but are shared in the spirit of
+# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
+
+# Achoo!'s purpose is to speed up installation of Arch Linux, plus a desktop
+# environment and a greeter, with minimum user intervention. An initialising
+# phase asks for only the essential data of location, username, and passwords,
+# and works with the user to set up their partitioning and desktop environment
+# requirements. The script then runs without further intervention to the end.
+# There is an error-trapping function which will report if any critical
+# errors are detected.
+
+# Check for the external files
+
+if [[ -f `pwd`/achoofuncs ]]; then
+  source achoofuncs
+else
+  echo "missing file: achoofuncs"
+  exit 1
+fi
+
+if [[ -f `pwd`/achooparts ]]; then
+  source achooparts
+else
+  echo "missing file: achooparts"
+  exit 1
+fi
+
+if [[ -f `pwd`/achoodesktop ]]; then
+  source achoodesktop
+else
+  echo "missing file: achoodesktop"
+  exit 1
+fi
+
+if [[ -f `pwd`/achoorunning ]]; then
+  source achoorunning
+else
+  echo "missing file: achoorunning"
+  exit 1
+fi
+
+# Test internet connection
+CheckInternet
+StartTime=$(date +%s)
+
+# Check partition table and partitions, offer cfdisk
+TestUEFI
+ManagePartitions
+# Display partitions and allocate root
+
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
+then
+  AllocateRoot
+else
+  ManagePartitions
+fi
+# Display remaining partitions and allocate swap
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
+then
+  AllocateSwap
+fi
+# Check contents of PartitionList again. If not empty, call the ExtraPartitions function
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
+then
+  ExtraPartitions
+fi
+# Select device for Grub
+if [ $AutoPart -eq 0 ]; then
+  SetGrubDevice
+fi
+
+# Set scope of installation
+SetScope
+
+# Keyboard layout
+getkeymap
+loadkeys ${Countrykbd} 2> error.log
+CheckForError "${LINENO} 'Loadkeys'" 1
+# Localisation
+settimezone
+setlocale
+
+SetHostname
+# Add user
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
+  UserName
+fi
+
+# Desktop environment, display manager & luxuries
+case $Scope in
+  "Full") Repeat=1
+    ChooseDE
+    ;;
+  "Extras") Repeat=1
+    ChooseDE
+    PickLuxuries
+    ;;
+  *) 
+esac
+
+# Allow user to change any variables
+FinalCheck
+
+#
+# Auto from here
+#
+
+print_heading
+tput bold
+read_timed "Entering automatic installation mode" 1
+tput sgr0
+read_timed "If you are re-using existing partitions, the system may pause to" 1
+read_timed "ask you to confirm that you wish to mount them ..." 1
+read_timed "this may happen more than once ..." 1
+read_timed "'y' would be an appropriate response." 1
+
+# Unmount any existing partitions and mount as defined in setup
+umount_partitions
+MountPartitions
+
+# Set mirrorlist
+ReflectorMirrorList
+
+TPecho "Installing LTS Kernel, base-devel & cli tools"
+pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
+CheckForError "${LINENO} 'installing kernel and base-devel'" 2
+arch_chroot "systemctl enable sshd.service" >/dev/null
+
+# Set the default PATH variable
+arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
+
+TPecho "Generating fstab"
+genfstab -U -p /mnt > /mnt/etc/fstab 2> error.log
+CheckForError "${LINENO} 'genfstab'" 2
+if [ ${SwapFile} ]; then
+  TPecho "Making /swapfile"
+  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2> error.log
+  CheckForError "${LINENO} 'mkswap /swapfile'" 1
+  chmod 600 /mnt/swapfile >/dev/null 2>> error.log
+  CheckForError "${LINENO} 'mkswap /swapfile'" 1
+  mkswap /mnt/swapfile >/dev/null 2>> error.log
+  CheckForError "${LINENO} 'mkswap /swapfile'" 1
+  swapon /mnt/swapfile >/dev/null 2> error.log
+  CheckForError "${LINENO} 'swapon /swapfile'" 1
+  echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab
+fi
+
+TPecho "Setting hostname"
+echo ${HostName} > /mnt/etc/hostname 2> error.log
+CheckForError "${LINENO} 'save hostname'" 2
+sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2> error.log
+CheckForError "${LINENO} 'save to hosts'" 2
+sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2> error.log
+CheckForError "${LINENO} 'save to hosts'" 2
+
+# Set up locale
+TPecho "Preparing locale.gen"
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2> error.log # eg: en_US.UTF-8 UTF-8
+CheckForError "${LINENO} 'save full locale'" 2
+arch_chroot "locale-gen"
+
+TPecho "Preparing locale.conf"
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2> error.log # eg: LANG=en_US.UTF-8
+CheckForError "${LINENO} 'set LANG'" 2
+export "LANG=${CountryLocale}" 2> error.log # eg: LANG=en_US.UTF-8
+CheckForError "${LINENO} 'export LANG'" 2
+
+TPecho "Setting clock"
+arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
+arch_chroot "hwclock --systohc --utc"
+
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
+  TPecho "Enabling dhcpcd"
+  arch_chroot "systemctl enable dhcpcd.service"
+  TPecho "Installing and configuring network services"
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2> error.log
+  CheckForError "${LINENO} 'Installing network manager'" 2
+  arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+fi
+
+# Install bootloader
+if [[ $UEFI -eq 1 ]]; then
+  TPecho "Installing ${BootLoader} to $GrubDevice"
+  # The mount command will likely result in an error due to it being loaded already
+  mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
+  pacstrap ${MOUNTPOINT} gummiboot
+  pacstrap ${MOUNTPOINT}/usr/bin/gummiboot install 2> error.log
+  CheckForError "${LINENO} 'Installing Gummiboot'" 1
+  # Copy modified arch.conf to new system
+  TPecho "Modifying arch.conf for gummiboot"
+  cp arch.conf ${MOUNTPOINT}/boot/loader/entries/ 2> error.log
+  CheckForError "${LINENO} 'Copying arch.conf to MOUNTPOINT'" 1
+elif [ ${GrubDevice} ]; then
+  TPecho "Installing Grub to $GrubDevice"
+  pacstrap /mnt grub os-prober 2> error.log
+  CheckForError "${LINENO} 'Install grub'" 2
+  arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
+  arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+else
+  TPecho "Not installing Grub"
+fi
+
+TPecho "Running mkinitcpio"
+arch_chroot "mkinitcpio -p linux-lts"
+
+# Set keyboard to selected language at next startup
+echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
+CheckForError "${LINENO} 'Saving persistent keymap'" 1
+
+# Use dmidecode to check for Virtualbox installation
+# pacman -S --noconfirm -q dmidecode 2> error.log
+# CheckForError "${LINENO} 'Installing dmidecode'" 2
+IsInVbox=`dmidecode --type 1 | grep VirtualBox`
+if [[ -z ${IsInVbox} ]]; then
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
+else
+  # Add code to overcome piix4 Virtualbox error
+  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+  CheckForError "${LINENO} 'vbox piix4 override'" 1
+  # Install Virtualbox video modules
+  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+fi
+
+# Extra processes for 'Full' or 'Extras' installation
+if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+then
+  CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
+  # If not already exist, create user
+  if [ -z ${CheckUsers} ]; then
+    TPecho "Adding user ${UserName} ... "
+    arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
+    CheckForError "${LINENO} 'Could not add user'" 1
+    # Set up basic configuration files and permissions for user
+    TPecho "Setting up user configuration"
+    arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2> error.log
+    CheckForError "${LINENO} 'User-configuration'" 1
+  else
+    TPecho "User already exists"
+  fi
+
+  # Install Flash and other Multimedia Codecs (add/remove items as desired)
+  TPecho "Adding Flash and other Multimedia Codecs"
+  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
+  CheckForError "${LINENO} 'Install codecs'" 1
+
+  # Wireless tools
+  TPecho "Installing wireless tools"
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2> error.log
+  CheckForError "${LINENO} 'Wireless firmware'" 1
+  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
+  CheckForError "${LINENO} 'Wireless tools'" 1
+
+  # Install X, graphics, Virtualbox guest modules, etc
+  TPecho "Installing X, graphics, etc"
+  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
+  CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
+  if [[ -z ${IsInVbox} ]]; then
+    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
+    CheckForError "${LINENO} 'Installing nouveau'" 1
+  else
+    # Add code to overcome piix4 Virtualbox error
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+    CheckForError "${LINENO} 'vbox piix4 override'" 1
+    # Install Virtualbox video modules
+    pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+    CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
+  fi
+
+  # Copy modified pacman.conf to new system and install Yaourt
+  TPecho "Modifying pacman.conf and installing Yaourt"
+  cp pacman.conf /mnt/etc 2> error.log # For installed system
+  CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
+  cp pacman.conf /etc 2> error.log # For installer
+  CheckForError "${LINENO} 'Copying pacman.conf local'" 1
+  pacman -Sy 2> error.log # Update
+  CheckForError "${LINENO} 'Update Arch" 1
+  pacstrap /mnt yaourt 2> error.log
+  CheckForError "${LINENO} 'Install yaourt'" 1
+
+  # Install Display Manager
+  if [ ${DisplayManager} ]; then
+    # Test for existing display manager and disable if necessary
+    TestExistingDM
+    # Then install and enable new DM
+    TPecho "Installing Display Manager ${DisplayManager}"
+    pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
+    CheckForError "Line ${LINENO} 'Install display manager'" 2
+    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+    if [ ${DisplayManager} = "LXDM" ] && [ ${DesktopEnvironment} = "Xfce" ]; then
+      echo "session=/usr/bin/startxfce4" >> /mnt/etc/lxdm/lxdm.conf
+    fi
+  else
+    TPecho "Not installing a Display Manager"
+  fi
+
+  # Install Desktop Environment
+  case ${DesktopEnvironment} in
+    "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
+        pacstrap /mnt cinnamon gnome-terminal 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Cinnamon'" 1
+        ;;
+    "Enlightenment") TPecho "Installing 'Cinnamon' Desktop Environment"
+        pacstrap /mnt enlightenment 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Enlightenment'" 1
+        ;;
+    "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
+        pacstrap /mnt gnome ${GoodiesGnome} 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Gnome'" 1
+        arch_chroot "systemctl enable gdm.service" >/dev/null
+        ;;
+    "gnome-shell") TPecho "Installing 'gnome-shell'"
+        pacstrap /mnt gnome-shell 2> error.log
+        CheckForError "Line ${LINENO} 'Installing gnome-shell'" 1
+        arch_chroot "systemctl enable gdm.service" >/dev/null
+        ;;
+    "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
+        pacstrap /mnt lxde gedit 2> error.log
+        CheckForError "Line ${LINENO} 'Installing lxde'" 1
+        # Test for existing display manager and disable if necessary
+        TestExistingDM
+        # Then enable LXDM
+        arch_chroot "systemctl enable lxdm.service" >/dev/null
+        echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
+        ;;
+    "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
+        pacstrap /mnt lxqt xterm 2> error.log
+        CheckForError "Line ${LINENO} 'Installing lxqt'" 1
+        ;;
+    "Mate") TPecho "Installing 'Mate' Desktop Environment"
+        pacstrap /mnt mate mate-extra 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Mate'" 1
+        ;;
+    "Openbox") TPecho "Installing 'Openbox' Window Manager"
+        pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Openbox'" 1
+        ;;
+    "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
+        pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2> error.log
+        CheckForError "Line ${LINENO} 'Installing Xfce'" 1
+        ;;
+  *) TPecho "Not installing a Desktop Environment"	
+  esac
+fi
+
+if [ -n ${#LuxuriesList[@]} ]; then
+  for i in ${LuxuriesList}
+  do
+    TPecho "Installing $i"
+    pacstrap /mnt $i 2> error.log
+    CheckForError "Line ${LINENO} 'Installing $i'" 1
+	done
+fi
+
+EndTime=$(date +%s)
+Difference=$(( $EndTime-$StartTime ))
+DIFFMIN=$(( $Difference/60 ))
+DIFFSEC=$(( $Difference % 60 ))
+
+SetRootPassword
+echo
+print_info "Congratulations. Installation is finished."
+echo
+print_info "Press any key to reboot"
+echo
+read -n1
+systemctl reboot

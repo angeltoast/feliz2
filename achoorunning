@@ -1,0 +1,248 @@
+#!/bin/bash
+
+# achoorunning - Functions called by the main achoo script while on auto
+# Also declares all the global variables used throughout the scripts
+# 
+# This script and the achoodesktop, achooparts and achoofuncs scripts must
+# all be present in the same directory as the main achoo script when running.
+# 
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
+# 
+# Please read the introduction in the main Achoo! script
+# 
+
+#
+# Partition variables
+#
+declare -a AddPartList	# Array of additional partitions by system name. eg: /dev/sda5
+declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
+declare -a AddPartType	# Array of format type for the same partitions. eg: ext4
+GrubDevice=""     # "/dev/sda"
+SwapPartition=""  # "/dev/sda3"
+FormatSwap="N"    # User selects whether to reuse swap
+MakeSwap="Y"
+SwapFile=""       # "2G"
+IsSwap=""         # Result of lsblk test
+RootPartition=""  # "/dev/sda2"
+RootType=""       # "ext4"
+Partition=""      # "sda1"
+DualBoot="N"      # Ready for dual-booting option
+EFIPartition=""   # Will hold partition label for mounting
+AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
+UseDisk="sda"     # Used if more than one disk
+DiskDetails=0     # Size of selected disk
+
+#
+# Location variables
+#
+CountryCode=""    # "GB" Country code for mirrorlist
+CountryLocale=""  # "en_GB.UTF-8"	Locale
+Countrykbd=""     # "uk" keyboard
+ZONE=""           # "Europe" For time
+SUBZONE=""        # "London" For time
+#
+# Desktop environment, display manager and greeter variables
+#
+DesktopEnvironment=""  # "xfce4"
+GoodiesXfce=""
+GoodiesGnome=""
+GoodiesOpenbox=""
+DisplayManager=""      # "lightdm"
+Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
+#
+# Root and user variables
+#
+HostName=""       # "arch-linux"
+UserName=""       # "archie"
+Scope="Basic"     # Installation scope ... 'Extras' 'Full' or 'Basic'
+
+#
+# Input/Output variables
+#
+OutPrompt="Press [Enter] to continue."
+AnyPrompt="Press any key to continue."
+prompt1="Enter the number of your selection : "
+Response="" # Global user input variable
+Banner="~ https://wiki.archlinux.org ~"
+
+
+# -----------------
+# Functions    Line
+# -----------------
+# arch_chroot       80
+# umount_partitions 85
+# MountPartitions   41
+# TestExistingDM   109
+# SetRootPassword  138
+# SetUserPassword  169
+# -----------------
+
+arch_chroot() {  # Taken directly from Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" 2> error.log
+  CheckForError "${LINENO} 'arch-chroot /mnt ${1}'" 2
+}  
+
+umount_partitions(){ # from Lution/AUI
+  MOUNTED=""
+  MOUNTED=$(mount | grep "/mnt" | awk '{print $3}' | sort -r)
+  swapoff -a 2> error.log
+  CheckForError "${LINENO} 'swapoff'" 1
+  for i in ${MOUNTED[@]}; do
+    umount $i >/dev/null 2> error.log
+    CheckForError "${LINENO} 'umount $i >/dev/null'" 1
+  done
+}
+
+MountPartitions() {
+  
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
+    mkfs.fat -F32 ${EFIPartition} 2> error.log
+    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
+    mkdir /mnt/boot
+    mount ${EFIPartition} /mnt/boot
+  fi
+  
+  case $RootType in
+    "") TPecho "Not formatting root partition"
+    ;;
+    "Skip") TPecho "Not formatting root partition"
+    ;;
+    *) TPecho "Formatting /root partition"
+    # Check if replacing existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${RootPartition}
+      CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
+    elif [ $RootType = "btrfs" ]; then
+      mkfs.btrfs -f ${RootPartition} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
+    else
+      mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+      CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
+    fi
+  esac
+  TPecho "Mounting /root partition"	
+  mount ${RootPartition} /mnt 2> error.log # eg: mount /dev/sda1 /mnt
+  CheckForError "${LINENO} 'mount ${RootPartition} /mnt'" 2
+  if [ ${SwapPartition} ]
+  then
+    if [ $MakeSwap = "Y" ]; then
+      TPecho "Making /swap partition"
+      mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
+      CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
+    fi
+    TPecho "Activating /swap"
+    swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
+    CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
+  fi
+  TPecho "Mounting additional partitions"
+  local Counter=0
+  Elements=${#AddPartList[@]}
+ 	# Repeat $Elements times getting data from the three arrays
+  while [ $Counter -lt $Elements ]
+  do
+    mkdir -p /mnt${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
+    # As for /root ... check if replacing existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${AddPartList[$Counter]}
+      CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+      mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
+    elif [ ${AddPartType[$Counter]} != "Skip" ];     then
+      mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
+    fi
+    mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}'" 2
+		Counter=$((Counter+1))
+	done
+}
+
+TestExistingDM() {
+  # Test for existing display manager and disable if necessary
+  arch-chroot /mnt systemctl list-unit-files | grep dm.service > mnt/etc/output.log
+  DMLine=`cat /mnt/etc/output.log`
+  # Start a local counter to check for multiple entries
+  local Counter=1
+  case ${DMLine} in
+    "") TPecho "No previous DM discovered"
+    ;;
+    *) local Continue="Y"
+      while [ ${Continue} = "Y" ]
+      do
+        ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` # First of pair is DM
+        if [ -z ${ExDM} ]; then
+          Continue="N" # Quit if no further entries
+          break
+        fi
+        Counter=$((Counter+1))
+        ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` # Second is status
+        case ${ExDMStatus} in
+          "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+          ;;
+          *) TPecho "${ExDM} already disabled"
+        esac
+        Counter=$((Counter+1))
+      done
+  esac
+}
+
+SetRootPassword() { # New function, to be called at end of installation
+  print_heading
+ 	print_info  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+  echo
+ 	print_info "Finally we need to set passwords ..."
+  echo
+  Repeat="Y"
+  while [ $Repeat = "Y" ]
+  do
+    read -s -p "Enter a password for root: " Pass1
+    echo
+    read -s -p "Re-enter root password: " Pass2
+    echo
+    if [ $Pass1 = $Pass2 ]; then
+     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
+     CheckForError "${LINENO} 'Root password'" 2
+     arch_chroot "passwd root" < /tmp/.passwd >/dev/null
+     rm /tmp/.passwd 2> error.log
+     CheckForError "${LINENO} 'rm temp passwd'" 0
+      Repeat="N"
+    else
+      print_heading
+      print_info "Passwords don't match. Try again"
+    fi
+  done
+  if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+  then
+    SetUserPassword
+  fi
+}
+
+SetUserPassword() {
+  print_heading
+  echo
+	print_info   "And now a password for $UserName: "
+  echo
+  Repeat="Y"
+  while [ $Repeat = "Y" ]
+  do
+    read -s -p "Enter a password for $UserName: " Pass1
+    echo
+    read -s -p "Re-enter password for $UserName: " Pass2
+    echo
+    if [ $Pass1 = $Pass2 ]; then
+      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
+      CheckForError "${LINENO} 'save temp passwd'" 0
+      arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+      rm /tmp/.passwd 2> error.log
+      CheckForError "${LINENO} 'rm temp passwd'" 0
+      Repeat="N"
+    else
+      echo "Passwords don't match. Try again"
+    fi
+  done
+}
