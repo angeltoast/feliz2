@@ -71,7 +71,7 @@ ManagePartitions() {
       print_info "will terminate to allow you to partition in some other way."
       echo
       Partitioning # New function of partitioning options
-      if [ $Response -eq 3 ]; then
+      if [ $1 -eq 3 ]; then
         read_timed "Exiting Achoo! Hurry back, y'hear?"
         exit
       fi
@@ -122,10 +122,13 @@ Partitioning() {
     case $Response in
       1) cfdisk 2> error.log
         CheckForError "${LINENO} 'cfdisk'" 2
+        return 1
       ;;
       2) AutoPartition
+        return 2
       ;;
       3) echo
+        return 3
       ;;
       *) invalid_option
         Proceed=""
@@ -216,7 +219,7 @@ AutoPartition() {
       SwapPartition="/dev/sda1"
       MakeSwap="Y"
       Parted "mkpart primary ext4 4GiB 100%"
-      Parted "parted set 2 boot on"
+      Parted "set 2 boot on"
       RootPartition="/dev/sda2"
       RootType="ext4"
     elif [ $DiskSize -gt 10 ]; then
