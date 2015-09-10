@@ -152,7 +152,6 @@ AutoPartition() {
   AutoPart=1 # Set flag to 'on' for mounting 
   DiskDetails=`lsblk -l | grep disk | awk '{print $1}'`
   UseDisk=$DiskDetails # If more than one, UseDisk will be first
-  read -p "$LINENO $DiskDetails" # For testing only ##############################
   # Count lines. If more than one disk, ask user which to use
   local Counter=0
   CountDisks=0
@@ -185,11 +184,11 @@ AutoPartition() {
   fi
   GrubDevice="/dev/${UseDisk}"
 	# Get disk size
-  DiskDetails=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
+  DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
   # Proceed to create partitions and set variables for mounting
   if [ $UEFI -eq 1 ]; then
     Parted "mklabel gpt"
-    if [ $DiskDetails -gt 18 ]; then
+    if [ $DiskSize -gt 18 ]; then
       Parted "mkpart ESP fat32 1MiB 1GiB"
       EFIPartition="/dev/sda1"
       Parted "set 1 boot on"
@@ -199,7 +198,7 @@ AutoPartition() {
       Parted "mkpart primary ext4 4GiB 100%"
       RootPartition="/dev/sda3"
       RootType="ext4"
-    elif [ $DiskDetails -gt 10 ]; then
+    elif [ $DiskSize -gt 10 ]; then
       Parted "mkpart ESP fat32 1MiB 1GiB"
       EFIPartition="/dev/sda1"
       Parted "set 1 boot on"
@@ -220,7 +219,7 @@ AutoPartition() {
     fi
   else
     Parted "mklabel msdos"
-    if [ $DiskDetails -gt 18 ]; then
+    if [ $DiskSize -gt 18 ]; then
       Parted "mkpart primary linux-swap 1MiB 4GiB"
       SwapPartition="/dev/sda1"
       MakeSwap="Y"
@@ -228,7 +227,7 @@ AutoPartition() {
       Parted "parted set 2 boot on"
       RootPartition="/dev/sda2"
       RootType="ext4"
-    elif [ $DiskDetails -gt 10 ]; then
+    elif [ $DiskSize -gt 10 ]; then
       Parted "mkpart primary linux-swap 1MiB 2GiB"
       SwapPartition="/dev/sda1"
       Parted "mkpart primary ext4 2GiB 100%"
@@ -247,13 +246,7 @@ AutoPartition() {
     fi
   fi
   # Check partitions after creation
-  ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-  Counter=0
-  for i in $ShowPartitions
-  do
-    Counter=$((Counter+1))
-  done
-  PARTITIONS=${Counter}
+  ManagePartitions
 }
 
 select_filesystem() {
@@ -284,15 +277,12 @@ AllocateRoot() {
 # Display partitions for user-selection	
 	# Uses list of all available partitions in PartitionList created in ManagePartitions
 	print_heading
-  PartitionList="${PartitionList} Skip"
 	Remaining=""
 	local Counter=0
   Partition=""
 	PartitionType=""
   SetPS3
-	print_info "Please now select a partition to use for root"
-  print_info "You should not choose the 'Skip' option unless you"
-  print_info "are using Achoo to edit an existing Arch installation."
+	print_info "Please now select a partition to use for root."
   echo
 	select partition in ${PartitionList}
 	do
@@ -300,7 +290,7 @@ AllocateRoot() {
     for i in ${PartitionList}
 		do
 		Counter=$((Counter+1))
-      if [ $Counter -eq $Reply ] && [ $i != "Skip" ]; then
+      if [ $Counter -eq $Reply ]; then
 				Partition="/dev/$i"
 				RootPartition="${Partition}"
         # Before going to select_filesystem, check the partition
