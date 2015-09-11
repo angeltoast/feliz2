@@ -132,7 +132,8 @@ do
     else
       InvalidEntry=0
       ReadArray=$((Response-1))
-      CountryLocale="${LocaleList[${ReadArray}]}"
+      CountryLocale="${LocaleList[${ReadArray}]}.UTF-8"
+      CountryCode=(`echo ${LocaleList[${ReadArray}]} | cut -c4-6`)
     fi
   fi
   print_heading
