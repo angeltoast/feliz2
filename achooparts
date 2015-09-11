@@ -66,8 +66,8 @@ ManagePartitions() {
       print_info "yourself. If you choose 'Do nothing', the script"
       print_info "will terminate to allow you to partition in some other way."
       echo
-      Partitioning # New function of partitioning options
-      if [ $1 -eq 3 ]; then
+      Partitioning # Partitioning options
+      if [ $Response = "3" ]; then
         read_timed "Exiting Achoo! Hurry back, y'hear?"
         exit
       fi
@@ -84,7 +84,7 @@ ManagePartitions() {
     print_info "If you choose the 'Do nothing' option, the script"
     print_info "will continue with the existing partitions."
     echo
-    Partitioning # New function offering partitioning options
+    Partitioning # Partitioning options
 	fi
   # Build new list of partitions
   PartitionList=" "
@@ -116,16 +116,16 @@ Partitioning() {
     TPread "Enter the number of your selection : "
     Proceed=$Response
     echo
-    case $Response in
+    case $Proceed in
       1) cfdisk 2> error.log
         CheckForError "${LINENO} 'cfdisk'" 2
-        return 1
+        Response=$Proceed
       ;;
       2) AutoPartition
-        return 2
+        Response=$Proceed
       ;;
       3) echo
-        return 3
+        Response=$Proceed
       ;;
       *) invalid_option
         Proceed=""
