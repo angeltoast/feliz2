@@ -107,6 +107,7 @@ ManagePartitions() {
 
 Partitioning() {
   local Proceed=""
+  AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
     print_info "1) Open cfdisk so I can partition manually"
