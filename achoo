@@ -59,7 +59,7 @@ TestUEFI
 ManagePartitions
 # Display partitions and allocate root
 
-if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ] && [ $UEFI -eq 0 ]]; then
+if [ ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ] && [ $UEFI -eq 0 ]; then
   AllocateRoot
 elif [ -z ${#PartitionList[@]} ]; then
   ManagePartitions

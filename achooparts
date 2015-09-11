@@ -90,19 +90,10 @@ ManagePartitions() {
   PartitionList=" "
   ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
   Counter=0
-  for i in $ShowPartitions
+  for Part in $ShowPartitions
   do
-    Counter=$((Counter+1))
+    PartitionList="$PartitionList $Part" # Build PartitionList for next functions
   done
-  PARTITIONS=${Counter}
-  if [[ $PARTITIONS -eq 0 ]]; then # Make sure partitions have not been deleted
-    ManagePartitions
-  else
-    for Part in ${ShowPartitions}	# Build PartitionList for next functions
-    do
-      PartitionList="$PartitionList $Part"
-    done
-  fi
 }
 
 Partitioning() {
