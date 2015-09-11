@@ -59,7 +59,7 @@ TestUEFI
 ManagePartitions
 # Display partitions and allocate root
 
-if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]; then
+if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ] && [ $UEFI -eq 0 ]]; then
   AllocateRoot
 elif [ -z ${#PartitionList[@]} ]; then
   ManagePartitions
@@ -195,11 +195,8 @@ if [[ $UEFI -eq 1 ]]; then
   TPecho "Installing ${BootLoader} to $GrubDevice"
   # The mount command will likely result in an error due to it being loaded already
   mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
-bootctl --path=/mnt/EFI install
- # pacstrap /mnt gummiboot
+  bootctl --path=/mnt/boot/EFI install
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
- # pacstrap /mnt/usr/bin/gummiboot install 2> error.log
- # CheckForError "${LINENO} 'Installing Gummiboot'" 1
   # Copy modified arch.conf to new system
   TPecho "Modifying arch.conf for gummiboot"
   cp arch.conf /mnt/boot/loader/entries/ 2> error.log
