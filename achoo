@@ -199,6 +199,7 @@ if [[ $UEFI -eq 1 ]]; then
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
   # Copy modified arch.conf to new system
   TPecho "Modifying arch.conf for gummiboot"
+  mkdir /mnt/boot/EFI/loader/entries/
   cp arch.conf /mnt/boot/EFI/loader/entries/ 2> error.log
   CheckForError "${LINENO} 'Copying arch.conf to /mnt/boot/EFI/loader/entries/'" 1
 elif [ ${GrubDevice} ]; then

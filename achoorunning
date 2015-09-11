@@ -100,7 +100,7 @@ MountPartitions() {
     mkfs.fat -F32 ${EFIPartition} 2> error.log
     CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
     mkdir /mnt/boot
-    mount ${EFIPartition} /mnt/boot
+  #  mount ${EFIPartition} /mnt/boot
   fi
   
   case $RootType in
