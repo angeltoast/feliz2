@@ -297,7 +297,6 @@ done
 
 AddDEextras() {
  local Extras="$1"
- print_heading
  case $DesktopEnvironment in
   "Openbox") print_info "tint2 is a system panel/taskbar that can be configured"
     print_info "to include a system tray, task list, battery monitor, clock, etc."
