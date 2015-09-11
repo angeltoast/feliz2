@@ -24,91 +24,118 @@
 
 getkeymap() {
 print_heading
-DoDoDo=1
-print_info "Now we will try to find your keyboard from a list of all"
-print_info "known layouts. If you know your keyboard layout code, enter"
-print_info "it now. If not, try entering a two-letter abbreviation for"
-print_info "your country or language and a list will be displayed ..."
-echo
-SearchPrompt="(eg: fr or us): "
-while [ $DoDoDo -eq 1 ]
+print_info "Now we will try to find your keyboard."
+InvalidEntry=1
+while [ $InvalidEntry -eq 1 ]
 do
-  SetPS3
-  TPread "$SearchPrompt"
-  search_term=$Response
   echo
-  SEARCHTERM="${search_term,,}"
-  KeyboardList=(`localectl list-keymaps | grep ${SEARCHTERM} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again' );
+  print_info "If you know your keyboard layout code, enter it now"
+  print_info "If not, try entering a two-letter abbreviation for your"
+  print_info "country or language and a list will be displayed ..."
+  echo
+  local Counter=0
+  TPread "(eg: fr or us): "
+  Length=${#Response}
+  local Term="${Response,,}"
+  echo
+  FirstTry=(`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+  for i in "${FirstTry[@]}"
+  do
+    local Check=`echo $i | cut -c 1-${Length}`
+    if [ $Check = $Term ]; then
+      print_info "Keyboard = $i"
+      TPread "Is this the one you wish to use? (Y/n): "
+      if [ -z $Response ] || [ $Response = "Y" ] || [ $Response = "y" ]; then
+        Countrykbd="$i"
+        echo
+        read_timed "The keyboard is now set to: '$Countrykbd'" 1
+        break 2
+      else
+        break
+      fi
+    fi
+  done
+  KeyboardList=(`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again' );
   echo
   print_info "Choose your keyboard, or 'Try_Again': "
   echo
-  select KEYMAP in "${KeyboardList[@]}"; do
-    if contains_element "$KEYMAP" "${KeyboardList[@]}"
-    then
-      if [ $KEYMAP = "Try_Again" ]
-      then
-        print_heading
-        print_info "Try a different two-letter code: "
-        break
-      else
-        Countrykbd=$KEYMAP
-        DoDoDo=0
-        break
-      fi
+  for i in "${KeyboardList[@]}"
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      print_info "$Counter $i"
     else
-      invalid_option
+      print_list "$Counter $i"
     fi
   done
+  echo
+  TPread "Enter the number of your keyboard: "
+  if [ -z ${Response} ] || [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
+  then
+    invalid_option
+  elif [ ${Response} -eq ${Counter} ]; then
+    echo
+  else
+    InvalidEntry=0
+    ReadArray=$((Response-1))
+    Countrykbd="${KeyboardList[${ReadArray}]}"
+    echo
+    read_timed "The keyboard is now set to: '$Countrykbd'" 1
+  fi
+  print_heading
 done
-echo
-read_timed "The keyboard is now set to: '$Countrykbd'" 1
+
 }
 
 setlocale() {
-print_heading
-SetPS3
-DoDoDo=1
 SearchPrompt=" (eg: GB or en): "
+print_heading
 print_info "Next we will try to find your locale"
-echo
-while [ $DoDoDo -eq 1 ]
+InvalidEntry=1
+while [ $InvalidEntry -eq 1 ]
 do
+  local Counter=0
   print_info "Enter a two-letter code for your country or language ..."
   TPread "$SearchPrompt"
-  search_term=$Response
-  echo
-  SEARCHTERM=${search_term}
-  LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
- Counter=${#LocaleList[@]}
-  if [ $Counter -eq 0 ]
-  then 
-    SEARCHTERM="${search_term^^}"
-    LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-    Counter=${#LocaleList[@]}
-  fi
-  Counter=$((Counter+1))
-  LocaleList[$Counter]='Try_Again'
-  echo
-  print_info "Choose your locale, or 'Try_Again': "
-  echo
-  select LOCALE in "${LocaleList[@]}"; do
-    if contains_element "$LOCALE" "${LocaleList[@]}"
+  if [ -z ${Response} ]
+  then
+    print_info "Try a different two-letter code (try UPPER CASE): "
+    invalid_option
+  else
+    echo
+    searchterm="${Response,,}"
+    LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again');
+    if [ ${#LocaleList[@]} -eq 1 ]
     then
-      if [ $LOCALE = "Try_Again" ]
-      then
-        print_heading
-        print_info "Try a different two-letter code (try UPPER CASE): "
-        break
-      else
-        CountryLocale="${LOCALE}.UTF-8"
-        CountryCode=(`echo $LOCALE | cut -c4-6`)
-        DoDoDo=0
-        break
-      fi
-    else
-      invalid_option
+      SEARCHTERM="${Response^^}"
+      LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again');
     fi
-  done
+    echo
+    print_info "Choose your locale, or 'Try_Again': "
+    echo
+    for i in "${LocaleList[@]}"
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq 1 ]; then
+        print_info "$Counter $i"
+      else
+        print_list "$Counter $i"
+      fi
+    done
+    echo
+    TPread "Enter the number of your locale: "
+    if [ -z ${Response} ] || [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
+    then
+      invalid_option
+    elif [ ${Response} -eq ${Counter} ]; then
+      SearchPrompt="Try a different two-letter code: "
+    else
+      InvalidEntry=0
+      ReadArray=$((Response-1))
+      CountryLocale="${LocaleList[${ReadArray}]}"
+    fi
+  fi
+  print_heading
 done
 echo
 read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1

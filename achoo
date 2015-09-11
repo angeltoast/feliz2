@@ -194,12 +194,12 @@ fi
 if [[ $UEFI -eq 1 ]]; then
   TPecho "Installing ${BootLoader} to $GrubDevice"
   # The mount command will likely result in an error due to it being loaded already
-  mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
+  # mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> error.log
   bootctl --path=/mnt/boot/EFI install
   CheckForError "${LINENO} 'Installing Gummiboot'" 1
   # Copy modified arch.conf to new system
   TPecho "Modifying arch.conf for gummiboot"
-  mkdir /mnt/boot/EFI/loader/entries/
+  mkdir /mnt/boot/EFI/loader/entries
   cp arch.conf /mnt/boot/EFI/loader/entries/ 2> error.log
   CheckForError "${LINENO} 'Copying arch.conf to /mnt/boot/EFI/loader/entries/'" 1
 elif [ ${GrubDevice} ]; then
@@ -219,9 +219,7 @@ arch_chroot "mkinitcpio -p linux-lts"
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
 CheckForError "${LINENO} 'Saving persistent keymap'" 1
 
-# Use dmidecode to check for Virtualbox installation
-# pacman -S --noconfirm -q dmidecode 2> error.log
-# CheckForError "${LINENO} 'Installing dmidecode'" 2
+# Use dmidecode (added to archiso) to check for Virtualbox installation
 IsInVbox=`dmidecode --type 1 | grep VirtualBox`
 if [[ -z ${IsInVbox} ]]; then
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
