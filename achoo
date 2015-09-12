@@ -87,7 +87,7 @@ getkeymap
 loadkeys ${Countrykbd} 2> error.log
 CheckForError "${LINENO} 'Loadkeys'" 1
 # Localisation
-settimezone
+SetTimeZone
 setlocale
 
 SetHostname

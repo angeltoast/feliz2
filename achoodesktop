@@ -12,14 +12,18 @@
 # Please read the introduction in the main Achoo! script
 # 
 
-# -----------------
-# Functions    Line
-# -----------------
-# Location     23
-# Names        151
-# DE           184
-# Luxuries     342
-# Review       403
+# ---------------
+# Functions  Line
+# ---------------
+# Keymap      25
+# Locale      91
+# Timezone   150
+# Username   183
+# Hostname   199
+# DE         220
+# DM         340
+# Luxuries   377
+# Review     466
 # -----------------
 
 getkeymap() {
@@ -95,7 +99,8 @@ InvalidEntry=1
 while [ $InvalidEntry -eq 1 ]
 do
   local Counter=0
-  print_info "Enter a two-letter code for your country or language ..."
+  print_info "Enter a two-letter code for your country or language. This will"
+  print_info "be used to set up the best mirrors for downloading your system"
   TPread "$SearchPrompt"
   if [ -z ${Response} ]
   then
@@ -142,45 +147,103 @@ echo
 read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
 }
 
-settimezone() {
+SetTimeZone() {
+Complete=0
+SearchPrompt="To set the system clock, please first"
+while [ $Complete -eq 0 ]
+do
+  local Counter=0
   print_heading
-  print_info "Now we have to set up the best mirrors for downloading your system"
-  print_info "This data will also be used for setting the clock during installation"
-  print_info "Choose the World Zone of your location from the following list"
+  print_info "$SearchPrompt"
+  print_info "choose the World Zone of your location."
+  Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   echo
-  local _zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
-  SetPS3
-  echo
-  print_info "Select zone:"
-  echo
-  select ZONE in "${_zones[@]}"
+  NoZones="${#Zones[@]}"
+
+  for i in "${Zones[@]}"
   do
-    if contains_element "$ZONE" "${_zones[@]}"; then
-      local _subzones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
-      print_heading
-      SetPS3
-      print_info "Now select your local city or Sub-Zone:"
-      print_info "(If the list scrolls off the screen, use Shift/PageUp Shift/PageDown)"
-      echo
-      select SUBZONE in "${_subzones[@]}"; do
-        if contains_element "$SUBZONE" "${_subzones[@]}"; then
-          break
-        else
-          invalid_option
-        fi
-      done
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      print_info "$Counter $i"
+    elif [ $Counter -eq $NoZones ]; then
       break
     else
-      invalid_option
+      print_list "$Counter $i"
     fi
   done
   echo
-  read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
+  TPread "Enter the number of your selection: "
+  Zone1=$Response
+  if [ -z ${Zone1} ] || [ ${Zone1} -gt ${Counter} ] || [ ${Zone1} -lt 1 ]
+  then
+    invalid_option
+  else
+    Zone1=$((Zone1-1))
+    ZONE=${Zones[$Zone1]}
+    print_info "$ZONE selected"
+    SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
+    SetSubZone # New subroutine for matching sub-zones
+  fi
+done    
 }
 
-#
-# Names
-#
+SetSubZone() {
+print_info "Now please enter the first letter of"
+TPread "    your nearest major city: "
+while [ $Complete -eq 0 ]
+do
+  if [ -z ${Response} ]
+  then
+    print_heading
+    invalid_option
+    break
+  fi
+  echo
+  Zone2="${Response^^}"
+  local Counter=0
+  for i in "${SubZones[@]}"
+  do
+    CheckInitial=`echo $i | cut -c 1`
+    if [ ${CheckInitial} = ${Zone2} ]; then
+      Counter=$((Counter+1))
+      if [ $Counter -eq 1 ]; then
+        print_info "$Counter $i"
+      else
+        print_list "$Counter $i"
+      fi
+      TrueCounter=$((Counter-1))
+      Shortlist[$TrueCounter]="$i "
+    fi
+  done
+  if [ $Counter -gt 0 ]; then
+    echo
+    print_info "Enter the number of your choice"
+    TPread "    (or leave blank to restart): "
+    if [ -z ${Response} ] || [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
+    then
+      print_heading
+      invalid_option
+      break
+    else
+      TrueCounter=$(($Response-1))
+      SUBZONE=${Shortlist[$TrueCounter]}
+      echo
+      read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
+      Complete=1
+      break
+    fi
+  else
+    print_heading
+    print_info "Sorry, nothing found. Please try again ..."
+    print_info "Enter the first letter of your nearest major city: "
+    TPread "   (or leave blank to restart): "
+    echo
+    if [ -z ${Response} ]; then
+      break
+    fi
+  fi
+done
+}
 
 UserName() {
 	print_heading
@@ -197,6 +260,7 @@ UserName() {
 	esac
 	print_info "$UserName will be created"
 }
+
 SetHostname() {
 	Entered="arch-linux"
 	print_heading
@@ -213,10 +277,6 @@ SetHostname() {
 	esac
 	print_info "Hostname set to: $HostName"
 }
-
-#
-# Desktop Environment
-#
 
 ChooseDE() {
 	Counter=0
@@ -466,10 +526,6 @@ LibreVersion() {
   done
 }
 
-#
-# Review
-#
-
 FinalCheck() {
 Repeat=1
 while [ $Repeat -gt 0 ]
@@ -533,7 +589,7 @@ do
     ;;
     6) setlocale
     ;;
-    7) settimezone
+    7) SetTimeZone
     ;;
     8) ChooseDE
     ;;

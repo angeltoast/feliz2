@@ -28,7 +28,7 @@ contains_element() { # (from AUI scripts)
 
 invalid_option() { # (from AUI scripts)
     echo 
-    read_timed "Invalid option. Try again."
+    read_timed "Invalid option. Try again ..." 1
 }
 
 print_heading() {
@@ -59,7 +59,7 @@ print_info() { # Aligned text according to screen size
   fi
 }
 
-print_list() { # Subsequent item in an aligned list (menu)
+print_list() { # Subsequent item(s) in an aligned list (menu)
     if [ $2 ]; then
       lov=$2
       stpt=$(( ($T_COLS - $lov) / 2 ))

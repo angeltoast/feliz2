@@ -65,7 +65,7 @@ AnyPrompt="Press any key to continue."
 prompt1="Enter the number of your selection : "
 Response="" # Global user input variable
 Banner="~ https://wiki.archlinux.org ~"
-
+Complete=0
 
 # -----------------
 # Functions    Line
