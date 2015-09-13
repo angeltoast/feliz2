@@ -76,7 +76,7 @@ ManagePartitions() {
     print_heading
 		print_info "Here is a list of available partitions on all connected devices ..."
     echo
-		lsblk
+		lsblk -l
 		echo
     print_info "'cfdisk' is available for you to edit them, or Achoo can"
     print_info "overwrite them with a new partition table if you wish."
