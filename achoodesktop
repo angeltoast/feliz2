@@ -15,14 +15,15 @@
 # ---------------
 # Functions  Line
 # ---------------
-# Keymap      25
-# Locale      91
-# Timezone   150
-# Username   183
-# Hostname   199
-# DE         220
-# DM         340
-# Luxuries   377
+# Keymap      29
+# Locale      94
+# Timezone   152
+# Subzone    192
+# Username   256
+# Hostname   272
+# DE         288
+# DM         410
+# Luxuries   446
 # Review     466
 # -----------------
 
@@ -37,7 +38,6 @@ do
   print_info "If not, try entering a two-letter abbreviation for your"
   print_info "country or language and a list will be displayed ..."
   echo
-  local Counter=0
   TPread "(eg: fr or us): "
   Length=${#Response}
   local Term="${Response,,}"
@@ -63,6 +63,7 @@ do
   echo
   print_info "Choose your keyboard, or 'Try_Again': "
   echo
+  local Counter=0
   for i in "${KeyboardList[@]}"
   do
     Counter=$((Counter+1))
@@ -92,15 +93,17 @@ done
 }
 
 setlocale() {
-SearchPrompt=" (eg: GB or en): "
+SearchPrompt=" (for example: GB or en): "
 print_heading
 print_info "Next we will try to find your locale"
 InvalidEntry=1
 while [ $InvalidEntry -eq 1 ]
 do
   local Counter=0
-  print_info "Enter a two-letter code for your country or language. This will"
-  print_info "be used to set up the best mirrors for downloading your system"
+  print_info "This will be used to find the best mirrors"
+  print_info "for downloading your system"
+  print_info "Please enter a two-letter code for your country or language."
+  echo
   TPread "$SearchPrompt"
   if [ -z ${Response} ]
   then
@@ -285,7 +288,6 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	SetPS3
 	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
   print_heading
   print_info "Desktop Environments & Window Managers"
@@ -296,17 +298,15 @@ ChooseDE() {
   print_info "after installation. Alternatively, you can choose to skip this"
   print_info "option, and install something else manually later."
   echo
-	print_info "Choose your Desktop Environment"
-	select type in ${DEList}
-	do
-  Reply=$REPLY
-  SelectedDE=type
-    for i in ${DEList}
-    do
-      Item=$i
-      Counter=$((Counter+1))
-			if [ $Counter -eq $Reply ]
-			then
+	MeNu "${DEList}" "Please choose: " "Desktop-Environments"
+	Reply=$Response
+  SelectedDE=$Result
+  for i in ${DEList}
+  do
+    Item=$i
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]
+		then
       DesktopEnvironment=$Item
       case $Item in
         "Cinnamon") DMList="LightDM LXDM Skip"
@@ -351,10 +351,8 @@ ChooseDE() {
               Greeter=""	
  			esac
       break
-			fi
-		done
-		break
-  done
+		fi
+	done	
 }
 
 GnomeOptions() {
@@ -408,104 +406,82 @@ AddDEextras() {
 ChooseDM() {
   # Choice of Display Manager from list passed via DMList
   Counter=0
-  SetPS3
   print_heading
   print_info "Choose one of the following Display Managers for "$Item
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
   echo
-  print_info "Choose your Display Manager"
-  select type in ${DMList}
+  MeNu "${DMList}" "Choose your Display Manager" "Display-Managers"
+  Reply=$Response
+  for item in ${DMList}
   do
-  Reply=$REPLY
-    for item in ${DMList}
-    do
-      Counter=$((Counter+1))
-      if [ $Counter -eq $Reply ]
-      then
-        SelectedDM=$item
-        case $SelectedDM in
-          "LightDM") DisplayManager="lightdm"
-                Greeter="lightdm-gtk-greeter"	
-              ;;
-          "LXDM") DisplayManager="lxdm"
-                Greeter=""
-              ;;
-          *) DisplayManager=""
-                Greeter=""
-        esac	
-        break
-      fi
-    done
-		break
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]
+    then
+      SelectedDM=$item
+      case $SelectedDM in
+        "LightDM") DisplayManager="lightdm"
+              Greeter="lightdm-gtk-greeter"	
+          ;;
+        "LXDM") DisplayManager="lxdm"
+              Greeter=""
+          ;;
+        *) DisplayManager=""
+              Greeter=""
+      esac	
+      break
+    fi
   done
 }
 
 PickLuxuries() {
 # User selects any combination from a list of luxuries
+local Complete=0
+LuxuriesList=""
+Categories="Accessories Graphical Internet Multimedia Office Done"
+Accessories="alarm-clock-applet ClamTK Conky_Manager gCalculator Geany Nautilus Terminator Done"
+Graphical="Evince gColor2 GIMP gThumb SimpleScan Xsane Done"
+Internet="Chromium Epiphany Filezilla qBittorrent Firefox Thunderbird Done"
+Multimedia="Codecs VLC xfburn Done"
+Office="AbiWord Artha Gnumeric LibreOffice Orage Done"
 print_heading
-Retry="Y"
-Response=""
-while [ $Retry = "Y" ]
+print_info "Achoo offers you the option to add 'luxuries' such as"
+print_info "a web browser, office software, graphical tools, etc"
+while [ $Complete -eq 0 ]
 do
-  print_info "You can also add any of the following extras. Just enter the numbers"
-  print_info "of each you want, separated by a single space [ eg: 2 3 6 8 9 ]"
-  print_info "Of course, adding these items will increase the installation time."
-  print_info "If you don't want any of them, just hit [Enter] without any numbers."
-  echo
-  print_info "1) Firefox - web browser                             "
-  print_list "2) Chromium - web browser"
-  print_list "3) LibreOffice - full office suite"
-  print_list "4) Gparted - partitioning tool"
-  print_list "5) Geany - advanced text editor and IDE"
-  print_list "6) Terminator - advanced terminal emulator"
-  print_list "7) Transmission - BitTorrent client"
-  print_list "8) GIMP - advanced image manipulation"
-  print_list "9) Thunderbird - email client"
-  echo
-  TPread "Enter the numbers of your selections : "
-  if [ -z ${#Response[@]} ]; then
-    Retry="N"
-    break
+  MeNu "$Categories" "Please choose a category: "
+  case $Response in
+    1) MeNu "$Accessories" "Please choose one: " "Accessories"
+    ;;
+    2) MeNu "$Graphical" "Please choose one: " "Graphical"
+    ;;
+    3) MeNu "$Internet" "Please choose one: " "Internet"
+    ;;
+    4) MeNu "$Multimedia" "Please choose one: " "Multimedia"
+    ;;
+    5) MeNu "$Office" "Please choose one: " "Office"
+    ;;
+    *) break 2
+  esac
+  if [ ${Result[$Response]} != "Done" ]; then
+    if [ ${Result[$Response]} = "LibreOffice" ]; then
+      LibreVersion
+      case $Response in
+        "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
+        ;;   
+        "4") LuxuriesList="${LuxuriesList} libreoffice-still"
+        ;;
+        *) echo "Wormhole detected"
+      esac
+    else
+      LuxuriesList="${LuxuriesList} ${Result[$Response]}"
+    fi
   fi
+  print_heading
+  print_info "Added so far: ${LuxuriesList}"
   echo
-  local Counter=0
-  LuxuriesList=""
-  CheckList=${Response}
-  for i in ${CheckList} # Iterate through the list to check validity of each item and add it
-	do
-    case $i in
-      "1") LuxuriesList="${LuxuriesList} firefox"
-      ;;
-      "2") LuxuriesList="${LuxuriesList} chromium"
-      ;;
-      "3") LibreVersion
-        case ${Response} in
-          "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
-          ;;   
-          "4") LuxuriesList="${LuxuriesList} libreoffice-still"
-          ;;
-          *) echo "Wormhole detected"
-        esac
-      ;;
-      "4") LuxuriesList="${LuxuriesList} gparted"
-      ;;
-      "5") LuxuriesList="${LuxuriesList} geany"
-      ;;
-      "6") LuxuriesList="${LuxuriesList} terminator"
-      ;;
-      "7") LuxuriesList="${LuxuriesList} transmission-gtk"
-      ;;
-      "8") LuxuriesList="${LuxuriesList} gimp"
-      ;;
-      "9") LuxuriesList="${LuxuriesList} thunderbird"
-      ;;
-      *) echo "$i is not a valid item"
-    esac
-  done
-  Retry="N"
+  print_info "You can add more, if you wish, or choose 'Done'"
 done
-LuxuriesList=`echo $LuxuriesList | cut -c1-` # Remove leading space
 }
 
 LibreVersion() {

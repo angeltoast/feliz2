@@ -57,26 +57,28 @@ StartTime=$(date +%s)
 # Check partition table and partitions, offer cfdisk
 TestUEFI
 ManagePartitions
-# Display partitions and allocate root
 
-if [ ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ] && [ $UEFI -eq 0 ]; then
-  AllocateRoot
-elif [ -z ${#PartitionList[@]} ]; then
-  ManagePartitions
-fi
-# Display remaining partitions and allocate swap
-if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
-then
-  AllocateSwap
-fi
-# Check contents of PartitionList again. If not empty, call the ExtraPartitions function
-if [ -n ${#PartitionList[@]} ] && [ $AutoPart -eq 0 ]
-then
-  ExtraPartitions
-fi
-# Select device for Grub
 if [ $AutoPart -eq 0 ]; then
-  SetGrubDevice
+  # Display partitions and allocate root
+  if [ ${#PartitionList[@]} ] && [ $UEFI -eq 0 ]; then
+    AllocateRoot
+  elif [ -z ${#PartitionList[@]} ]; then
+    ManagePartitions
+  fi
+  # Display remaining partitions and allocate swap
+  if [ -n ${#PartitionList[@]} ]
+  then
+    AllocateSwap
+  fi
+  # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
+  if [ -n ${#PartitionList[@]} ]
+  then
+    ExtraPartitions
+  fi
+  # Select device for Grub
+  if [ $AutoPart -eq 0 ]; then
+    SetGrubDevice
+  fi
 fi
 
 # Set scope of installation
