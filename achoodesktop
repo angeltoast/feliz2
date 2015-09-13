@@ -219,11 +219,15 @@ do
     echo
     print_info "Enter the number of your choice"
     TPread "    (or leave blank to restart): "
-    if [ -z ${Response} ] || [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
+    if [ -z ${Response} ]
     then
       print_heading
-      invalid_option
       break
+    elif [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
+    then
+        print_heading
+        invalid_option
+        break
     else
       TrueCounter=$(($Response-1))
       SUBZONE=${Shortlist[$TrueCounter]}
@@ -235,6 +239,7 @@ do
   else
     print_heading
     print_info "Sorry, nothing found. Please try again ..."
+    print_info "$ZONE selected"
     print_info "Enter the first letter of your nearest major city: "
     TPread "   (or leave blank to restart): "
     echo

@@ -36,8 +36,7 @@ TestUEFI() { # Called immediately after establishing internet connection
 
 ManagePartitions() {
 	# First test for existing partitions
-	ShowPartitions=""
-	ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
   for i in $ShowPartitions
   do
@@ -88,7 +87,7 @@ ManagePartitions() {
 	fi
   # Build new list of partitions
   PartitionList=" "
-  ShowPartitions=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   Counter=0
   for Part in $ShowPartitions
   do
@@ -102,7 +101,7 @@ Partitioning() {
   while [ -z $Proceed ]
   do
     print_info "1) Open cfdisk so I can partition manually"
-    print_list "2) Auto-partition"
+    print_list "2) Auto-partition (overwrites entire disk)"
     print_list "3) Do nothing"
     echo
     TPread "Enter the number of your selection : "
@@ -134,7 +133,7 @@ Parted() {
 AutoPartition() {
   # This function called from options within Partitioning via MakePartitions
   AutoPart=1 # Set flag to 'on' for mounting 
-  DiskDetails=`lsblk -l | grep disk | awk '{print $1}'`
+  DiskDetails=`lsblk -l | grep 'disk' | awk '{print $1}'`
   UseDisk=$DiskDetails # If more than one, UseDisk will be first
   # Count lines. If more than one disk, ask user which to use
   local Counter=0
@@ -164,7 +163,18 @@ AutoPartition() {
       echo
       TPread "Enter the number of your selection: "
       UseDisk="${Drives[$Response]}"
+      print_info "This will erase all data on $UseDisk"
+      TPread "Are you sure you wish to continue? (y/N): "
+      if [ $Response != "Y" ] &&  [ $Response !="y" ]; then 
+        ManagePartitions
+      fi
     done
+  else
+    print_info "This will erase all data on the device"
+    TPread "Are you sure you wish to continue? (y/N): "
+    if [ $Response != "Y" ] &&  [ $Response !="y" ]; then 
+      ManagePartitions
+    fi
   fi
   GrubDevice="/dev/${UseDisk}"
 	# Get disk size
