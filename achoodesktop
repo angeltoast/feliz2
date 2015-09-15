@@ -286,7 +286,7 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox Skip"
+	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox"
   print_heading
   print_info "Desktop Environments & Window Managers"
   print_info "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
@@ -307,10 +307,10 @@ ChooseDE() {
 		then
       DesktopEnvironment=$Item
       case $Item in
-        "Cinnamon") DMList="LightDM LXDM Skip"
+        "Cinnamon") DMList="LightDM LXDM"
               ChooseDM
           ;;
-        "Enlightenment") DMList="LightDM LXDM Skip"
+        "Enlightenment") DMList="LightDM LXDM"
               ChooseDM
           ;;
         "Gnome") DisplayManager=""
@@ -323,10 +323,10 @@ ChooseDE() {
         "LXQt") DisplayManager="sddm"
               Greeter=""
           ;;
-        "Mate") DMList="LightDM LXDM Skip"
+        "Mate") DMList="LightDM LXDM"
               ChooseDM
           ;;
-        "Openbox") DMList="LightDM LXDM Skip"
+        "Openbox") DMList="LightDM LXDM"
             AddDEextras "tint2"
             case $Response in
               "Y" | "y") GoodiesOpenbox="tint2"
@@ -335,7 +335,7 @@ ChooseDE() {
             esac
               ChooseDM
           ;;
-        "Xfce") DMList="LightDM LXDM Skip"
+        "Xfce") DMList="LightDM LXDM"
             AddDEextras "xfce4-goodies"
             case $Response in
               "Y" | "y") GoodiesXfce="xfce4-goodies"

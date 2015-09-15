@@ -131,7 +131,7 @@ Parted() {
 }
 
 AutoPartition() {
-# This function called from options within Partitioning via MakePartitions
+# This function called from option 2) within Partitioning()
 AutoPart=0
 until [ ${AutoPart} ]
 do
@@ -297,7 +297,7 @@ AllocateRoot() {
         print_info "be aware that not reformatting the root partition can have"
         print_info "unexpected consequences."
         echo
-        TypeList="ext2 ext3 ext4 btrfs Skip"	
+        TypeList="ext2 ext3 ext4 btrfs"	
       else
       	TypeList="ext2 ext3 ext4 btrfs"	
       fi
@@ -338,7 +338,7 @@ then
   Remaining=""
   local Counter=0
   SwapPartition=""
-  PickFrom="$PartitionList Swapfile Skip"
+  PickFrom="$PartitionList Swapfile"
   SwapFile=""
   print_info "If you select the 'Skip' option, no swap will be allocated:"
   echo
@@ -422,7 +422,7 @@ while [ $Elements -gt 0 ]
 do
 	print_heading
 	Remaining=""
-  PartitionList="$PartitionList Skip"
+  PartitionList="$PartitionList"
 	print_info "The following partitions remain unallocated."
   print_info "If you wish to use one, select it from the list,"
   print_info "or choose 'Skip' to finish partitioning."
@@ -478,7 +478,7 @@ MakePartition() {
     echo
   fi
   # 2) Select filesystem
-  TypeList="ext2 ext3 ext4 btrfs Skip" # Set format types for the selected partition
+  TypeList="ext2 ext3 ext4 btrfs" # Set format types for the selected partition
 	select_filesystem
   if [ -z ${PartitionType} ]; then
 		PartitionType="Skip"
@@ -530,7 +530,7 @@ MakePartition() {
 
 SetGrubDevice() {
   DEVICE=""
-  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd') Skip";
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
 	print_heading
   GrubDevice=""
 	Counter=0
