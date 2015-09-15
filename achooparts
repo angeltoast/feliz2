@@ -76,7 +76,7 @@ ManagePartitions() {
     print_heading
 		print_info "Here is a list of available partitions on all connected devices ..."
     echo
-		lsblk -l
+		lsblk -l | grep 'part'
 		echo
     print_info "'cfdisk' is available for you to edit them, or Achoo can"
     print_info "overwrite them with a new partition table if you wish."
@@ -401,9 +401,13 @@ done
 
 ExtraPartitions() {
 local PartCounter=0
+local Elements=0
 AddedToRemaining=0
-Elements=${#PartitionList[@]}
-while [ $PartCounter -le $Elements ] # Display a list (including a 'Skip' option) 
+for i in ${PartitionList}
+do
+  Elements=$((Elements+1))
+done
+while [ $Elements -gt 0 ]  
 do
 	print_heading
 	Remaining=""
@@ -422,30 +426,26 @@ do
       PartCounter=$((PartCounter+1))
 			if [ $PartCounter -eq $Selected ]
 			then
-        Item=$Part  # Selected item
-        if [ $Item = Skip ]; then
-          break
+        if [ $Part = "Skip" ]; then
+          break 2
         else                        # If item is not 'Skip'
-        	Partition="/dev/$Item"
+        	Partition="/dev/$Part"
           MakePartition # Call MakePartition to complete details
         fi
       else                          # If $Counter is not equal to $Selected
-        if [ $Part != Skip ]; then   # (and not 'Skip')
+        if [ $Part != "Skip" ]; then   # (and not 'Skip')
           Remaining="$Remaining $Part" # Add unused partition to temp list
           AddedToRemaining=$(($AddedToRemaining+1))
         fi
 			fi
     done
-    if [ $Part = Skip ] || [ ${AddedToRemaining} -eq 0 ]; then  # If skip or there are no more to allocate
-      break
-    fi
-    break
-  if [ $Item = Skip ] || [ ${AddedToRemaining} -eq 0 ]; then
-    break
-  fi
-  PartCounter=0 # Final breakpoint, when all required partitions have been selected
+  Elements=0
+  for i in ${Remaining}
+  do
+    Elements=$((Elements+1))
+  done  
+  PartCounter=0 # Return to zero for next iteration
   PartitionList=$Remaining	# Replace original PartitionList with temp list
-  Elements=${#PartitionList[@]}
 done
 # Ensure that if AddPartList (the defining array) is empty, all others are too
 if [ -z ${#AddPartList[@]} ]
@@ -455,6 +455,7 @@ then
   AddPartType=""
 fi
 }
+
 MakePartition() {
   # 1) When selected, first save to AddPartList (eg: /dev/sda5)
 	ExtraPartitions=${#AddPartList[@]}

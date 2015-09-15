@@ -43,6 +43,13 @@ else
   exit 1
 fi
 
+if [[ -f `pwd`/achoolux ]]; then
+  source achoolux
+else
+  echo "missing file: achoolux"
+  exit 1
+fi
+
 if [[ -f `pwd`/achoorunning ]]; then
   source achoorunning
 else
@@ -280,17 +287,6 @@ then
     CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
   fi
 
-  # Copy modified pacman.conf to new system and install Yaourt
-  TPecho "Modifying pacman.conf and installing Yaourt"
-  cp pacman.conf /mnt/etc 2> error.log # For installed system
-  CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
-  cp pacman.conf /etc 2> error.log # For installer
-  CheckForError "${LINENO} 'Copying pacman.conf local'" 1
-  pacman -Sy 2> error.log # Update
-  CheckForError "${LINENO} 'Update Arch" 1
-  pacstrap /mnt yaourt 2> error.log
-  CheckForError "${LINENO} 'Install yaourt'" 1
-
   # Install Display Manager
   if [ ${DisplayManager} ]; then
     # Test for existing display manager and disable if necessary
@@ -359,9 +355,22 @@ fi
 if [ -n ${#LuxuriesList[@]} ]; then
   for i in ${LuxuriesList}
   do
-    TPecho "Installing $i"
-    pacstrap /mnt $i 2> error.log
-    CheckForError "Line ${LINENO} 'Installing $i'" 1
+    if [ $i = "yaourt" ]; then
+      # Copy modified pacman.conf to new system and install Yaourt
+      TPecho "Modifying pacman.conf and installing Yaourt"
+      cp pacman.conf /mnt/etc 2> error.log # For installed system
+      CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
+      cp pacman.conf /etc 2> error.log # For installer
+      CheckForError "${LINENO} 'Copying pacman.conf local'" 1
+      pacman -Sy 2> error.log # Update
+      CheckForError "${LINENO} 'Update Arch" 1
+      pacstrap /mnt yaourt 2> error.log
+      CheckForError "${LINENO} 'Install yaourt'" 1
+    else
+      TPecho "Installing $i"
+      pacstrap /mnt $i 2> error.log
+      CheckForError "Line ${LINENO} 'Installing $i'" 1
+    fi
 	done
 fi
 

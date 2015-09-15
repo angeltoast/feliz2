@@ -1,0 +1,397 @@
+#!/bin/bash
+
+# achoodesktop - Functions relevant to users, locations, desktop
+# settings and data review called by the main achoo script
+# 
+# This script and the achooparts, achoorunning and achoofuncs scripts must
+# all be present in the same directory as the main achoo script when running.
+# 
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
+# 
+# Please read the introduction in the main Achoo! script
+# 
+
+# ------------------
+# Functions     Line
+# ------------------
+# Variables       23
+# PickLuxuries    63
+# Multi-Menu     111
+# LibreVersion   203
+# FinalCheck     228
+# ManualSettings 303
+# ------------------
+
+Categories="Accessories Graphical Internet Multimedia Office Programming"
+Accessories="conky gparted gnome-calculator geany nautilus terminator yaourt"
+LongAccs[1]="Conky - Desktop time and system information   "
+LongAccs[2]="GParted - make/delete/resize partitions"
+LongAccs[3]="gCalculator - Calculator for your taskbar"
+LongAccs[4]="Geany - Advanced text editor & IDE"
+LongAccs[5]="Nautilus - The file-manager from Gnome"
+LongAccs[6]="Terminator - Multi-tab terminal emulator"
+LongAccs[7]="Yaourt - Easy to use AUR package installer"
+Graphical="evince gimp imagemagick gthumb simple-scan xsane"
+LongGraph[1]="Evince - Reader for PDF and othe document formats"
+LongGraph[2]="GIMP - Advanced image editing suite"
+LongGraph[3]="Imagemagick - Command-line image manipulation"
+LongGraph[4]="gThumb - Image viewer & basic editor"
+LongGraph[5]="Simple-Scan - A simple scanner GUI"
+LongGraph[6]="Xsane - A full-featured GTK-based sane frontend"
+Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
+LongNet[1]="Chromium - Open source web browser from Google       "
+LongNet[2]="Epiphany - Gnome WebKitGTK+ browser (aka Web)"
+LongNet[3]="Filezilla - Fast and reliable FTP, FTPS & SFTP client"
+LongNet[4]="Firefox - Extensible browser from Mozilla"
+LongNet[5]="qBittorent - Open source BitTorrent client"
+LongNet[6]="Thunderbird - Feature-rich email client from Mozilla"
+LongNet[7]="Transmission - Easy-to-use BitTorrent client"
+Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
+LongMulti[1]="Avidemux - Simple video editor"
+LongMulti[2]="Banshee - Feature-rich audio player"
+LongMulti[3]="Handbrake - Simple yet powerful video transcoder"
+LongMulti[4]="Openshot - Easy-to-use non-linear video editor"
+LongMulti[5]="VLC - Middleweight video player"
+LongMulti[6]="Xfburn"
+Office="abiword gnumeric libreoffice orage scribus"
+LongOffice[1]="Abiword - Full-featured word processor            "
+LongOffice[2]="Gnumeric - Spreadsheet program from GNOME"
+LongOffice[3]="LibreOffice - Open-source office software suite"
+LongOffice[4]="Orage - Calendar and task manager (incl with Xfce)"
+LongOffice[5]="Scribus - Desktop publishing program"
+Programming="bluefish codeblocks netbeans"
+LongProg[1]="Bluefish - GTK+ IDE with support for Python plugins  "
+LongProg[2]="Code::Blocks - Open source & cross-platform C/C++ IDE"
+LongProg[3]="Netbeans - Integrated development environment (IDE)"
+
+PickLuxuries() {
+# User selects any combination from a list of luxuries
+local Complete=0
+LuxuriesList=""
+print_heading
+print_info "Achoo offers you the option to add 'luxuries' such as"
+print_info "a web browser, office software, graphical tools, etc"
+while [ $Complete -eq 0 ]
+do
+  Result=""
+  MeNu "$Categories" "Please choose a category: "
+  case $Response in
+    1) Multi-Menu "Accessories" "Please choose one: "
+    ;;
+    2) Multi-Menu "Graphical" "Please choose one: "
+    ;;
+    3) Multi-Menu "Internet" "Please choose one: "
+    ;;
+    4) Multi-Menu "Multimedia" "Please choose one: "
+    ;;
+    5) Multi-Menu "Office" "Please choose one: "
+    ;;
+    6) Multi-Menu "Programming" "Please choose one: "
+    ;;
+    *) break 2
+  esac
+  if [ ${Result} != "Done" ]; then
+    if [ ${Result} = "LibreOffice" ]; then
+      LibreVersion
+      case $Response in
+        "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
+        ;;   
+        "4") LuxuriesList="${LuxuriesList} libreoffice-still"
+        ;;
+        *) echo "Wormhole detected"
+      esac
+    else
+      LuxuriesList="${LuxuriesList} ${Result}"
+    fi
+  fi
+  print_heading
+  print_info "Added so far: ${LuxuriesList}"
+  echo
+  print_info "You can add more, if you wish, or choose 'Done'"
+done
+LuxuriesList="${LuxuriesList,,}"
+}
+
+Multi-Menu() {
+# New Multi-Menu features extended descriptions linked to app name
+local Complete=0
+Result=""
+while [ $Complete -eq 0 ]
+do
+  print_heading
+  print_info $1
+  Underscore=`echo $1 | sed 's/./-/g'`
+  print_info $Underscore
+  local Counter=0
+  case $1 in
+    "Accessories") for i in ${Accessories}; do
+        Counter=$((Counter+1))
+        if [ $Counter -eq 1 ]; then
+          print_info "${Counter}) ${LongAccs[$Counter]}"
+        else
+          print_list "${Counter}) ${LongAccs[$Counter]}"
+        fi
+        ConvertToArray[$Counter]=$i
+      done
+      ;;
+    "Graphical") for i in ${Graphical}; do
+        Counter=$((Counter+1))
+        if [ $Counter -eq 1 ]; then
+          print_info "$Counter) ${LongGraph[$Counter]}"
+        else
+          print_list "$Counter) ${LongGraph[$Counter]}"
+        fi
+        ConvertToArray[$Counter]=$i
+      done
+      ;;
+    "Internet") for i in ${Internet}; do
+        Counter=$((Counter+1))
+        if [ $Counter -eq 1 ]; then
+          print_info "$Counter) ${LongNet[$Counter]}"
+        else
+          print_list "$Counter) ${LongNet[$Counter]}"
+        fi
+        ConvertToArray[$Counter]=$i
+      done
+      ;;
+    "Multimedia") for i in ${Multimedia}; do
+        Counter=$((Counter+1))
+        if [ $Counter -eq 1 ]; then
+          print_info "$Counter) ${LongMulti[$Counter]}"
+        else
+          print_list "$Counter) ${LongMulti[$Counter]}"
+        fi
+        ConvertToArray[$Counter]=$i
+      done
+      ;;
+    "Office") for i in ${Office}; do
+        Counter=$((Counter+1))
+        if [ $Counter -eq 1 ]; then
+          print_info "$Counter) ${LongOffice[$Counter]}"
+        else
+          print_list "$Counter) ${LongOffice[$Counter]}"
+        fi
+        ConvertToArray[$Counter]=$i
+      done
+      ;;
+    "Programming") for i in ${Programming}; do
+        Counter=$((Counter+1))
+        if [ $Counter -eq 1 ]; then
+          print_info "$Counter) ${LongProg[$Counter]}"
+        else
+          print_list "$Counter) ${LongProg[$Counter]}"
+        fi
+        ConvertToArray[$Counter]=$i
+      done
+      ;;
+    *) break 2
+  esac
+  Counter=$((Counter+1))
+  print_list "$Counter) Done"
+  echo
+  TPread "$2"
+  if [ -z ${Response} ]; then
+    invalid_option
+    
+  elif [ ${Response} -gt ${Counter} ]; then
+    invalid_option
+  else
+    Result="${ConvertToArray[$Response]}"
+    read -p "$Response $Result"
+    Complete=1
+  fi
+done
+}
+
+LibreVersion() {
+  Redo="Y"
+  Response="1"
+  while [ $Redo = "Y" ]
+  do
+    print_heading
+    print_info "LibreOffice was recently updated to version 5, but"
+    print_info "some people still prefer the older version. So Achoo"
+    print_info "gives you the option to choose."
+    echo
+    print_info "Version 5 (also called libreoffice-fresh)"
+    print_list "Version 4 (now known as libreoffice-still)"
+    echo
+    TPread "Enter the version number you prefer (5 or 4) : "
+    echo
+    case $Response in
+      "5" | "4") Redo="N"
+      ;;
+      *) invalid_option
+    esac
+  done
+}
+
+FinalCheck() {
+Repeat=1
+while [ $Repeat -gt 0 ]
+do
+  print_heading
+  print_info "These are the settings you have entered. Please check them ..."
+  echo
+  print_info "1)  Root partition ... $RootPartition : $RootType" 50
+  if [ $SwapPartition ] || [ $SwapFile ]; then
+    print_list "2)  Swap partition ... $SwapPartition $SwapFile"
+  else
+    print_list "2)  No provision has been made for swap"
+  fi
+  if [ ${AddPartList} ]; then
+    Counter=0
+    print_list "3)  Extra partitions ..."
+    for i in ${AddPartList[@]}	
+    do
+      print_info "     ${AddPartLabel[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+      Counter=$((Counter+1))
+    done
+  else
+    print_list "3)  No additional partitions have been allocated"
+  fi
+  if [ $GrubDevice ]; then
+  print_list "4)  Grub will be installed to $GrubDevice" 50
+  else
+    print_list "4)  No provision has been made for Grub"
+  fi
+  print_list "5)  Keyboard is $Countrykbd"
+  print_list "6)  Locale will be set to $CountryLocale"
+  print_list "7)  Zone/subZone will be $ZONE/$SUBZONE"
+  if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
+    print_list "8)  DE = $DesktopEnvironment : $DisplayManager"
+  elif [ $DesktopEnvironment ]; then
+    print_list "8)  DE = $DesktopEnvironment $GoodiesGnome $GoodiesOpenbox $GoodiesXfce"
+  else
+    print_list "8)  No DE selected"
+  fi
+  print_list "9)  Root and user settings ..."
+  print_list "     Hostname = '$HostName'"
+  print_list "     User = '$UserName'"
+  print_list "10) The following extras have been selected ..."
+  print_list "     ${LuxuriesList}"
+  echo
+  print_list "Press [Enter] to install with these settings, or"
+  TPread "enter an item number if you wish to change it: "
+  case $Response in
+    1) ChangeRootPartition
+        AllocateRoot
+    ;;
+    2) ChangeSwapPartition
+        AllocateSwap
+    ;;
+    3) ChangeExtraPartitions
+        ExtraPartitions
+    ;;
+    4) SetGrubDevice
+    ;;
+    5) getkeymap
+    ;;
+    6) setlocale
+    ;;
+    7) SetTimeZone
+    ;;
+    8) ChooseDE
+    ;;
+    9) ManualSettings
+    ;;
+    10) PickLuxuries
+    ;;
+    *) Repeat=0
+  esac
+done
+}
+
+ManualSettings() {
+  Retry="Y"
+  Response=3
+  while [ $Retry = "Y" ]
+  do
+    print_heading
+    print_info "Enter number for data to change, or [Enter] to finish:"
+    echo
+    print_info "1) Hostname (currently $HostName)"
+    print_list "2) Username (currently $UserName)"
+    echo
+    TPread "Enter the number of your selection : "
+    echo
+    case $Response in
+      1) TPread "Enter new Hostname (currently $HostName) : "
+         HostName=$Response
+        ;;
+      2) TPread "Enter new username to be created (currently $UserName) : "
+         UserName=$Response
+        ;;
+      *) Retry="N"
+         break
+    esac
+  done
+}
+
+ChangeRootPartition() {
+# Start array with SwapPartition
+  Ignorelist[0]=${SwapPartition}
+  local Counter=1
+  AddExtras
+  MakePartitionList
+}
+  
+ChangeSwapPartition() {
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangeExtraPartitions() {
+# Copy RootPartition and SwapPartition into temporary array
+Ignorelist[0]=${RootPartition}
+local Counter=1
+if [ ${SwapPartition} ]; then
+  Ignorelist[1]=${SwapPartition}
+  Counter=2
+fi
+Ignores=${#Ignorelist[@]} # Save a count for later
+MakePartitionList
+}
+
+AddExtras() {
+  # Called by ChangeSwapPartition and ChangeRootPartition with
+  # Ignorelist started and Counter set to next record number
+  # Add each field (extra partition) from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  Ignores=${#Ignorelist[@]} # Save a count for later
+}
+
+MakePartitionList() {
+  # Get a new list of all available partitions ...
+  Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
+  # Make an array
+  Counter=0
+  for a in $Partitionlist; do
+    AllPartitions[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  # Parse through AllPartitions, comparing against each item in Ignorelist
+  PartitionList=""
+  use=1
+  for a in ${AllPartitions[@]}; do
+    for i in ${Ignorelist[@]}; do
+      if [ $i = $a ]; then
+        use=0
+        break
+      fi
+    done
+    if [ ${use} -eq 1 ]; then
+      PartitionList="${PartitionList} $a"
+    else
+      use=1
+    fi
+  done
+}
+
