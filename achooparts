@@ -131,8 +131,10 @@ Parted() {
 }
 
 AutoPartition() {
-  # This function called from options within Partitioning via MakePartitions
-  AutoPart=1 # Set flag to 'on' for mounting 
+# This function called from options within Partitioning via MakePartitions
+AutoPart=0
+until [ ${AutoPart} ]
+do
   DiskDetails=`lsblk -l | grep 'disk' | awk '{print $1}'`
   UseDisk=$DiskDetails # If more than one, UseDisk will be first
   # Count lines. If more than one disk, ask user which to use
@@ -165,17 +167,25 @@ AutoPartition() {
       UseDisk="${Drives[$Response]}"
       print_info "This will erase all data on $UseDisk"
       TPread "Are you sure you wish to continue? (y/N): "
-      if [ $Response != "Y" ] &&  [ $Response !="y" ]; then 
-        ManagePartitions
-      fi
+      case $Response in
+      "Y" | "y") RunAutoPart
+      ;;
+      *) UseDisk=""
+      esac
     done
   else
     print_info "This will erase all data on the device"
     TPread "Are you sure you wish to continue? (y/N): "
-    if [ $Response != "Y" ] &&  [ $Response !="y" ]; then 
-      ManagePartitions
-    fi
+    case $Response in
+    "Y" | "y") RunAutoPart
+    ;;
+    *) UseDisk=""
+    esac
   fi
+done
+}
+
+RunAutoPart() {
   GrubDevice="/dev/${UseDisk}"
 	# Get disk size
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
@@ -239,6 +249,7 @@ AutoPartition() {
       SwapPartition=""
     fi
   fi
+  AutoPart=1 # Set flag to 'on' for mounting 
 }
 
 select_filesystem() {
