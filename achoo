@@ -103,9 +103,8 @@ then
   UserName
 fi
 
-# Desktop environment, display manager & luxuries
-
 # Set scope of installation
+# Desktop environment, display manager & luxuries
 SetScope
 case $Scope in
   "Full") Repeat=1

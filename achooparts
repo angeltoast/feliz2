@@ -251,11 +251,14 @@ RunAutoPart() {
   fi
   AutoPart=1 # Set flag to 'on' for mounting 
   # Report result
-  echo
-  ShowPart=`lsblk -l | grep "/\$" | awk '{print $4}'`
+  print_heading
+  ShowPart=`echo ${RootPartition} | cut -c 5-` >/dev/null
+  ShowPart=`lsblk -l | grep "${ShowPart}" | awk '{print $4}'` >/dev/null
   print_info "Root partition: ${RootPartition} ${RootType} $ShowPart"
-  ShowPart=`lsblk -l | grep "SWAP" | awk '{print $4}'`
+  ShowPart=`echo ${SwapPartition} | cut -c 5-` >/dev/null
+  ShowPart=`lsblk -l | grep "${ShowPart}" | awk '{print $4}'` >/dev/null
   print_list "Swap: ${SwapPartition}${SwapFile} $ShowPart"
+  echo
   print_info "You will have the opportunity to review these later."
   echo
   print_info "Press any key to continue"
