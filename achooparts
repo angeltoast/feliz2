@@ -34,7 +34,7 @@ TestUEFI() { # Called immediately after establishing internet connection
   fi
 }
 
-ManagePartitions() {
+mmmmmmmmmmmmmmmManagePartitions() {
 	# First test for existing partitions
 	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
@@ -95,7 +95,7 @@ ManagePartitions() {
   done
 }
 
-Partitioning() {
+pppppppppppppppppPartitioning() {
   local Proceed=""
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
@@ -125,15 +125,15 @@ Partitioning() {
   done
 }
 
-Parted() {
+pppppppppppppppParted() {
   parted --script /dev/${UseDisk} "$1" 2> error.log
   CheckForError "${LINENO} 'Parted ${1}'" 2
 }
 
-AutoPartition() {
+aaaaaaaaaaaaaaaaaaaAutoPartition() {
 # This function called from option 2) within Partitioning()
 AutoPart=0
-until [ ${AutoPart} ]
+until [ ${AutoPart} -gt 0 ]
 do
   DiskDetails=`lsblk -l | grep 'disk' | awk '{print $1}'`
   UseDisk=$DiskDetails # If more than one, UseDisk will be first
@@ -250,6 +250,13 @@ RunAutoPart() {
     fi
   fi
   AutoPart=1 # Set flag to 'on' for mounting 
+  # Report result
+  echo
+  ShowPart=`lsblk -l | grep "/\$" | awk '{print $4}'`
+  read_timed "Root partition: ${RootPartition} ${RootType} $ShowPart" 1
+  ShowPart=`lsblk -l | grep "SWAP" | awk '{print $4}'`
+  read_timed "Swap: ${SwapPartition}${SwapFile} $ShowPart" 1
+  read_timed "You will have the opportunity to review these later."
 }
 
 select_filesystem() {

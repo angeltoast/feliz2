@@ -198,7 +198,6 @@ do
     invalid_option
   else
     Result="${ConvertToArray[$Response]}"
-    read -p "$Response $Result"
     Complete=1
   fi
 done
