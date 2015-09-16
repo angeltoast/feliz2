@@ -195,9 +195,9 @@ do
   echo
   TPread "$2"
   if [ -z ${Response} ]; then
-    invalid_option
-    
-  elif [ ${Response} -gt ${Counter} ]; then
+    Response="$Counter"
+  fi
+  if [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
     invalid_option
   else
     Result="${ConvertToArray[$Response]}"

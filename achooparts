@@ -221,6 +221,9 @@ RunAutoPart() {
       SwapFile="2G"
       SwapPartition=""
     fi
+      ShowPart1=`lsblk -l | grep "${UseDisk}1" | awk '{print $4}'` >/dev/null
+      ShowPart2=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
+      ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
   else
     Parted "mklabel msdos"
     if [ $DiskSize -gt 18 ]; then
@@ -248,16 +251,16 @@ RunAutoPart() {
       SwapFile="2G"
       SwapPartition=""
     fi
+      ShowPart1=""
+      ShowPart2=`lsblk -l | grep "${UseDisk}1" | awk '{print $4}'` >/dev/null
+      ShowPart3=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
   fi
   AutoPart=1 # Set flag to 'on' for mounting 
   # Report result
   print_heading
-  ShowPart=`echo ${RootPartition} | cut -c 5-` >/dev/null
-  ShowPart=`lsblk -l | grep "${ShowPart}" | awk '{print $4}'` >/dev/null
-  print_info "Root partition: ${RootPartition} ${RootType} $ShowPart"
-  ShowPart=`echo ${SwapPartition} | cut -c 5-` >/dev/null
-  ShowPart=`lsblk -l | grep "${ShowPart}" | awk '{print $4}'` >/dev/null
-  print_list "Swap: ${SwapPartition}${SwapFile} $ShowPart"
+  print_info "EFI: ${EFIPartition} $ShowPart1"
+  print_list "Swap: ${SwapPartition}${SwapFile} $ShowPart2"
+  print_list "Root partition: ${RootPartition} ${RootType} $ShowPart3"
   echo
   print_info "You will have the opportunity to review these later."
   echo
