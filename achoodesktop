@@ -348,7 +348,11 @@ ChooseDE() {
             DisplayManager=""
               Greeter=""	
  			esac
-      Scope="Full"
+      if [ -n ${DesktopEnvironment} ];then
+        Scope="Full"
+        PickLuxuries
+        UserName
+      fi
       break
 		fi
 	done	
