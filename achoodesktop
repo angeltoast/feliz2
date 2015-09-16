@@ -348,6 +348,7 @@ ChooseDE() {
             DisplayManager=""
               Greeter=""	
  			esac
+      Scope="Full"
       break
 		fi
 	done	

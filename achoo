@@ -95,24 +95,11 @@ CheckForError "${LINENO} 'Loadkeys'" 1
 # Localisation
 SetTimeZone
 setlocale
-
 SetHostname
-# Add user
-if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
-then
-  UserName
-fi
 
 # Set scope of installation
-# Desktop environment, display manager & luxuries
+# (Desktop environment, display manager & luxuries)
 SetScope
-case $Scope in
-  "Full") Repeat=1
-    ChooseDE
-    PickLuxuries
-    ;;
-  *) 
-esac
 
 # Allow user to change any variables
 FinalCheck

@@ -229,9 +229,9 @@ do
   print_info "A working internet connection is needed for installation."
   print_info "Please choose which of the following apply: "
   echo
-  print_info "1) My computer has a wired connection by ethernet cable;"
-  print_list "2) My computer has wifi;"
-  print_list "3) I am not connected to the internet;"
+  print_info "1) My computer has a wired connection by ethernet cable"
+  print_list "2) My computer has wifi"
+  print_list "3) I am not connected to the internet"
   echo
   TPread "Enter the number of your selection : "
   echo
@@ -324,9 +324,9 @@ SetScope() {
     TPread "Add DE, codecs, user setup, etc? (y/N): "
     echo
     case $Response in
-      "y" | "Y") Scope="Full"
-        ChooseDE
+      "y" | "Y") ChooseDE
         PickLuxuries
+        UserName
         Retry="N"
       ;;
       *) Scope="Basic"
