@@ -288,7 +288,7 @@ ChooseDE() {
 	Counter=0
 	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox"
   print_heading
-  print_info "Desktop Environments & Window Managers"
+  echo
   print_info "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
   print_info "may need, such as file manager, terminal emulator and text"
   print_info "editor, whereas LXDE and LXQt and the Window Managers are"

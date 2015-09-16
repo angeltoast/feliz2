@@ -18,10 +18,9 @@
 # Error-checking       135
 # Internet connection  170
 # Mirrorlist           222
-# Set scope            278
+# Set scope            314
 # -------------------------
 
-MeNu() {
 # MeNu is an alternative to the bash 'select' function. It generates a
 # numbered menu in the centre of the screen. It can receive
 # up to 3 parameters:
@@ -42,7 +41,7 @@ MeNu() {
 # 1) print_info (which centres text on the screen), and
 # 2) print_list (which aligns subsequent items under the first)
 # Those functions must be available to the script
-
+MeNu() {
 local Complete=0
 print_info $3
 Underscore=`echo $3 | sed 's/./-/g'`
@@ -63,7 +62,7 @@ do
     ConvertToArray[$Counter]=$i
   done
   Counter=$((Counter+1))
-  print_list "$Counter) Skip"
+  print_list "$Counter) Done"
   echo
   TPread "$2"
   if [ -z ${Response} ]; then
@@ -318,30 +317,20 @@ SetScope() {
   while [ $Retry = "Y" ]
   do
     print_heading
-    print_info "You can choose to have just a basic Arch Linux installation, "
-    print_info "or Achoo can include a desktop environment, set up users, and"
-    print_info "automatically install codecs, wifi tools, graphics and other "
-    print_info "luxuries for you, including Yaourt. Or you can have all the above"
-    print_info "and also choose from a list of extras, such as Firefox, GIMP"
-    print_info "LibreOffice, Gparted, Thunderbird, Transmission, etc."
+    print_info "You can continue with just a basic Arch Linux installation, "
+    print_info "or Achoo can add a Desktop Environment, set up users, and"
+    print_info "automatically install codecs, wifi tools, graphics, etc"
     echo
-    print_info "1) Just a basic Arch installation;"
-    print_list "2) Arch plus DE, codecs, user setup, etc;"
-    print_list "3) As above, plus choice of extras;"
-    echo
-    TPread "Enter the number of your selection : "
+    TPread "Add DE, codecs, user setup, etc? (y/N): "
     echo
     case $Response in
-      1) Scope="Basic"
+      "y" | "Y") Scope="Full"
+        ChooseDE
+        PickLuxuries
         Retry="N"
       ;;
-      2) Scope="Full"
+      *) Scope="Basic"
         Retry="N"
-      ;;
-      3) Scope="Extras"
-        Retry="N"
-      ;;
-      *) invalid_option
     esac
   done
 }

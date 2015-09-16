@@ -63,14 +63,14 @@ StartTime=$(date +%s)
 
 # Check partition table and partitions, offer cfdisk
 TestUEFI
-ManagePartitions
+CheckParts
 
 if [ $AutoPart -eq 0 ]; then
   # Display partitions and allocate root
   if [ ${#PartitionList[@]} ] && [ $UEFI -eq 0 ]; then
     AllocateRoot
   elif [ -z ${#PartitionList[@]} ]; then
-    ManagePartitions
+    CheckParts
   fi
   # Display remaining partitions and allocate swap
   if [ -n ${#PartitionList[@]} ]
@@ -88,9 +88,6 @@ if [ $AutoPart -eq 0 ]; then
   fi
 fi
 
-# Set scope of installation
-SetScope
-
 # Keyboard layout
 getkeymap
 loadkeys ${Countrykbd} 2> error.log
@@ -107,11 +104,11 @@ then
 fi
 
 # Desktop environment, display manager & luxuries
+
+# Set scope of installation
+SetScope
 case $Scope in
   "Full") Repeat=1
-    ChooseDE
-    ;;
-  "Extras") Repeat=1
     ChooseDE
     PickLuxuries
     ;;

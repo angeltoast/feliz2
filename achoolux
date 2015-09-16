@@ -70,8 +70,8 @@ PickLuxuries() {
 local Complete=0
 LuxuriesList=""
 print_heading
-print_info "Achoo offers you the option to add 'luxuries' such as"
-print_info "a web browser, office software, graphical tools, etc"
+print_info "Now you have the option to add 'luxuries' such as a"
+print_info "web browser, office software, graphical tools, etc"
 while [ $Complete -eq 0 ]
 do
   Result=""
@@ -111,6 +111,9 @@ do
   print_info "You can add more, if you wish, or choose 'Done'"
 done
 LuxuriesList="${LuxuriesList,,}"
+if [ -n ${LuxuriesList} ]; then
+  Scope="Extras"
+fi
 }
 
 Multi-Menu() {

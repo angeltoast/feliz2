@@ -11,16 +11,16 @@
 # Please read the introduction in the main Achoo! script
 # 
 
-# -------------------------
-# Functions           Line
-# -------------------------
-# TestUEFI              29
-# ManagePartitions      46
-# Partitioning         125
-# Parted               147
-# AutoPartition        152
-# select_filesystem    261
-# -------------------------
+# -----------------------
+# Functions         Line
+# -----------------------
+# TestUEFI            29
+# CheckParts          46
+# Partitioning       125
+# Parted             147
+# AutoPartition      152
+# select_filesystem  261
+# -----------------------
 
 TestUEFI() { # Called immediately after establishing internet connection
  dmesg | grep -q "EFI v" # -q tells grep to output nothing
@@ -34,7 +34,7 @@ TestUEFI() { # Called immediately after establishing internet connection
   fi
 }
 
-mmmmmmmmmmmmmmmManagePartitions() {
+CheckParts() {
 	# First test for existing partitions
 	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
@@ -95,7 +95,7 @@ mmmmmmmmmmmmmmmManagePartitions() {
   done
 }
 
-pppppppppppppppppPartitioning() {
+Partitioning() {
   local Proceed=""
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
@@ -125,13 +125,13 @@ pppppppppppppppppPartitioning() {
   done
 }
 
-pppppppppppppppParted() {
+Parted() {
   parted --script /dev/${UseDisk} "$1" 2> error.log
   CheckForError "${LINENO} 'Parted ${1}'" 2
 }
 
-aaaaaaaaaaaaaaaaaaaAutoPartition() {
-# This function called from option 2) within Partitioning()
+AutoPartition() {
+# Called from option 2) within Partitioning()
 AutoPart=0
 until [ ${AutoPart} -gt 0 ]
 do
@@ -189,7 +189,7 @@ RunAutoPart() {
   GrubDevice="/dev/${UseDisk}"
 	# Get disk size
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
-  # Proceed to create partitions and set variables for mounting
+  # Create partitions and set variables for mounting
   if [ $UEFI -eq 1 ]; then
     Parted "mklabel gpt"
     if [ $DiskSize -gt 18 ]; then
@@ -253,10 +253,13 @@ RunAutoPart() {
   # Report result
   echo
   ShowPart=`lsblk -l | grep "/\$" | awk '{print $4}'`
-  read_timed "Root partition: ${RootPartition} ${RootType} $ShowPart" 1
+  print_info "Root partition: ${RootPartition} ${RootType} $ShowPart"
   ShowPart=`lsblk -l | grep "SWAP" | awk '{print $4}'`
-  read_timed "Swap: ${SwapPartition}${SwapFile} $ShowPart" 1
-  read_timed "You will have the opportunity to review these later."
+  print_list "Swap: ${SwapPartition}${SwapFile} $ShowPart"
+  print_info "You will have the opportunity to review these later."
+  echo
+  print_info "Press any key to continue"
+  read -n1
 }
 
 select_filesystem() {
@@ -281,7 +284,7 @@ select_filesystem() {
 
 AllocateRoot() {
 # Display partitions for user-selection	
-	# Uses list of all available partitions in PartitionList created in ManagePartitions
+	# Uses list of all available partitions in PartitionList created in CheckParts
 	print_heading
 	Remaining=""
 	local Counter=0
