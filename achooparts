@@ -348,7 +348,7 @@ fi
 AllocateSwap() {
 # Checks if remaining partitions and allows selection for swap
 print_heading
-if [ -n ${#PartitionList[@]} ]
+if [ -n "${PartitionList}" ]
 then
   print_info "Select a partition for /swap from the ones that remain,"
   print_info "or you can allocate a swap file."

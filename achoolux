@@ -74,8 +74,14 @@ print_info "Now you have the option to add 'luxuries' such as a"
 print_info "web browser, office software, graphical tools, etc"
 while [ $Complete -eq 0 ]
 do
-  Result=""
   MeNu "$Categories" "Please choose a category: "
+  print_heading
+  if [ -n "${LuxuriesList}" ]; then
+    print_info "Added so far: ${LuxuriesList}"
+    echo
+    print_info "You can add more, if you wish, or choose 'Done'"
+    echo
+  fi
   case $Response in
     1) Multi-Menu "Accessories" "Please choose one: "
     ;;
@@ -106,12 +112,15 @@ do
     fi
   fi
   print_heading
-  print_info "Added so far: ${LuxuriesList}"
-  echo
-  print_info "You can add more, if you wish, or choose 'Done'"
+  if [ -n "${LuxuriesList}" ]; then
+    print_info "Added so far: ${LuxuriesList}"
+    echo
+    print_info "You can add more, if you wish, or choose 'Done'"
+    echo
+  fi
 done
 LuxuriesList="${LuxuriesList,,}"
-if [ -n ${LuxuriesList} ]; then
+if [ -n "${LuxuriesList}" ]; then
   Scope="Extras"
 fi
 }
@@ -122,7 +131,6 @@ local Complete=0
 Result=""
 while [ $Complete -eq 0 ]
 do
-  print_heading
   print_info $1
   Underscore=`echo $1 | sed 's/./-/g'`
   print_info $Underscore
@@ -194,9 +202,8 @@ do
   print_list "$Counter) Done"
   echo
   TPread "$2"
-  if [ -z ${Response} ]; then
-    Response="$Counter"
-    Result=""
+  if [ -z ${Response} ] || [ ${Response} = ${Counter} ]; then
+    Result="Done"
     Complete=1
   elif [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
     invalid_option

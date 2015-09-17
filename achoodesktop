@@ -361,7 +361,7 @@ ChooseDE() {
             DisplayManager=""
               Greeter=""	
  			esac
-      if [ -n ${DesktopEnvironment} ];then
+      if [ -n "${DesktopEnvironment}" ];then
         Scope="Full"
         PickLuxuries
         UserName

@@ -73,12 +73,12 @@ if [ $AutoPart -eq 0 ]; then
     CheckParts
   fi
   # Display remaining partitions and allocate swap
-  if [ -n ${#PartitionList[@]} ]
+  if [ -n "${PartitionList}" ]
   then
     AllocateSwap
   fi
   # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
-  if [ -n ${#PartitionList[@]} ]
+  if [ -n "${PartitionList}" ]
   then
     ExtraPartitions
   fi
@@ -333,7 +333,7 @@ then
   esac
 fi
 
-if [ -n ${#LuxuriesList[@]} ]; then
+if [ -n "${LuxuriesList}" ]; then
   for i in ${LuxuriesList}
   do
     if [ $i = "yaourt" ]; then
