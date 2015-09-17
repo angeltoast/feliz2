@@ -258,6 +258,8 @@ RunAutoPart() {
   AutoPart=1 # Set flag to 'on' for mounting 
   # Report result
   print_heading
+  print_info "Partitioning of ${GrubDevice} successful"
+  print_info "-------------------------------------"
   if [ -n ${EFIPartition} ]; then
     print_info "EFI: ${EFIPartition} $ShowPart1                  "
   else

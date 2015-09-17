@@ -90,15 +90,13 @@ fi
 
 # Keyboard layout
 getkeymap
-loadkeys ${Countrykbd} 2> error.log
-CheckForError "${LINENO} 'Loadkeys'" 1
+
 # Localisation
 SetTimeZone
 setlocale
 SetHostname
 
 # Set scope of installation
-# (Desktop environment, display manager & luxuries)
 SetScope
 
 # Allow user to change any variables

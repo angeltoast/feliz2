@@ -82,6 +82,8 @@ do
     InvalidEntry=0
     ReadArray=$((Response-1))
     Countrykbd="${KeyboardList[${ReadArray}]}"
+    loadkeys ${Countrykbd} 2> error.log
+    CheckForError "${LINENO} 'Loadkeys'" 1
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
   fi
@@ -189,9 +191,8 @@ done
 }
 
 SetSubZone() {
-print_info "Now please enter the first two letters"
-print_info "of your nearest major city"
-TPread "(for example 'Ma' for Madrid, Spain: "
+print_info "Now please enter the first letter"
+TPread "of your nearest major city: "
 while [ $Complete -eq 0 ]
 do
   if [ -z ${Response} ]
@@ -201,13 +202,11 @@ do
     break
   fi
   echo
-  Xx1=`echo ${Response} | cut -c 1`
-  Xx2=`echo ${Response} | cut -c 2`
-  Zone2="${Xx1^^}${XX2,,}"
+  Zone2="${Response^^}"
   local Counter=0
   for i in "${SubZones[@]}"
   do
-    CheckInitial=`echo $i | cut -c 1,2`
+    CheckInitial=`echo $i | cut -c 1`
     if [ ${CheckInitial} = ${Zone2} ]; then
       Counter=$((Counter+1))
       if [ $Counter -eq 1 ]; then
@@ -289,7 +288,7 @@ SetHostname() {
 	print_info "default hostname of 'arch-linux' will be used."
    echo
 	TPread "Enter a hostname for your computer : "
-  Entered=$Response
+  Entered=${Response,,}
 	case $Entered in
 		"") HostName="arch-linux"
 		;;

@@ -18,7 +18,7 @@
 # Error-checking       135
 # Internet connection  170
 # Mirrorlist           222
-# Set scope            314
+# SetScope             314
 # -------------------------
 
 # MeNu is an alternative to the bash 'select' function. It generates a
@@ -313,15 +313,14 @@ LocalMirrorList() {
 
 SetScope() {
   Retry="Y"
-  Response=1
   while [ $Retry = "Y" ]
   do
     print_heading
     print_info "You can continue with just a basic Arch Linux installation, "
-    print_info "or Achoo can add a Desktop Environment, set up users, and"
+    print_info "or Achoo can add a Desktop Environment, set up a user, and"
     print_info "automatically install codecs, wifi tools, graphics, etc"
     echo
-    TPread "Add DE, codecs, user setup, etc? (y/n): "
+    TPread "Add Desktop Environment, etc? (y/n): "
     echo
     case $Response in
       "y" | "Y") ChooseDE
