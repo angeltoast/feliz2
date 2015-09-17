@@ -12,16 +12,16 @@
 # Please read the introduction in the main Achoo! script
 # 
 
-# ------------------
-# Functions     Line
-# ------------------
-# Variables       23
+# -------------------
+# Functions      Line
+# -------------------
+# Variables       26
 # PickLuxuries    63
 # Multi-Menu     111
 # LibreVersion   203
 # FinalCheck     228
 # ManualSettings 303
-# ------------------
+# -------------------
 
 Categories="Accessories Graphical Internet Multimedia Office Programming"
 Accessories="conky gparted gnome-calculator geany nautilus terminator yaourt"

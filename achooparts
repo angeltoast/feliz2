@@ -11,16 +11,17 @@
 # Please read the introduction in the main Achoo! script
 # 
 
-# -----------------------
-# Functions         Line
-# -----------------------
-# TestUEFI            29
-# CheckParts          46
-# Partitioning       125
-# Parted             147
-# AutoPartition      152
-# select_filesystem  261
-# -----------------------
+# -----------------------      -----------------------
+# Functions         Line       Functions         Line
+# -----------------------      -----------------------
+# TestUEFI            25       AllocateRoot       298
+# CheckParts          37       CheckPartition     342
+# Partitioning        98       AllocateSwap       352
+# Parted             128       SetSwapFile        411
+# AutoPartition      133       ExtraPartitions    436
+# select_filesystem  278       MakePartition      493
+#                              SetGrubDevice      554
+# -----------------------      -----------------------
 
 TestUEFI() { # Called immediately after establishing internet connection
  dmesg | grep -q "EFI v" # -q tells grep to output nothing
@@ -110,13 +111,10 @@ Partitioning() {
     case $Proceed in
       1) cfdisk 2> error.log
         CheckForError "${LINENO} 'cfdisk'" 2
-        Response=$Proceed
       ;;
       2) AutoPartition
-        Response=$Proceed
       ;;
       3) echo
-        Response=$Proceed
       ;;
       *) invalid_option
         Proceed=""
@@ -187,6 +185,7 @@ done
 
 RunAutoPart() {
   GrubDevice="/dev/${UseDisk}"
+  EFIPartition=""
 	# Get disk size
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
   # Create partitions and set variables for mounting
