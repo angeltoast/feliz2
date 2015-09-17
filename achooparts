@@ -258,7 +258,11 @@ RunAutoPart() {
   AutoPart=1 # Set flag to 'on' for mounting 
   # Report result
   print_heading
-  print_info "EFI: ${EFIPartition} $ShowPart1"
+  if [ -n ${EFIPartition} ]; then
+    print_info "EFI: ${EFIPartition} $ShowPart1                  "
+  else
+    print_info "                                                 "
+  fi
   print_list "Swap: ${SwapPartition}${SwapFile} $ShowPart2"
   print_list "Root partition: ${RootPartition} ${RootType} $ShowPart3"
   echo

@@ -321,13 +321,14 @@ SetScope() {
     print_info "or Achoo can add a Desktop Environment, set up users, and"
     print_info "automatically install codecs, wifi tools, graphics, etc"
     echo
-    TPread "Add DE, codecs, user setup, etc? (y/N): "
+    TPread "Add DE, codecs, user setup, etc? (y/n): "
     echo
     case $Response in
       "y" | "Y") ChooseDE
         UserName
         Retry="N"
       ;;
+      "") invalid_option
       *) Scope="Basic"
         Retry="N"
     esac
