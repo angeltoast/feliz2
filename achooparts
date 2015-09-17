@@ -87,9 +87,8 @@ CheckParts() {
     Partitioning # Partitioning options
 	fi
   # Build new list of partitions
-  PartitionList=" "
+  PartitionList=""
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  Counter=0
   for Part in $ShowPartitions
   do
     PartitionList="$PartitionList $Part" # Build PartitionList for next functions
@@ -255,11 +254,10 @@ RunAutoPart() {
       ShowPart3=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
   fi
   AutoPart=1 # Set flag to 'on' for mounting 
-  # Report result
   print_heading
   print_info "Partitioning of ${GrubDevice} successful"
   print_info "-------------------------------------"
-  if [ -n ${EFIPartition} ]; then
+  if [ $UEFI -eq 1 ]; then
     print_info "EFI: ${EFIPartition} $ShowPart1                  "
   else
     print_info "                                                 "
