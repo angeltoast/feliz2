@@ -67,9 +67,9 @@ CheckParts
 
 if [ $AutoPart -eq 0 ]; then
   # Display partitions and allocate root
-  if [ ${#PartitionList[@]} ] && [ $UEFI -eq 0 ]; then
+  if [ -n "${PartitionList}" ] && [ $UEFI -eq 0 ]; then
     AllocateRoot
-  elif [ -z ${#PartitionList[@]} ]; then
+  elif [ -z "${PartitionList}" ]; then
     CheckParts
   fi
   # Display remaining partitions and allocate swap
