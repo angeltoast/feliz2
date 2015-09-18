@@ -76,29 +76,49 @@ while [ $Complete -eq 0 ]
 do
   MeNu "$Categories" "Please choose a category: "
   print_heading
-  if [ -n "${LuxuriesList}" ]; then
-    print_info "Added so far: ${LuxuriesList}"
-    echo
-    print_info "You can add more, if you wish, or choose 'Done'"
-    echo
-  fi
   case $Response in
-    1) Multi-Menu "Accessories" "Please choose one: "
+    1) Multi-Menu "Accessories" "Added so far: ${LuxuriesList}"
     ;;
-    2) Multi-Menu "Graphical" "Please choose one: "
+    2) Multi-Menu "Graphical" "Added so far: ${LuxuriesList}"
     ;;
-    3) Multi-Menu "Internet" "Please choose one: "
+    3) Multi-Menu "Internet" "Added so far: ${LuxuriesList}"
     ;;
-    4) Multi-Menu "Multimedia" "Please choose one: "
+    4) Multi-Menu "Multimedia" "Added so far: ${LuxuriesList}"
     ;;
-    5) Multi-Menu "Office" "Please choose one: "
+    5) Multi-Menu "Office" "Added so far: ${LuxuriesList}"
     ;;
-    6) Multi-Menu "Programming" "Please choose one: "
+    6) Multi-Menu "Programming" "Added so far: ${LuxuriesList}"
     ;;
-    *) break 2
+    *) break
   esac
-  if [ ${Result} != "Done" ]; then
-    if [ ${Result} = "LibreOffice" ]; then
+  print_heading
+  print_info "Added so far: ${LuxuriesList}"
+  echo
+  print_info "You can now choose from any of the other lists,"
+  print_info "or choose 'Done' to finish this part of the setup"
+done
+LuxuriesList="${LuxuriesList,,}"  #Safety net in case any itms have caps
+if [ -n "${LuxuriesList}" ]; then
+  Scope="Extras"
+fi
+}
+
+CheckAndAdd() {
+# Called from Multi-Menu. Adds item(s) to a variable specific to the
+# function that called Multi-Menu (in this instance it is for PickLuxuries)
+Caller="PickLuxuries"
+AddToList="Y"
+# First check that chosen item is not already on the list
+for lux in $LuxuriesList
+do
+  if [ ${lux} = ${Result} ]; then
+    read_timed "Already in your shopping list"
+    AddToList="N"
+  fi
+done
+# Then carry out any specific tests and add the item to the
+if [ ${AddToList} = "Y" ]; then
+    if [ ${Result} = "libreoffice" ]; then
       LibreVersion
       case $Response in
         "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
@@ -110,18 +130,7 @@ do
     else
       LuxuriesList="${LuxuriesList} ${Result}"
     fi
-  fi
-  print_heading
-  if [ -n "${LuxuriesList}" ]; then
-    print_info "Added so far: ${LuxuriesList}"
-    echo
-    print_info "You can add more, if you wish, or choose 'Done'"
-    echo
-  fi
-done
-LuxuriesList="${LuxuriesList,,}"
-if [ -n "${LuxuriesList}" ]; then
-  Scope="Extras"
+  Passed="Added so far: ${LuxuriesList}"  
 fi
 }
 
@@ -129,11 +138,18 @@ Multi-Menu() {
 # New Multi-Menu features extended descriptions linked to app name
 local Complete=0
 Result=""
+local Passed="$2"
 while [ $Complete -eq 0 ]
 do
-  print_info $1
+  print_heading
+  print_info "$Passed"
+  echo
+  print_info "Please select one item at a time from this list"
+  print_info "by entering its number and pressing [Enter]"
+  echo
+  print_info "$1"
   Underscore=`echo $1 | sed 's/./-/g'`
-  print_info $Underscore
+  print_info "$Underscore"
   local Counter=0
   case $1 in
     "Accessories") for i in ${Accessories}; do
@@ -201,7 +217,7 @@ do
   Counter=$((Counter+1))
   print_list "$Counter) Done"
   echo
-  TPread "$2"
+  TPread "Please enter one number : "
   if [ -z ${Response} ] || [ ${Response} = ${Counter} ]; then
     Result="Done"
     Complete=1
@@ -209,7 +225,8 @@ do
     invalid_option
   else
     Result="${ConvertToArray[$Response]}"
-    Complete=1
+  #  Complete=1
+    CheckAndAdd
   fi
 done
 }
