@@ -36,6 +36,8 @@ TestUEFI() { # Called immediately after establishing internet connection
 }
 
 CheckParts() {
+  echo "Entering CheckParts"
+  lsblk -l | grep 'part' | awk '{print $1}'
 	# First test for existing partitions
 	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
@@ -44,6 +46,7 @@ CheckParts() {
     Counter=$((Counter+1))
   done
   PARTITIONS=${Counter}
+  read -p "$LINENO In CheckParts PARTITIONS = $PARTITIONS"
 	# If no partitions exist, offer cfdisk to create (or exit)
   if [ $PARTITIONS -eq 0 ]
   then
@@ -96,6 +99,9 @@ CheckParts() {
     PartitionList="$PartitionList $Part" # Build PartitionList for next functions
   done
   PARTITIONS=${Counter}
+  lsblk -l | grep 'part' | awk '{print $1}'
+  read -p "$LINENO Leaving CheckParts PARTITIONS = $PARTITIONS"
+
 }
 
 Partitioning() {
@@ -272,6 +278,8 @@ RunAutoPart() {
   echo
   print_info "Press any key to continue"
   read -n1
+  lsblk -l | grep 'part' | awk '{print $1}'
+  read -p "$LINENO Leaving RunAutoPart PARTITIONS = $PARTITIONS"
 }
 
 select_filesystem() {
