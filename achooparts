@@ -41,7 +41,7 @@ CheckParts() {
 	# First test for existing partitions
 	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
-  for i in $ShowPartitions
+  for i in "$ShowPartitions"
   do
     Counter=$((Counter+1))
   done
@@ -93,7 +93,7 @@ CheckParts() {
   PartitionList=""
   Counter=0
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  for Part in $ShowPartitions
+  for Part in "$ShowPartitions"
   do
     Counter=$((Counter+1))
     PartitionList="$PartitionList $Part" # Build PartitionList for next functions
@@ -101,7 +101,6 @@ CheckParts() {
   PARTITIONS=${Counter}
   lsblk -l | grep 'part' | awk '{print $1}'
   read -p "$LINENO Leaving CheckParts PARTITIONS = $PARTITIONS"
-
 }
 
 Partitioning() {
@@ -278,8 +277,6 @@ RunAutoPart() {
   echo
   print_info "Press any key to continue"
   read -n1
-  lsblk -l | grep 'part' | awk '{print $1}'
-  read -p "$LINENO Leaving RunAutoPart PARTITIONS = $PARTITIONS"
 }
 
 select_filesystem() {
