@@ -36,17 +36,14 @@ TestUEFI() { # Called immediately after establishing internet connection
 }
 
 CheckParts() {
-  echo "Entering CheckParts"
-  lsblk -l | grep 'part' | awk '{print $1}'
 	# First test for existing partitions
 	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
-  for i in "$ShowPartitions"
+  for i in $ShowPartitions
   do
     Counter=$((Counter+1))
   done
   PARTITIONS=${Counter}
-  read -p "$LINENO In CheckParts PARTITIONS = $PARTITIONS"
 	# If no partitions exist, offer cfdisk to create (or exit)
   if [ $PARTITIONS -eq 0 ]
   then
@@ -74,6 +71,14 @@ CheckParts() {
         read_timed "Exiting Achoo! Hurry back, y'hear?"
         exit
       fi
+      # Check that partitions have been created
+      ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+      Counter=0
+      for i in $ShowPartitions
+      do
+        Counter=$((Counter+1))
+      done
+      PARTITIONS=${Counter}
     done
   else
     # Alternatively, offer cfdisk to edit existing partitions
@@ -93,14 +98,12 @@ CheckParts() {
   PartitionList=""
   Counter=0
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  for Part in "$ShowPartitions"
+  for Part in $ShowPartitions
   do
     Counter=$((Counter+1))
     PartitionList="$PartitionList $Part" # Build PartitionList for next functions
   done
   PARTITIONS=${Counter}
-  lsblk -l | grep 'part' | awk '{print $1}'
-  read -p "$LINENO Leaving CheckParts PARTITIONS = $PARTITIONS"
 }
 
 Partitioning() {
