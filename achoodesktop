@@ -27,6 +27,7 @@
 
 getkeymap() {
 print_heading
+print_info "That's the partitioning done."
 print_info "Now we will try to find your keyboard."
 InvalidEntry=1
 while [ $InvalidEntry -eq 1 ]
