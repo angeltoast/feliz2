@@ -16,8 +16,9 @@
 # Functions      Line
 # -------------------
 # Variables       26
-# PickLuxuries    63
-# Multi-Menu     111
+# PickLuxuries    68
+# CheckAndAdd    107  (see separate Manual)
+# Multi-Menu     138
 # LibreVersion   203
 # FinalCheck     228
 # ManualSettings 303
@@ -74,20 +75,20 @@ print_info "Now you have the option to add 'luxuries' such as a"
 print_info "web browser, office software, graphical tools, etc"
 while [ $Complete -eq 0 ]
 do
-  MeNu "$Categories" "Please choose a category: "
+  Menu "$Categories" "Please choose a category: "
   print_heading
-  case $Response in
-    1) Multi-Menu "Accessories" "Added so far: ${LuxuriesList}"
+   case $Response in
+    1) Multimenu "$Accessories" "Added so far: ${LuxuriesList}" "Accessories" "LongAccs"
     ;;
-    2) Multi-Menu "Graphical" "Added so far: ${LuxuriesList}"
+    2) Multimenu "$Graphical" "Added so far: ${LuxuriesList}" "Graphical" "LongGraph"
     ;;
-    3) Multi-Menu "Internet" "Added so far: ${LuxuriesList}"
+    3) Multimenu "$Internet" "Added so far: ${LuxuriesList}" "Internet" "LongNet"
     ;;
-    4) Multi-Menu "Multimedia" "Added so far: ${LuxuriesList}"
+    4) Multimenu "$Multimedia" "Added so far: ${LuxuriesList}" "Multimedia" "LongMulti"
     ;;
-    5) Multi-Menu "Office" "Added so far: ${LuxuriesList}"
+    5) Multimenu "$Office" "Added so far: ${LuxuriesList}" "Office" "LongOffice"
     ;;
-    6) Multi-Menu "Programming" "Added so far: ${LuxuriesList}"
+    6) Multimenu "$Programming" "Added so far: ${LuxuriesList}" "Programming" "LongProg"
     ;;
     *) break
   esac
@@ -97,7 +98,7 @@ do
   print_info "You can now choose from any of the other lists,"
   print_info "or choose 'Done' to finish this part of the setup"
 done
-LuxuriesList="${LuxuriesList,,}"  #Safety net in case any itms have caps
+LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
 if [ -n "${LuxuriesList}" ]; then
   Scope="Extras"
 fi
@@ -134,11 +135,17 @@ if [ ${AddToList} = "Y" ]; then
 fi
 }
 
-Multi-Menu() {
-# New Multi-Menu features extended descriptions linked to app name
+Multimenu() {
+# Menu, with extended descriptions linked to app name
+# Parameters: 1) Primary file; 2) Copy of existing output file;
+# 3) Title; 4) Secondary file (long description); 
 local Complete=0
 Result=""
-local Passed="$2"
+PrimaryFile="$1"
+Passed="$2"
+name=$4[@]
+LongDescription=("${!name}")
+local Counter=0
 while [ $Complete -eq 0 ]
 do
   print_heading
@@ -147,73 +154,19 @@ do
   print_info "Please select one item at a time from this list"
   print_info "by entering its number and pressing [Enter]"
   echo
-  print_info "$1"
-  Underscore=`echo $1 | sed 's/./-/g'`
+  print_info "$3"
+  Underscore=`echo $3 | sed 's/./-/g'`
   print_info "$Underscore"
-  local Counter=0
-  case $1 in
-    "Accessories") for i in ${Accessories}; do
-        Counter=$((Counter+1))
-        if [ $Counter -eq 1 ]; then
-          print_info "${Counter}) ${LongAccs[$Counter]}"
-        else
-          print_list "${Counter}) ${LongAccs[$Counter]}"
-        fi
-        ConvertToArray[$Counter]=$i
-      done
-      ;;
-    "Graphical") for i in ${Graphical}; do
-        Counter=$((Counter+1))
-        if [ $Counter -eq 1 ]; then
-          print_info "$Counter) ${LongGraph[$Counter]}"
-        else
-          print_list "$Counter) ${LongGraph[$Counter]}"
-        fi
-        ConvertToArray[$Counter]=$i
-      done
-      ;;
-    "Internet") for i in ${Internet}; do
-        Counter=$((Counter+1))
-        if [ $Counter -eq 1 ]; then
-          print_info "$Counter) ${LongNet[$Counter]}"
-        else
-          print_list "$Counter) ${LongNet[$Counter]}"
-        fi
-        ConvertToArray[$Counter]=$i
-      done
-      ;;
-    "Multimedia") for i in ${Multimedia}; do
-        Counter=$((Counter+1))
-        if [ $Counter -eq 1 ]; then
-          print_info "$Counter) ${LongMulti[$Counter]}"
-        else
-          print_list "$Counter) ${LongMulti[$Counter]}"
-        fi
-        ConvertToArray[$Counter]=$i
-      done
-      ;;
-    "Office") for i in ${Office}; do
-        Counter=$((Counter+1))
-        if [ $Counter -eq 1 ]; then
-          print_info "$Counter) ${LongOffice[$Counter]}"
-        else
-          print_list "$Counter) ${LongOffice[$Counter]}"
-        fi
-        ConvertToArray[$Counter]=$i
-      done
-      ;;
-    "Programming") for i in ${Programming}; do
-        Counter=$((Counter+1))
-        if [ $Counter -eq 1 ]; then
-          print_info "$Counter) ${LongProg[$Counter]}"
-        else
-          print_list "$Counter) ${LongProg[$Counter]}"
-        fi
-        ConvertToArray[$Counter]=$i
-      done
-      ;;
-    *) break 2
-  esac
+  Counter=0
+  # for i in $PrimaryFile; do
+  for i in "${LongDescription[@]}"; do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      print_info "${Counter}) $i"
+    else
+      print_list "${Counter}) $i"
+    fi
+  done
   Counter=$((Counter+1))
   print_list "$Counter) Done"
   echo
@@ -224,8 +177,13 @@ do
   elif [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
     invalid_option
   else
-    Result="${ConvertToArray[$Response]}"
-  #  Complete=1
+    Counter=0
+    for i in $PrimaryFile; do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Response ]; then
+        Result="$i"
+      fi
+    done
     CheckAndAdd
   fi
 done

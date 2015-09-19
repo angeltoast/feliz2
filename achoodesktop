@@ -310,7 +310,7 @@ ChooseDE() {
   print_info "after installation. Alternatively, you can choose to skip this"
   print_info "option, and install something else manually later."
   echo
-	MeNu "${DEList}" "Please choose: " "Desktop-Environments"
+	Menu "${DEList}" "Please choose: " "Desktop-Environments"
 	Reply=$Response
   SelectedDE=$Result
   for i in ${DEList}
@@ -365,7 +365,6 @@ ChooseDE() {
       if [ -n "${DesktopEnvironment}" ];then
         Scope="Full"
         PickLuxuries
-        UserName
       fi
       break
 		fi
@@ -428,7 +427,7 @@ ChooseDM() {
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
   echo
-  MeNu "${DMList}" "Choose your Display Manager" "Display-Managers"
+  Menu "${DMList}" "Choose your Display Manager" "Display-Managers"
   Reply=$Response
   for item in ${DMList}
   do

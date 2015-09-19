@@ -292,7 +292,7 @@ select_filesystem() {
 	print_info "Please now select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
   echo
-	MeNu "${TypeList}" "$Prompt1" "Filesystems"
+	Menu "${TypeList}" "$Prompt1" "Filesystems"
   for i in ${TypeList}
 	do
     Counter=$((Counter+1))
@@ -314,7 +314,7 @@ AllocateRoot() {
 	PartitionType=""
 	print_info "Please now select a partition to use for root."
   echo
-	MeNu "${PartitionList}" "$Prompt1" "Partitions"
+	Menu "${PartitionList}" "$Prompt1" "Partitions"
   Reply=$Response
   for i in ${PartitionList}
   do
@@ -374,7 +374,7 @@ then
   SwapFile=""
   print_info "If you select the 'Skip' option, no swap will be allocated:"
   echo
-  MeNu "${PickFrom}" "$Prompt1" "Partitions"
+  Menu "${PickFrom}" "$Prompt1" "Partitions"
   Reply=$Response
   echo
   for i in ${PickFrom}
@@ -459,7 +459,7 @@ do
   print_info "If you wish to use one, select it from the list,"
   print_info "or choose 'Skip' to finish partitioning."
   echo
-	MeNu "${PartitionList}" "$Prompt1" "Partitions"
+	Menu "${PartitionList}" "$Prompt1" "Partitions"
   echo
   Selected=$Response
 		for Part in ${PartitionList} # Iterate through the list
@@ -571,7 +571,7 @@ SetGrubDevice() {
   print_info "not be installed, and you will have to make"
   print_info "alternative arrangements for booting your new system."
   echo
-	MeNu "${DevicesList}" "Enter the number of your selection: " "Devices"
+	Menu "${DevicesList}" "Enter the number of your selection: " "Devices"
   Reply=$Response
   for i in ${DevicesList}
 	do
