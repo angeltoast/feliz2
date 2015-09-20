@@ -173,26 +173,29 @@ do
       echo
       TPread "Enter the number of your selection: "
       UseDisk="${Drives[$Response]}"
-      print_info "This will erase all data on $UseDisk"
-      TPread "Are you sure you wish to continue? (y/N): "
-      case $Response in
-      "Y" | "y") RunAutoPart
-      ;;
-      *) UseDisk=""
-        break 3
-      esac
+      AutoWarning
     done
   else
-    print_info "This will erase any data on the device"
-    TPread "Are you sure you wish to continue? (y/N): "
-    case $Response in
-    "Y" | "y") RunAutoPart
-    ;;
-    *) UseDisk=""
-      break 3
-    esac
+    AutoWarning
   fi
 done
+}
+
+AutoWarning() {
+while :
+do
+  print_info "This will erase any data on the device"
+  TPread "Are you sure you wish to continue? (y/N): "
+  case $Response in
+    "Y" | "y") RunAutoPart
+      break
+      ;;
+    "N" | "n") UseDisk=""
+      break 2
+      ;;
+    *) invalid_option
+  esac
+done  
 }
 
 RunAutoPart() {
