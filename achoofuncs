@@ -234,11 +234,11 @@ do
         break
       fi
     else
-      read_timed "Wifi connection detected"
+      read_timed "Connection detected"
       Service="Y"
     fi
   else
-    read_timed "Wired connection detected"
+    read_timed "Connection detected"
     Service="Y"
   fi
 done
