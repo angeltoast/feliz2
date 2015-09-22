@@ -79,9 +79,6 @@ CheckParts() {
         Counter=$((Counter+1))
       done
       PARTITIONS=${Counter}
-echo $LINENO
-lsblk -l | grep 'part' | awk '{print $1}'
-read -p ""
     done
   else
     # Alternatively, offer cfdisk to edit existing partitions
@@ -100,9 +97,6 @@ read -p ""
   # Build new list of partitions
   PartitionList=""
   Counter=0
-echo $LINENO
-lsblk -l | grep 'part' | awk '{print $1}'
-read -p ""
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   for Part in "${ShowPartitions}"
   do
@@ -110,7 +104,6 @@ read -p ""
     PartitionList="${PartitionList} ${Part}" # Build PartitionList for next functions
   done
   PARTITIONS=${Counter}
-read -p "$PARTITIONS $PartitionList"
 }
 
 Partitioning() {
@@ -128,9 +121,7 @@ Partitioning() {
     case $Proceed in
       1) cfdisk 2> error.log
         CheckForError "${LINENO} 'cfdisk'" 2
-echo $LINENO
-lsblk -l | grep 'part' | awk '{print $1}'
-read -p ""
+        ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
       2) AutoPartition
       ;;
@@ -474,33 +465,23 @@ do
   echo
 	Menu "${PartitionList}" "$Prompt1" "Partitions"
   echo
-  Selected=$Response
-		for Part in ${PartitionList} # Iterate through the list
-		do
-      Partition=""
-      PartitionType=""
-      PartCounter=$((PartCounter+1))
-			if [ $PartCounter -eq $Selected ]
-			then
-        if [ $Part = "Done" ]; then
-          break 2
-        else                        # If item is not 'Done'
-        	Partition="/dev/$Part"
-          MakePartition # Call MakePartition to complete details
-        fi
-      else                          # If $Counter is not equal to $Selected
-        if [ $Part != "Done" ]; then   # (and not 'Done')
-          Remaining="$Remaining $Part" # Add unused partition to temp list
-          AddedToRemaining=$(($AddedToRemaining+1))
-        fi
-			fi
-    done
+	for Part in ${PartitionList} # Iterate through the list
+	do
+    Partition=""
+    PartitionType=""
+    if [ $Part = $Result ] && [ $Part != "Done" ]; then
+     	Partition="/dev/$Part"
+      MakePartition # Call MakePartition to complete details
+    elif [ $Part != "Done" ]; then   # Part is not selected and not 'Done'
+      Remaining="$Remaining $Part" # Add unused partition to temp list
+      AddedToRemaining=$(($AddedToRemaining+1))
+    fi
+  done
   Elements=0
   for i in ${Remaining}
   do
     Elements=$((Elements+1))
   done  
-  PartCounter=0 # Return to zero for next iteration
   PartitionList=$Remaining	# Replace original PartitionList with temp list
 done
 # Ensure that if AddPartList (the defining array) is empty, all others are too
