@@ -320,7 +320,7 @@ AllocateRoot() {
       # Before going to select_filesystem, check the partition
       CheckPartition
       if [ ${CurrentType} ]; then
-        print_info "You can choose to leave it as it is, by selecting 'Skip', but"
+        print_info "You can choose to leave it as it is, by selecting 'Done', but"
         print_info "be aware that not reformatting the root partition can have"
         print_info "unexpected consequences."
         echo
@@ -367,7 +367,7 @@ then
   SwapPartition=""
   PickFrom="$PartitionList Swapfile"
   SwapFile=""
-  print_info "If you select the 'Skip' option, no swap will be allocated:"
+  print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
   Menu "${PickFrom}" "$Prompt1" "Partitions"
   Reply=$Response
@@ -378,7 +378,7 @@ then
     if [ $Counter -eq $Reply ]
     then
       case $i in
-        "Skip") SwapPartition=""
+        "Done") SwapPartition=""
         ;;
         "Swapfile") SetSwapFile
             SwapPartition=""
@@ -394,7 +394,7 @@ then
           esac
       esac          
     else
-      if [ $i != Skip ] && [ $i != Swapfile ]; then
+      if [ $i != "Done" ] && [ $i != Swapfile ]; then
         Remaining="$Remaining $i"	# Add next available partition
       fi
     fi
@@ -490,16 +490,13 @@ MakePartition() {
 	AddPartList[$ExtraPartitions]="${Partition}"
   CheckPartition   # Before going to select_filesystem, check the partition
   if [ ${CurrentType} ]; then
-    print_info "You can choose to leave it as it is, by selecting 'Skip', but not"
+    print_info "You can choose to leave it as it is, by selecting 'Done', but not"
     print_info "reformatting an existing partition can have unexpected consequences."
     echo
   fi
   # 2) Select filesystem
   TypeList="ext2 ext3 ext4 btrfs" # Set format types for the selected partition
 	select_filesystem
-  if [ -z ${PartitionType} ]; then
-		PartitionType="Skip"
-	fi
 	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list  
   # 3) Then get a label for it
 	LoopRepeat="Y"
@@ -552,7 +549,7 @@ SetGrubDevice() {
   GrubDevice=""
 	Counter=0
 	print_info "Select the device where Grub is to be installed."
-  print_info "Note that if you select the 'Skip' option, Grub will"
+  print_info "Note that if you select the 'Done' option, Grub will"
   print_info "not be installed, and you will have to make"
   print_info "alternative arrangements for booting your new system."
   echo
@@ -563,7 +560,7 @@ SetGrubDevice() {
     Item=$i
     Counter=$((Counter+1))
     if [ $Counter -eq $Reply ]; then
-      if [ $Item = Skip ]; then
+      if [ $Item = "Done" ]; then
         GrubDevice=""
       else
         GrubDevice=$Item

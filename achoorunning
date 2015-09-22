@@ -72,7 +72,7 @@ Complete=0
 # -----------------
 # arch_chroot       80
 # umount_partitions 85
-# MountPartitions   41
+# MountPartitions   97
 # TestExistingDM   109
 # SetRootPassword  138
 # SetUserPassword  169
@@ -105,8 +105,6 @@ MountPartitions() {
   
   case $RootType in
     "") TPecho "Not formatting root partition"
-    ;;
-    "Skip") TPecho "Not formatting root partition"
     ;;
     *) TPecho "Formatting /root partition"
     # Check if replacing existing ext3/4 partition with btrfs
@@ -152,7 +150,7 @@ MountPartitions() {
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
-    elif [ ${AddPartType[$Counter]} != "Skip" ];     then
+    elif [ ${AddPartType[$Counter]} != "" ];     then
       mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
       CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi
