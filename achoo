@@ -66,6 +66,16 @@ TestUEFI
 CheckParts
 
 if [ $AutoPart -eq 0 ]; then
+  # Build new list of partitions
+  PartitionList=""
+  Counter=0
+  ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+  for Part in "${ShowPartitions}"
+  do
+    Counter=$((Counter+1))
+    PartitionList="${PartitionList} ${Part}" # Build PartitionList for next functions
+  done
+  PARTITIONS=${Counter}
   # Display partitions and allocate root
   if [ $UEFI -eq 0 ]; then
     AllocateRoot

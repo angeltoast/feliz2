@@ -94,16 +94,7 @@ CheckParts() {
     echo
     Partitioning # Partitioning options
 	fi
-  # Build new list of partitions
-  PartitionList=""
-  Counter=0
-  ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  for Part in "${ShowPartitions}"
-  do
-    Counter=$((Counter+1))
-    PartitionList="${PartitionList} ${Part}" # Build PartitionList for next functions
-  done
-  PARTITIONS=${Counter}
+
 }
 
 Partitioning() {
