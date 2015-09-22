@@ -94,7 +94,7 @@ CheckParts() {
     echo
     Partitioning # Partitioning options
 	fi
-
+  lsblk >/dev/null # Reset
 }
 
 Partitioning() {
