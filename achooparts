@@ -79,6 +79,9 @@ CheckParts() {
         Counter=$((Counter+1))
       done
       PARTITIONS=${Counter}
+echo $LINENO
+lsblk -l | grep 'part' | awk '{print $1}'
+read -p ""
     done
   else
     # Alternatively, offer cfdisk to edit existing partitions
@@ -97,13 +100,17 @@ CheckParts() {
   # Build new list of partitions
   PartitionList=""
   Counter=0
+echo $LINENO
+lsblk -l | grep 'part' | awk '{print $1}'
+read -p ""
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  for Part in $ShowPartitions
+  for Part in "${ShowPartitions}"
   do
     Counter=$((Counter+1))
-    PartitionList="$PartitionList $Part" # Build PartitionList for next functions
+    PartitionList="${PartitionList} ${Part}" # Build PartitionList for next functions
   done
   PARTITIONS=${Counter}
+read -p "$PARTITIONS $PartitionList"
 }
 
 Partitioning() {
@@ -121,6 +128,9 @@ Partitioning() {
     case $Proceed in
       1) cfdisk 2> error.log
         CheckForError "${LINENO} 'cfdisk'" 2
+echo $LINENO
+lsblk -l | grep 'part' | awk '{print $1}'
+read -p ""
       ;;
       2) AutoPartition
       ;;
@@ -185,7 +195,7 @@ AutoWarning() {
 while :
 do
   print_info "This will erase any data on the device"
-  TPread "Are you sure you wish to continue? (y/N): "
+  TPread "Are you sure you wish to continue? (y/n): "
   case $Response in
     "Y" | "y") RunAutoPart
       break
@@ -460,7 +470,7 @@ do
   PartitionList="$PartitionList"
 	print_info "The following partitions remain unallocated."
   print_info "If you wish to use one, select it from the list,"
-  print_info "or choose 'Skip' to finish partitioning."
+  print_info "or choose 'Done' to finish partitioning."
   echo
 	Menu "${PartitionList}" "$Prompt1" "Partitions"
   echo
@@ -472,14 +482,14 @@ do
       PartCounter=$((PartCounter+1))
 			if [ $PartCounter -eq $Selected ]
 			then
-        if [ $Part = "Skip" ]; then
+        if [ $Part = "Done" ]; then
           break 2
-        else                        # If item is not 'Skip'
+        else                        # If item is not 'Done'
         	Partition="/dev/$Part"
           MakePartition # Call MakePartition to complete details
         fi
       else                          # If $Counter is not equal to $Selected
-        if [ $Part != "Skip" ]; then   # (and not 'Skip')
+        if [ $Part != "Done" ]; then   # (and not 'Done')
           Remaining="$Remaining $Part" # Add unused partition to temp list
           AddedToRemaining=$(($AddedToRemaining+1))
         fi
