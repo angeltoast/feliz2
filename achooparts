@@ -94,8 +94,7 @@ CheckParts() {
     echo
     Partitioning # Partitioning options
 	fi
-  genfstab -U -p /mnt > /mnt/etc/fstab 2> error.log # Rebuild fstab
-  CheckForError "${LINENO} 'genfstab'" 2
+
 }
 
 Partitioning() {
@@ -112,6 +111,7 @@ Partitioning() {
     echo
     case $Proceed in
       1) cfdisk 2> error.log
+        partprobe 2> error.log #Inform kernel of changes to partitions
         CheckForError "${LINENO} 'cfdisk'" 2
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
