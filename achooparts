@@ -94,7 +94,8 @@ CheckParts() {
     echo
     Partitioning # Partitioning options
 	fi
-  umount_partitions # Reset
+  genfstab -U -p /mnt > /mnt/etc/fstab 2> error.log # Rebuild fstab
+  CheckForError "${LINENO} 'genfstab'" 2
 }
 
 Partitioning() {
