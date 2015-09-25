@@ -111,9 +111,8 @@ Partitioning() {
     echo
     case $Proceed in
       1) cfdisk 2> error.log
-        tput setf 0 # Change foreground colour temporarily to hide error message
+        tput setf 0 # Change foreground colour to black temporarily to hide error message
         partprobe 2> error.log #Inform kernel of changes to partitions
-        CheckForError "${LINENO} 'cfdisk'" 0
         tput sgr0 # Reset colour
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
@@ -343,7 +342,7 @@ AllocateRoot() {
 			Remaining="$Remaining $i"	# Add next available partition
 		fi
 	done
-    PartitionList=$Remaining			# Replace original PartitionList with remaining options
+  PartitionList=$Remaining			# Replace original PartitionList with remaining options
 }
 
 CheckPartition() {
@@ -402,7 +401,6 @@ then
       fi
     fi
   done
-
   if [ $SwapPartition ]; then
     read_timed "$SwapPartition will be used for swap" 1
   elif [ $SwapFile ]; then
@@ -441,7 +439,6 @@ done
 }
 
 ExtraPartitions() {
-local PartCounter=0
 local Elements=0
 AddedToRemaining=0
 for i in ${PartitionList}
@@ -452,31 +449,30 @@ while [ $Elements -gt 0 ]
 do
 	print_heading
 	Remaining=""
-  PartitionList="$PartitionList"
 	print_info "The following partitions remain unallocated."
   print_info "If you wish to use one, select it from the list,"
   print_info "or choose 'Done' to finish partitioning."
   echo
 	Menu "${PartitionList}" "$Prompt1" "Partitions"
   echo
-	for Part in ${PartitionList} # Iterate through the list
+	for Part in "${PartitionList}" # Iterate through the list
 	do
     Partition=""
     PartitionType=""
-    if [ $Part = $Result ] && [ $Part != "Done" ]; then
+    if [ $Part = $Result ] && [ $Result != "Done" ]; then
      	Partition="/dev/$Part"
-      MakePartition # Call MakePartition to complete details
+      MakePartition # Call complete details
     elif [ $Part != "Done" ]; then   # Part is not selected and not 'Done'
       Remaining="$Remaining $Part" # Add unused partition to temp list
       AddedToRemaining=$(($AddedToRemaining+1))
     fi
   done
-  Elements=0
-  for i in ${Remaining}
-  do
-    Elements=$((Elements+1))
-  done  
   PartitionList=$Remaining	# Replace original PartitionList with temp list
+  if [ $Result = "Done" ]; then
+    Elements=0
+  else
+    Elements=$AddedToRemaining
+  fi
 done
 # Ensure that if AddPartList (the defining array) is empty, all others are too
 if [ -z ${#AddPartList[@]} ]
