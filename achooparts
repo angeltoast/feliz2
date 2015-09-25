@@ -111,8 +111,10 @@ Partitioning() {
     echo
     case $Proceed in
       1) cfdisk 2> error.log
+        tput setf 0 # Change foreground colour temporarily to hide error message
         partprobe 2> error.log #Inform kernel of changes to partitions
-        CheckForError "${LINENO} 'cfdisk'" 2
+        CheckForError "${LINENO} 'cfdisk'" 0
+        tput sgr0 # Reset colour
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
       2) AutoPartition
