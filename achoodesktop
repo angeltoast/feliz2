@@ -416,7 +416,7 @@ AddDEextras() {
     ;;
   *) echo
  esac
- TPread "Include the $Extras pack? [y/N] : "
+ TPread "Include the $Extras pack? [y/n] : "
 }
 
 ChooseDM() {
@@ -427,7 +427,7 @@ ChooseDM() {
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
   echo
-  Menu "${DMList}" "Choose your Display Manager" "Display-Managers"
+  Menu "${DMList}" "Choose your Display Manager: " "Display-Managers"
   Reply=$Response
   for item in ${DMList}
   do

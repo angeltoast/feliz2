@@ -108,8 +108,8 @@ fi
 }
 
 CheckAndAdd() {
-# Called from Multi-Menu. Adds item(s) to a variable specific to the
-# function that called Multi-Menu (in this instance it is for PickLuxuries)
+# Called from Multi-Menu. Adds item(s) to a variable specified when
+# calling Multi-Menu (in this instance it is for PickLuxuries)
 Caller="PickLuxuries"
 AddToList="Y"
 # First check that chosen item is not already on the list
