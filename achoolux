@@ -64,7 +64,7 @@ Programming="bluefish codeblocks emacs geany git netbeans"
 LongProg[1]="Bluefish - GTK+ IDE with support for Python plugins  "
 LongProg[2]="Code::Blocks - Open source & cross-platform C/C++ IDE"
 LongProg[3]="Emacs - extensible, customizable text editor"
-LongAccs[4]="Geany - Advanced text editor & IDE"
+LongProg[4]="Geany - Advanced text editor & IDE"
 LongProg[5]="Git - open source distributed version control system"
 LongProg[6]="Netbeans - Integrated development environment (IDE)"
 
