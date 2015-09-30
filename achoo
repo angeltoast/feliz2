@@ -88,7 +88,7 @@ if [ $AutoPart -eq 0 ]; then
   # Check contents of PartitionList again. If not empty, call the MorePartitions function
   if [ -n "${PartitionList}" ]
   then
-    MorePartitionsPartitions
+    MorePartitions
   fi
   # Select device for Grub
   if [ $AutoPart -eq 0 ]; then
