@@ -18,7 +18,7 @@
 # CheckParts          37       CheckPartition     342
 # Partitioning        98       AllocateSwap       352
 # Parted             128       SetSwapFile        411
-# AutoPartition      133       ExtraPartitions    436
+# AutoPartition      133       MorePartitions    436
 # select_filesystem  278       MakePartition      493
 #                              SetGrubDevice      554
 # -----------------------      -----------------------
@@ -438,7 +438,7 @@ do
 done 
 }
 
-ExtraPartitions() {
+MorePartitions() {
 local Elements=0
 AddedToRemaining=0
 for i in ${PartitionList}
@@ -470,6 +470,7 @@ do
   PartitionList=$Remaining	# Replace original PartitionList with temp list
   if [ $Result = "Done" ]; then
     Elements=0
+    break
   else
     Elements=$AddedToRemaining
   fi

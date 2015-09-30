@@ -50,6 +50,9 @@ do
     invalid_option
   elif [ ${Response} -gt ${Counter} ]; then
     invalid_option
+  elif [ ${Response} -eq ${Counter} ]; then
+    Result="Done"
+    Complete=1
   else
     Result=${ConvertToArray[${Response}]}
     Complete=1

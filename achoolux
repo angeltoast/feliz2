@@ -269,8 +269,8 @@ do
     2) ChangeSwapPartition
         AllocateSwap
     ;;
-    3) ChangeExtraPartitions
-        ExtraPartitions
+    3) ChangePartitions
+        MorePartitions
     ;;
     4) SetGrubDevice
     ;;
@@ -333,7 +333,7 @@ ChangeSwapPartition() {
   MakePartitionList
 }
 
-ChangeExtraPartitions() {
+ChangePartitions() {
 # Copy RootPartition and SwapPartition into temporary array
 Ignorelist[0]=${RootPartition}
 local Counter=1

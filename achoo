@@ -85,10 +85,10 @@ if [ $AutoPart -eq 0 ]; then
   then
     AllocateSwap
   fi
-  # Check contents of PartitionList again. If not empty, call the ExtraPartitions function
+  # Check contents of PartitionList again. If not empty, call the MorePartitions function
   if [ -n "${PartitionList}" ]
   then
-    ExtraPartitions
+    MorePartitionsPartitions
   fi
   # Select device for Grub
   if [ $AutoPart -eq 0 ]; then
