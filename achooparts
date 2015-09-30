@@ -455,7 +455,7 @@ do
   echo
 	Menu "${PartitionList}" "$Prompt1" "Partitions"
   echo
-	for Part in "${PartitionList}" # Iterate through the list
+	for Part in ${PartitionList} # Iterate through the list
 	do
     Partition=""
     PartitionType=""
