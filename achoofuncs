@@ -309,3 +309,57 @@ SetScope() {
     esac
   done
 }
+
+InfoMenu() {
+# Advanced menuing function with extended descriptions linked to short name
+# Parameters: 1) Primary file; 2) Title; 3) Secondary file (long description); 
+# If global variable $Passed is not empty, that is displayed at the top 
+local Complete=0
+Result=""
+PrimaryFile="$1"
+name=$3[@]
+LongDescription=("${!name}")
+local Counter=0
+while [ $Complete -eq 0 ]
+do
+  if [ -n "${Passed}" ]; then
+    print_info "$Passed"
+  fi
+  echo
+  print_info "Select one item from this list by typing"
+  print_info "its number and pressing [Enter]"
+  echo
+  print_info "$2"
+  Underscore=`echo $2 | sed 's/./-/g'`
+  print_info "$Underscore"
+  Counter=0
+  # for i in $PrimaryFile; do
+  for i in "${LongDescription[@]}"; do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      print_info "${Counter}) $i"
+    else
+      print_list "${Counter}) $i"
+    fi
+  done
+  Counter=$((Counter+1))
+  print_list "$Counter) Done"
+  echo
+  TPread "Please enter one number : "
+  if [ -z ${Response} ] || [ ${Response} = ${Counter} ]; then
+    Result="Done"
+    Complete=1
+  elif [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
+    invalid_option
+  else
+    Counter=0
+    for i in $PrimaryFile; do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Response ]; then
+        Result="$i"
+      fi
+    done
+    break
+  fi
+done
+}

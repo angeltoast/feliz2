@@ -301,9 +301,32 @@ select_filesystem() {
 	done
 }
 
+BuildPartitionLists() {
+# New code to list more information of partitions to help user when
+# choosing for root, etc by passing an array of long details to InfoMenu
+# Use sfdisk to find if any partition is labelled as bootable
+Flagged=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
+# (NOTE: There could be more than one - this has yet to be dealt with) # # # # # # # # # # 
+PartitionList="" # List of short identifiers for InfoMenu
+local Counter=0
+ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+  for part in ${ShowPartitions}
+  do
+    if [ $part = $Flagged ]; then
+      PartitionArray[$Counter]="`lsblk -l | grep $part | awk '{print $1, $4, $7}'` (Bootable)"
+    else
+      PartitionArray[$Counter]=`lsblk -l | grep $part | awk '{print $1,$4,$7}'`
+    fi
+    # Then save other details (this will be the short-reference for InfoMenu)
+    Counter=$((Counter+1))
+    PartitionList="${PartitionList} ${part}" # Build PartitionList for next functions
+  done
+  PARTITIONS=${Counter}
+}
+
 AllocateRoot() {
-# Display partitions for user-selection	
-	# Uses list of all available partitions in PartitionList created in CheckParts
+  # Display partitions for user-selection	
+	# Uses list of all available partitions in PartitionList
 	print_heading
 	Remaining=""
 	local Counter=0
@@ -311,7 +334,10 @@ AllocateRoot() {
 	PartitionType=""
 	print_info "Please now select a partition to use for root."
   echo
-	Menu "${PartitionList}" "$Prompt1" "Partitions"
+  
+# Changed from Menu to InfoMenu here ..... 
+#	Menu "${PartitionList}" "$Prompt1" "Partitions"
+InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   Reply=$Response
   for i in ${PartitionList}
   do
@@ -371,7 +397,9 @@ then
   SwapFile=""
   print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
-  Menu "${PickFrom}" "$Prompt1" "Partitions"
+# Changed here ...
+#  Menu "${PickFrom}" "$Prompt1" "Partitions"
+InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   Reply=$Response
   echo
   for i in ${PickFrom}

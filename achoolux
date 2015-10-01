@@ -79,22 +79,23 @@ print_info "Yaourt is now optional, and is located in 'Accessories'"
 while [ $Complete -eq 0 ]
 do
   Menu "$Categories" "Please choose a category: "
-  print_heading
-   case $Response in
-    1) Multimenu "$Accessories" "Added so far: ${LuxuriesList}" "Accessories" "LongAccs"
-    ;;
-    2) Multimenu "$Graphical" "Added so far: ${LuxuriesList}" "Graphical" "LongGraph"
-    ;;
-    3) Multimenu "$Internet" "Added so far: ${LuxuriesList}" "Internet" "LongNet"
-    ;;
-    4) Multimenu "$Multimedia" "Added so far: ${LuxuriesList}" "Multimedia" "LongMulti"
-    ;;
-    5) Multimenu "$Office" "Added so far: ${LuxuriesList}" "Office" "LongOffice"
-    ;;
-    6) Multimenu "$Programming" "Added so far: ${LuxuriesList}" "Programming" "LongProg"
-    ;;
-    *) break
-  esac
+#  print_heading
+#   case $Response in
+#    1) InfoMenu "$Accessories" "Added so far: ${LuxuriesList}" "Accessories" "LongAccs"
+#    ;;
+#    2) InfoMenu "$Graphical" "Added so far: ${LuxuriesList}" "Graphical" "LongGraph"
+#    ;;
+#    3) InfoMenu "$Internet" "Added so far: ${LuxuriesList}" "Internet" "LongNet"
+#   ;;
+#    4) InfoMenu "$Multimedia" "Added so far: ${LuxuriesList}" "Multimedia" "LongMulti"
+#    ;;
+#    5) InfoMenu "$Office" "Added so far: ${LuxuriesList}" "Office" "LongOffice"
+#    ;;
+#   6) InfoMenu "$Programming" "Added so far: ${LuxuriesList}" "Programming" "LongProg"
+#    ;;
+#    *) break
+#  esac
+  ShoppingList
   print_heading
   print_info "Added so far: ${LuxuriesList}"
   echo
@@ -107,21 +108,49 @@ if [ -n "${LuxuriesList}" ]; then
 fi
 }
 
-CheckAndAdd() {
-# Called from Multi-Menu. Adds item(s) to a variable specified when
-# calling Multi-Menu (in this instance it is for PickLuxuries)
-Caller="PickLuxuries"
-AddToList="Y"
-# First check that chosen item is not already on the list
-for lux in $LuxuriesList
+ShoppingList() {
+# Allows InfoMenu to concentrate on menus. This function
+# is called by PickLuxuries after a category has been chosen.
+# 
+local Complete=0
+Response="3" # For testing only (obviously)
+Passed="Choose your first item"
+# and will pass them on to InfoMenu for the user to choose one item;
+# When control returns here, it is checked then added to the shopping list
+# Then InfoMenu is called again until user selects "Done" 
+while [ $Complete -eq 0 ]
 do
-  if [ ${lux} = ${Result} ]; then
-    read_timed "Already in your shopping list"
-    AddToList="N"
-  fi
-done
-# Then carry out any specific tests and add the item to the
-if [ ${AddToList} = "Y" ]; then
+  print_heading
+  print_info "Added so far: ${LuxuriesList}"
+  echo
+  Category=$Response
+   case $Category in
+    1) InfoMenu "$Accessories" "Accessories" "LongAccs"
+    ;;
+    2) InfoMenu "$Graphical" "Graphical" "LongGraph"
+    ;;
+    3) InfoMenu "$Internet" "Internet" "LongNet"
+    ;;
+    4) InfoMenu "$Multimedia" "Multimedia" "LongMulti"
+    ;;
+    5) InfoMenu "$Office" "Office" "LongOffice"
+    ;;
+    6) InfoMenu "$Programming" "Programming" "LongProg"
+    ;;
+    *) break
+  esac
+
+  AddToList="Y"
+  # First check that chosen item is not already on the list
+  for lux in $LuxuriesList
+  do
+    if [ ${lux} = ${Result} ]; then
+      read_timed "Already in your shopping list"
+      AddToList="N"
+    fi
+  done
+  # Then carry out any specific tests and add the item to the
+  if [ ${AddToList} = "Y" ]; then
     if [ ${Result} = "libreoffice" ]; then
       LibreVersion
       case $Response in
@@ -134,61 +163,8 @@ if [ ${AddToList} = "Y" ]; then
     else
       LuxuriesList="${LuxuriesList} ${Result}"
     fi
-  Passed="Added so far: ${LuxuriesList}"  
-fi
-}
-
-Multimenu() {
-# Menu, with extended descriptions linked to app name
-# Parameters: 1) Primary file; 2) Copy of existing output file;
-# 3) Title; 4) Secondary file (long description); 
-local Complete=0
-Result=""
-PrimaryFile="$1"
-Passed="$2"
-name=$4[@]
-LongDescription=("${!name}")
-local Counter=0
-while [ $Complete -eq 0 ]
-do
-  print_heading
-  print_info "$Passed"
-  echo
-  print_info "Please select one item at a time from this list"
-  print_info "by entering its number and pressing [Enter]"
-  echo
-  print_info "$3"
-  Underscore=`echo $3 | sed 's/./-/g'`
-  print_info "$Underscore"
-  Counter=0
-  # for i in $PrimaryFile; do
-  for i in "${LongDescription[@]}"; do
-    Counter=$((Counter+1))
-    if [ $Counter -eq 1 ]; then
-      print_info "${Counter}) $i"
-    else
-      print_list "${Counter}) $i"
-    fi
-  done
-  Counter=$((Counter+1))
-  print_list "$Counter) Done"
-  echo
-  TPread "Please enter one number : "
-  if [ -z ${Response} ] || [ ${Response} = ${Counter} ]; then
-    Result="Done"
-    Complete=1
-  elif [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
-    invalid_option
-  else
-    Counter=0
-    for i in $PrimaryFile; do
-      Counter=$((Counter+1))
-      if [ $Counter -eq $Response ]; then
-        Result="$i"
-      fi
-    done
-    CheckAndAdd
   fi
+  Passed="Choose your next item"
 done
 }
 
