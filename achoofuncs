@@ -326,8 +326,7 @@ do
     print_info "$Passed"
   fi
   echo
-  print_info "Select one item from this list by typing"
-  print_info "its number and pressing [Enter]"
+  print_info "Select one item from this list"
   echo
   print_info "$2"
   Underscore=`echo $2 | sed 's/./-/g'`

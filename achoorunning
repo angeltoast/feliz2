@@ -19,6 +19,7 @@ declare -a AddPartList	# Array of additional partitions by system name. eg: /dev
 declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
 declare -a AddPartType	# Array of format type for the same partitions. eg: ext4
 declare -a PartitionArray # List of long identifiers for InfoMenu
+declare -a NewArray # For copying any array
 GrubDevice=""     # "/dev/sda"
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap

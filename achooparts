@@ -11,17 +11,17 @@
 # Please read the introduction in the main Achoo! script
 # 
 
-# -----------------------      -----------------------
-# Functions         Line       Functions         Line
-# -----------------------      -----------------------
-# TestUEFI            25       AllocateRoot       298
-# CheckParts          37       CheckPartition     342
-# Partitioning        98       AllocateSwap       352
-# Parted             128       SetSwapFile        411
-# AutoPartition      133       MorePartitions    436
-# select_filesystem  278       MakePartition      493
-#                              SetGrubDevice      554
-# -----------------------      -----------------------
+# -----------------------      ------------------------
+# Functions         Line       Functions           Line
+# -----------------------      ------------------------
+# TestUEFI            25       BuildPartitionLists 304
+# CheckParts          37       CheckPartition      342
+# Partitioning       100       AllocateSwap        352
+# Parted             128       SetSwapFile         411
+# AutoPartition      133       MorePartitions      494
+# select_filesystem  278       MakePartition       540
+# AllocateRoot       298       SetGrubDevice       598
+# -----------------------      ------------------------
 
 TestUEFI() { # Called immediately after establishing internet connection
  dmesg | grep -q "EFI v" # -q tells grep to output nothing
@@ -324,6 +324,31 @@ ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   PARTITIONS=${Counter}
 }
 
+UpdateArray() {
+  # Remove the selected partition from $PartitionArray[]
+  # (This code will also be needed in AllocateSwap and MorePartitions)
+	local Counter=0
+  # First create new array without selected item
+  for p in "${PartitionArray[@]}"
+  do
+    First=`echo $p | cut -c 1-5`
+    if [ ${Result} != ${First} ]; then
+      NewArray[${Counter}]="$p"
+      Counter=$((Counter+1))
+    fi
+  done
+  # Then copy NewArray into PartitionArray
+  Counter=0
+  for p in "${NewArray[@]}"
+  do
+    PartitionArray[${Counter}]=${NewArray[$Counter]}
+    Counter=$((Counter+1))
+  done
+  unset PartitionArray[$Counter] # Delete the last element
+  Counter=$((Counter-1))
+  unset NewArray[$Counter] # Also delete the last element from the copy array
+}
+
 AllocateRoot() {
   # Display partitions for user-selection	
 	# Uses list of all available partitions in PartitionList
@@ -334,11 +359,10 @@ AllocateRoot() {
 	PartitionType=""
 	print_info "Please now select a partition to use for root."
   echo
-  
-# Changed from Menu to InfoMenu here ..... 
-#	Menu "${PartitionList}" "$Prompt1" "Partitions"
-InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+  InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   Reply=$Response
+  UpdateArray # Remove the selected partition from $PartitionArray[]
+  Counter=0  
   for i in ${PartitionList}
   do
 		Counter=$((Counter+1))
@@ -397,10 +421,9 @@ then
   SwapFile=""
   print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
-# Changed here ...
-#  Menu "${PickFrom}" "$Prompt1" "Partitions"
-InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+  InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   Reply=$Response
+  UpdateArray # Remove the selected partition from $PartitionArray[]
   echo
   for i in ${PickFrom}
   do
@@ -481,7 +504,11 @@ do
   print_info "If you wish to use one, select it from the list,"
   print_info "or choose 'Done' to finish partitioning."
   echo
-	Menu "${PartitionList}" "$Prompt1" "Partitions"
+	#Menu "${PartitionList}" "$Prompt1" "Partitions"
+  InfoMenu "$PartitionList" "Partitions" "PartitionArray"  
+    
+  UpdateArray # Remove the selected partition from $PartitionArray[]
+  
   echo
 	for Part in ${PartitionList} # Iterate through the list
 	do
