@@ -421,7 +421,7 @@ then
   SwapFile=""
   print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
-  InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+  InfoMenu "$PickFrom" "Partitions" "PartitionArray" "Swapfile"
   Reply=$Response
   UpdateArray # Remove the selected partition from $PartitionArray[]
   echo
@@ -504,11 +504,8 @@ do
   print_info "If you wish to use one, select it from the list,"
   print_info "or choose 'Done' to finish partitioning."
   echo
-	#Menu "${PartitionList}" "$Prompt1" "Partitions"
-  InfoMenu "$PartitionList" "Partitions" "PartitionArray"  
-    
+  InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   UpdateArray # Remove the selected partition from $PartitionArray[]
-  
   echo
 	for Part in ${PartitionList} # Iterate through the list
 	do

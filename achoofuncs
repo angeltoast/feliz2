@@ -15,11 +15,12 @@
 # Functions           Line
 # -------------------------
 # MeNu                 25 (See separate manual)
-# Input and output     61
-# Error-checking       135
-# Internet connection  222
-# Mirrorlist           277
-# SetScope             314
+# Input and output     65-162
+# Error-checking       163
+# Internet connection  199-242
+# Mirrorlist           243-281
+# SetScope             282
+# InfoMenu             306
 # -------------------------
 
 Menu() { 
@@ -158,14 +159,6 @@ read_timed() { # Now can receive second parameter to set duration
   fi
   read -t ${tim} -p "$EMPTY $1"
   echo
-}
-
-SetPS3() { # Aligned prompt for 'select' command
-  T_COLS=`tput cols`
-  lov=40
-  stpt=$(( ($T_COLS - $lov) / 2 ))
-  EMPTY="$(printf '%*s' $stpt)"
-  PS3="${EMPTY} Enter the number of your selection : "
 }
 
 CheckForError() {
@@ -312,13 +305,15 @@ SetScope() {
 
 InfoMenu() {
 # Advanced menuing function with extended descriptions linked to short name
-# Parameters: 1) Primary file; 2) Title; 3) Secondary file (long description); 
+# Parameters: 1) Primary file; 2) Title; 3) Secondary file (long description);
+# Optional 4) An additional item for the menu
 # If global variable $Passed is not empty, that is displayed at the top 
 local Complete=0
 Result=""
 PrimaryFile="$1"
 name=$3[@]
 LongDescription=("${!name}")
+ExtraItem=$4
 local Counter=0
 while [ $Complete -eq 0 ]
 do
@@ -342,7 +337,13 @@ do
     fi
   done
   Counter=$((Counter+1))
-  print_list "$Counter) Done"
+  if [ -n "${ExtraItem}" ]; then
+    print_list "$Counter) $4"
+    Counter=$((Counter+1))
+    print_list "$Counter) Done"
+  else
+    print_list "$Counter) Done"
+  fi
   echo
   TPread "Please enter one number : "
   if [ -z ${Response} ] || [ ${Response} = ${Counter} ]; then
