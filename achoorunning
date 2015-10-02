@@ -15,11 +15,11 @@
 #
 # Partition variables
 #
-declare -a AddPartList	# Array of additional partitions by system name. eg: /dev/sda5
-declare -a AddPartLabel # Array of labels for the same partitions in the same order. eg: /home
-declare -a AddPartType	# Array of format type for the same partitions. eg: ext4
+declare -a AddPartList	  # Array of additional partitions by system name. eg: /dev/sda5
+declare -a AddPartLabel   # Array of labels for the same partitions in the same order. eg: /home
+declare -a AddPartType  	# Array of format type for the same partitions. eg: ext4
 declare -a PartitionArray # List of long identifiers for InfoMenu
-declare -a NewArray # For copying any array
+declare -a NewArray       # For copying any array
 GrubDevice=""     # "/dev/sda"
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap
@@ -34,7 +34,6 @@ EFIPartition=""   # Will hold partition label for mounting
 AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"     # Used if more than one disk
 DiskDetails=0     # Size of selected disk
-
 #
 # Location variables
 #
@@ -58,7 +57,6 @@ Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
 HostName=""       # "arch-linux"
 UserName=""       # "archie"
 Scope="Basic"     # Installation scope ... 'Extras' 'Full' or 'Basic'
-
 #
 # Input/Output variables
 #
@@ -69,21 +67,50 @@ Response="" # Global user input variable
 Banner="~ https://wiki.archlinux.org ~"
 Complete=0
 
-# -----------------
-# Functions    Line
-# -----------------
+# ---------------------
+# Functions        Line
+# ---------------------
 # arch_chroot       80
-# umount_partitions 85
-# MountPartitions   97
-# TestExistingDM   109
-# SetRootPassword  138
-# SetUserPassword  169
-# -----------------
+# SetGrubDevice     89
+# umount_partitions 117
+# MountPartitions   128
+# TestExistingDM    192
+# SetRootPassword   221
+# SetUserPassword   252
+# ---------------------
 
 arch_chroot() {  # Taken directly from Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2> error.log
   CheckForError "${LINENO} 'arch-chroot /mnt ${1}'" 2
 }  
+
+SetGrubDevice() {
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
+	print_heading
+  GrubDevice=""
+	Counter=0
+	print_info "Select the device where Grub is to be installed."
+  print_info "Note that if you select the 'Done' option, Grub will"
+  print_info "not be installed, and you will have to make"
+  print_info "alternative arrangements for booting your new system."
+  echo
+	Menu "${DevicesList}" "Enter the number of your selection: " "Devices"
+  Reply=$Response
+  for i in ${DevicesList}
+	do
+    Item=$i
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]; then
+      if [ $Item = "Done" ]; then
+        GrubDevice=""
+      else
+        GrubDevice=$Item
+      fi
+      break
+  	fi
+	done
+}
 
 umount_partitions(){ # from Lution/AUI
   MOUNTED=""
@@ -97,14 +124,12 @@ umount_partitions(){ # from Lution/AUI
 }
 
 MountPartitions() {
-  
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
     mkfs.fat -F32 ${EFIPartition} 2> error.log
     CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
     mkdir /mnt/boot
   #  mount ${EFIPartition} /mnt/boot
   fi
-  
   case $RootType in
     "") TPecho "Not formatting root partition"
     ;;

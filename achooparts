@@ -85,7 +85,17 @@ CheckParts() {
     print_heading
 		print_info "Here is a list of available partitions on all connected devices ..."
     echo
-		lsblk -l | grep 'part'
+    Counter=0
+		BuildPartitionLists # Function to generate an array of partitions
+    for part in ${PartitionList}
+    do
+      if [ $Counter = 0 ]; then
+        print_info "${PartitionArray[$Counter]}"
+      else
+        print_list "${PartitionArray[$Counter]}"
+      fi
+      Counter=$((Counter+1))
+    done
 		echo
     print_info "'cfdisk' is available for you to edit them, or Achoo can"
     print_info "overwrite them with a new partition table if you wish."
@@ -419,12 +429,23 @@ then
   SwapPartition=""
   PickFrom="$PartitionList Swapfile"
   SwapFile=""
+  declare -a CopyArray # For passing to InfoMenu
+  local Counter=0
+  for p in "${PartitionArray[@]}"
+  do
+    CopyArray[${Counter}]=${PartitionArray[$Counter]}
+    Counter=$((Counter+1))
+  done
+  CopyArray[${Counter}]="Swapfile"
   print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
-  InfoMenu "$PickFrom" "Partitions" "PartitionArray" "Swapfile"
+  InfoMenu "$PickFrom" "Partitions" "CopyArray"
   Reply=$Response
-  UpdateArray # Remove the selected partition from $PartitionArray[]
+  if [ $Result != "Swapfile" ] && [ $Result != "Done" ]; then
+    UpdateArray # Remove the selected partition from $PartitionArray[]
+  fi
   echo
+  Counter=0
   for i in ${PickFrom}
   do
     Counter=$((Counter+1))
@@ -555,7 +576,7 @@ MakePartition() {
 	while [ ${LoopRepeat} = "Y" ]
 	do
     echo
-		print_info "Enter a mount-point for ${Partition} ..."
+		print_info "Enter a mountpoint for ${Partition} ..."
     TPread "eg: '/home' ... /"
  		# Check that entry includes '/'
 		CheckInput=(`echo $Response | cut -c1`)
@@ -579,7 +600,7 @@ MakePartition() {
 			do 
 				LabelCounter=$((LabelCounter+1))
 				if [ $Label = $PartLabel ]; then
-					read_timed "Label ${PartLabel} has already been used. Please use a different label."
+					read_timed "Mountpoint ${PartLabel} has already been used. Please use a different mountpoint."
 				else
 					LoopRepeat="N"
 					break
@@ -592,32 +613,4 @@ MakePartition() {
 		fi 
 	done 
 	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
-}
-
-SetGrubDevice() {
-  DEVICE=""
-  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
-	print_heading
-  GrubDevice=""
-	Counter=0
-	print_info "Select the device where Grub is to be installed."
-  print_info "Note that if you select the 'Done' option, Grub will"
-  print_info "not be installed, and you will have to make"
-  print_info "alternative arrangements for booting your new system."
-  echo
-	Menu "${DevicesList}" "Enter the number of your selection: " "Devices"
-  Reply=$Response
-  for i in ${DevicesList}
-	do
-    Item=$i
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Reply ]; then
-      if [ $Item = "Done" ]; then
-        GrubDevice=""
-      else
-        GrubDevice=$Item
-      fi
-      break
-  	fi
-	done
 }

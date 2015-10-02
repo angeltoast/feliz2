@@ -306,7 +306,6 @@ SetScope() {
 InfoMenu() {
 # Advanced menuing function with extended descriptions linked to short name
 # Parameters: 1) Primary file; 2) Title; 3) Secondary file (long description);
-# Optional 4) An additional item for the menu
 # If global variable $Passed is not empty, that is displayed at the top 
 local Complete=0
 Result=""
@@ -337,13 +336,7 @@ do
     fi
   done
   Counter=$((Counter+1))
-  if [ -n "${ExtraItem}" ]; then
-    print_list "$Counter) $4"
-    Counter=$((Counter+1))
-    print_list "$Counter) Done"
-  else
-    print_list "$Counter) Done"
-  fi
+  print_list "$Counter) Done"
   echo
   TPread "Please enter one number : "
   if [ -z ${Response} ] || [ ${Response} = ${Counter} ]; then
