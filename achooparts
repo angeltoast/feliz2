@@ -80,13 +80,16 @@ CheckParts() {
       done
       PARTITIONS=${Counter}
     done
+    # Call function to generate an array of partitions
+		BuildPartitionLists # This is a first call
   else
     # Alternatively, offer cfdisk to edit existing partitions
     print_heading
 		print_info "Here is a list of available partitions on all connected devices ..."
     echo
+    # Call function to generate an array of partitions
+		BuildPartitionLists # This is a first call
     Counter=0
-		BuildPartitionLists # Function to generate an array of partitions
     for part in ${PartitionList}
     do
       if [ $Counter = 0 ]; then
@@ -103,8 +106,17 @@ CheckParts() {
     print_info "will continue with the existing partitions."
     echo
     Partitioning # Partitioning options
+    # Call function to generate an array of partitions
+    # This is not a first call, so first empty the existing array
+    	local x=0
+      local HowMany="${#PartitionArray[@]}"
+      until [ ${x} -eq ${HowMany} ]
+      do
+        unset PartitionArray[$x]
+        x=$((x+1))
+      done
+		BuildPartitionLists # Then rebuild
 	fi
-
 }
 
 Partitioning() {
@@ -312,7 +324,6 @@ select_filesystem() {
 }
 
 BuildPartitionLists() {
-
 # 1) Use blkid with grep to find all with LABEL, select first & second field; remove /dev/
   ListAll=`sudo blkid | grep LABEL | awk '{print $1 $2}' | cut -c 6-`
   declare -a Labelled
@@ -325,7 +336,6 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyLabelled="${#Labelled[@]}"
-
 # 2) Find any partitions flagged as bootable
   ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
   declare -a Flagged
@@ -336,11 +346,9 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyFlagged="${#Flagged[@]}"
-
 # 3) Prepare list of partitions
   PartitionList="" 
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-
 # 4) Run through short identifiers, checking the arrays for a match
   Counter=0
   for part in ${ShowPartitions}
@@ -381,7 +389,7 @@ UpdateArray() { # Remove the selected partition from $PartitionArray[]
 	local Counter=0
   # Empty NewArray
     local HowMany="${#NewArray[@]}"
-    x=0
+    local x=0
     until [ ${x} -eq ${HowMany} ]
     do
       unset NewArray[$x]

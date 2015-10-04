@@ -33,7 +33,7 @@ do
   local Counter=0
   MenuList=$1
   MenuPrompt="$2"
-  for i in $1
+  for i in $MenuList
   do
     Counter=$((Counter+1))
     if [ $Counter -eq 1 ]; then

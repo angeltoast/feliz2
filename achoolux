@@ -18,10 +18,9 @@
 # Variables       26
 # PickLuxuries    68
 # CheckAndAdd    107  (see separate Manual)
-# Multi-Menu     138
-# LibreVersion   203
-# FinalCheck     228
-# ManualSettings 303
+# LibreVersion   170
+# FinalCheck     193
+# ManualSettings 269
 # -------------------
 
 Categories="Accessories Graphical Internet Multimedia Office Programming"
@@ -76,31 +75,20 @@ print_heading
 print_info "Now you have the option to add 'luxuries' such as a"
 print_info "web browser, office software, graphical tools, etc"
 print_info "Yaourt is now optional, and is located in 'Accessories'"
+echo
 while [ $Complete -eq 0 ]
 do
-  Menu "$Categories" "Please choose a category: "
-#  print_heading
-#   case $Response in
-#    1) InfoMenu "$Accessories" "Added so far: ${LuxuriesList}" "Accessories" "LongAccs"
-#    ;;
-#    2) InfoMenu "$Graphical" "Added so far: ${LuxuriesList}" "Graphical" "LongGraph"
-#    ;;
-#    3) InfoMenu "$Internet" "Added so far: ${LuxuriesList}" "Internet" "LongNet"
-#   ;;
-#    4) InfoMenu "$Multimedia" "Added so far: ${LuxuriesList}" "Multimedia" "LongMulti"
-#    ;;
-#    5) InfoMenu "$Office" "Added so far: ${LuxuriesList}" "Office" "LongOffice"
-#    ;;
-#   6) InfoMenu "$Programming" "Added so far: ${LuxuriesList}" "Programming" "LongProg"
-#    ;;
-#    *) break
-#  esac
-  ShoppingList
-  print_heading
-  print_info "Added so far: ${LuxuriesList}"
-  echo
-  print_info "You can now choose from any of the other lists,"
-  print_info "or choose 'Done' to finish this part of the setup"
+  Menu "$Categories" "Please choose a category: " "Categories"
+  if [ $Result = "Done" ]; then
+    break
+  else
+    ShoppingList
+    print_heading
+    print_info "Added so far: ${LuxuriesList}"
+    echo
+    print_info "You can now choose from any of the other lists,"
+    print_info "or choose 'Done' to finish this part of the setup"
+  fi
 done
 LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
 if [ -n "${LuxuriesList}" ]; then
@@ -109,11 +97,8 @@ fi
 }
 
 ShoppingList() {
-# Allows InfoMenu to concentrate on menus. This function
-# is called by PickLuxuries after a category has been chosen.
-# 
+# Called by PickLuxuries after a category has been chosen.
 local Complete=0
-Response="3" # For testing only (obviously)
 Passed="Choose your first item"
 # and will pass them on to InfoMenu for the user to choose one item;
 # When control returns here, it is checked then added to the shopping list
@@ -139,7 +124,9 @@ do
     ;;
     *) break
   esac
-
+  if [ $Result = "Done" ]; then
+    continue
+  fi
   AddToList="Y"
   # First check that chosen item is not already on the list
   for lux in $LuxuriesList
