@@ -192,13 +192,13 @@ done
 }
 
 SetSubZone() {
+print_heading
 print_info "Now please enter the first letter"
 TPread "of your nearest major city: "
 while [ $Complete -eq 0 ]
 do
   if [ -z ${Response} ]
   then
-    print_heading
     invalid_option
     break
   fi
