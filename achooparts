@@ -14,26 +14,15 @@
 # -----------------------      ------------------------
 # Functions         Line       Functions           Line
 # -----------------------      ------------------------
-# TestUEFI            25       BuildPartitionLists 304
-# CheckParts          37       CheckPartition      342
-# Partitioning       100       AllocateSwap        352
-# Parted             128       SetSwapFile         411
-# AutoPartition      133       MorePartitions      494
-# select_filesystem  278       MakePartition       540
-# AllocateRoot       298       SetGrubDevice       598
+# CheckParts          25       BuildPartitionLists 306
+# Partitioning       101       UpdateArray         368
+# Parted             131       AllocateRoot        397
+# AutoPartition      136       CheckPartition      444
+# AutoWarning        180       AllocateSwap        454
+# RunAuto            197       SetSwapFile         524
+# select_filesystem  286       MorePartitions      549
+#                              MakePartition       595
 # -----------------------      ------------------------
-
-TestUEFI() { # Called immediately after establishing internet connection
- dmesg | grep -q "EFI v" # -q tells grep to output nothing
- if [ $? -eq 0 ]         # check exit code; 0 = EFI, else BIOS
- then
-   UEFI=1
-   System="UEFI"
-  else
-    UEFI=0
-    System="BIOS"
-  fi
-}
 
 CheckParts() {
 	# First test for existing partitions
@@ -106,7 +95,7 @@ CheckParts() {
     print_info "will continue with the existing partitions."
     echo
     Partitioning # Partitioning options
-    # Call function to generate an array of partitions
+    # Call function to regenerate the array of partitions
     MakePartitionList
 	fi
 }
@@ -322,7 +311,7 @@ BuildPartitionLists() {
   local Counter=0
   for i in $ListAll
   do
-    PartOne=`echo $i | cut -c 1-5 | sed s/://g` # Up to sda99 excluding colon
+    PartOne=`echo $i | cut -c 1-5 | sed s/://g`  # Up to sda99 excluding colon
     PartTwo=`echo $i | cut -c 13- | sed s/\"//g` # Label, removing final double-quote
     Labelled[${Counter}]="$PartOne $PartTwo"
     Counter=$((Counter+1))
@@ -341,7 +330,7 @@ BuildPartitionLists() {
 # 3) Prepare list of partitions
   PartitionList="" 
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-# 4) Run through short identifiers, checking the arrays for a match
+# 4) Run through short identifiers, checking the two arrays for a match
   Counter=0
   for part in ${ShowPartitions}
   do
@@ -350,7 +339,8 @@ BuildPartitionLists() {
     until [ ${x} -eq ${HowManyFlagged} ]
     do
       if [ $part = "${Flagged[$x]}" ]; then
-        Bootable="Bootable"
+        Bootable="(Bootable)"
+        break
       else
         Bootable=""
       fi
@@ -364,15 +354,17 @@ BuildPartitionLists() {
       if [ $part = "${ThisPart}" ]; then
         ThisPart=`echo "${Labelled[$x]}" | awk '{print $2}'`
         Label="${ThisPart}"
+        break
       else
         Label=""
       fi
       x=$((x+1))
     done
-    PartitionArray[$Counter]="$part ${Label} ${Bootable}"
-  # Save the short-reference for later functions
-    Counter=$((Counter+1))
+    LongID=`lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}'`
+    PartitionArray[${Counter}]="$LongID ${Label} ${Bootable}"
+    # Save the short ID for later functions
     PartitionList="${PartitionList} ${part}"
+    Counter=$((Counter+1))
   done
   PARTITIONS=${Counter}
 }
@@ -604,7 +596,9 @@ then
 fi
 }
 
-MakePartition() {
+MakePartition() { # Called by MorePartitions
+  # This function adds the selected partition to the array for extra partitions
+  # And allows selection of format type and mountpoint
   # 1) When selected, first save to AddPartList (eg: /dev/sda5)
 	ExtraPartitions=${#AddPartList[@]}
 	AddPartList[$ExtraPartitions]="${Partition}"

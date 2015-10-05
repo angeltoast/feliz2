@@ -318,17 +318,3 @@ AddExtras() {
   done
   Ignores=${#Ignorelist[@]} # Save a count for later
 }
-
-MakePartitionList() {
-  # Call function to generate an array of partitions
-  # This is not a first call, so first empty the existing array
-   	local x=0
-    local HowMany="${#PartitionArray[@]}"
-    until [ ${x} -eq ${HowMany} ]
-    do
-      unset PartitionArray[$x]
-      x=$((x+1))
-    done
-		BuildPartitionLists # Then rebuild
-}
-

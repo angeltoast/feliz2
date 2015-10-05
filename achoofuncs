@@ -18,9 +18,11 @@
 # Input and output     65-162
 # Error-checking       163
 # Internet connection  199-242
+# TestUEFI             245
 # Mirrorlist           243-281
 # SetScope             282
 # InfoMenu             306
+# MakePartitionList    360
 # -------------------------
 
 Menu() { 
@@ -240,6 +242,18 @@ do
 done
 }
 
+TestUEFI() { # Called immediately after establishing internet connection
+ dmesg | grep -q "EFI v" # -q tells grep to output nothing
+ if [ $? -eq 0 ]         # check exit code; 0 = EFI, else BIOS
+ then
+   UEFI=1
+   System="UEFI"
+  else
+    UEFI=0
+    System="BIOS"
+  fi
+}
+
 ReflectorMirrorList() {
  # Use reflector to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
@@ -355,4 +369,17 @@ do
     break
   fi
 done
+}
+
+MakePartitionList() {
+  # Call function to generate an array of partitions
+  # This is not a first call, so first empty the existing array
+   	local x=0
+    local HowMany="${#PartitionArray[@]}"
+    until [ ${x} -eq ${HowMany} ]
+    do
+      unset PartitionArray[$x]
+      x=$((x+1))
+    done
+		BuildPartitionLists # Then rebuild
 }
