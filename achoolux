@@ -1,23 +1,22 @@
 #!/bin/bash
 
-# achoodesktop - Functions relevant to users, locations, desktop
+# achoolux - Functions relevant to users, locations, desktop
 # settings and data review called by the main achoo script
 # 
-# This script and the achooparts, achoorunning and achoofuncs scripts must
-# all be present in the same directory as the main achoo script when running.
+# This script and the achooparts, achoorunning, achoodesktop and achoofuncs scripts
+# must all be present in the same directory as the main achoo script when running.
 # 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
 # 
 # Please read the introduction in the main Achoo! script
-# 
 
 # -------------------
 # Functions      Line
 # -------------------
 # Variables       26
-# PickLuxuries    68
-# CheckAndAdd    107  (see separate Manual)
+# PickLuxuries    69
+# ShoppingList    99
 # LibreVersion   170
 # FinalCheck     193
 # ManualSettings 269
@@ -79,6 +78,7 @@ echo
 while [ $Complete -eq 0 ]
 do
   Menu "$Categories" "Please choose a category: " "Categories"
+  Category=$Response
   if [ $Result = "Done" ]; then
     break
   else
@@ -108,8 +108,7 @@ do
   print_heading
   print_info "Added so far: ${LuxuriesList}"
   echo
-  Category=$Response
-   case $Category in
+  case $Category in
     1) InfoMenu "$Accessories" "Accessories" "LongAccs"
     ;;
     2) InfoMenu "$Graphical" "Graphical" "LongGraph"
@@ -125,7 +124,7 @@ do
     *) break
   esac
   if [ $Result = "Done" ]; then
-    continue
+    break
   fi
   AddToList="Y"
   # First check that chosen item is not already on the list
@@ -225,7 +224,8 @@ do
   echo
   print_list "Press [Enter] to install with these settings, or"
   TPread "enter an item number if you wish to change it: "
-  case $Response in
+  Change=$Response
+  case $Change in
     1) ChangeRootPartition
         AllocateRoot
     ;;
@@ -320,29 +320,15 @@ AddExtras() {
 }
 
 MakePartitionList() {
-  # Get a new list of all available partitions ...
-  Partitionlist=$(lsblk -l | grep 'part' | sed 's/[\t ].*//')
-  # Make an array
-  Counter=0
-  for a in $Partitionlist; do
-    AllPartitions[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-  # Parse through AllPartitions, comparing against each item in Ignorelist
-  PartitionList=""
-  use=1
-  for a in ${AllPartitions[@]}; do
-    for i in ${Ignorelist[@]}; do
-      if [ $i = $a ]; then
-        use=0
-        break
-      fi
+  # Call function to generate an array of partitions
+  # This is not a first call, so first empty the existing array
+   	local x=0
+    local HowMany="${#PartitionArray[@]}"
+    until [ ${x} -eq ${HowMany} ]
+    do
+      unset PartitionArray[$x]
+      x=$((x+1))
     done
-    if [ ${use} -eq 1 ]; then
-      PartitionList="${PartitionList} $a"
-    else
-      use=1
-    fi
-  done
+		BuildPartitionLists # Then rebuild
 }
 
