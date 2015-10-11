@@ -14,14 +14,14 @@
 # -----------------------      ------------------------
 # Functions         Line       Functions           Line
 # -----------------------      ------------------------
-# CheckParts          25       BuildPartitionLists 306
+# CheckParts          25       BuildPartitionLists 347
 # Partitioning       101       UpdateArray         368
 # Parted             131       AllocateRoot        397
 # AutoPartition      136       CheckPartition      444
 # AutoWarning        180       AllocateSwap        454
 # RunAuto            197       SetSwapFile         524
 # select_filesystem  286       MorePartitions      549
-#                              MakePartition       595
+# SetLabel           306       MakePartition       595
 # -----------------------      ------------------------
 
 CheckParts() {
@@ -286,7 +286,6 @@ RunAutoPart() {
 
 select_filesystem() {
 # Allows user-selection of filesystem by entering a number
-# Returns enhanced selection via FILESYSTEM variable
 	local Counter=0
   #	TypeList now passed as string by caller
 	print_info "Please now select the file system for ${Partition}"
@@ -304,9 +303,48 @@ select_filesystem() {
 	done
 }
 
+SetLabel() {
+# To build an associative array of partitions
+# The array (LabellingArray[]) is declared in achoorunning with other variables
+# This function should be called from the root, swap and extra partitions routines
+# (passing a single argument containing the partition ID)
+#
+PartitionID=$1
+local HowMany="${#PartitionArray[@]}"
+local x=1
+until [ ${x} -gt ${HowMany} ]
+do
+  CompareID=`echo ${PartitionArray[${x}]} | awk '{print $1}'`
+  if [ ${CompareID} = ${PartitionID} ]; then # If the partition is in the array, it has a label
+    Label=`echo ${PartitionArray[${x}]} | awk '{print $4}'` # Save the label
+  fi
+  x=$((x+1))
+done
+if [ -n $Label ]; then
+  # Then inform the user and accept input
+  print_heading
+  echo
+  print_info "The partition you have chosen is labelled '$Label'"
+  echo
+  print_info "If you wish to keep that label, enter 1            "
+  print_list "If you wish to delete the label, enter 2"
+  print_list "If you wish to enter a new label, type it at the prompt"
+  echo
+  TPread "Enter 1, 2 or a new label: "
+  # Save to the -A array
+  case $Response in
+    1) LabellingArray[$PartitionID]=$Label
+    ;;
+    2) LabellingArray[$PartitionID]=""
+    ;;
+    *) LabellingArray[$PartitionID]=$Response
+  esac
+fi
+}
+
 BuildPartitionLists() {
 # 1) Use blkid with grep to find all with LABEL, select first & second field; remove /dev/
-  ListAll=`sudo blkid | grep LABEL | awk '{print $1 $2}' | cut -c 6-`
+  ListAll=`blkid | grep LABEL | awk '{print $1 $2}' | cut -c 6-` # Note: sudo command removed
   declare -a Labelled
   local Counter=0
   for i in $ListAll
@@ -318,7 +356,7 @@ BuildPartitionLists() {
   done
   local HowManyLabelled="${#Labelled[@]}"
 # 2) Find any partitions flagged as bootable
-  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
+  ListAll=`sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-` # Note: sudo command removed
   declare -a Flagged
   Counter=0
   for i in $ListAll
@@ -410,7 +448,10 @@ AllocateRoot() {
   echo
   InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   Reply=$Response
-  UpdateArray # Remove the selected partition from $PartitionArray[]
+  if [ $Result != "Done" ]; then
+    SetLabel "$Result"
+    UpdateArray # Remove the selected partition from $PartitionArray[]
+  fi
   Counter=0  
   for i in ${PartitionList}
   do
@@ -481,6 +522,7 @@ then
   InfoMenu "$PickFrom" "Partitions" "CopyArray"
   Reply=$Response
   if [ $Result != "Swapfile" ] && [ $Result != "Done" ]; then
+    SetLabel "$Result"
     UpdateArray # Remove the selected partition from $PartitionArray[]
   fi
   echo
@@ -534,7 +576,7 @@ do
   RESPONSE="${Response^^}"
 	# Check that entry includes 'M or G'
 	CheckInput=(`echo $RESPONSE | grep "G\|M"`)
-  echo ""
+  echo
 	if [ -z ${CheckInput} ]; then
     print_info "You must include M or G"
 		SwapFile=""
@@ -565,7 +607,10 @@ do
   print_info "or choose 'Done' to finish partitioning."
   echo
   InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+  if [ $Result != "Done" ]; then
+  SetLabel "$Result"
   UpdateArray # Remove the selected partition from $PartitionArray[]
+  fi
   echo
 	for Part in ${PartitionList} # Iterate through the list
 	do
@@ -591,7 +636,7 @@ done
 if [ -z ${#AddPartList[@]} ]
 then
   AddPartList=""
-  AddPartLabel=""
+  AddPartMount=""
   AddPartType=""
 fi
 }
@@ -612,7 +657,7 @@ MakePartition() { # Called by MorePartitions
   TypeList="ext2 ext3 ext4 btrfs" # Set format types for the selected partition
 	select_filesystem
 	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list  
-  # 3) Then get a label for it
+  # 3) Then get a mountpoint for it
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
@@ -623,25 +668,25 @@ MakePartition() { # Called by MorePartitions
 		CheckInput=(`echo $Response | cut -c1`)
 		case ${CheckInput} in
       "") print_info "You must enter a valid name"
-					PartLabel=""
+					PartMount=""
           ;;
 			*) if [ ${CheckInput} != "/" ]; then
-						PartLabel="/${Response}"
+						PartMount="/${Response}"
 				else
-						PartLabel="${Response}"
+						PartMount="${Response}"
 				fi
     esac
-    # Check that the label has not already been used
-		LabelCounter=0
-		if [ -z ${AddPartLabel} ]; then
+    # Check that the mountpoint has not already been used
+		MountPointCounter=0
+		if [ -z ${AddPartMount} ]; then
 			LoopRepeat="N"
 		else
-      # Go through AddPartLabel checking each item against PartLabel
-			for Label in ${AddPartLabel}
+      # Go through AddPartMount checking each item against PartMount
+			for MountPoint in ${AddPartMount}
 			do 
-				LabelCounter=$((LabelCounter+1))
-				if [ $Label = $PartLabel ]; then
-					read_timed "Mountpoint ${PartLabel} has already been used. Please use a different mountpoint."
+				MountPointCounter=$((MountPointCounter+1))
+				if [ $MountPoint = $PartMount ]; then
+					read_timed "Mountpoint ${PartMount} has already been used. Please use a different mountpoint."
 				else
 					LoopRepeat="N"
 					break
@@ -653,5 +698,5 @@ MakePartition() { # Called by MorePartitions
 			break
 		fi 
 	done 
-	AddPartLabel[$ExtraPartitions]="${PartLabel}" 	# Add it to AddPartLabel list
+	AddPartMount[$ExtraPartitions]="${PartMount}" 	# Add it to AddPartMount list
 }

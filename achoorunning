@@ -16,10 +16,11 @@
 # Partition variables
 #
 declare -a AddPartList	  # Array of additional partitions by system name. eg: /dev/sda5
-declare -a AddPartLabel   # Array of labels for the same partitions in the same order. eg: /home
+declare -a AddPartMount   # Array of mountpoints for the same partitions in the same order. eg: /home
 declare -a AddPartType  	# Array of format type for the same partitions. eg: ext4
 declare -a PartitionArray # List of long identifiers for InfoMenu
 declare -a NewArray       # For copying any array
+declare -A LabellingArray # To hold any user labels for partitions
 GrubDevice=""     # "/dev/sda"
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap
@@ -30,7 +31,7 @@ RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
 DualBoot="N"      # Ready for dual-booting option
-EFIPartition=""   # Will hold partition label for mounting
+EFIPartition=""   # Will hold partition mountpoint
 AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"     # Used if more than one disk
 DiskDetails=0     # Size of selected disk
@@ -167,7 +168,7 @@ MountPartitions() {
  	# Repeat $Elements times getting data from the three arrays
   while [ $Counter -lt $Elements ]
   do
-    mkdir -p /mnt${AddPartLabel[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    mkdir -p /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     # As for /root ... check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
@@ -181,8 +182,8 @@ MountPartitions() {
       mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
       CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi
-    mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} /mnt${AddPartLabel[$Counter]}'" 2
+    mount ${AddPartList[$Counter]} /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} /mnt${AddPartMount[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
 }

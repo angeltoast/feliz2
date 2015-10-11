@@ -195,7 +195,7 @@ do
     print_list "3)  Extra partitions ..."
     for i in ${AddPartList[@]}	
     do
-      print_info "     ${AddPartLabel[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+      print_info "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
       Counter=$((Counter+1))
     done
   else
