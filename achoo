@@ -67,8 +67,7 @@ CheckParts
 
 if [ $AutoPart -eq 0 ]; then
 
-  BuildPartitionLists # New function to display
-  # more information about the available partitions
+  BuildPartitionLists # Display information about the available partitions
   
   if [ $UEFI -eq 0 ]; then
     AllocateRoot

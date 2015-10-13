@@ -19,9 +19,9 @@
 # Parted             131       AllocateRoot        397
 # AutoPartition      136       CheckPartition      444
 # AutoWarning        180       AllocateSwap        454
-# RunAuto            197       SetSwapFile         524
-# select_filesystem  286       MorePartitions      549
-# SetLabel           306       MakePartition       595
+# RunAuto            197       SetSwapFile         549
+# select_filesystem  286       MorePartitions      604
+# SetLabel           306       MakePartition       655
 # -----------------------      ------------------------
 
 CheckParts() {
@@ -307,21 +307,29 @@ SetLabel() {
 # To build an associative array of partitions
 # The array (LabellingArray[]) is declared in achoorunning with other variables
 # This function should be called from the root, swap and extra partitions routines
-# (passing a single argument containing the partition ID)
+# (each passing a single argument containing the partition ID)
 #
 PartitionID=$1
 local HowMany="${#PartitionArray[@]}"
-local x=1
-until [ ${x} -gt ${HowMany} ]
+local x=0
+until [ ${x} -eq ${HowMany} ]
 do
   CompareID=`echo ${PartitionArray[${x}]} | awk '{print $1}'`
+  if [ -z ${CompareID} ]; then
+    x=$((x+1))
+    continue
+  fi
   if [ ${CompareID} = ${PartitionID} ]; then # If the partition is in the array, it has a label
     Label=`echo ${PartitionArray[${x}]} | awk '{print $4}'` # Save the label
   fi
   x=$((x+1))
 done
-if [ -n $Label ]; then
-  # Then inform the user and accept input
+}
+
+EditLabel() {
+  # Uses $Label from previous function
+if [ -n "${Label}" ]; then
+  # Inform the user and accept input
   print_heading
   echo
   print_info "The partition you have chosen is labelled '$Label'"
@@ -345,7 +353,7 @@ fi
 BuildPartitionLists() {
 # 1) Use blkid with grep to find all with LABEL, select first & second field; remove /dev/
   ListAll=`blkid | grep LABEL | awk '{print $1 $2}' | cut -c 6-` # Note: sudo command removed
-  declare -a Labelled
+  declare -a Labelled=""
   local Counter=0
   for i in $ListAll
   do
@@ -355,6 +363,7 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyLabelled="${#Labelled[@]}"
+  
 # 2) Find any partitions flagged as bootable
   ListAll=`sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-` # Note: sudo command removed
   declare -a Flagged
@@ -365,9 +374,11 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyFlagged="${#Flagged[@]}"
+  
 # 3) Prepare list of partitions
   PartitionList="" 
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+  
 # 4) Run through short identifiers, checking the two arrays for a match
   Counter=0
   for part in ${ShowPartitions}
@@ -477,6 +488,7 @@ AllocateRoot() {
 				RootType="ext4"
 			else
         RootType="${PartitionType}"
+        EditLabel
       fi
 		else
 			Remaining="$Remaining $i"	# Add next available partition
@@ -547,6 +559,7 @@ then
             ;;
             *) FormatSwap="Y"
           esac
+          EditLabel
       esac          
     else
       if [ $i != "Done" ] && [ $i != Swapfile ]; then
@@ -608,8 +621,9 @@ do
   echo
   InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   if [ $Result != "Done" ]; then
-  SetLabel "$Result"
-  UpdateArray # Remove the selected partition from $PartitionArray[]
+read -p "$LINENO Result = ${Result}"
+    SetLabel "$Result"
+    UpdateArray # Remove the selected partition from $PartitionArray[]
   fi
   echo
 	for Part in ${PartitionList} # Iterate through the list
@@ -619,6 +633,7 @@ do
     if [ $Part = $Result ] && [ $Result != "Done" ]; then
      	Partition="/dev/$Part"
       MakePartition # Call complete details
+      EditLabel
     elif [ $Part != "Done" ]; then   # Part is not selected and not 'Done'
       Remaining="$Remaining $Part" # Add unused partition to temp list
       AddedToRemaining=$(($AddedToRemaining+1))
