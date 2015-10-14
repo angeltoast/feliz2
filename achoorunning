@@ -144,7 +144,13 @@ MountPartitions() {
       mkfs.btrfs -f ${RootPartition} 2> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     else
-      mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
+      Partition=`echo $RootPartition | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mke2fs ${Label} -t ${RootType} ${RootPartition}
+  #    mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     fi
   esac
@@ -155,7 +161,12 @@ MountPartitions() {
   then
     if [ $MakeSwap = "Y" ]; then
       TPecho "Making /swap partition"
-      mkswap ${SwapPartition} 2> error.log # eg: mkswap /dev/sda2
+      Partition=`echo $SwapPartition | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mkswap ${Label} ${SwapPartition} # eg: mkswap -L Arch-Swap /dev/sda2
       CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
     fi
     TPecho "Activating /swap"
@@ -179,7 +190,12 @@ MountPartitions() {
       mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
     elif [ ${AddPartType[$Counter]} != "" ];     then
-      mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]} 2> error.log # eg: mkfs.ext4 /dev/sda3
+      Partition=`echo ${AddPartList[$Counter]} | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mke2fs ${Label} -t ${AddPartType[$Counter]} ${AddPartList[$Counter]} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
       CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
     fi
     mount ${AddPartList[$Counter]} /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home

@@ -621,7 +621,6 @@ do
   echo
   InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   if [ $Result != "Done" ]; then
-read -p "$LINENO Result = ${Result}"
     SetLabel "$Result"
     UpdateArray # Remove the selected partition from $PartitionArray[]
   fi

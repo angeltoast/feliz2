@@ -218,7 +218,7 @@ else
   echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
   CheckForError "${LINENO} 'vbox piix4 override'" 1
   # Install Virtualbox video modules
-  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+  # pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms # Installs latest kernel
 fi
 
 # Extra processes for 'Full' or 'Extras' installation
@@ -264,12 +264,12 @@ then
     echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
     CheckForError "${LINENO} 'vbox piix4 override'" 1
     # Install Virtualbox video modules
-    pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
-    CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
+    # pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms # Installs latest kernel
+    # CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
   fi
 
   # Install Display Manager
-  if [ ${DisplayManager} ]; then
+  if [ -n ${DisplayManager} ]; then
     # Test for existing display manager and disable if necessary
     TestExistingDM
     # Then install and enable new DM
@@ -364,7 +364,11 @@ SetRootPassword
 echo
 print_info "Congratulations. Installation is finished."
 echo
-print_info "Press any key to reboot"
-echo
-read -n1
-systemctl reboot
+Menu "Reboot Shutdown" "Please choose: "
+case $Response in
+  1) systemctl reboot
+  ;;
+  2) shutdown now
+  ;;
+  *) shutdown now
+esac
