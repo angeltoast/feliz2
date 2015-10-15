@@ -30,19 +30,18 @@ fi
 # Next code needed is at the mkfs stage, to add any labels as partitions are made
 
 # MountPartitions() {
-echo "... Running"
-    # Here ...
-  Partition=`echo ${AddPartList[3]} | cut -c 6-`
-read -p "Line $LINENO: Partition = ${Partition}"
+echo "... Running (additional partitions)"
+Counter=0
+for id in ${AddPartList}
+do
+  Partition=`echo ${id} | cut -c 6-`
   Label="${LabellingArray[${Partition}]}"
-read -p "Line $LINENO: Label = ${Label}"
   if [ -n "${Label}" ]; then
     Label="-L ${Label}"
-read -p "Line $LINENO: Label = ${Label}"    
   fi
-read -p "Line $LINENO: mke2fs ${Label} -t ${AddPartType[3]} ${AddPartList[3]}"  
-    # mke2fs ${Label} -t ${AddPartType[3]} ${AddPartList[3]}
-
+  mke2fs ${Label} -t ${AddPartType[${Counter}]} ${AddPartList[${Counter}]}
+  Counter=$((Counter+1))
+done
 }
 
 # ~~~~~~~
@@ -87,31 +86,31 @@ read -p "Line $LINENO: mke2fs ${Label} -t ${AddPartType[3]} ${AddPartList[3]}"
   
   # Various variables
   UEFI=0
-  RootPartition="sda10"
-  RootType="ext4"
-  SwapPartition="sda7"
-  PartitionList="sda2 sda3"
-  AddPartList[0]="sda9"
-  AddPartLabel[0]="/home"
-  AddPartType[0]="ext4"
-  AddPartList[1]="sda5"
-  AddPartLabel[1]="/spare"
-  AddPartType[1]="ext4"
-  GrubDevice="/dev/sda"
-  CountryCode="GB"
-  CountryLocale="en_GB.UTF-8"
-  Countrykbd="uk"
-  ZONE="Europe"
-  SUBZONE="London"
-  DesktopEnvironment="xfce4"
-  DisplayManager="lightdm"
-  Greeter="lightdm-gtk-greeter"
-  LuxuriesList="firefox libreoffice-still geany pamac-aur"
-  HostName="ArchLinux"
-  RootPassword="Root"
-  UserName="archie"
-  UserPassword="Linux"
-  DesktopEnvironment="Gnome"
+#  RootPartition="sda10"
+#  RootType="ext4"
+#  SwapPartition="sda7"
+#  PartitionList="sda2 sda3"
+#  AddPartList[0]="sda9"
+#  AddPartLabel[0]="/home"
+#  AddPartType[0]="ext4"
+#  AddPartList[1]="sda5"
+#  AddPartLabel[1]="/spare"
+#  AddPartType[1]="ext4"
+#  GrubDevice="/dev/sda"
+#  CountryCode="GB"
+#  CountryLocale="en_GB.UTF-8"
+#  Countrykbd="uk"
+#  ZONE="Europe"
+#  SUBZONE="London"
+#  DesktopEnvironment="xfce4"
+#  DisplayManager="lightdm"
+#  Greeter="lightdm-gtk-greeter"
+#  LuxuriesList="firefox libreoffice-still geany pamac-aur"
+#  HostName="ArchLinux"
+#  RootPassword="Root"
+#  UserName="archie"
+#  UserPassword="Linux"
+#  DesktopEnvironment="Gnome"
   
   # Call the function 'testbed' holding code to be tested
   testbed

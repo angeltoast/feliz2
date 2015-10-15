@@ -20,7 +20,8 @@ declare -a AddPartMount   # Array of mountpoints for the same partitions in the 
 declare -a AddPartType  	# Array of format type for the same partitions. eg: ext4
 declare -a PartitionArray # List of long identifiers for InfoMenu
 declare -a NewArray       # For copying any array
-declare -A LabellingArray # To hold any user labels for partitions
+declare -A LabellingArray # To hold full details of user labels for partitions
+declare -A Labelled       # Store labels
 GrubDevice=""     # "/dev/sda"
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap
@@ -175,31 +176,29 @@ MountPartitions() {
   fi
   TPecho "Mounting additional partitions"
   local Counter=0
-  Elements=${#AddPartList[@]}
- 	# Repeat $Elements times getting data from the three arrays
-  while [ $Counter -lt $Elements ]
+  for id in ${AddPartList}
   do
     mkdir -p /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
-    # As for /root ... check if replacing existing ext3/4 partition with btrfs
+    # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${AddPartList[$Counter]}
-      CheckForError "${LINENO} 'btrfs-convert  ${AddPartList[$Counter]} $CurrentType ${AddPartType[$Counter]}'" 2
+      btrfs-convert ${id}
+      CheckForError "${LINENO} 'btrfs-convert  ${id} $CurrentType ${AddPartType[$Counter]}'" 2
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${AddPartList[$Counter]} 2> error.log
-      CheckForError "${LINENO} 'mkfs.${RootType} ${AddPartList[$Counter]}'" 2
+      mkfs.btrfs -f ${id} 2> error.log
+      CheckForError "${LINENO} 'mkfs.${AddPartType} ${id}'" 2
     elif [ ${AddPartType[$Counter]} != "" ];     then
-      Partition=`echo ${AddPartList[$Counter]} | cut -c 6-`
+      Partition=`echo ${id} | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mke2fs ${Label} -t ${AddPartType[$Counter]} ${AddPartList[$Counter]} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
-      CheckForError "${LINENO} 'mkfs.${AddPartType[$Counter]} ${AddPartList[$Counter]}'" 2
+      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+      CheckForError "${LINENO} 'mke2fs.${AddPartType[$Counter]} ${id}'" 2
     fi
-    mount ${AddPartList[$Counter]} /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
-    CheckForError "${LINENO} 'mount ${AddPartList[$Counter]} /mnt${AddPartMount[$Counter]}'" 2
+    mount ${id} /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    CheckForError "${LINENO} 'mount ${id} /mnt${AddPartMount[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
 }
