@@ -261,8 +261,8 @@ then
     CheckForError "${LINENO} 'Installing nouveau'" 1
   else
     # Add code to overcome piix4 Virtualbox error
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
-    CheckForError "${LINENO} 'vbox piix4 override'" 1
+    # echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+    # CheckForError "${LINENO} 'vbox piix4 override'" 1
     # Install Virtualbox video modules
     # pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms # Installs latest kernel
     # CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
