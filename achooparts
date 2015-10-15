@@ -16,9 +16,9 @@
 # -----------------------      ------------------------
 # CheckParts          25       BuildPartitionLists 347
 # Partitioning       101       UpdateArray         368
-# Parted             131       AllocateRoot        397
-# AutoPartition      136       CheckPartition      444
-# AutoWarning        180       AllocateSwap        454
+# Parted             131       AllocateRoot        450
+# AutoPartition      136       CheckPartition      500
+# AutoWarning        180       AllocateSwap        510
 # RunAuto            197       SetSwapFile         549
 # select_filesystem  286       MorePartitions      604
 # SetLabel           306       MakePartition       655
@@ -352,20 +352,25 @@ fi
 
 BuildPartitionLists() {
 # 1) Use blkid with grep to find all with LABEL, select first & second field; remove /dev/
-  ListAll=`blkid | grep LABEL | awk '{print $1 $2}' | cut -c 6-` # Note: sudo command removed
-  declare -a Labelled=""
+  ListLabelledIDs=`sudo blkid | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g` # Up to sda99 excluding colon
+  if [ -n "$ListLabelledIDs" ]; then
+    ListLabelledLabels=`sudo blkid | grep LABEL | awk '{print $3}' | cut -c 7- | sed s/\"//g` # Label, removing quotes
+  fi
   local Counter=0
-  for i in $ListAll
+  declare -A Labelled
+  for i in "${ListLabelledIDs}"
   do
-    PartOne=`echo $i | cut -c 1-5 | sed s/://g`  # Up to sda99 excluding colon
-    PartTwo=`echo $i | cut -c 13- | sed s/\"//g` # Label, removing final double-quote
-    Labelled[${Counter}]="$PartOne $PartTwo"
+    PartOne=$i
+    PartTwo="${ListLabelledLabels[${Counter}]}" 
+    Labelled[${PartOne}]="$PartTwo"
+read -p "$LINENO ${Labelled[${PartOne}]}"    
     Counter=$((Counter+1))
   done
   local HowManyLabelled="${#Labelled[@]}"
-  
+echo "$LINENO $HowManyLabelled"
+
 # 2) Find any partitions flagged as bootable
-  ListAll=`sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-` # Note: sudo command removed
+  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-` # Note: sudo command to be removed
   declare -a Flagged
   Counter=0
   for i in $ListAll
@@ -397,20 +402,22 @@ BuildPartitionLists() {
     done
   # Then test Labelled[]
     x=0
-    until [ ${x} -eq ${HowManyLabelled} ]
-    do
-      ThisPart=`echo "${Labelled[$x]}" | awk '{print $1}'`
+  #  until [ ${x} -eq ${HowManyLabelled} ]
+  #  do
+      ThisPart=`echo "${Labelled[${part}]}" | cut -c 1-5`
+read -p "$LINENO $part $ThisPart"
       if [ $part = "${ThisPart}" ]; then
-        ThisPart=`echo "${Labelled[$x]}" | awk '{print $2}'`
+        ThisPart=`echo "${Labelled[${x}]}" | awk '{print $2}'`
+read -p "$LINENO $ThisPart"
         Label="${ThisPart}"
         break
       else
         Label=""
       fi
       x=$((x+1))
-    done
+  #  done
     LongID=`lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}'`
-    PartitionArray[${Counter}]="$LongID ${Label} ${Bootable}"
+    PartitionArray[${Counter}]="$LongID ${Bootable} ${Label}"
     # Save the short ID for later functions
     PartitionList="${PartitionList} ${part}"
     Counter=$((Counter+1))
@@ -459,6 +466,8 @@ AllocateRoot() {
   echo
   InfoMenu "$PartitionList" "Partitions" "PartitionArray"
   Reply=$Response
+PartitionArray[${Result}]="${PartitionArray[${Result}]} Arch-Root"
+read -p "${PartitionArray[${Result}]}"
   if [ $Result != "Done" ]; then
     SetLabel "$Result"
     UpdateArray # Remove the selected partition from $PartitionArray[]

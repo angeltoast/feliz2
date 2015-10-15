@@ -246,6 +246,10 @@ SetRootPassword() { # New function, to be called at end of installation
     echo
     read -s -p "Re-enter root password: " Pass2
     echo
+    if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
+      read_timed "Passwords cannot be blank. Try again ..." 1
+      continue
+    fi
     if [ $Pass1 = $Pass2 ]; then
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
      CheckForError "${LINENO} 'Root password'" 2
@@ -276,6 +280,10 @@ SetUserPassword() {
     echo
     read -s -p "Re-enter password for $UserName: " Pass2
     echo
+    if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
+      read_timed "Passwords cannot be blank. Try again ..." 1
+      continue
+    fi
     if [ $Pass1 = $Pass2 ]; then
       echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
       CheckForError "${LINENO} 'save temp passwd'" 0

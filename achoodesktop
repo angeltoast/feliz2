@@ -373,7 +373,7 @@ ChooseDE() {
 
 GnomeOptions() {
   Redo="Y"
-  Response=1
+#  Response=1
   GoodiesGnome=""
 while [ $Redo = "Y" ]
 do
