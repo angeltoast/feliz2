@@ -84,6 +84,7 @@ if [ $AutoPart -eq 0 ]; then
   fi
   # Select device for Grub
   if [ $AutoPart -eq 0 ]; then
+    SetKernel
     SetGrubDevice
   fi
 fi
@@ -122,12 +123,10 @@ MountPartitions
 # Set mirrorlist
 ReflectorMirrorList
 
-############################## Done ###########################################
 # Use dmidecode (added to archiso) to check for Virtualbox installation
 IsInVbox=`dmidecode --type 1 | grep VirtualBox`
-# Then call function
+# Then call kernel function
 InstallKernel
-###############################################################################
 
 # Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
@@ -204,14 +203,12 @@ else
   TPecho "Not installing Grub"
 fi
 
-############################### Done ####################################################
 TPecho "Running mkinitcpio"
 if [ $Kernel = "1" ]; then
   arch_chroot "mkinitcpio -p linux-lts"
 else
   arch_chroot "mkinitcpio -p linux"
 fi
-###################################################################################
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log

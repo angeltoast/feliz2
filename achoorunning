@@ -39,10 +39,10 @@ DiskDetails=0     # Size of selected disk
 # Grub, kernel & EFI variables
 #
 GrubDevice=""     # "/dev/sda"
-Kernel=""
-IsInVbox=""
+Kernel="1"        # Default 1 = LTS
+IsInVbox=""       # Result of test to see if installation is in Virtualbox
 DualBoot="N"      # Ready for dual-booting option
-EFIPartition=""   # Will hold partition mountpoint
+EFIPartition=""   # Will hold EFI partition mountpoint
 #
 # Location variables
 #
@@ -82,11 +82,11 @@ Complete=0
 # arch_chroot       80
 # SetGrubDevice     89
 # umount_partitions 117
-# MountPartitions   128
-
-# TestExistingDM    192
-# SetRootPassword   221
-# SetUserPassword   252
+# MountPartitions   136
+# InstallKernel     214
+# TestExistingDM    246
+# SetRootPassword   275
+# SetUserPassword   310
 # ---------------------
 
 arch_chroot() {  # Taken directly from Lution AIS

@@ -150,7 +150,7 @@ CheckForError() {
       esac
       ;;
       *) print_info "The error is critical, and the script cannot continue"
-        "Please press any key: "
+        print_info "Please press any key: "
         read -n1
         tput sgr0
         exit
