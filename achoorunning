@@ -22,7 +22,7 @@ declare -a PartitionArray # List of long identifiers for InfoMenu
 declare -a NewArray       # For copying any array
 declare -A LabellingArray # To hold full details of user labels for partitions
 declare -A Labelled       # Store labels
-GrubDevice=""     # "/dev/sda"
+
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap
 MakeSwap="Y"
@@ -31,11 +31,18 @@ IsSwap=""         # Result of lsblk test
 RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
-DualBoot="N"      # Ready for dual-booting option
-EFIPartition=""   # Will hold partition mountpoint
+
 AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"     # Used if more than one disk
 DiskDetails=0     # Size of selected disk
+#
+# Grub, kernel & EFI variables
+#
+GrubDevice=""     # "/dev/sda"
+Kernel=""
+IsInVbox=""
+DualBoot="N"      # Ready for dual-booting option
+EFIPartition=""   # Will hold partition mountpoint
 #
 # Location variables
 #
@@ -76,6 +83,7 @@ Complete=0
 # SetGrubDevice     89
 # umount_partitions 117
 # MountPartitions   128
+
 # TestExistingDM    192
 # SetRootPassword   221
 # SetUserPassword   252
@@ -201,6 +209,38 @@ MountPartitions() {
     CheckForError "${LINENO} 'mount ${id} /mnt${AddPartMount[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
+}
+
+InstallKernel() {
+  TPecho "Installing kernel, base-devel & cli tools"
+  # First, the modules used by both kernels
+  pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
+  CheckForError "${LINENO} 'installing kernel and base-devel'" 2
+  arch_chroot "systemctl enable sshd.service" >/dev/null
+  if [[ -z ${IsInVbox} ]]; then # If not in Virtualbox
+    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log # Install open video drivers
+    CheckForError "${LINENO} 'Installing nouveau'" 1
+  else
+    # Add code to overcome piix4 Virtualbox error
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+    CheckForError "${LINENO} 'vbox piix4 override'" 1
+  fi
+  # Then install the chosen kernel
+  if [ $Kernel = "1" ]; then # LTS kernel
+    pacstrap /mnt linux-lts
+    CheckForError "${LINENO} 'installing lts kernel'" 2
+    if [[ -n ${IsInVbox} ]]; then # If in Virtualbox
+      pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils-lts virtualbox-guest-dkms-lts
+      CheckForError "${LINENO} 'Installing Virtualbox lts guest modules'" 1
+    fi
+  else # Latest kernel
+    pacstrap /mnt linux
+    CheckForError "${LINENO} 'installing latest kernel'" 2
+    if [[ -n ${IsInVbox} ]]; then # If in Virtualbox
+      pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+      CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
+    fi
+  fi
 }
 
 TestExistingDM() {

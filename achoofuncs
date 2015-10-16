@@ -14,55 +14,17 @@
 # -------------------------
 # Functions           Line
 # -------------------------
-# MeNu                 25 (See separate manual)
-# Input and output     65-162
-# Error-checking       163
-# Internet connection  199-242
-# TestUEFI             245
-# Mirrorlist           243-281
-# SetScope             282
-# InfoMenu             306
-# MakePartitionList    360
+# Input and output     29
+# Error-checking       128
+# Internet connection  163
+# TestUEFI             207
+# Mirrorlist           219
+# SetScope             258
+# SetKernel            282
+# Menu                 315
+# InfoMenu             354
+# MakePartitionList    408
 # -------------------------
-
-Menu() { 
-local Complete=0
-print_info $3
-Underscore=`echo $3 | sed 's/./-/g'`
-print_info $Underscore
-while [ $Complete -eq 0 ]
-do
-  local Counter=0
-  MenuList=$1
-  MenuPrompt="$2"
-  for i in $MenuList
-  do
-    Counter=$((Counter+1))
-    if [ $Counter -eq 1 ]; then
-      print_info "$Counter) $i"
-    else
-      print_list "$Counter) $i"
-    fi
-    ConvertToArray[$Counter]=$i
-  done
-  Counter=$((Counter+1))
-  print_list "$Counter) Done"
-  echo
-  TPread "$2"
-  if [ -z ${Response} ]; then
-    invalid_option
-  elif [ ${Response} -gt ${Counter} ]; then
-    invalid_option
-  elif [ ${Response} -eq ${Counter} ]; then
-    Result="Done"
-    Complete=1
-  else
-    Result=${ConvertToArray[${Response}]}
-    Complete=1
-  fi
-  print_heading
-done
-}
 
 contains_element() { # (from AUI scripts)
 # check if an element exists in a string
@@ -315,6 +277,78 @@ SetScope() {
         Retry="N"
     esac
   done
+}
+
+SetKernel() {
+MenuList="LTS Latest"
+Exit="N"
+while [ $Exit = "N" ]
+do
+  print_heading
+  echo
+  print_info "The Long-Term-Support kernel (LTS) offers stabilty,"
+  print_info "while the Latest kernel has all the new features."
+  print_info "If in doubt, choose LTS."
+  echo
+  local Counter=0
+  for i in $MenuList
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      print_info "$Counter) $i   "
+    else
+      print_list "$Counter) $i"
+    fi
+  done
+  echo
+  TPread "Enter the number of your choice: "
+  if [ $Response = "1" ] || [ $Response = "2" ]; then
+    Exit="Y"
+  else
+    invalid_option
+  fi
+done
+Kernel=${Response}
+echo $Kernel # Set the Kernel variable
+}
+
+Menu() { 
+local Complete=0
+print_info $3
+Underscore=`echo $3 | sed 's/./-/g'`
+print_info $Underscore
+while [ $Complete -eq 0 ]
+do
+  local Counter=0
+  MenuList=$1
+  MenuPrompt="$2"
+  for i in $MenuList
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      print_info "$Counter) $i"
+    else
+      print_list "$Counter) $i"
+    fi
+    ConvertToArray[$Counter]=$i
+  done
+  Counter=$((Counter+1))
+  print_list "$Counter) Done"
+  echo
+  TPread "$2"
+  if [ -z ${Response} ]; then
+    invalid_option
+  elif [ ${Response} -gt ${Counter} ]; then
+    invalid_option
+  elif [ ${Response} -eq ${Counter} ]; then
+    Result="Done"
+    Complete=1
+  else
+    Result=${ConvertToArray[${Response}]}
+    Complete=1
+  fi
+  print_heading
+done
 }
 
 InfoMenu() {

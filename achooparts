@@ -540,11 +540,7 @@ then
   echo
   InfoMenu "$PickFrom" "Partitions" "CopyArray"
   Reply=$Response
-  if [ $Result != "Swapfile" ] && [ $Result != "Done" ]; then
-    PassPart=$Result
-    SetLabel "$Result"
-    UpdateArray # Remove the selected partition from $PartitionArray[]
-  fi
+
   echo
   Counter=0
   for i in ${PickFrom}
@@ -578,6 +574,11 @@ then
       fi
     fi
   done
+  if [ $Reply != "Swapfile" ] && [ $Reply != "Done" ]; then
+    PassPart=$Reply
+    SetLabel "$Reply"
+    UpdateArray # Remove the selected partition from $PartitionArray[]
+  fi
   if [ $SwapPartition ]; then
     read_timed "$SwapPartition will be used for swap" 1
   elif [ $SwapFile ]; then

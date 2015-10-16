@@ -122,10 +122,12 @@ MountPartitions
 # Set mirrorlist
 ReflectorMirrorList
 
-TPecho "Installing LTS Kernel, base-devel & cli tools"
-pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
-CheckForError "${LINENO} 'installing kernel and base-devel'" 2
-arch_chroot "systemctl enable sshd.service" >/dev/null
+############################## Done ###########################################
+# Use dmidecode (added to archiso) to check for Virtualbox installation
+IsInVbox=`dmidecode --type 1 | grep VirtualBox`
+# Then call function
+InstallKernel
+###############################################################################
 
 # Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
@@ -202,24 +204,18 @@ else
   TPecho "Not installing Grub"
 fi
 
+############################### Done ####################################################
 TPecho "Running mkinitcpio"
-arch_chroot "mkinitcpio -p linux-lts"
+if [ $Kernel = "1" ]; then
+  arch_chroot "mkinitcpio -p linux-lts"
+else
+  arch_chroot "mkinitcpio -p linux"
+fi
+###################################################################################
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
 CheckForError "${LINENO} 'Saving persistent keymap'" 1
-
-# Use dmidecode (added to archiso) to check for Virtualbox installation
-IsInVbox=`dmidecode --type 1 | grep VirtualBox`
-if [[ -z ${IsInVbox} ]]; then
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
-else
-  # Add code to overcome piix4 Virtualbox error
-  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
-  CheckForError "${LINENO} 'vbox piix4 override'" 1
-  # Install Virtualbox video modules
-  # pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms # Installs latest kernel
-fi
 
 # Extra processes for 'Full' or 'Extras' installation
 if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
@@ -251,22 +247,14 @@ then
   CheckForError "${LINENO} 'Wireless firmware'" 1
   pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
   CheckForError "${LINENO} 'Wireless tools'" 1
-
-  # Install X, graphics, Virtualbox guest modules, etc
+  
+################################# Done ##############################################
+  # Install X, graphics, etc
   TPecho "Installing X, graphics, etc"
   pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
-  if [[ -z ${IsInVbox} ]]; then
-    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log
-    CheckForError "${LINENO} 'Installing nouveau'" 1
-  else
-    # Add code to overcome piix4 Virtualbox error
-    # echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
-    # CheckForError "${LINENO} 'vbox piix4 override'" 1
-    # Install Virtualbox video modules
-    # pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms # Installs latest kernel
-    # CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
-  fi
+
+#####################################################################################
 
   # Install Display Manager
   if [ -n ${DisplayManager} ]; then
