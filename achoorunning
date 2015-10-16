@@ -245,8 +245,9 @@ InstallKernel() {
 
 TestExistingDM() {
   # Test for existing display manager and disable if necessary
-  arch-chroot /mnt systemctl list-unit-files | grep dm.service > mnt/etc/output.log
-  DMLine=`cat /mnt/etc/output.log`
+  #arch-chroot /mnt systemctl list-unit-files | grep dm.service > mnt/etc/output.log
+  #DMLine=`cat /mnt/etc/output.log`
+  DMLine=`arch-chroot /mnt systemctl list-unit-files | grep dm.service`
   # Start a local counter to check for multiple entries
   local Counter=1
   case ${DMLine} in

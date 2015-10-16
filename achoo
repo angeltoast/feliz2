@@ -245,13 +245,10 @@ then
   pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2> error.log
   CheckForError "${LINENO} 'Wireless tools'" 1
   
-################################# Done ##############################################
   # Install X, graphics, etc
   TPecho "Installing X, graphics, etc"
   pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
-
-#####################################################################################
 
   # Install Display Manager
   if [ -n ${DisplayManager} ]; then
