@@ -22,6 +22,7 @@
 # RunAuto            197       SetSwapFile         549
 # select_filesystem  286       MorePartitions      604
 # SetLabel           306       MakePartition       655
+# EditLabel          330
 # -----------------------      ------------------------
 
 CheckParts() {
@@ -539,8 +540,10 @@ then
   print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
   InfoMenu "$PickFrom" "Partitions" "CopyArray"
-  Reply=$Response
-
+  Reply=$Response # Number of selected item
+  if [ $Result != "Swapfile" ] && [ $Result != "Done" ]; then # Short ID of selected item
+    PassPart=$Result
+  fi
   echo
   Counter=0
   for i in ${PickFrom}
@@ -550,9 +553,11 @@ then
     then
       case $i in
         "Done") SwapPartition=""
+              break
         ;;
         "Swapfile") SetSwapFile
             SwapPartition=""
+            break
         ;;
         *) SwapPartition="/dev/$i"
           IsSwap=$(lsblk -l | grep $i | sed 's/ \+/ \t/g' | cut -d ' ' -f7 | cut -c3-6)
@@ -566,7 +571,9 @@ then
           Label="${Labelled[${PassPart}]}"
           if [ -n "${Label}" ]; then
             EditLabel $PassPart
+            SetLabel "$PassPart"
           fi
+          UpdateArray # Remove the selected partition from $PartitionArray[]
       esac          
     else
       if [ $i != "Done" ] && [ $i != Swapfile ]; then
@@ -574,11 +581,6 @@ then
       fi
     fi
   done
-  if [ $Reply != "Swapfile" ] && [ $Reply != "Done" ]; then
-    PassPart=$Reply
-    SetLabel "$Reply"
-    UpdateArray # Remove the selected partition from $PartitionArray[]
-  fi
   if [ $SwapPartition ]; then
     read_timed "$SwapPartition will be used for swap" 1
   elif [ $SwapFile ]; then

@@ -346,7 +346,7 @@ SetRootPassword
 echo
 print_info "Congratulations. Installation is finished."
 echo
-Menu "Reboot Shutdown" "Please choose: "
+Menu "Reboot Shutdown" "Please choose: " "" "nodone"
 case $Response in
   1) systemctl reboot
   ;;
