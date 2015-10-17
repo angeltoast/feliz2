@@ -250,19 +250,6 @@ then
   pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
-  # Install Display Manager
-  if [ -n ${DisplayManager} ]; then
-    # Test for existing display manager and disable if necessary
-    TestExistingDM
-    # Then install and enable new DM
-    TPecho "Installing ${DisplayManager} Display Manager"
-    pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
-    CheckForError "Line ${LINENO} 'Install display manager'" 2
-    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  else
-    TPecho "Not installing a Display Manager"
-  fi
-
   # Install Desktop Environment
   case ${DesktopEnvironment} in
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
@@ -305,28 +292,41 @@ then
         ;;
   *) TPecho "Not installing a Desktop Environment"	
   esac
-fi
 
-if [ -n "${LuxuriesList}" ]; then
-  for i in ${LuxuriesList}
-  do
-    if [ $i = "yaourt" ]; then
-      # Copy modified pacman.conf to new system and install Yaourt
-      TPecho "Modifying pacman.conf and installing Yaourt"
-      cp pacman.conf /mnt/etc 2> error.log # For installed system
-      CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
-      cp pacman.conf /etc 2> error.log # For installer
-      CheckForError "${LINENO} 'Copying pacman.conf local'" 1
-      pacman -Sy 2> error.log # Update
-      CheckForError "${LINENO} 'Update Arch" 1
-      pacstrap /mnt yaourt 2> error.log
-      CheckForError "${LINENO} 'Install yaourt'" 1
-    else
-      TPecho "Installing $i"
-      pacstrap /mnt $i 2> error.log
-      CheckForError "Line ${LINENO} 'Installing $i'" 1
-    fi
-	done
+  # Install Display Manager
+  if [ -n ${DisplayManager} ]; then
+    # Test for existing display manager and disable if necessary
+    TestExistingDM
+    # Then install and enable new DM
+    TPecho "Installing ${DisplayManager} Display Manager"
+    pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
+    CheckForError "Line ${LINENO} 'Install display manager'" 2
+    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  else
+    TPecho "Not installing a Display Manager"
+  fi
+
+  if [ -n "${LuxuriesList}" ]; then
+    for i in ${LuxuriesList}
+    do
+      if [ $i = "yaourt" ]; then
+        # Copy modified pacman.conf to new system and install Yaourt
+        TPecho "Modifying pacman.conf and installing Yaourt"
+        cp pacman.conf /mnt/etc 2> error.log # For installed system
+        CheckForError "${LINENO} 'Copying pacman.conf MOUNTPOINT'" 1
+        cp pacman.conf /etc 2> error.log # For installer
+        CheckForError "${LINENO} 'Copying pacman.conf local'" 1
+        pacman -Sy 2> error.log # Update
+        CheckForError "${LINENO} 'Update Arch" 1
+        pacstrap /mnt yaourt 2> error.log
+        CheckForError "${LINENO} 'Install yaourt'" 1
+      else
+        TPecho "Installing $i"
+        pacstrap /mnt $i 2> error.log
+        CheckForError "Line ${LINENO} 'Installing $i'" 1
+      fi
+    done
+  fi
 fi
 
 EndTime=$(date +%s)
