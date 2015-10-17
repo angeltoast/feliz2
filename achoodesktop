@@ -331,8 +331,8 @@ ChooseDE() {
             Greeter=""
             GnomeOptions
           ;;
-        "LXDE") DisplayManager=""
-              Greeter=""
+        "LXDE") DMList="LightDM LXDM"
+              ChooseDM
           ;;
         "LXQt") DisplayManager="sddm"
               Greeter=""

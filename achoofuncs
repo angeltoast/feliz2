@@ -267,7 +267,8 @@ SetScope() {
     TPread "Add Desktop Environment, etc? (y/n): "
     echo
     case $Response in
-      "y" | "Y") ChooseDE
+      "y" | "Y") Scope="Full"
+        ChooseDE
         UserName
         Retry="N"
       ;;

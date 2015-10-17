@@ -171,7 +171,7 @@ TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
-if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+if [ $Scope = "Full" ]
 then
   TPecho "Enabling dhcpcd"
   arch_chroot "systemctl enable dhcpcd.service"
@@ -214,8 +214,8 @@ fi
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
 CheckForError "${LINENO} 'Saving persistent keymap'" 1
 
-# Extra processes for 'Full' or 'Extras' installation
-if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
+# Extra processes for desktop installation
+if [ $Scope = "Full" ]
 then
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
@@ -255,13 +255,10 @@ then
     # Test for existing display manager and disable if necessary
     TestExistingDM
     # Then install and enable new DM
-    TPecho "Installing Display Manager ${DisplayManager}"
+    TPecho "Installing ${DisplayManager} Display Manager"
     pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
     CheckForError "Line ${LINENO} 'Install display manager'" 2
     arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-    if [ ${DisplayManager} = "LXDM" ] && [ ${DesktopEnvironment} = "Xfce" ]; then
-      echo "session=/usr/bin/startxfce4" >> /mnt/etc/lxdm/lxdm.conf
-    fi
   else
     TPecho "Not installing a Display Manager"
   fi
@@ -289,11 +286,6 @@ then
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap /mnt lxde gedit 2> error.log
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
-        # Test for existing display manager and disable if necessary
-        TestExistingDM
-        # Then enable LXDM
-        arch_chroot "systemctl enable lxdm.service" >/dev/null
-        echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
         ;;
     "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
         pacstrap /mnt lxqt xterm 2> error.log
