@@ -1,15 +1,12 @@
 #!/bin/bash
 
-# achoolux - Functions relevant to users, locations, desktop
-# settings and data review called by the main achoo script
-# 
-# This script and the achooparts, achoorunning, achoodesktop and achoofuncs scripts
-# must all be present in the same directory as the main achoo script when running.
-# 
+# achoolux - Functions to build lists of additional software to be
+# installed, and to offer a review of settings before installation
+
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
-# 
-# Please read the introduction in the main Achoo! script
+# the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# Please read the introduction in the README file
 
 # -------------------
 # Functions      Line

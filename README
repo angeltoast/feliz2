@@ -1,12 +1,11 @@
-The Achoo! scripts work with you to produce a fast installation of Arch Linux
-with a desktop environment and optional extras. These scripts are shared in the
-spirit of the community, subject to the terms set out in the GNU GENERAL LICENSE.
+The Achoo scripts work with you to produce a fast installation of Arch Linux. 
+They were originally written for my own use, but are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
-Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts
-a live session of Arch Linux, and runs the script. All you have to do is follow
-the prompts. Installation follows closely the Arch Wiki beginners' guide, and
-hopefully you will understand something of the process by the time it has
-finished; you may even like to try a manual installation with the help of the
-Wiki. 
+Achoo's purpose is to speed up installation of Arch Linux, plus a desktop environment and a 'shopping list' of extras like web browsers, office
+software and programming tools. An initialising phase gathers essential data of location, username, and passwords, and works with the user to set up their partitioning and desktop environment requirements. The script then runs without further intervention to the end.
 
-You can join our Facebook community at ... http://tinyurl.com/osdree9
+Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts a live session of Arch Linux, and runs the script. All you have to do is follow the prompts. Installation follows closely the Arch Wiki beginners' guide, and hopefully you will understand something of the process by the time it has finished; you may even like to try a manual installation with the help of the Wiki.
+
+Join our Facebook community
+
+Elizabeth Mills

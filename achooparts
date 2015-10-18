@@ -1,15 +1,11 @@
 #!/bin/bash
 
 # achooparts - Partitioning functions called by the main achoo script
-# 
-# This script and the achoorunning, achoofuncs and achoodesktop scripts must
-# all be present in the same directory as the main achoo script when running.
-# 
+
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo/Lution script by Carl Duff and the AUI scripts by HelmuthDU.
-# 
-# Please read the introduction in the main Achoo! script
-# 
+# the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# Please read the introduction in the README file
 
 # -----------------------      ------------------------
 # Functions         Line       Functions           Line

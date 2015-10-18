@@ -1,48 +1,31 @@
 #!/bin/bash
 
 # Achoo! Arch Linux Installation Script
-# -------------------------------------
-# Developed by Elizabeth Mills, incorporating some code adapted from the
-# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
-# The achoodesktop, achoorunning and achoofuncs scripts
-# must be present in the same directory when running this script.
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
-# The Achoo! scripts are still in development, and may contain bugs. They
-# were originally written for my own use, but are shared in the spirit of
-# the community, subject to the conditions set out in the GNU GENERAL LICENSE.
+# Please read the introduction in the README file
 
-# Achoo!'s purpose is to speed up installation of Arch Linux, plus a desktop
-# environment and a greeter, with minimum user intervention. An initialising
-# phase asks for only the essential data of location, username, and passwords,
-# and works with the user to set up their partitioning and desktop environment
-# requirements. The script then runs without further intervention to the end.
-# There is an error-trapping function which will report if any critical
-# errors are detected.
-
-# Check for the external files
-
+# First check for the external files
 if [[ -f `pwd`/achoofuncs ]]; then
   source achoofuncs
 else
   echo "missing file: achoofuncs"
   exit 1
 fi
-
 if [[ -f `pwd`/achooparts ]]; then
   source achooparts
 else
   echo "missing file: achooparts"
   exit 1
 fi
-
 if [[ -f `pwd`/achoodesktop ]]; then
   source achoodesktop
 else
   echo "missing file: achoodesktop"
   exit 1
 fi
-
 if [[ -f `pwd`/achoolux ]]; then
   source achoolux
 else
@@ -66,9 +49,7 @@ TestUEFI
 CheckParts
 
 if [ $AutoPart -eq 0 ]; then
-
   BuildPartitionLists # Display information about the available partitions
-  
   if [ $UEFI -eq 0 ]; then
     AllocateRoot
   fi
@@ -250,6 +231,19 @@ then
   pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
+  # Test for existing display manager and disable if necessary
+  TestExistingDM
+  # Install chosen display manager
+  if [ -n ${DisplayManager} ]; then
+    # Then install and enable new DM
+    TPecho "Installing ${DisplayManager} Display Manager"
+    pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
+    CheckForError "Line ${LINENO} 'Install display manager'" 2
+    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  else
+    TPecho "Not installing a Display Manager"
+  fi
+
   # Install Desktop Environment
   case ${DesktopEnvironment} in
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
@@ -273,6 +267,9 @@ then
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap /mnt lxde gedit 2> error.log
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
+        arch_chroot "systemctl enable lxdm.service" >/dev/null
+        echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
+        CheckForError "Line ${LINENO} 'Installing lxde'" 1
         ;;
     "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
         pacstrap /mnt lxqt xterm 2> error.log
@@ -290,21 +287,8 @@ then
         pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2> error.log
         CheckForError "Line ${LINENO} 'Installing Xfce'" 1
         ;;
-  *) TPecho "Not installing a Desktop Environment"	
+    *) TPecho "Not installing a Desktop Environment"	
   esac
-
-  # Install Display Manager
-  if [ -n ${DisplayManager} ]; then
-    # Test for existing display manager and disable if necessary
-    TestExistingDM
-    # Then install and enable new DM
-    TPecho "Installing ${DisplayManager} Display Manager"
-    pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
-    CheckForError "Line ${LINENO} 'Install display manager'" 2
-    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  else
-    TPecho "Not installing a Display Manager"
-  fi
 
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
