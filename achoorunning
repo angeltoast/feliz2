@@ -155,15 +155,13 @@ MountPartitions() {
         Label="-L ${Label}"
       fi
       mke2fs ${Label} -t ${RootType} ${RootPartition}
-  #    mkfs.${RootType} ${RootPartition} 2> error.log # eg: mkfs.ext4 /dev/sda1
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     fi
   esac
   TPecho "Mounting /root partition"	
   mount ${RootPartition} /mnt 2> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} /mnt'" 2
-  if [ ${SwapPartition} ]
-  then
+  if [ ${SwapPartition} ]; then
     if [ $MakeSwap = "Y" ]; then
       TPecho "Making /swap partition"
       Partition=`echo $SwapPartition | cut -c 6-`
@@ -192,7 +190,7 @@ MountPartitions() {
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} 2> error.log
       CheckForError "${LINENO} 'mkfs.${AddPartType} ${id}'" 2
-    elif [ ${AddPartType[$Counter]} != "" ];     then
+    elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=`echo ${id} | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
@@ -213,7 +211,7 @@ InstallKernel() {
   pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
   CheckForError "${LINENO} 'installing kernel and base-devel'" 2
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  if [[ -z ${IsInVbox} ]]; then # If not in Virtualbox
+  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
     pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log # Install open video drivers
     CheckForError "${LINENO} 'Installing nouveau'" 1
   else
@@ -232,7 +230,7 @@ InstallKernel() {
   else # Latest kernel
     pacstrap /mnt linux
     CheckForError "${LINENO} 'installing latest kernel'" 2
-    if [[ -n ${IsInVbox} ]]; then # If in Virtualbox
+    if [ -n ${IsInVbox} ]; then # If in Virtualbox
       pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
       CheckForError "${LINENO} 'Installing Virtualbox guest modules'" 1
     fi
@@ -244,7 +242,6 @@ TestExistingDM() {
   touch mnt/etc/output.log # Create empty file
   arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service' > mnt/etc/output.log
   DMLine=`cat /mnt/etc/output.log`
-  # DMLine=`arch_chroot "systemctl list-unit-files | grep '(*dm|slim)\.service'"` # Attempt at one-line code - not sure if it works or not
   local Counter=1
   case ${DMLine} in
     "") TPecho "No previous DM discovered"
@@ -269,7 +266,7 @@ TestExistingDM() {
   esac
 }
 
-SetRootPassword() { # New function, to be called at end of installation
+SetRootPassword() {
   print_heading
  	print_info  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
   echo
@@ -298,10 +295,6 @@ SetRootPassword() { # New function, to be called at end of installation
       print_info "Passwords don't match. Try again"
     fi
   done
-  if [ $Scope = "Full" ] || [ $Scope = "Extras" ]
-  then
-    SetUserPassword
-  fi
 }
 
 SetUserPassword() {

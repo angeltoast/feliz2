@@ -269,7 +269,6 @@ then
         CheckForError "Line ${LINENO} 'Installing lxde'" 1
         arch_chroot "systemctl enable lxdm.service" >/dev/null
         echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
-        CheckForError "Line ${LINENO} 'Installing lxde'" 1
         ;;
     "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
         pacstrap /mnt lxqt xterm 2> error.log
@@ -319,6 +318,10 @@ DIFFMIN=$(( $Difference/60 ))
 DIFFSEC=$(( $Difference % 60 ))
 
 SetRootPassword
+if [ $Scope = "Full" ]; then
+  SetUserPassword
+fi
+
 echo
 print_info "Congratulations. Installation is finished."
 echo

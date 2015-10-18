@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# achoofuncs - Various functions called throughout the scripts
+# achoofuncs - Various functions called by all scripts at data-entry stage
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
@@ -277,19 +277,19 @@ SetScope() {
 }
 
 SetKernel() {
-MenuList="LTS Latest"
-print_heading
-echo
-print_info "The Long-Term-Support kernel (LTS) offers stabilty,"
-print_info "while the Latest kernel has all the new features."
-print_info "If in doubt, choose LTS."
-echo
-local Counter=0
-Menu "$MenuList" "Enter the number of your choice: " "Kernels" "nodone"
-Kernel=${Response} # Set the Kernel variable
+  MenuList="LTS Latest"
+  print_heading
+  echo
+  print_info "The Long-Term-Support kernel (LTS) offers stabilty,"
+  print_info "while the Latest kernel has all the new features."
+  print_info "If in doubt, choose LTS."
+  echo
+  local Counter=0
+  Menu "$MenuList" "Enter the number of your choice: " "Kernels" "nodone"
+  Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
-Menu() { 
+Menu() {
 nodone=$4
 local Complete=0
 print_info $3
