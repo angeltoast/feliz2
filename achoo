@@ -152,8 +152,7 @@ TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
-if [ $Scope = "Full" ]
-then
+if [ $Scope = "Full" ]; then
   TPecho "Enabling dhcpcd"
   arch_chroot "systemctl enable dhcpcd.service"
   TPecho "Installing and configuring network services"
@@ -196,7 +195,7 @@ echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2> error.log
 CheckForError "${LINENO} 'Saving persistent keymap'" 1
 
 # Extra processes for desktop installation
-if [ $Scope = "Full" ]
+if [ $Scope != "Basic" ]
 then
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
