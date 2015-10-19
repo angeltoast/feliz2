@@ -59,9 +59,9 @@ Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
 #
 # Root and user variables
 #
-HostName=""       # "arch-linux"
-UserName=""       # "archie"
-Scope="Basic"     # Installation scope ... 'Extras' 'Full' or 'Basic'
+HostName=""  # "arch-linux"
+UserName=""  # "archie"
+Scope=""     # Installation scope ... 'Full' or 'Basic'
 #
 # Input/Output variables
 #
@@ -239,7 +239,7 @@ InstallKernel() {
 
 TestExistingDM() {
   # Test for existing display manager and disable if necessary
-  arch-chroot /mnt/etc touch output.log # Create empty file
+  arch-chroot /mnt touch etc/output.log # Create empty file
   arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service' > mnt/etc/output.log
   DMLine=`cat /mnt/etc/output.log`
   local Counter=1

@@ -214,7 +214,7 @@ then
     TPecho "User already exists"
   fi
 
-  # Install Flash and other Multimedia Codecs (add/remove items as desired)
+  # Install Flash and other Multimedia Codecs
   TPecho "Adding Flash and other Multimedia Codecs"
   pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2> error.log
   CheckForError "${LINENO} 'Install codecs'" 1
@@ -231,11 +231,9 @@ then
   pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2> error.log
   CheckForError "${LINENO} 'Installing X, Graphics, etc'" 1
 
-  # Test for existing display manager and disable if necessary
-  TestExistingDM
   # Install chosen display manager
+  TestExistingDM
   if [ -n ${DisplayManager} ]; then
-    # Then install and enable new DM
     TPecho "Installing ${DisplayManager} Display Manager"
     pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
     CheckForError "Line ${LINENO} 'Install display manager'" 2

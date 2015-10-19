@@ -556,7 +556,7 @@ then
             break
         ;;
         *) SwapPartition="/dev/$i"
-          IsSwap=$(lsblk -l | grep $i | sed 's/ \+/ \t/g' | cut -d ' ' -f7 | cut -c3-6)
+          IsSwap=`lsblk -l | grep $i | sed 's/ \+/ \t/g' | cut -d ' ' -f7 | cut -c3-6`
           case ${IsSwap} in
             "SWAP") print_info "$i is already formatted as a swap partition"
             TPread "Do you wish to reformat it? (y/n) : "
@@ -566,7 +566,7 @@ then
           esac
           Label="${Labelled[${PassPart}]}"
           if [ -n "${Label}" ]; then
-            EditLabel $PassPart
+            EditLabel "$PassPart"
             SetLabel "$PassPart"
           fi
           UpdateArray # Remove the selected partition from $PartitionArray[]

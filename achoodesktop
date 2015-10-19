@@ -358,10 +358,6 @@ ChooseDE() {
             DisplayManager=""
               Greeter=""	
  			esac
-      if [ -n "${DesktopEnvironment}" ];then
-        Scope="Full"
-        PickLuxuries
-      fi
       break
 		fi
 	done	
