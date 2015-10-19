@@ -239,7 +239,7 @@ InstallKernel() {
 
 TestExistingDM() {
   # Test for existing display manager and disable if necessary
-  touch mnt/etc/output.log # Create empty file
+  arch-chroot /mnt/etc touch output.log # Create empty file
   arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service' > mnt/etc/output.log
   DMLine=`cat /mnt/etc/output.log`
   local Counter=1
