@@ -232,7 +232,7 @@ then
 
   # Install chosen display manager
   TestExistingDM
-  if [ -n ${DisplayManager} ]; then
+  if [ ${DisplayManager} != "None" ]; then
     TPecho "Installing ${DisplayManager} Display Manager"
     pacstrap /mnt ${DisplayManager} ${Greeter} 2> error.log
     CheckForError "Line ${LINENO} 'Install display manager'" 2

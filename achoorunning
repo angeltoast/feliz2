@@ -50,11 +50,11 @@ SUBZONE=""        # "London" For time
 #
 # Desktop environment, display manager and greeter variables
 #
-DesktopEnvironment=""  # "xfce4"
+DesktopEnvironment="None"  # "xfce4"
 GoodiesXfce=""
 GoodiesGnome=""
 GoodiesOpenbox=""
-DisplayManager=""      # "lightdm"
+DisplayManager="None"      # "lightdm"
 Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
 #
 # Root and user variables

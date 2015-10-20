@@ -323,11 +323,11 @@ ChooseDE() {
         "Enlightenment") DMList="LightDM LXDM"
               ChooseDM
           ;;
-        "Gnome") DisplayManager=""
+        "Gnome") DisplayManager="None"
             Greeter=""
             GnomeOptions
           ;;
-        "LXDE") DisplayManager=""
+        "LXDE") DisplayManager="None"
             Greeter=""
           ;;
         "LXQt") DisplayManager="sddm"
@@ -354,8 +354,8 @@ ChooseDE() {
             esac
             ChooseDM
           ;;
-        *) DesktopEnvironment=""
-            DisplayManager=""
+        *) DesktopEnvironment="None"
+            DisplayManager="None"
               Greeter=""	
  			esac
       break
@@ -434,7 +434,7 @@ ChooseDM() {
         "LXDM") DisplayManager="lxdm"
               Greeter=""
           ;;
-        *) DisplayManager=""
+        *) DisplayManager="None"
               Greeter=""
       esac	
       break
