@@ -152,7 +152,7 @@ TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
-if [ $Scope = "Full" ]; then
+if [ $Scope != "Basic" ]; then
   TPecho "Enabling dhcpcd"
   arch_chroot "systemctl enable dhcpcd.service"
   TPecho "Installing and configuring network services"
@@ -315,7 +315,7 @@ DIFFMIN=$(( $Difference/60 ))
 DIFFSEC=$(( $Difference % 60 ))
 
 SetRootPassword
-if [ $Scope = "Full" ]; then
+if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
 

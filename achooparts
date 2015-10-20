@@ -556,14 +556,12 @@ then
             break
         ;;
         *) SwapPartition="/dev/$i"
-          IsSwap=`lsblk -l | grep $i | sed 's/ \+/ \t/g' | cut -d ' ' -f7 | cut -c3-6`
-          case ${IsSwap} in
-            "SWAP") print_info "$i is already formatted as a swap partition"
+          IsSwap=`lsblk -l | grep $i | grep SWAP | awk '{print $7}'`
+          if [ -n "$IsSwap" ]; then
+            print_info "$i is already formatted as a swap partition"
             TPread "Do you wish to reformat it? (y/n) : "
             FormatSwap="${Response^^}"
-            ;;
-            *) FormatSwap="Y"
-          esac
+          fi
           Label="${Labelled[${PassPart}]}"
           if [ -n "${Label}" ]; then
             EditLabel "$PassPart"
