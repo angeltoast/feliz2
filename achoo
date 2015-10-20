@@ -259,7 +259,7 @@ then
     "gnome-shell") TPecho "Installing 'gnome-shell'"
         pacstrap /mnt gnome-shell 2> error.log
         CheckForError "Line ${LINENO} 'Installing gnome-shell'" 1
-        arch_chroot "systemctl enable gdm.service" >/dev/null
+      #  arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap /mnt lxde gedit 2> error.log
