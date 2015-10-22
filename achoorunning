@@ -18,6 +18,7 @@ declare -a PartitionArray # List of long identifiers for InfoMenu
 declare -a NewArray       # For copying any array
 declare -A LabellingArray # To hold full details of user labels for partitions
 declare -A Labelled       # Store labels
+declare -A FileSystem     # Store filesystem types (ext* swap)
 
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap

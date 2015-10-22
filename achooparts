@@ -12,12 +12,12 @@
 # -----------------------      ------------------------
 # CheckParts          25       BuildPartitionLists 347
 # Partitioning       101       UpdateArray         368
-# Parted             131       AllocateRoot        450
-# AutoPartition      136       CheckPartition      500
-# AutoWarning        180       AllocateSwap        510
-# RunAuto            197       SetSwapFile         549
-# select_filesystem  286       MorePartitions      604
-# SetLabel           306       MakePartition       655
+# Parted             131       AllocateRoot        470
+# AutoPartition      136       CheckPartition      520
+# AutoWarning        180       AllocateSwap        530
+# RunAuto            197       SetSwapFile         569
+# select_filesystem  286       MorePartitions      624
+# SetLabel           306       MakePartition       675
 # EditLabel          330
 # -----------------------      ------------------------
 
@@ -350,13 +350,34 @@ fi
 }
 
 BuildPartitionLists() {
-# 1) Use blkid with grep to find all with LABEL | select first field | remove /dev/
-  ListLabelledIDs=`sudo blkid | grep LABEL | grep sd | awk '{print $1}' | cut -c 6- | sed s/://g` # Up to sda99 remove colon
-  if [ -n "$ListLabelledIDs" ]; then # If at least one labelled partition found, get a matching list of labels
-    ListLabelledLabels=`sudo blkid | grep LABEL | grep sd | awk '{print $2}' | cut -c 7- | sed s/\"//g` # ... remove quotes
-  fi
+  # 1) First get a list of all partitions up to sda99 | select first field | remove /dev/ | remove colon 
+  ListTypeIDs=`sudo blkid /dev/sd* | grep ' TYPE' | awk '{print $1}' | cut -c 6- | sed s/://g`
+  # Then get matching list of types, removing unwanted text (TYPE=) and quotes 
+  ListTypes=`sudo blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -c 6- | sed s/\"//g` 
+  # Add records from those two indexed arrays into the associative array
   local Counter=0
-  for i in ${ListLabelledIDs} # Add records from indexed arrays into associative array
+  for i in ${ListTypeIDs} 
+  do
+    x=0
+    for l in ${ListTypes}
+    do
+      if [ $x -eq $Counter ]; then
+        FileSystem[$i]=$l # ... get the matching type
+      break
+      fi
+      x=$((x+1))
+    done
+    Counter=$((Counter+1))
+  done
+# 2) Use blkid again to find all up to sda99 with LABEL | select first field | remove /dev/ | Remove colon
+  ListLabelledIDs=`sudo blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g`
+  # If at least one labelled partition found, get a matching list of labels (remove quotes)
+  if [ -n "$ListLabelledIDs" ]; then
+    ListLabelledLabels=`sudo blkid /dev/sd* | grep LABEL | awk '{print $2}' | cut -c 7- | sed s/\"//g`
+  fi
+  # Add records from those two indexed arrays into associative array
+  Counter=0
+  for i in ${ListLabelledIDs}
   do
     x=0
     for l in ${ListLabelledLabels}
@@ -370,9 +391,8 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyLabelled="${#Labelled[@]}"
-
-# 2) Find any partitions flagged as bootable
-  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-` # Note: sudo command to be removed
+# 3) Find any partitions flagged as bootable
+  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
   declare -a Flagged
   Counter=0
   for i in $ListAll
@@ -381,13 +401,11 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyFlagged="${#Flagged[@]}"
-  
-# 3) Prepare list of short identifiers (sda1 sda2 ...)
+# 4) Prepare list of short identifiers (sda1 sda2 ...)
   PartitionList="" 
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  
-# 4) Run through short identifiers, checking the two arrays for a match
-  Counter=0
+# 5) Run through short identifiers, checking the three arrays for a match
+  Counter=0 # For count of partitions
   Label=""
   for part in ${ShowPartitions}
   do
@@ -404,12 +422,14 @@ BuildPartitionLists() {
       x=$((x+1))
     done
     # Next test Labelled
-    ThisPart=${Labelled[${part}]} # Find the record that matches the current iteration
+    ThisPart=${Labelled[${part}]} # Find the record in Labelled that matches the current iteration
     if [ -n "${ThisPart}" ]; then
       Label="${ThisPart}"
     fi
+    # Finally get the filesystem type
+    ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
     LongID=`lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}'`
-    PartitionArray[${Counter}]="$LongID ${Label} ${Bootable}"
+    PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
     Label=""
     # Save the short ID for later functions
     PartitionList="${PartitionList} ${part}"
@@ -556,7 +576,8 @@ then
             break
         ;;
         *) SwapPartition="/dev/$i"
-          IsSwap=`lsblk -l | grep $i | grep SWAP | awk '{print $7}'`
+         # IsSwap=`lsblk -l | grep $i | grep SWAP | awk '{print $7}'`
+          IsSwap=`sudo blkid /dev/sd* | grep 'swap' | awk '{print $1}'`
           if [ -n "$IsSwap" ]; then
             print_info "$i is already formatted as a swap partition"
             TPread "Do you wish to reformat it? (Y/n) : "
