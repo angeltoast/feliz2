@@ -87,7 +87,7 @@ Complete=0
 # ---------------------
 
 arch_chroot() {  # Taken directly from Lution AIS
-  arch-chroot /mnt /bin/bash -c "${1}" 2> error.log
+  arch-chroot /mnt /bin/bash -c "${1}" 2>> error.log
   CheckForError "${LINENO} 'arch-chroot /mnt ${1}'" 2
 }  
 
@@ -122,21 +122,15 @@ SetGrubDevice() {
 umount_partitions(){ # from Lution/AUI
   MOUNTED=""
   MOUNTED=$(mount | grep "/mnt" | awk '{print $3}' | sort -r)
-  swapoff -a 2> error.log
+  swapoff -a 2>> error.log
   CheckForError "${LINENO} 'swapoff'" 1
   for i in ${MOUNTED[@]}; do
-    umount $i >/dev/null 2> error.log
+    umount $i >/dev/null 2>> error.log
     CheckForError "${LINENO} 'umount $i >/dev/null'" 1
   done
 }
 
 MountPartitions() {
-  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then
-    mkfs.fat -F32 ${EFIPartition} 2> error.log
-    CheckForError "${LINENO} 'mkfs.fat -F32 ${EFIPartition}'" 2
-    mkdir /mnt/boot
-  #  mount ${EFIPartition} /mnt/boot
-  fi
   case $RootType in
     "") TPecho "Not formatting root partition"
     ;;
@@ -147,7 +141,7 @@ MountPartitions() {
       btrfs-convert ${RootPartition}
       CheckForError "${LINENO} 'btrfs-convert  ${RootPartition} $CurrentType ${RootType}'" 2
     elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} 2> error.log
+      mkfs.btrfs -f ${RootPartition} 2>> error.log
       CheckForError "${LINENO} 'mkfs.${RootType} ${RootPartition}'" 2
     else
       Partition=`echo $RootPartition | cut -c 6-`
@@ -160,7 +154,7 @@ MountPartitions() {
     fi
   esac
   TPecho "Mounting /root partition"	
-  mount ${RootPartition} /mnt 2> error.log # eg: mount /dev/sda1 /mnt
+  mount ${RootPartition} /mnt 2>> error.log # eg: mount /dev/sda1 /mnt
   CheckForError "${LINENO} 'mount ${RootPartition} /mnt'" 2
   if [ ${SwapPartition} ]; then
     if [ $MakeSwap = "Y" ]; then
@@ -174,14 +168,14 @@ MountPartitions() {
       CheckForError "${LINENO} 'mkswap ${SwapPartition}'" 1
     fi
     TPecho "Activating /swap"
-    swapon ${SwapPartition} 2> error.log # eg: swapon /dev/sda2
+    swapon ${SwapPartition} 2>> error.log # eg: swapon /dev/sda2
     CheckForError "${LINENO} 'swapon ${SwapPartition}'" 1
   fi
   TPecho "Mounting additional partitions"
   local Counter=0
   for id in ${AddPartList}
   do
-    mkdir -p /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mkdir -p /mnt/home
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> error.log	# eg: mkdir -p /mnt/home
     CheckForError "${LINENO}" 0 # Non-critical, to allow for possible existing directory !!
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
@@ -189,7 +183,7 @@ MountPartitions() {
       btrfs-convert ${id}
       CheckForError "${LINENO} 'btrfs-convert  ${id} $CurrentType ${AddPartType[$Counter]}'" 2
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${id} 2> error.log
+      mkfs.btrfs -f ${id} 2>> error.log
       CheckForError "${LINENO} 'mkfs.${AddPartType} ${id}'" 2
     elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=`echo ${id} | cut -c 6-`
@@ -200,7 +194,7 @@ MountPartitions() {
       mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
       CheckForError "${LINENO} 'mke2fs.${AddPartType[$Counter]} ${id}'" 2
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} 2> error.log	# eg: mount /dev/sda3 /mnt/home
+    mount ${id} /mnt${AddPartMount[$Counter]} 2>> error.log	# eg: mount /dev/sda3 /mnt/home
     CheckForError "${LINENO} 'mount ${id} /mnt${AddPartMount[$Counter]}'" 2
 		Counter=$((Counter+1))
 	done
@@ -209,15 +203,15 @@ MountPartitions() {
 InstallKernel() {
   TPecho "Installing kernel, base-devel & cli tools"
   # First, the modules used by both kernels
-  pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2> error.log
+  pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
   CheckForError "${LINENO} 'installing kernel and base-devel'" 2
   arch_chroot "systemctl enable sshd.service" >/dev/null
   if [ -z ${IsInVbox} ]; then # If not in Virtualbox
-    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2> error.log # Install open video drivers
+    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install open video drivers
     CheckForError "${LINENO} 'Installing nouveau'" 1
   else
     # Add code to overcome piix4 Virtualbox error
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2> error.log
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log
     CheckForError "${LINENO} 'vbox piix4 override'" 1
   fi
   # Then install the chosen kernel
@@ -285,10 +279,10 @@ SetRootPassword() {
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
-     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
+     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
      CheckForError "${LINENO} 'Root password'" 2
      arch_chroot "passwd root" < /tmp/.passwd >/dev/null
-     rm /tmp/.passwd 2> error.log
+     rm /tmp/.passwd 2>> error.log
      CheckForError "${LINENO} 'rm temp passwd'" 0
       Repeat="N"
     else
@@ -315,10 +309,10 @@ SetUserPassword() {
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
-      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2> error.log
+      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
       CheckForError "${LINENO} 'save temp passwd'" 0
       arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-      rm /tmp/.passwd 2> error.log
+      rm /tmp/.passwd 2>> error.log
       CheckForError "${LINENO} 'rm temp passwd'" 0
       Repeat="N"
     else

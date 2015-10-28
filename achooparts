@@ -37,15 +37,9 @@ CheckParts() {
     while [ $PARTITIONS -eq 0 ]
     do
       echo
-      if [ $UEFI -eq 1 ]; then
-        print_info "There are no partitions on the device, and your UEFI device"
-        print_info "requires at least two. If you partition manually you must ensure"
-        print_info "that you create and allocate the necessary partitions correctly."
-      else
-        print_info "There are no partitions on the device, and at least one"
-        print_info "partition is needed for the root directory. If you are"
-        print_info "uncertain about partitioning, you should read the Arch Wiki."
-      fi
+      print_info "There are no partitions on the device, and at least one"
+      print_info "partition is needed for the root directory. If you are"
+      print_info "uncertain about partitioning, you should read the Arch Wiki."
       echo
       print_info "Achoo can create a partition table for you, if you wish."
       print_info "Alternatively, 'cfdisk' is available for you to create one"
@@ -110,9 +104,9 @@ Partitioning() {
     Proceed=$Response
     echo
     case $Proceed in
-      1) cfdisk 2> error.log
+      1) cfdisk 2>> error.log
         tput setf 0 # Change foreground colour to black temporarily to hide error message
-        partprobe 2> error.log #Inform kernel of changes to partitions
+        partprobe 2>> error.log #Inform kernel of changes to partitions
         tput sgr0 # Reset colour
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
@@ -128,7 +122,7 @@ Partitioning() {
 }
 
 Parted() {
-  parted --script /dev/${UseDisk} "$1" 2> error.log
+  parted --script /dev/${UseDisk} "$1" 2>> error.log
   CheckForError "${LINENO} 'Parted ${1}'" 2
 }
 
@@ -198,41 +192,6 @@ RunAutoPart() {
 	# Get disk size
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
   # Create partitions and set variables for mounting
-  if [ $UEFI -eq 1 ]; then
-    Parted "mklabel gpt"
-    if [ $DiskSize -gt 18 ]; then
-      Parted "mkpart ESP fat32 1MiB 1GiB"
-      EFIPartition="${GrubDevice}1"
-      Parted "set 1 boot on"
-      Parted "mkpart primary linux-swap 1GiB 4GiB"
-      SwapPartition="${GrubDevice}2"
-      MakeSwap="Y"
-      Parted "mkpart primary ext4 4GiB 100%"
-      RootPartition="${GrubDevice}3"
-      RootType="ext4"
-    elif [ $DiskSize -gt 10 ]; then
-      Parted "mkpart ESP fat32 1MiB 1GiB"
-      EFIPartition="${GrubDevice}1"
-      Parted "set 1 boot on"
-      Parted "mkpart primary ext4 1GiB 100%"
-      RootPartition="${GrubDevice}2"
-      RootType="ext4"
-      SwapFile="2G"
-      SwapPartition=""
-    else # If disk < 10 Gb
-      Parted "mkpart ESP fat32 1MiB 500MiB"
-      EFIPartition="${GrubDevice}1"
-      Parted "set 1 boot on"
-      Parted "mkpart primary ext4 500MiB 100%"
-      RootPartition="${GrubDevice}2"
-      RootType="ext4"
-      SwapFile="2G"
-      SwapPartition=""
-    fi
-      ShowPart1=`lsblk -l | grep "${UseDisk}1" | awk '{print $4}'` >/dev/null
-      ShowPart2=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
-      ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
-  else
     Parted "mklabel msdos"
     if [ $DiskSize -gt 18 ]; then
       Parted "mkpart primary linux-swap 1MiB 4GiB"
@@ -262,16 +221,10 @@ RunAutoPart() {
       ShowPart1=""
       ShowPart2=`lsblk -l | grep "${UseDisk}1" | awk '{print $4}'` >/dev/null
       ShowPart3=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
-  fi
   AutoPart=1 # Set flag to 'on' for mounting 
   print_heading
   print_info "Partitioning of ${GrubDevice} successful"
   print_info "-------------------------------------"
-  if [ $UEFI -eq 1 ]; then
-    print_info "EFI: ${EFIPartition} $ShowPart1                  "
-  else
-    print_info "                                                 "
-  fi
   print_list "Swap: ${SwapPartition}${SwapFile} $ShowPart2"
   print_list "Root partition: ${RootPartition} ${RootType} $ShowPart3"
   echo
@@ -301,11 +254,10 @@ select_filesystem() {
 }
 
 SetLabel() {
-# To build an associative array of partitions
+# Build an associative array of partitions
 # The array (LabellingArray[]) is declared in achoorunning with other variables
-# This function should be called from the root, swap and extra partitions routines
+# Called from the root, swap and extra partitions routines
 # ... each passing a single argument containing the partition ID
-#
 PartitionID=$1
 local HowMany="${#PartitionArray[@]}"
 local x=0
@@ -325,7 +277,6 @@ done
 }
 
 EditLabel() {
-  # Uses $Label from previous function
 Label="${Labelled[$1]}"
 if [ -n ${Label} ]; then
   # Inform the user and accept input
@@ -615,7 +566,6 @@ fi
 }
 
 SetSwapFile() {
-# If user chooses to have a swap file instead of swap partition
 LoopRepeat="Y"
 while [ ${LoopRepeat} = "Y" ]
 do
@@ -640,63 +590,62 @@ done
 }
 
 MorePartitions() {
-local Elements=0
-AddedToRemaining=0
-for i in ${PartitionList}
-do
-  Elements=$((Elements+1))
-done
-while [ $Elements -gt 0 ]  
-do
-	print_heading
-	Remaining=""
-	print_info "The following partitions remain unallocated."
-  print_info "If you wish to use one, select it from the list,"
-  print_info "or choose 'Done' to finish partitioning."
-  echo
-  InfoMenu "$PartitionList" "Partitions" "PartitionArray"
-  if [ $Result != "Done" ]; then
-    PassPart=$Result
-    SetLabel "$Result"
-    UpdateArray # Remove the selected partition from $PartitionArray[]
-  fi
-  echo
-	for Part in ${PartitionList} # Iterate through the list
-	do
-    Partition=""
-    PartitionType=""
-    if [ $Part = $Result ] && [ $Result != "Done" ]; then
-     	Partition="/dev/$Part"
-      MakePartition # Call complete details
-      Label="${Labelled[${PassPart}]}"
-      if [ -n "${Label}" ]; then
-        EditLabel $PassPart
+  local Elements=0
+  AddedToRemaining=0
+  for i in ${PartitionList}
+  do
+    Elements=$((Elements+1))
+  done
+  while [ $Elements -gt 0 ]  
+  do
+    print_heading
+    Remaining=""
+    print_info "The following partitions remain unallocated."
+    print_info "If you wish to use one, select it from the list,"
+    print_info "or choose 'Done' to finish partitioning."
+    echo
+    InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+    if [ $Result != "Done" ]; then
+      PassPart=$Result
+      SetLabel "$Result"
+      UpdateArray # Remove the selected partition from $PartitionArray[]
+    fi
+    echo
+    for Part in ${PartitionList} # Iterate through the list
+    do
+      Partition=""
+      PartitionType=""
+      if [ $Part = $Result ] && [ $Result != "Done" ]; then
+        Partition="/dev/$Part"
+        MakePartition # Call complete details
+        Label="${Labelled[${PassPart}]}"
+        if [ -n "${Label}" ]; then
+          EditLabel $PassPart
+        fi
+      elif [ $Part != "Done" ]; then   # Part is not selected and not 'Done'
+        Remaining="$Remaining $Part" # Add unused partition to temp list
+        AddedToRemaining=$(($AddedToRemaining+1))
       fi
-    elif [ $Part != "Done" ]; then   # Part is not selected and not 'Done'
-      Remaining="$Remaining $Part" # Add unused partition to temp list
-      AddedToRemaining=$(($AddedToRemaining+1))
+    done
+    PartitionList=$Remaining	# Replace original PartitionList with temp list
+    if [ $Result = "Done" ]; then
+      Elements=0
+      break
+    else
+      Elements=$AddedToRemaining
     fi
   done
-  PartitionList=$Remaining	# Replace original PartitionList with temp list
-  if [ $Result = "Done" ]; then
-    Elements=0
-    break
-  else
-    Elements=$AddedToRemaining
+  # Ensure that if AddPartList (the defining array) is empty, all others are too
+  if [ -z ${#AddPartList[@]} ]
+  then
+    AddPartList=""
+    AddPartMount=""
+    AddPartType=""
   fi
-done
-# Ensure that if AddPartList (the defining array) is empty, all others are too
-if [ -z ${#AddPartList[@]} ]
-then
-  AddPartList=""
-  AddPartMount=""
-  AddPartType=""
-fi
 }
 
 MakePartition() { # Called by MorePartitions
-  # This function adds the selected partition to the array for extra partitions
-  # And allows selection of format type and mountpoint
+  # Add the selected partition to the array for extra partitions
   # 1) When selected, first save to AddPartList (eg: /dev/sda5)
 	ExtraPartitions=${#AddPartList[@]}
 	AddPartList[$ExtraPartitions]="${Partition}"

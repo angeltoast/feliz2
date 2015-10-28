@@ -30,7 +30,7 @@ while [ $InvalidEntry -eq 1 ]
 do
   echo
   print_info "If you know your keyboard layout code, enter it now"
-  print_info "If not, try entering a two-letter abbreviation for your"
+  print_info "If not, try entering an abbreviation for your"
   print_info "country or language and a list will be displayed ..."
   echo
   TPread "(eg: fr or us): "
@@ -79,14 +79,13 @@ do
     InvalidEntry=0
     ReadArray=$((Response-1))
     Countrykbd="${KeyboardList[${ReadArray}]}"
-    loadkeys ${Countrykbd} 2> error.log
+    loadkeys ${Countrykbd} 2>> error.log
     CheckForError "${LINENO} 'Loadkeys'" 1
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
   fi
   print_heading
 done
-
 }
 
 setlocale() {
@@ -365,7 +364,6 @@ ChooseDE() {
 
 GnomeOptions() {
   Redo="Y"
-#  Response=1
   GoodiesGnome=""
 while [ $Redo = "Y" ]
 do
@@ -412,7 +410,6 @@ AddDEextras() {
 }
 
 ChooseDM() {
-  # Choice of Display Manager from list passed via DMList
   Counter=0
   print_heading
   print_info "Choose one of the following Display Managers for "$Item

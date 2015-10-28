@@ -13,7 +13,6 @@
 # Input and output     29
 # Error-checking       128
 # Internet connection  163
-# TestUEFI             207
 # Mirrorlist           219
 # SetScope             258
 # SetKernel            282
@@ -122,38 +121,10 @@ read_timed() { # Now can receive second parameter to set duration
 }
 
 CheckForError() {
-# Check for stderr, display it, then exit script
-# Now receiving $2 to flag critical or non-critical error
-	if [[ $? -gt 0 ]]; then
-    print_heading
-    echo
-    tput bold
-		print_info "Error reported at Line: $1"
-    echo
-    cat error.log
-    echo
-    case $2 in
-      0) read_timed "The error is not critical, and you may ignore it"
-      ;;
-      1) print_info "You may ignore the error if you choose, and continue with"
-      print_info "the installation, but this may have unexpected consequences."
-      TPread "Continue with installation? (y/N): "
-      case $Response in
-        "n" | "N" | "") tput sgr0
-          exit
-        ;;
-        *) echo ""
-      esac
-      ;;
-      *) print_info "The error is critical, and the script cannot continue"
-        print_info "Please press any key: "
-        read -n1
-        tput sgr0
-        exit
-    esac
-    print_info "Continuing as though nothing has happened"
-    tput sgr0
-  fi
+  
+# Now does nothing, in preparation for removing all calls
+read -p "$1"
+
 }
 
 CheckInternet() {
@@ -186,7 +157,7 @@ do
       TPread "Try again? (y/n): "
       Retry=$Response
       if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
-        CheckForError "${LINENO} 'No internet'" 2
+        exit
         break
       fi
     else
@@ -200,30 +171,18 @@ do
 done
 }
 
-TestUEFI() { # Called immediately after establishing internet connection
- dmesg | grep -q "EFI v" # -q tells grep to output nothing
- if [ $? -eq 0 ]         # check exit code; 0 = EFI, else BIOS
- then
-   UEFI=1
-   System="UEFI"
-  else
-    UEFI=0
-    System="BIOS"
-  fi
-}
-
 ReflectorMirrorList() {
  # Use reflector to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
- # cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+ # cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> error.log
  # CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
- # pacman -Sy --noconfirm -q reflector 2> error.log
+ # pacman -Sy --noconfirm -q reflector 2>> error.log
  # CheckForError "${LINENO} 'Installing Reflector'" 2
-  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2> error.log
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> error.log
   if [[ $? -gt 0 ]]; then
     LocalMirrorList
   else
-    chmod +r /etc/pacman.d/mirrorlist 2> error.log
+    chmod +r /etc/pacman.d/mirrorlist 2>> error.log
     CheckForError "${LINENO} 'Sharing mirrorlist'" 2
   fi
 }
@@ -233,21 +192,21 @@ LocalMirrorList() {
 # the mirrors defined in the CountryCode variable. Adapted from Lution AIS
 	TPecho "Reflector failed - generating local mirrorlist instead"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2> error.log
+	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> error.log
 	CheckForError "${LINENO}"
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} 2> error.log
+	curl -so ${MirrorTemp} ${URL} 2>> error.log
 	CheckForError "${LINENO}" 2
 	# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2> error.log
+	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> error.log
 	CheckForError "${LINENO}" 2
 	# Make a safe copy of existing mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2> error.log
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> error.log
 	CheckForError "${LINENO}" 2
 	# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2> error.log
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> error.log
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
-	chmod +r /etc/pacman.d/mirrorlist 2> error.log
+	chmod +r /etc/pacman.d/mirrorlist 2>> error.log
 	CheckForError "${LINENO} 'saving mirrorlist'" 2
 }
 
