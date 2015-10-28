@@ -123,7 +123,6 @@ Partitioning() {
 
 Parted() {
   parted --script /dev/${UseDisk} "$1" 2>> error.log
-  CheckForError "${LINENO} 'Parted ${1}'" 2
 }
 
 AutoPartition() {

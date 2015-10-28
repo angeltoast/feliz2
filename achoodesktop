@@ -80,7 +80,6 @@ do
     ReadArray=$((Response-1))
     Countrykbd="${KeyboardList[${ReadArray}]}"
     loadkeys ${Countrykbd} 2>> error.log
-    CheckForError "${LINENO} 'Loadkeys'" 1
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
   fi

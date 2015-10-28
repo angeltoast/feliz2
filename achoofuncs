@@ -11,7 +11,6 @@
 # Functions           Line
 # -------------------------
 # Input and output     29
-# Error-checking       128
 # Internet connection  163
 # Mirrorlist           219
 # SetScope             258
@@ -120,13 +119,6 @@ read_timed() { # Now can receive second parameter to set duration
   echo
 }
 
-CheckForError() {
-  
-# Now does nothing, in preparation for removing all calls
-read -p "$1"
-
-}
-
 CheckInternet() {
 print_heading
 Service="N"
@@ -174,16 +166,11 @@ done
 ReflectorMirrorList() {
  # Use reflector to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
- # cp -vf /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> error.log
- # CheckForError "${LINENO} 'Making safe copy of original mirror-list'" 2
- # pacman -Sy --noconfirm -q reflector 2>> error.log
- # CheckForError "${LINENO} 'Installing Reflector'" 2
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> error.log
   if [[ $? -gt 0 ]]; then
     LocalMirrorList
   else
     chmod +r /etc/pacman.d/mirrorlist 2>> error.log
-    CheckForError "${LINENO} 'Sharing mirrorlist'" 2
   fi
 }
 
@@ -193,21 +180,15 @@ LocalMirrorList() {
 	TPecho "Reflector failed - generating local mirrorlist instead"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> error.log
-	CheckForError "${LINENO}"
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
 	curl -so ${MirrorTemp} ${URL} 2>> error.log
-	CheckForError "${LINENO}" 2
 	# Use sed to filter entries
 	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> error.log
-	CheckForError "${LINENO}" 2
 	# Make a safe copy of existing mirrorlist
 	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> error.log
-	CheckForError "${LINENO}" 2
 	# Replace existing mirrorlist with new local mirrorlist
 	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> error.log
-	CheckForError "${LINENO} 'saving mirrorlist'" 2
 	chmod +r /etc/pacman.d/mirrorlist 2>> error.log
-	CheckForError "${LINENO} 'saving mirrorlist'" 2
 }
 
 SetScope() {
