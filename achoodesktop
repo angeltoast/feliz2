@@ -11,8 +11,8 @@
 # ---------------
 # Functions  Line
 # ---------------
-# Keymap      29
-# Locale      94
+# Keymap      24
+# Locale      60
 # Timezone   152
 # Subzone    192
 # Username   256
@@ -23,67 +23,40 @@
 
 getkeymap() {
 print_heading
-print_info "That's the partitioning done."
-print_info "Now we will try to find your keyboard."
-InvalidEntry=1
-while [ $InvalidEntry -eq 1 ]
+echo
+print_info "Now let's try to find your keyboard."
+Repeat=1
+while [ $Repeat -eq 1 ]
 do
   echo
-  print_info "If you know your keyboard layout code, enter it now"
-  print_info "If not, try entering an abbreviation for your"
+  print_info "If you know the code for your keyboard layout, enter"
+  print_info "it now. If not, try entering an abbreviation for your"
   print_info "country or language and a list will be displayed ..."
   echo
   TPread "(eg: fr or us): "
-  Length=${#Response}
   local Term="${Response,,}"
   echo
-  FirstTry=(`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-  for i in "${FirstTry[@]}"
-  do
-    local Check=`echo $i | cut -c 1-${Length}`
-    if [ $Check = $Term ]; then
-      print_info "Keyboard = $i"
-      TPread "Is this the one you wish to use? (Y/n): "
-      if [ -z $Response ] || [ $Response = "Y" ] || [ $Response = "y" ]; then
-        Countrykbd="$i"
-        echo
-        read_timed "The keyboard is now set to: '$Countrykbd'" 1
-        break 2
-      else
-        break
-      fi
-    fi
-  done
-  KeyboardList=(`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again' );
-  echo
-  print_info "Choose your keyboard, or 'Try_Again': "
-  echo
-  local Counter=0
-  for i in "${KeyboardList[@]}"
-  do
-    Counter=$((Counter+1))
-    if [ $Counter -eq 1 ]; then
-      print_info "$Counter $i"
-    else
-      print_list "$Counter $i"
-    fi
-  done
-  echo
-  TPread "Enter the number of your keyboard: "
-  if [ -z ${Response} ] || [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
-  then
-    invalid_option
-  elif [ ${Response} -eq ${Counter} ]; then
-    echo
-  else
-    InvalidEntry=0
-    ReadArray=$((Response-1))
-    Countrykbd="${KeyboardList[${ReadArray}]}"
+  # ListKbs=`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
+  ListKbs=`cat keymaps.list | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
+  case ${ListKbs} in
+    "") print_heading
+      echo
+      print_info "No keyboards found containing '$Term'"
+      print_info "Try again"
+      continue
+      ;;
+    *) Menu "$ListKbs" "Enter the number of your keyboard: " "Keyboards" "Retry"
+  esac
+  case ${Result} in
+    "Retry") print_heading
+        continue
+      ;;
+    *) Repeat=0
+      Countrykbd="${Result}"
     loadkeys ${Countrykbd} 2>> error.log
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
-  fi
-  print_heading
+  esac
 done
 }
 

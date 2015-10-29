@@ -15,7 +15,7 @@
 # Mirrorlist           219
 # SetScope             258
 # SetKernel            282
-# Menu                 315
+# Menu                 233
 # InfoMenu             354
 # MakePartitionList    408
 # -------------------------
@@ -231,8 +231,8 @@ SetKernel() {
 }
 
 Menu() {
-nodone=$4
 local Complete=0
+local Done=$4
 print_info $3
 Underscore=`echo $3 | sed 's/./-/g'`
 print_info $Underscore
@@ -251,23 +251,31 @@ do
     fi
     ConvertToArray[$Counter]=$i
   done
-  if [ -z $nodone ]; then
-    Counter=$((Counter+1))
-    print_list "$Counter) Done"
-  fi
+  case $Done in
+    "") Counter=$((Counter+1))
+        Done="Done"
+        print_list "$Counter) Done"
+    ;;
+    "nodone") Done=""
+    ;;
+    *) Counter=$((Counter+1))
+        print_list "$Counter) ${Done}"
+  esac
   echo
   TPread "$2"
-  if [ -z ${Response} ]; then
-    invalid_option
-  elif [ ${Response} -gt ${Counter} ]; then
-    invalid_option
-  elif [ ${Response} -eq ${Counter} ]; then
-    Result="Done"
-    Complete=1
-  else
-    Result=${ConvertToArray[${Response}]}
-    Complete=1
-  fi
+  case $Response in
+    ''|*[!0-9]*) invalid_option
+    ;;
+    *) if [ ${Response} -gt ${Counter} ]; then
+      invalid_option
+      elif [ ${Response} -eq ${Counter} ]; then
+        Result="$Done"
+        Complete=1
+      else
+        Result=${ConvertToArray[${Response}]}
+        Complete=1
+      fi
+  esac
   print_heading
 done
 }
