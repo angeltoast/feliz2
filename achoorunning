@@ -76,17 +76,17 @@ Complete=0
 # ---------------------
 # Functions        Line
 # ---------------------
-# arch_chroot       80
-# SetGrubDevice     89
-# umount_partitions 117
-# MountPartitions   136
-# InstallKernel     214
-# TestExistingDM    246
-# SetRootPassword   275
-# SetUserPassword   310
+# arch_chroot        89
+# SetGrubDevice      93
+# umount_partitions 121
+# MountPartitions   130
+# InstallKernel     189
+# TestExistingDM    214
+# SetRootPassword   243
+# SetUserPassword   272
 # ---------------------
 
-arch_chroot() {  # Taken directly from Lution AIS
+arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> error.log
 }  
 
@@ -188,7 +188,7 @@ MountPartitions() {
 
 InstallKernel() {
   TPecho "Installing kernel, base-devel & cli tools"
-  # First, the modules used by both kernels
+  # Modules used by both kernels
   pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   if [ -z ${IsInVbox} ]; then # If not in Virtualbox
@@ -197,7 +197,7 @@ InstallKernel() {
     # Add code to overcome piix4 Virtualbox error
     echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log
   fi
-  # Then install the chosen kernel
+  # Chosen kernel
   if [ $Kernel = "1" ]; then # LTS kernel
     pacstrap /mnt linux-lts
     if [[ -n ${IsInVbox} ]]; then # If in Virtualbox

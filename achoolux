@@ -11,12 +11,12 @@
 # -------------------
 # Functions      Line
 # -------------------
-# Variables       26
-# PickLuxuries    69
-# ShoppingList    99
-# LibreVersion   170
-# FinalCheck     193
-# ManualSettings 269
+# Arrays          22
+# PickLuxuries    66
+# ShoppingList    96
+# LibreVersion   152
+# FinalCheck     175
+# ManualSettings 252
 # -------------------
 
 Categories="Accessories Graphical Internet Multimedia Office Programming"
@@ -97,14 +97,12 @@ ShoppingList() {
 # Called by PickLuxuries after a category has been chosen.
 local Complete=0
 Passed="Choose your first item"
-# and will pass them on to InfoMenu for the user to choose one item;
-# When control returns here, it is checked then added to the shopping list
-# Then InfoMenu is called again until user selects "Done" 
 while [ $Complete -eq 0 ]
 do
   print_heading
   print_info "Added so far: ${LuxuriesList}"
   echo
+  # Pass category to InfoMenu for user to choose one item;
   case $Category in
     1) InfoMenu "$Accessories" "Accessories" "LongAccs"
     ;;
@@ -132,7 +130,7 @@ do
       AddToList="N"
     fi
   done
-  # Then carry out any specific tests and add the item to the
+  # Then carry out any specific tests and add the item to the list
   if [ ${AddToList} = "Y" ]; then
     if [ ${Result} = "libreoffice" ]; then
       LibreVersion
@@ -147,31 +145,31 @@ do
       LuxuriesList="${LuxuriesList} ${Result}"
     fi
   fi
-  Passed="Choose your next item"
+  Passed="Choose your next item" # Loop until user selects "Done" 
 done
 }
 
 LibreVersion() {
-  Redo="Y"
-  Response="1"
-  while [ $Redo = "Y" ]
-  do
-    print_heading
-    print_info "LibreOffice was recently updated to version 5, but"
-    print_info "some people still prefer the older version. So Achoo"
-    print_info "gives you the option to choose."
-    echo
-    print_info "Version 5 (also called libreoffice-fresh)"
-    print_list "Version 4 (now known as libreoffice-still)"
-    echo
-    TPread "Enter the version number you prefer (5 or 4) : "
-    echo
-    case $Response in
-      "5" | "4") Redo="N"
-      ;;
-      *) invalid_option
-    esac
-  done
+Redo="Y"
+Response="1"
+while [ $Redo = "Y" ]
+do
+  print_heading
+  print_info "LibreOffice was recently updated to version 5, but"
+  print_info "some people still prefer the older version. So Achoo"
+  print_info "gives you the option to choose."
+  echo
+  print_info "Version 5 (also called libreoffice-fresh)"
+  print_list "Version 4 (now known as libreoffice-still)"
+  echo
+  TPread "Enter the version number you prefer (5 or 4) : "
+  echo
+  case $Response in
+    "5" | "4") Redo="N"
+    ;;
+    *) invalid_option
+  esac
+done
 }
 
 FinalCheck() {
@@ -206,7 +204,7 @@ do
   print_list "5)  Keyboard is $Countrykbd"
   print_list "6)  Locale will be set to $CountryLocale"
   print_list "7)  Zone/subZone will be $ZONE/$SUBZONE"
-  if [ $DesktopEnvironment ] && [ $DisplayManager ]; then
+  if [ $DesktopEnvironment ] && [ $DisplayManager != "None" ]; then
     print_list "8)  DE = $DesktopEnvironment : $DisplayManager"
   elif [ $DesktopEnvironment ]; then
     print_list "8)  DE = $DesktopEnvironment $GoodiesGnome $GoodiesOpenbox $GoodiesXfce"

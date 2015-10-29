@@ -10,24 +10,24 @@
 # -------------------------
 # Functions           Line
 # -------------------------
-# Input and output     29
-# Internet connection  163
-# Mirrorlist           219
-# SetScope             258
-# SetKernel            282
+# Input and output     23
+# Internet connection  122
+# Mirrorlist           166
+# SetScope             194
+# SetKernel            220
 # Menu                 233
-# InfoMenu             354
-# MakePartitionList    408
+# InfoMenu             283
+# MakePartitionList    337
 # -------------------------
 
 contains_element() { # (from AUI scripts)
 # check if an element exists in a string
-    for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
+  for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
 }
 
 invalid_option() { # (from AUI scripts)
-    echo 
-    read_timed "Invalid option. Try again ..." 1
+  echo 
+  read_timed "Invalid option. Try again ..." 1
 }
 
 print_heading() {
@@ -39,12 +39,12 @@ print_heading() {
 }
 
 print_line() { # from AUI scripts
-    printf "%$(tput cols)s\n"|tr ' ' '-'
+  printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
 print_info() { # Aligned text according to screen size
   T_COLS=`tput cols`
-  if [ $2 ]; then # Second parameter is number of characters to left of centre
+  if [ $2 ]; then # $2 is number of characters to left of centre
     lov=$2
   else
     lov=${#1}
@@ -59,12 +59,12 @@ print_info() { # Aligned text according to screen size
 }
 
 print_list() { # Subsequent item(s) in an aligned list (menu)
-    if [ $2 ]; then
-      lov=$2
-      stpt=$(( ($T_COLS - $lov) / 2 ))
-      EMPTY="$(printf '%*s' $stpt)"
-    fi
-   echo "$EMPTY $1"
+  if [ $2 ]; then
+    lov=$2
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  fi
+  echo "$EMPTY $1"
 }
 
 TPecho() { # For displaying status while running on auto
@@ -101,7 +101,7 @@ TPread() { # Aligned prompt for user-entry - returns result through $Response
   read -p "$EMPTY $1" Response
 }
 
-read_timed() { # Now can receive second parameter to set duration
+read_timed() { # $1 = text to display; $2 = duration
   T_COLS=`tput cols`
   lov=${#1}
   if [ $2 ]; then
@@ -120,22 +120,22 @@ read_timed() { # Now can receive second parameter to set duration
 }
 
 CheckInternet() {
-print_heading
-Service="N"
-while [ $Service = "N" ]
-do
-  print_info "Welcome to the Achoo! Arch Linux installation script."
-  print_info "A working internet connection is needed for installation."
-  print_info "Checking your connection now ..."
-  CheckConnection
-  case $Service in
-    "N") read_timed "Sorry, installation cannot continue without an internet connection."
-      exit
-    ;;
-    *) break
-  esac
   print_heading
-done
+  Service="N"
+  while [ $Service = "N" ]
+  do
+    print_info "Welcome to the Achoo! Arch Linux installation script."
+    print_info "A working internet connection is needed for installation."
+    print_info "Checking your connection now ..."
+    CheckConnection
+    case $Service in
+      "N") read_timed "Sorry, installation cannot continue without an internet connection."
+        exit
+      ;;
+      *) break
+    esac
+    print_heading
+  done
 }
 
 CheckConnection() {
@@ -164,7 +164,7 @@ done
 }
 
 ReflectorMirrorList() {
- # Use reflector to generate fast mirror list
+# Use reflector to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> error.log
   if [[ $? -gt 0 ]]; then
@@ -335,14 +335,14 @@ done
 }
 
 MakePartitionList() {
-  # Call function to generate an array of partitions
-  # This is not a first call, so first empty the existing array
-   	local x=0
-    local HowMany="${#PartitionArray[@]}"
-    until [ ${x} -eq ${HowMany} ]
-    do
-      unset PartitionArray[$x]
-      x=$((x+1))
-    done
-		BuildPartitionLists # Then rebuild
+# Call function to generate an array of partitions
+# This is not a first call, so first empty the existing array
+ 	local x=0
+  local HowMany="${#PartitionArray[@]}"
+  until [ ${x} -eq ${HowMany} ]
+  do
+    unset PartitionArray[$x]
+    x=$((x+1))
+  done
+  BuildPartitionLists # Then rebuild
 }

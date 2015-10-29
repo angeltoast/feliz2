@@ -12,13 +12,13 @@
 # Functions  Line
 # ---------------
 # Keymap      24
-# Locale      60
-# Timezone   152
-# Subzone    192
-# Username   256
-# Hostname   272
-# DE         288
-# DM         410
+# Locale      63
+# Timezone   121
+# Subzone    161
+# Username   235
+# Hostname   251
+# DE         268
+# DM         384
 # ---------------
 
 getkeymap() {
@@ -335,8 +335,8 @@ ChooseDE() {
 }
 
 GnomeOptions() {
-  Redo="Y"
-  GoodiesGnome=""
+Redo="Y"
+GoodiesGnome=""
 while [ $Redo = "Y" ]
 do
   print_heading

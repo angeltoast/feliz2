@@ -144,7 +144,6 @@ if [ $Scope != "Basic" ]; then
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 fi
 
-# Install bootloader
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
   pacstrap /mnt grub os-prober 2>> error.log
@@ -181,20 +180,16 @@ then
     TPecho "User already exists"
   fi
 
-  # Install Flash and other Multimedia Codecs
   TPecho "Adding Flash and other Multimedia Codecs"
   pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> error.log
 
-  # Wireless tools
   TPecho "Installing wireless tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> error.log
   pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2>> error.log
   
-  # Install X, graphics, etc
   TPecho "Installing X, graphics, etc"
   pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> error.log
 
-  # Install chosen display manager
   TestExistingDM
   if [ ${DisplayManager} != "None" ]; then
     TPecho "Installing ${DisplayManager} Display Manager"
@@ -204,7 +199,6 @@ then
     TPecho "Not installing a Display Manager"
   fi
 
-  # Install Desktop Environment
   case ${DesktopEnvironment} in
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
         pacstrap /mnt cinnamon gnome-terminal 2>> error.log

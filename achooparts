@@ -10,19 +10,19 @@
 # -----------------------      ------------------------
 # Functions         Line       Functions           Line
 # -----------------------      ------------------------
-# CheckParts          25       BuildPartitionLists 347
-# Partitioning       101       UpdateArray         368
-# Parted             131       AllocateRoot        470
-# AutoPartition      136       CheckPartition      520
-# AutoWarning        180       AllocateSwap        530
-# RunAuto            197       SetSwapFile         569
-# select_filesystem  286       MorePartitions      624
-# SetLabel           306       MakePartition       675
-# EditLabel          330
+# CheckParts          24       BuildPartitionLists 299
+# Partitioning        94       UpdateArray         388
+# Parted             124       AllocateRoot        417
+# AutoPartition      128       CheckPartition      471
+# AutoWarning        171       AllocateSwap        481
+# RunAutoPart        188       SetSwapFile         564
+# select_filesystem  236       MorePartitions      588
+# SetLabel           253       MakePartition       643
+# EditLabel          275
 # -----------------------      ------------------------
 
 CheckParts() {
-	# First test for existing partitions
+# First test for existing partitions
 	ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
   local Counter=0
   for i in $ShowPartitions
@@ -233,10 +233,8 @@ RunAutoPart() {
   read -n1
 }
 
-select_filesystem() {
-# Allows user-selection of filesystem by entering a number
+select_filesystem() { #	$1 = list passed as string by caller
 	local Counter=0
-  #	TypeList now passed as string by caller
 	print_info "Please now select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
   echo
@@ -252,11 +250,10 @@ select_filesystem() {
 	done
 }
 
-SetLabel() {
-# Build an associative array of partitions
-# The array (LabellingArray[]) is declared in achoorunning with other variables
-# Called from the root, swap and extra partitions routines
+SetLabel() { # Called from the root, swap and extra partitions routines
 # ... each passing a single argument containing the partition ID
+# Build an associative array of partitions (LabellingArray[]) as
+# declared in achoorunning with other arrays
 PartitionID=$1
 local HowMany="${#PartitionArray[@]}"
 local x=0
@@ -644,8 +641,8 @@ MorePartitions() {
 }
 
 MakePartition() { # Called by MorePartitions
-  # Add the selected partition to the array for extra partitions
-  # 1) When selected, first save to AddPartList (eg: /dev/sda5)
+# Add the selected partition to the array for extra partitions
+  # 1) Save to AddPartList (eg: /dev/sda5)
 	ExtraPartitions=${#AddPartList[@]}
 	AddPartList[$ExtraPartitions]="${Partition}"
   CheckPartition   # Before going to select_filesystem, check the partition
@@ -658,7 +655,7 @@ MakePartition() { # Called by MorePartitions
   TypeList="ext2 ext3 ext4 btrfs" # Set format types for the selected partition
 	select_filesystem
 	AddPartType[$ExtraPartitions]="${PartitionType}" 	# Add it to AddPartType list  
-  # 3) Then get a mountpoint for it
+  # 3) Get a mountpoint
 	LoopRepeat="Y"
 	while [ ${LoopRepeat} = "Y" ]
 	do
@@ -699,5 +696,5 @@ MakePartition() { # Called by MorePartitions
 			break
 		fi 
 	done 
-	AddPartMount[$ExtraPartitions]="${PartMount}" 	# Add it to AddPartMount list
+	AddPartMount[$ExtraPartitions]="${PartMount}"
 }
