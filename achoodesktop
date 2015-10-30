@@ -130,7 +130,6 @@ do
   Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   echo
   NoZones="${#Zones[@]}"
-
   for i in "${Zones[@]}"
   do
     Counter=$((Counter+1))
