@@ -199,14 +199,10 @@ InstallKernel() {
     TPecho "Installing Latest kernel"
     pacstrap /mnt linux
   fi
-  TPecho "Installing opensource video drivers and virtualbox modules"
-  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
-    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
-    pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
-  else
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
-    pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
-  fi
+  TPecho "Installing opensource video drivers and virtualbox guest modules"
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
+  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
   cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
 }
 
