@@ -58,13 +58,12 @@ if [ $AutoPart -eq 0 ]; then
   then
     MorePartitions
   fi
-  # Select device for Grub
-  if [ $AutoPart -eq 0 ]; then
-    SetKernel
-    SetGrubDevice
-  fi
 fi
 
+# Select kernel and device for Grub
+SetKernel
+SetGrubDevice
+  
 # Keyboard layout
 getkeymap
 

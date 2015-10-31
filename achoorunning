@@ -195,24 +195,19 @@ InstallKernel() {
   if [ $Kernel = "1" ]; then # LTS kernel
     TPecho "Installing LTS kernel"
     pacstrap /mnt linux-lts
-#    if [ -n ${IsInVbox} ]; then # If in Virtualbox
-#      pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils-lts virtualbox-guest-dkms-lts
-#    fi
   else # Latest kernel
     TPecho "Installing Latest kernel"
     pacstrap /mnt linux
-#    if [ -n ${IsInVbox} ]; then # If in Virtualbox
-#      pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
-#    fi
   fi
-    TPecho "Installing opensource video drivers and virtualbox modules"
-#  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
+  TPecho "Installing opensource video drivers and virtualbox modules"
+  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
     pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
-#  else
-    # Add code to overcome piix4 Virtualbox error
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log
-#  fi
-  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+    pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+  else
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
+    pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+  fi
+  cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
 }
 
 TestExistingDM() {
