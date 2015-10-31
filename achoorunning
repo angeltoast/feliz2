@@ -187,35 +187,32 @@ MountPartitions() {
 }
 
 InstallKernel() {
-  TPecho "Installing kernel, base-devel & cli tools"
+  TPecho "Installing cli tools"
   # Modules used by both kernels
-read -p "$LINENO"
   pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
-    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
-read -p "$LINENO"
-  else
-    # Add code to overcome piix4 Virtualbox error
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log
-read -p "$LINENO"
-  fi
   # Chosen kernel
   if [ $Kernel = "1" ]; then # LTS kernel
+    TPecho "Installing LTS kernel"
     pacstrap /mnt linux-lts
-read -p "$LINENO"
-    if [ -n ${IsInVbox} ]; then # If in Virtualbox
-      pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils-lts virtualbox-guest-dkms-lts
-read -p "$LINENO"
-    fi
+#    if [ -n ${IsInVbox} ]; then # If in Virtualbox
+#      pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils-lts virtualbox-guest-dkms-lts
+#    fi
   else # Latest kernel
+    TPecho "Installing Latest kernel"
     pacstrap /mnt linux
-read -p "$LINENO"
-    if [ -n ${IsInVbox} ]; then # If in Virtualbox
-      pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
-read -p "$LINENO"
-    fi
+#    if [ -n ${IsInVbox} ]; then # If in Virtualbox
+#      pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+#    fi
   fi
+    TPecho "Installing opensource video drivers and virtualbox modules"
+#  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
+    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
+#  else
+    # Add code to overcome piix4 Virtualbox error
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log
+#  fi
+  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
 }
 
 TestExistingDM() {

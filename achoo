@@ -100,8 +100,7 @@ MountPartitions
 ReflectorMirrorList
 
 # Use dmidecode (added to archiso) to check for Virtualbox installation
-IsInVbox=`dmidecode --type 1 | grep VirtualBox`
-read -p "IsInVbox"
+# IsInVbox=`dmidecode --type 1 | grep VirtualBox`
 # Then call kernel function
 InstallKernel
 
