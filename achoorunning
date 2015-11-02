@@ -187,28 +187,23 @@ MountPartitions() {
 }
 
 InstallKernel() {
-  TPecho "Installing kernel, base-devel & cli tools"
+  TPecho "Installing cli tools"
   # Modules used by both kernels
   pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  if [ -z ${IsInVbox} ]; then # If not in Virtualbox
-    pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install open video drivers
-  else
-    # Add code to overcome piix4 Virtualbox error
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log
-  fi
   # Chosen kernel
   if [ $Kernel = "1" ]; then # LTS kernel
+    TPecho "Installing LTS kernel"
     pacstrap /mnt linux-lts
-    if [[ -n ${IsInVbox} ]]; then # If in Virtualbox
-      pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils-lts virtualbox-guest-dkms-lts
-    fi
   else # Latest kernel
+    TPecho "Installing Latest kernel"
     pacstrap /mnt linux
-    if [ -n ${IsInVbox} ]; then # If in Virtualbox
-      pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
-    fi
   fi
+  TPecho "Installing opensource video drivers and virtualbox guest modules"
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
+  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
+  cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
 }
 
 TestExistingDM() {
