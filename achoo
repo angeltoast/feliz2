@@ -7,6 +7,74 @@
 
 # Please read the introduction in the README file
 
+#
+# Partition variables
+#
+declare -a AddPartList	  # Array of additional partitions by system name. eg: /dev/sda5
+declare -a AddPartMount   # Array of mountpoints for the same partitions in the same order. eg: /home
+declare -a AddPartType  	# Array of format type for the same partitions. eg: ext4
+declare -a PartitionArray # List of long identifiers for InfoMenu
+declare -a NewArray       # For copying any array
+declare -A LabellingArray # To hold full details of user labels for partitions
+declare -A Labelled       # Store labels
+declare -A FileSystem     # Store filesystem types (ext* swap)
+
+SwapPartition=""  # "/dev/sda3"
+FormatSwap="N"    # User selects whether to reuse swap
+MakeSwap="Y"
+SwapFile=""       # "2G"
+IsSwap=""         # Result of lsblk test
+RootPartition=""  # "/dev/sda2"
+RootType=""       # "ext4"
+Partition=""      # "sda1"
+
+AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
+UseDisk="sda"     # Used if more than one disk
+DiskDetails=0     # Size of selected disk
+#
+# Grub, kernel & EFI variables
+#
+GrubDevice=""     # "/dev/sda"
+Kernel="1"        # Default 1 = LTS
+IsInVbox=""       # Result of test to see if installation is in Virtualbox
+DualBoot="N"      # Ready for dual-booting option
+EFIPartition=""   # Will hold EFI partition mountpoint
+#
+# Location variables
+#
+CountryCode=""    # "GB" Country code for mirrorlist
+CountryLocale=""  # "en_GB.UTF-8"	Locale
+Countrykbd=""     # "uk" keyboard
+ZONE=""           # "Europe" For time
+SUBZONE=""        # "London" For time
+#
+# Desktop environment, display manager and greeter variables
+#
+DesktopEnvironment="None"  # "xfce4"
+GoodiesXfce=""
+GoodiesGnome=""
+GoodiesOpenbox=""
+DisplayManager="None"      # "lightdm"
+Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
+#
+# Root and user variables
+#
+HostName=""  # "arch-linux"
+UserName=""  # "archie"
+Scope=""     # Installation scope ... 'Full' or 'Basic'
+#
+# Input/Output variables
+#
+OutPrompt="Press [Enter] to continue."
+AnyPrompt="Press any key to continue."
+Prompt1="Enter the number of your selection : "
+Response="" # Global user input variable
+Banner="~ https://wiki.archlinux.org ~"
+Complete=0
+
+#
+# Include files
+#
 if [[ -f `pwd`/achoofuncs ]]; then
   source achoofuncs
 else
@@ -25,27 +93,12 @@ else
   echo "missing file: achoodesktop"
   exit 1
 fi
-if [[ -f `pwd`/achoolux ]]; then
-  source achoolux
+if [[ -f `pwd`/menugen ]]; then
+  source menugen
 else
-  echo "missing file: achoolux"
+  echo "missing file: menugen"
   exit 1
 fi
-
-if [[ -f `pwd`/achoorunning ]]; then
-  source achoorunning
-else
-  echo "missing file: achoorunning"
-  exit 1
-fi
-
-# Added for menuing functions
-  if [[ -f `pwd`/menugen ]]; then
-    source menugen
-  else
-    echo "missing file: menugen"
-    exit 1
-  fi
 
 # Test internet connection
 CheckInternet

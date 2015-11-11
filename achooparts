@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# achooparts - Partitioning functions called by the main achoo script
+# achooparts - Partitioning functions
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.

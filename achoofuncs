@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# achoofuncs - Various functions called by all scripts at data-entry stage
+# achoofuncs - Various functions
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
@@ -15,10 +15,16 @@
 # Mirrorlist           166
 # SetScope             194
 # SetKernel            220
-# Menu                 233
-# InfoMenu             283
 # MakePartitionList    337
-# -------------------------
+# arch_chroot           24
+# SetGrubDevice         28
+# umount_partitions     56
+# MountPartitions      130
+# InstallKernel        189
+# TestExistingDM       214
+# SetRootPassword      243
+# SetUserPassword      272
+# ------------------------
 
 contains_element() { # (from AUI scripts)
 # check if an element exists in a string
@@ -35,10 +41,6 @@ print_heading() {
   T_COLS=`tput cols`
   tput cup 1 $((($T_COLS/2)-20))
   printf "~ Achoo! The Arch Linux Installation Script ~\n"
-  printf "%$(tput cols)s\n"|tr ' ' '-'
-}
-
-print_line() { # from AUI scripts
   printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
@@ -232,8 +234,6 @@ SetKernel() {
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
-
-
 MakePartitionList() {
 # Call function to generate an array of partitions
 # This is not a first call, so first empty the existing array
@@ -245,4 +245,208 @@ MakePartitionList() {
     x=$((x+1))
   done
   BuildPartitionLists # Then rebuild
+}
+
+arch_chroot() {  # From Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" 2>> error.log
+}  
+
+SetGrubDevice() {
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
+	print_heading
+  GrubDevice=""
+	Counter=0
+	print_info "Select the device where Grub is to be installed."
+  print_info "Note that if you select the 'Done' option, Grub will"
+  print_info "not be installed, and you will have to make"
+  print_info "alternative arrangements for booting your new system."
+  echo
+	Menu "${DevicesList}" "Enter the number of your selection: " "Devices"
+  Reply=$Response
+  for i in ${DevicesList}
+	do
+    Item=$i
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]; then
+      if [ $Item = "Done" ]; then
+        GrubDevice=""
+      else
+        GrubDevice=$Item
+      fi
+      break
+  	fi
+	done
+}
+
+umount_partitions(){ # from Lution/AUI
+  MOUNTED=""
+  MOUNTED=$(mount | grep "/mnt" | awk '{print $3}' | sort -r)
+  swapoff -a 2>> error.log
+  for i in ${MOUNTED[@]}; do
+    umount $i >/dev/null 2>> error.log
+  done
+}
+
+MountPartitions() {
+  case $RootType in
+    "") TPecho "Not formatting root partition"
+    ;;
+    *) TPecho "Formatting /root partition"
+    # Check if replacing existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${RootPartition}
+    elif [ $RootType = "btrfs" ]; then
+      mkfs.btrfs -f ${RootPartition} 2>> error.log
+    else
+      Partition=`echo $RootPartition | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mke2fs ${Label} -t ${RootType} ${RootPartition}
+    fi
+  esac
+  TPecho "Mounting /root partition"	
+  mount ${RootPartition} /mnt 2>> error.log # eg: mount /dev/sda1 /mnt
+  if [ ${SwapPartition} ]; then
+    if [ $MakeSwap = "Y" ]; then
+      TPecho "Making /swap partition"
+      Partition=`echo $SwapPartition | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mkswap ${Label} ${SwapPartition} # eg: mkswap -L Arch-Swap /dev/sda2
+    fi
+    TPecho "Activating /swap"
+    swapon ${SwapPartition} 2>> error.log # eg: swapon /dev/sda2
+  fi
+  TPecho "Mounting additional partitions"
+  local Counter=0
+  for id in ${AddPartList}
+  do
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> error.log	# eg: mkdir -p /mnt/home
+    # Check if replacing existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${id}
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+      mkfs.btrfs -f ${id} 2>> error.log
+    elif [ ${AddPartType[$Counter]} != "" ]; then
+      Partition=`echo ${id} | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+    fi
+    mount ${id} /mnt${AddPartMount[$Counter]} 2>> error.log	# eg: mount /dev/sda3 /mnt/home
+		Counter=$((Counter+1))
+	done
+}
+
+InstallKernel() {
+  TPecho "Installing cli tools"
+  pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
+  arch_chroot "systemctl enable sshd.service" >/dev/null
+  # Chosen kernel
+  if [ $Kernel = "1" ]; then # LTS kernel
+    TPecho "Installing LTS kernel"
+    pacstrap /mnt linux-lts
+  else # Latest kernel
+    TPecho "Installing Latest kernel"
+    pacstrap /mnt linux
+  fi
+  TPecho "Installing opensource video drivers and virtualbox guest modules"
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
+  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
+  cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
+}
+
+TestExistingDM() {
+  # Test for existing display manager and disable if necessary
+  arch-chroot /mnt touch etc/output.log # Create empty file
+  arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service' > mnt/etc/output.log
+  DMLine=`cat /mnt/etc/output.log`
+  local Counter=1
+  case ${DMLine} in
+    "") TPecho "No previous DM discovered"
+    ;;
+    *) local Continue="Y"
+      while [ ${Continue} = "Y" ]
+      do
+        ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` # First of pair is DM
+        if [ -z ${ExDM} ]; then
+          Continue="N" # Quit if no further entries
+          break
+        fi
+        Counter=$((Counter+1))
+        ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` # Second is status
+        case ${ExDMStatus} in
+          "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+          ;;
+          *) TPecho "${ExDM} already disabled"
+        esac
+        Counter=$((Counter+1))
+      done
+  esac
+}
+
+SetRootPassword() {
+  print_heading
+ 	print_info  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+  echo
+ 	print_info "Finally we need to set passwords ..."
+  echo
+  Repeat="Y"
+  while [ $Repeat = "Y" ]
+  do
+    read -s -p "Enter a password for root: " Pass1
+    echo
+    read -s -p "Re-enter root password: " Pass2
+    echo
+    if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
+      read_timed "Passwords cannot be blank. Try again ..." 1
+      continue
+    fi
+    if [ $Pass1 = $Pass2 ]; then
+     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
+     arch_chroot "passwd root" < /tmp/.passwd >/dev/null
+     rm /tmp/.passwd 2>> error.log
+      Repeat="N"
+    else
+      print_heading
+      print_info "Passwords don't match. Try again"
+    fi
+  done
+}
+
+SetUserPassword() {
+  print_heading
+  echo
+	print_info   "And now a password for $UserName: "
+  echo
+  Repeat="Y"
+  while [ $Repeat = "Y" ]
+  do
+    read -s -p "Enter a password for $UserName: " Pass1
+    echo
+    read -s -p "Re-enter password for $UserName: " Pass2
+    echo
+    if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
+      read_timed "Passwords cannot be blank. Try again ..." 1
+      continue
+    fi
+    if [ $Pass1 = $Pass2 ]; then
+      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
+      arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+      rm /tmp/.passwd 2>> error.log
+      Repeat="N"
+    else
+      echo "Passwords don't match. Try again"
+    fi
+  done
 }
