@@ -39,6 +39,14 @@ else
   exit 1
 fi
 
+# Added for menuing functions
+  if [[ -f `pwd`/menugen ]]; then
+    source menugen
+  else
+    echo "missing file: menugen"
+    exit 1
+  fi
+
 # Test internet connection
 CheckInternet
 StartTime=$(date +%s)
@@ -99,7 +107,7 @@ MountPartitions
 ReflectorMirrorList
 
 # Use dmidecode (added to archiso) to check for Virtualbox installation
-IsInVbox=`dmidecode --type 1 | grep VirtualBox`
+IsInVbox=`dmidecode --type 1 | grep "VirtualBox\|QEMU"`
 # Then call kernel function
 InstallKernel
 

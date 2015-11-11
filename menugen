@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# menugen - menu functions used throughout Achoo
+
+# Developed by Elizabeth Mills
+
+PrintOne() { # Aligned text according to screen size
+  width=`tput cols`
+  lov=${#1}
+  if [ ${lov} -lt ${width} ]; then
+    stpt=$(( ($width - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo "$EMPTY $1"
+  else
+    echo "$1"
+  fi
+}
+
+PrintMany() { # Subsequent item(s) in an aligned list
+  echo "$EMPTY $1"
+}
+
+Menu() {
+  menugen1 "$1" "$3" "$4" # Redirect calls referring to the old Menu function
+}
+
+InfoMenu() {
+  menugen2 "$1" "$2" "" "$3" # Redirect calls referring to the old InfoMenu function
+}
+
+menugen1() { # Previously 'Menu'
+# Simple menu alternative to the bash 'select' function
+# Can receive up to three string arguments:
+# 1) A string array variable of the items to be listed
+# 2) An optional one-word menu heading (which will be underlined on display)
+# 3) An optional alternative word to be displayed instead of 'Done' (eg: 'Retry')
+#    If set to 'nodone' the menu will display without a Done option.
+# Argument #1 should not be empty, others may be omitted or empty. If the 3rd argument
+# is used, there must be a 2nd argument even if it is an empty string.
+
+local Complete=0
+local Done=$3
+if [ -n $2 ]; then
+  PrintOne $2
+  Underscore=`echo $2 | sed 's/./-/g'`
+  PrintOne $Underscore
+fi
+while [ $Complete -eq 0 ]
+do
+  local Counter=0
+  MenuList=$1
+  for i in $MenuList
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      PrintOne "$Counter) $i"
+    else
+      PrintMany "$Counter) $i"
+    fi
+    ConvertToArray[$Counter]=$i
+  done
+  case $Done in
+    "") Counter=$((Counter+1))
+        Done="Done"
+        PrintMany "$Counter) Done"
+    ;;
+    "nodone") Done=""
+    ;;
+    *) Counter=$((Counter+1))
+        PrintMany "$Counter) ${Done}"
+  esac
+  echo
+  TPread "Please enter the number of your selection: "
+  case $Response in
+    ''|*[!0-9]*) invalid_option
+    ;;
+    *) if [ ${Response} -gt ${Counter} ]; then
+      invalid_option
+      elif [ ${Response} -eq ${Counter} ]; then
+        Result="$Done"
+        Complete=1
+      else
+        Result=${ConvertToArray[${Response}]}
+        Complete=1
+      fi
+  esac
+  clear
+done
+}
+
+menugen2() { # Previously 'InfoMenu'
+# Advanced menuing function with extended descriptions linked to short name
+# Parameters:
+# 1) Primary file (string of single-word references)
+# 2) An optional one-word menu heading (which will be underlined on display)
+# 4) Secondary file (the name of the array containing long descriptions)
+# 3) Optional alternative word to 'Done'
+# Global variable $Passed may be used as page heading 
+# If $Passed is not empty, it is displayed at the top of the page
+local Complete=0
+local Done=$3
+Result=""
+PrimaryFile="$1"
+name=$4[@]
+LongDescription=("${!name}")
+# ExtraItem=$4
+local Counter=0
+while [ $Complete -eq 0 ]
+do
+  if [ -n "${Passed}" ]; then
+    PrintOne "$Passed"
+  fi
+#  echo
+#  PrintOne "Select one item from this list"
+  echo
+  if [ -n $2 ]; then
+    PrintOne $2
+    Underscore=`echo $2 | sed 's/./-/g'`
+    PrintOne $Underscore
+  fi
+  Counter=0
+  for i in "${LongDescription[@]}"; do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      PrintOne "${Counter}) $i"
+    else
+      PrintMany "${Counter}) $i"
+    fi
+  done
+  case $Done in
+    "") Counter=$((Counter+1))
+        Done="Done"
+        PrintMany "$Counter) Done"
+    ;;
+    "nodone") Done=""
+    ;;
+    *) Counter=$((Counter+1))
+        PrintMany "$Counter) ${Done}"
+  esac
+  echo
+  TPread "Please enter the number of your selection: "
+  
+   case $Response in
+    ''|*[!0-9]*) invalid_option
+    ;;
+    *) if [ ${Response} -gt ${Counter} ]; then
+      invalid_option
+      elif [ ${Response} -eq ${Counter} ]; then
+        Result="$Done"
+        Complete=1
+      else
+        local Match=0
+        for i in $PrimaryFile; do
+          Match=$((Match+1))
+          if [ $Match -eq $Response ]; then
+            Result="$i"
+          fi
+        done
+        Complete=1
+      fi
+  esac 
+  clear
+done
+}
