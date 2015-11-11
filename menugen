@@ -31,22 +31,21 @@ InfoMenu() {
 menugen1() { # Previously 'Menu'
 # Simple menu alternative to the bash 'select' function
 # Can receive up to three string arguments:
-# 1) A string array variable of the items to be listed
-# 2) An optional one-word menu heading (which will be underlined on display)
-# 3) An optional alternative word to be displayed instead of 'Done' (eg: 'Retry')
-#    If set to 'nodone' the menu will display without a Done option.
+#  1) A string array variable of the items to be listed
+#  2) An optional one-word menu heading (which will be underlined on display)
+#  3) An optional alternative word to be displayed instead of 'Done' (eg: 'Retry')
+#     If set to 'nodone' the menu will display without a Done option.
 # Argument #1 should not be empty, others may be omitted or empty. If the 3rd argument
 # is used, there must be a 2nd argument even if it is an empty string.
-
 local Complete=0
-local Done=$3
-if [ -n $2 ]; then
-  PrintOne $2
-  Underscore=`echo $2 | sed 's/./-/g'`
-  PrintOne $Underscore
-fi
 while [ $Complete -eq 0 ]
 do
+  local Done=$3
+  if [ -n $2 ]; then
+    PrintOne $2
+    Underscore=`echo $2 | sed 's/./-/g'`
+    PrintOne $Underscore
+  fi
   local Counter=0
   MenuList=$1
   for i in $MenuList
@@ -74,8 +73,11 @@ do
   case $Response in
     ''|*[!0-9]*) invalid_option
     ;;
-    *) if [ ${Response} -gt ${Counter} ]; then
-      invalid_option
+    *) if [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
+        invalid_option
+      elif [ ${Response} -eq ${Counter} ] && [ -z $Done ]; then
+        Result=${ConvertToArray[${Response}]}
+        Complete=1
       elif [ ${Response} -eq ${Counter} ]; then
         Result="$Done"
         Complete=1
@@ -98,20 +100,17 @@ menugen2() { # Previously 'InfoMenu'
 # Global variable $Passed may be used as page heading 
 # If $Passed is not empty, it is displayed at the top of the page
 local Complete=0
-local Done=$3
-Result=""
-PrimaryFile="$1"
-name=$4[@]
-LongDescription=("${!name}")
-# ExtraItem=$4
-local Counter=0
 while [ $Complete -eq 0 ]
 do
+  local Done=$3
+  Result=""
+  PrimaryFile="$1"
+  name=$4[@]
+  LongDescription=("${!name}")
+  local Counter=0
   if [ -n "${Passed}" ]; then
     PrintOne "$Passed"
   fi
-#  echo
-#  PrintOne "Select one item from this list"
   echo
   if [ -n $2 ]; then
     PrintOne $2

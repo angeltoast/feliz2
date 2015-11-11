@@ -221,7 +221,6 @@ SetScope() {
 }
 
 SetKernel() {
-  MenuList="LTS Latest"
   print_heading
   echo
   print_info "Choose your kernel"
@@ -230,7 +229,7 @@ SetKernel() {
   print_info "If in doubt, choose LTS."
   echo
   local Counter=0
-  Menu "$MenuList" "Enter the number of your choice: " "Kernels" "nodone"
+  menugen1 "LTS Latest" "Kernels" "nodone"
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
@@ -351,7 +350,6 @@ InstallKernel() {
   TPecho "Installing cli tools"
   pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  # Chosen kernel
   if [ $Kernel = "1" ]; then # LTS kernel
     TPecho "Installing LTS kernel"
     pacstrap /mnt linux-lts
