@@ -160,7 +160,8 @@ MountPartitions
 ReflectorMirrorList
 
 # Use dmidecode (added to archiso) to check for Virtualbox installation
-IsInVbox=`dmidecode --type 1 | grep "VirtualBox\|QEMU"`
+IsInVbox=`dmidecode --type 1 | grep VirtualBox` # Installs guest modules
+IsInQEMU=`dmidecode --type 1 | grep QEMU` # Not yet used
 # Then call kernel function
 InstallKernel
 

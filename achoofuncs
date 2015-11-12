@@ -350,18 +350,27 @@ InstallKernel() {
   TPecho "Installing cli tools"
   pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  if [ $Kernel = "1" ]; then # LTS kernel
-    TPecho "Installing LTS kernel"
-    pacstrap /mnt linux-lts
-  else # Latest kernel
-    TPecho "Installing Latest kernel"
-    pacstrap /mnt linux
-  fi
-  TPecho "Installing opensource video drivers and virtualbox guest modules"
+  case $Kernel in
+    1) TPecho "Installing LTS kernel"
+        pacstrap /mnt linux-lts
+        if [ -n ${IsInVbox} ]; then # Installing in Virtualbox
+          TPecho "Installing virtualbox guest modules"
+          pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
+          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
+        fi
+      ;;  
+    *) TPecho "Installing Latest kernel"
+        pacstrap /mnt linux
+        if [ -n ${IsInVbox} ]; then # Installing latest kernel in Virtualbox
+          TPecho "Installing virtualbox guest modules"
+          pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
+          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
+        fi
+  esac
+  TPecho "Installing opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
-  pacstrap /mnt virtualbox-guest-modules virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
-  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
-  cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
 }
 
 TestExistingDM() {
