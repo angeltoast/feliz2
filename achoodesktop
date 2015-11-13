@@ -8,19 +8,18 @@
 
 # Please read the introduction in the README file
 
-# ---------------
-# Functions  Line
-# ---------------
-# Keymap      25
-# Locale      64
-# Timezone   122
-# Subzone    161
-# Username   235
-# Hostname   251
-# DE         268
+# ---------------     -----------------------
+# Function   Line     Function           Line
+# ---------------     -----------------------
+# Keymap      25      Luxuries            414
+# Locale      64      FinalCheck          578
+# Timezone   122      ManualSettings      655
+# Subzone    161      ChangeRootPartition 680
+# Username   235      ChangeSwapPartition 688
+# Hostname   251      ChangePartitions    696
+# DE         268      AddExtras           708
 # DM         384
-# Luxuries   414
-# ---------------
+# ---------------     -----------------------
 
 getkeymap() {
 print_heading
@@ -65,53 +64,36 @@ setlocale() {
 SearchPrompt=" (for example: GB or en): "
 print_heading
 print_info "Next we will try to find your locale"
+print_info "This will be used to find the best mirrors"
+print_info "for downloading your system"
 InvalidEntry=1
 while [ $InvalidEntry -eq 1 ]
 do
   local Counter=0
-  print_info "This will be used to find the best mirrors"
-  print_info "for downloading your system"
   print_info "Please enter a two-letter code for your country or language."
   echo
   TPread "$SearchPrompt"
   if [ -z ${Response} ]
   then
-    print_info "Try a different two-letter code (try UPPER CASE): "
     invalid_option
   else
     echo
     searchterm="${Response,,}"
-    LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again');
-    if [ ${#LocaleList[@]} -eq 1 ]
+    LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+    if [ ${#LocaleList[@]} -eq 0 ]
     then
       SEARCHTERM="${Response^^}"
-      LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` 'Try_Again');
+      LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
     fi
-    echo
-    print_info "Choose your locale, or 'Try_Again': "
-    echo
-    for i in "${LocaleList[@]}"
-    do
-      Counter=$((Counter+1))
-      if [ $Counter -eq 1 ]; then
-        print_info "$Counter $i"
-      else
-        print_list "$Counter $i"
-      fi
-    done
-    echo
-    TPread "Enter the number of your locale: "
-    if [ -z ${Response} ] || [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
-    then
-      invalid_option
-    elif [ ${Response} -eq ${Counter} ]; then
-      SearchPrompt="Try a different two-letter code: "
-    else
-      InvalidEntry=0
-      ReadArray=$((Response-1))
-      CountryLocale="${LocaleList[${ReadArray}]}.UTF-8"
-      CountryCode=(`echo ${LocaleList[${ReadArray}]} | cut -c4-6`)
-    fi
+    print_info "Choose your locale from this list, or 'Try_Again': "
+    menugen1 "${LocaleList}" "" "Try_Again"
+    case $Result in
+      "Try_Again") continue
+      ;;
+      *) CountryLocale="${Result}.UTF-8"
+      CountryCode=(`echo ${Result} | cut -c4-6`)
+      break
+    esac
   fi
   print_heading
 done
@@ -130,105 +112,54 @@ do
   print_info "choose the World Zone of your location."
   Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   echo
-  NoZones="${#Zones[@]}"
-  for i in "${Zones[@]}"
+  zones=""
+  for x in ${Zones[@]}
   do
-    Counter=$((Counter+1))
-    if [ $Counter -eq 1 ]; then
-      print_info "$Counter $i"
-    elif [ $Counter -eq $NoZones ]; then
-      break
-    else
-      print_list "$Counter $i"
-    fi
+    zones="$zones $x"
   done
-  echo
-  TPread "Enter the number of your selection: "
-  Zone1=$Response
-  if [ -z ${Zone1} ] || [ ${Zone1} -gt ${Counter} ] || [ ${Zone1} -lt 1 ]
-  then
-    invalid_option
-  else
-    Zone1=$((Zone1-1))
-    ZONE=${Zones[$Zone1]}
-    print_info "$ZONE selected"
-    SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
-    SetSubZone # New subroutine for matching sub-zones
-  fi
-done    
+  menugen1 "${zones}" "Zones" "nodone"
+  ZONE=$Result
+  case $Result in
+    "UTC") SUBZONE=""
+        Complete=1
+    ;;
+    *) SetSubZone
+  esac
+done
+echo
+read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
 }
 
 SetSubZone() {
-print_heading
-print_info "Now please enter the first letter"
-TPread "of your nearest major city: "
+SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
 while [ $Complete -eq 0 ]
 do
+  print_heading
+  print_info "World zone = $ZONE"
+  echo
+  print_info "Please enter the first letter"
+  TPread "of your nearest major city: "
   if [ -z ${Response} ]
   then
     invalid_option
-    break
+    continue
+  else
+    Zone2="${Response^^}"
   fi
-  echo
-  Zone2="${Response^^}"
-  local Counter=0
-  for i in "${SubZones[@]}"
+  subzones=""
+  for x in ${SubZones[@]}
   do
-    CheckInitial=`echo $i | cut -c 1`
-    if [ ${CheckInitial} = ${Zone2} ]; then
-      Counter=$((Counter+1))
-      if [ $Counter -eq 1 ]; then
-        print_info "$Counter $i"
-      else
-        print_list "$Counter $i"
-      fi
-      TrueCounter=$((Counter-1))
-      Shortlist[$TrueCounter]="$i "
+    if [ `echo $x | cut -c1` = $Zone2 ]; then
+      subzones="$subzones $x"
     fi
   done
-  if [ $Counter -eq 1 ]; then
-    echo
-    TPread "Is this the one? (Y/n): "
-    case ${Response} in
-    "Y" | "y" | "") SUBZONE=$i
-      echo
-      read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
-      Complete=1
-      ;;
-      *) print_heading
-    esac
-  elif [ $Counter -gt 0 ]; then
-    echo
-    print_info "Enter the number of your choice"
-    TPread "    (or leave blank to restart): "
-    if [ -z ${Response} ]
-    then
-      print_heading
-      break
-    elif [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]
-    then
-        print_heading
-        invalid_option
-        break
-    else
-      TrueCounter=$(($Response-1))
-      SUBZONE=${Shortlist[$TrueCounter]}
-      echo
-      read_timed "Zone and Subzone are set to: '$ZONE/$SUBZONE'" 1
-      Complete=1
-      break
-    fi
-  else
-    print_heading
-    print_info "Sorry, nothing found. Please try again ..."
-    print_info "$ZONE selected"
-    print_info "Enter the first letter of your nearest major city: "
-    TPread "   (or leave blank to restart): "
-    echo
-    if [ -z ${Response} ]; then
-      break
-    fi
-  fi
+  menugen1 "$subzones" "" "Try_Again"
+  case $Result in
+    "Try_Again") break
+    ;;
+    *) SUBZONE=$Result
+  esac
+  Complete=1
 done
 }
 
@@ -411,15 +342,14 @@ ChooseDM() {
   done
 }
 
-# -------------------      ------------------------
-# Functions      Line      Functions           Line
-# -------------------      ------------------------
-# Arrays         425       ManualSettings      655
-# PickLuxuries   469       ChangeRootPartition 680
-# ShoppingList   499       ChangeSwapPartition 688
-# LibreVersion   555       ChangePartitions    696
-# FinalCheck     578       AddExtras           708
-# -------------------
+# ------------------ 
+# Function      Line 
+# ------------------ 
+# Arrays         425
+# PickLuxuries   469
+# ShoppingList   499
+# LibreVersion   555   
+# ------------------
 
 Categories="Accessories Graphical Internet Multimedia Office Programming"
 Accessories="conky gparted gnome-calculator nautilus terminator yaourt"

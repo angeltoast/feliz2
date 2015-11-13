@@ -37,9 +37,14 @@ menugen1() { # Previously 'Menu'
 #     If set to 'nodone' the menu will display without a Done option.
 # Argument #1 should not be empty, others may be omitted or empty. If the 3rd argument
 # is used, there must be a 2nd argument even if it is an empty string.
+# Global variable $Passed may be used as page heading 
+# If $Passed is not empty, it is displayed at the top of the page
 local Complete=0
 while [ $Complete -eq 0 ]
 do
+  if [ -n "${Passed}" ]; then
+    PrintOne "$Passed"
+  fi
   local Done=$3
   if [ -n $2 ]; then
     PrintOne $2
