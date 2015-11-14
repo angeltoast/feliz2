@@ -33,7 +33,7 @@ do
   print_info "it now. If not, try entering an abbreviation for your"
   print_info "country or language and a list will be displayed ..."
   echo
-  TPread "(eg: fr or us): "
+  TPread "(eg: 'atari' or 'us'): "
   local Term="${Response,,}"
   echo
   # ListKbs=`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
@@ -86,7 +86,12 @@ do
       LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
     fi
     print_info "Choose your locale from this list, or 'Try_Again': "
-    menugen1 "${LocaleList}" "" "Try_Again"
+    localelist=""
+    for l in ${LocaleList[@]}
+    do
+      localelist="${localelist} $l"
+    done
+    menugen1 "${localelist}" "" "Try_Again"
     case $Result in
       "Try_Again") continue
       ;;
