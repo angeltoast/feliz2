@@ -2,10 +2,8 @@
 
 # Achoo! Arch Linux Installation Script
 
-# Developed by Elizabeth Mills, incorporating some code adapted from
-# the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
-
-# Please read the introduction in the README file
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
 #
 # Partition variables
@@ -18,7 +16,6 @@ declare -a NewArray       # For copying any array
 declare -A LabellingArray # To hold full details of user labels for partitions
 declare -A Labelled       # Store labels
 declare -A FileSystem     # Store filesystem types (ext* swap)
-
 SwapPartition=""  # "/dev/sda3"
 FormatSwap="N"    # User selects whether to reuse swap
 MakeSwap="Y"
@@ -27,7 +24,6 @@ IsSwap=""         # Result of lsblk test
 RootPartition=""  # "/dev/sda2"
 RootType=""       # "ext4"
 Partition=""      # "sda1"
-
 AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"     # Used if more than one disk
 DiskDetails=0     # Size of selected disk
@@ -38,7 +34,8 @@ GrubDevice=""     # "/dev/sda"
 Kernel="1"        # Default 1 = LTS
 IsInVbox=""       # Result of test to see if installation is in Virtualbox
 DualBoot="N"      # Ready for dual-booting option
-EFIPartition=""   # Will hold EFI partition mountpoint
+EFIPartition=""   # Will hold EFI partition mountpoint in format "/dev/sda1"
+OSprober="Y"
 #
 # Location variables
 #
@@ -123,8 +120,10 @@ fi
 
 # Select kernel and device for Grub
 SetKernel
-SetGrubDevice
-  
+if [ $AutoPart -eq 0 ]; then
+  SetGrubDevice
+fi
+
 # Keyboard layout
 getkeymap
 
@@ -136,16 +135,27 @@ SetHostname
 # Set scope of installation
 SetScope
 
+# Use dmidecode (added to archiso) to check for Virtualbox installation
+IsInVbox=`dmidecode --type 1 | grep VirtualBox` # Installs guest modules
+if [ $? -gt 0 ]; then # Added for testing - dmidecode error suggests that 
+  IsInVbox="Virtualbox" # scripts are not running from Ach00 iso
+else
+  IsInQEMU=`dmidecode --type 1 | grep QEMU` # Not yet used
+fi
+if [ -n $IsInVbox ]; then
+  ConfirmVbox
+fi
+
 # Allow user to change any variables
 FinalCheck
 
 #
-# Auto from here
+# No further user intervention from here
 #
 
 print_heading
 tput bold
-read_timed "Entering automatic installation mode" 1
+read_timed "Entering installation mode" 1
 tput sgr0
 read_timed "If you are re-using existing partitions, the system may pause to" 1
 read_timed "ask you to confirm that you wish to mount them ..." 1
@@ -159,14 +169,11 @@ MountPartitions
 # Set mirrorlist
 ReflectorMirrorList
 
-# Use dmidecode (added to archiso) to check for Virtualbox installation
-IsInVbox=`dmidecode --type 1 | grep VirtualBox` # Installs guest modules
-IsInQEMU=`dmidecode --type 1 | grep QEMU` # Not yet used
-# Then call kernel function
+# Install kernel
 InstallKernel
 
 # Set the default PATH variable
-arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/core_perl"
+arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
 
 TPecho "Generating fstab"
 genfstab -U -p /mnt > /mnt/etc/fstab 2>> error.log
@@ -207,7 +214,10 @@ fi
 
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
-  pacstrap /mnt grub os-prober 2>> error.log
+  pacstrap /mnt grub 2>> error.log
+  if [ $OSprober = "Y" ]; then
+    pacstrap /mnt os-prober 2>> error.log
+  fi
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
@@ -225,7 +235,7 @@ fi
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> error.log
 
 # Extra processes for desktop installation
-if [ $Scope != "Basic" ]
+if [ $Scope != "Basic" ];
 then
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
@@ -264,8 +274,11 @@ then
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
         pacstrap /mnt cinnamon gnome-terminal 2>> error.log
         ;;
-    "Enlightenment") TPecho "Installing 'Cinnamon' Desktop Environment"
+    "Enlightenment") TPecho "Installing 'Enlightenment' Desktop Environment"
         pacstrap /mnt enlightenment 2>> error.log
+        ;;
+    "Fluxbox") TPecho "Installing 'Fluxbox' Window Manager"
+        pacstrap /mnt fluxbox 2>> error.log
         ;;
     "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
         pacstrap /mnt gnome ${GoodiesGnome} 2>> error.log
@@ -297,17 +310,20 @@ then
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
-      if [ $i = "yaourt" ]; then
-        # Copy modified pacman.conf to new system and install Yaourt
-        TPecho "Modifying pacman.conf and installing Yaourt"
-        cp pacman.conf /mnt/etc 2>> error.log # For installed system
-        cp pacman.conf /etc 2>> error.log # For installer
-        pacman -Sy 2>> error.log # Update
-        pacstrap /mnt yaourt 2>> error.log
-      else
-        TPecho "Installing $i"
+      case $i in
+        "yaourt") # Copy modified pacman.conf to new system and install Yaourt
+          TPecho "Modifying pacman.conf and installing Yaourt"
+          cp pacman.conf /mnt/etc 2>> error.log # For installed system
+          cp pacman.conf /etc 2>> error.log # For installer
+          pacman -Sy 2>> error.log # Update
+          pacstrap /mnt yaourt 2>> error.log
+        ;;
+        "cairo-dock") TPecho "Installing $i and cairo-dock-plug-ins"
+          pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> error.log
+        ;;
+      *) TPecho "Installing $i"
         pacstrap /mnt $i 2>> error.log
-      fi
+      esac
     done
   fi
 fi

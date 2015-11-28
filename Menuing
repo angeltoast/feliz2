@@ -1,15 +1,12 @@
-
 These menus are designed to be application-independent. The detail is in the arguments.
 
 Notes:
-a) The menuing functions have been rewritten in a self-contained module 'menugen'
-b) The functions have been renamed, but the module includes two redirecting
-   functions in case any modules are calling them by the old names.
+The menuing functions have been rewritten in a self-contained module 'menugen'
 
 menugen1 (previously Menu)
 --------------------------
 menugen1 is an alternative to the bash 'select' function for use in shell scripts to
-generate a numbered menu in the centre of the screen.
+generate a numbered menu. Unlike 'select' it centres the menu on the screen.
 It receives up to three string arguments:
  1) A simple string array variable of the items to be listed;
  2) An optional one-word menu heading (which will be underlined by Menu); 
@@ -19,8 +16,8 @@ It receives up to three string arguments:
 If the 3rd argument is required, there must be a 2nd argument, even if it is an empty string.
 
 Example calls:
- Menu "$Accessories" "Accessories"
- Menu "Reboot Shutdown" "" "nodone"
+ menugen1 "$Accessories" "Accessories"
+ menugen1 "Reboot Shutdown" "" "nodone"
 
 The string array variable may be declared as follows:
 VariableName="item1 item2 item3 ... " 
@@ -43,7 +40,17 @@ menugen2 (previously InfoMenu)
 menugen2 is specifically designed for displaying longer descriptions in a menu.
 When an item is selected, InfoMenu finds that item in a reference variable array
 of short (one-word) names, and saves it as the global variable $Result which may
-then be used by the calling function if desired.
+then be used by the calling function if desired. Although complex to set up, it offers greater functionality and user-friendliness.
+
+The reference array must be specifically declared using the -A option, and the elements filled, before it can be used:
+
+Example: (from achoodesktop - luxuries)
+Desktop="conky cairo-dock docky gparted yaourt"
+LongDesk[1]="Conky - Desktop time and system information           "
+LongDesk[2]="Cairo Dock - Highly customizable dock and launcher application"
+LongDesk[3]="Docky - Application for opening applications and managing windows"
+LongDesk[4]="GParted - make/delete/resize partitions"
+LongDesk[5]="Yaourt - Easy to use AUR package installer"
 
 menugen2 receives four arguments (three MUST be passed, even if one or more is empty):
  1) The primary file. That is, the string of short references;   
@@ -53,8 +60,8 @@ menugen2 receives four arguments (three MUST be passed, even if one or more is e
  4) The name (only) of the reference array (this will be used to access the array;
     Only $1 and $4 are essential - $2 and 3) are optional and may be blank strings.
 
-Example: InfoMenu "$Graphical" "Graphical" "nodone" "LongGraph"
+Example: menugen2 "$Graphical" "Graphical" "nodone" "LongGraph"
 ... or ...
-Example: InfoMenu "$Office" "" "LongOffice"
+Example: menugen2 "$Office" "" "" "LongOffice"
 
 menugen2 accesses the same global variables as menugen1 and uses the same two built-in functions

@@ -20,14 +20,6 @@ PrintMany() { # Subsequent item(s) in an aligned list
   echo "$EMPTY $1"
 }
 
-Menu() {
-  menugen1 "$1" "$3" "$4" # Redirect calls referring to the old Menu function
-}
-
-InfoMenu() {
-  menugen2 "$1" "$2" "" "$3" # Redirect calls referring to the old InfoMenu function
-}
-
 menugen1() { # Previously 'Menu'
 # Simple menu alternative to the bash 'select' function
 # Can receive up to three string arguments:

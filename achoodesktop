@@ -6,20 +6,17 @@
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
-# Please read the introduction in the README file
-
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      25      Luxuries            414
-# Locale      64      FinalCheck          578
-# Timezone   122      ManualSettings      655
-# Subzone    161      ChangeRootPartition 680
-# Username   235      ChangeSwapPartition 688
-# Hostname   251      ChangePartitions    696
-# DE         268      AddExtras           708
-# DM         384
-# ---------------     -----------------------
+# Keymap      25      Luxuries from       353
+# Locale      64      FinalCheck          523
+# Timezone   122      ManualSettings      600
+# Subzone    161      ChangeRootPartition 626
+# Username   235      ChangeSwapPartition 634
+# Hostname   251      ChangePartitions    642
+# DE         206      AddExtras           654
+# DM         320
 
 getkeymap() {
 print_heading
@@ -45,7 +42,7 @@ do
       print_info "Try again"
       continue
       ;;
-    *) Menu "$ListKbs" "Enter the number of your keyboard: " "Keyboards" "Retry"
+    *) menugen1 "$ListKbs" "Keyboards" "Retry"
   esac
   case ${Result} in
     "Retry") print_heading
@@ -126,13 +123,15 @@ do
   ZONE=$Result
   case $Result in
     "UTC") SUBZONE=""
+        read_timed "Zone set to: '$ZONE'" 1
         Complete=1
     ;;
     *) SetSubZone
+    read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
   esac
 done
 echo
-read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
+
 }
 
 SetSubZone() {
@@ -203,17 +202,17 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	DEList="Cinnamon Enlightenment Gnome LXDE LXQt Mate Xfce Openbox"
+	DEList="Cinnamon Enlightenment Fluxbox Gnome LXDE LXQt Mate Xfce Openbox"
   print_heading
   echo
   print_info "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
-  print_info "may need, such as file manager, terminal emulator and text"
+  print_info "may need, such as a file manager, terminal emulator and text"
   print_info "editor, whereas LXDE and LXQt and the Window Managers are"
   print_info "more basic desktops onto which you can add your choice of tools"
-  print_info "after installation. Alternatively, you can choose to skip this"
-  print_info "option, and install something else manually later."
+  print_info "during installation, or afterwards. Alternatively, you can choose"
+  print_info "to skip this option, and install something else manually later."
   echo
-	Menu "${DEList}" "Please choose: " "Desktop-Environments"
+	menugen1 "${DEList}" "Desktop-Environments"
 	Reply=$Response
   SelectedDE=$Result
   for i in ${DEList}
@@ -228,6 +227,9 @@ ChooseDE() {
               ChooseDM
           ;;
         "Enlightenment") DMList="LightDM LXDM"
+              ChooseDM
+          ;;
+        "Fluxbox") DMList="LightDM LXDM"
               ChooseDM
           ;;
         "Gnome") DisplayManager="None"
@@ -276,9 +278,9 @@ GoodiesGnome=""
 while [ $Redo = "Y" ]
 do
   print_heading
-  print_info "If in doubt, choose 'Standard Gnome'"
   print_info "'Gnome with extras' adds a text editor, disk"
   print_info "manager, archive manager and a set of games"
+  print_info "If in doubt, choose '2) Standard Gnome'"
   echo
   print_info "1) Minimal Gnome (gnome-shell)"
   print_list "2) Standard Gnome"
@@ -324,7 +326,7 @@ ChooseDM() {
   print_info "Alternatively, you can choose to skip this option. Either way, you"
   print_info "can always install something else manually later."
   echo
-  Menu "${DMList}" "Choose your Display Manager: " "Display-Managers"
+  menugen1 "${DMList}" "Display-Managers" "None"
   Reply=$Response
   for item in ${DMList}
   do
@@ -347,23 +349,28 @@ ChooseDM() {
   done
 }
 
-# ------------------ 
+# ---- LUXURIES ----
 # Function      Line 
 # ------------------ 
 # Arrays         425
 # PickLuxuries   469
 # ShoppingList   499
 # LibreVersion   555   
-# ------------------
 
-Categories="Accessories Graphical Internet Multimedia Office Programming"
-Accessories="conky gparted gnome-calculator nautilus terminator yaourt"
-LongAccs[1]="Conky - Desktop time and system information"
-LongAccs[2]="GParted - make/delete/resize partitions"
-LongAccs[3]="gCalculator - Calculator for your taskbar"
+Categories="Accessories Desktop+System Graphical Internet Multimedia Office Programming"
+Accessories="brasero gnome-calculator gedit nautilus xfce4-terminal terminator"
+LongAccs[1]="Brasero - Disc burning application from Gnome"
+LongAccs[2]="gCalculator - Calculator for your taskbar"
+LongAccs[3]="gEdit - The text editor from Gnome"
 LongAccs[4]="Nautilus - The file-manager from Gnome"
-LongAccs[5]="Terminator - Multi-tab terminal emulator"
-LongAccs[6]="Yaourt - Easy to use AUR package installer"
+LongAccs[5]="Terminal - The Xfce terminal emulator"
+LongAccs[6]="Terminator - Multi-tab terminal emulator"
+Desktop="conky cairo-dock docky gparted yaourt"
+LongDesk[1]="Conky - Desktop time and system information           "
+LongDesk[2]="Cairo Dock - Highly customizable dock and launcher application"
+LongDesk[3]="Docky - Application for opening applications and managing windows"
+LongDesk[4]="GParted - make/delete/resize partitions"
+LongDesk[5]="Yaourt - Easy to use AUR package installer"
 Graphical="evince gimp imagemagick gthumb simple-scan xsane"
 LongGraph[1]="Evince - Reader for PDF and other document formats"
 LongGraph[2]="GIMP - Advanced image editing suite"
@@ -372,7 +379,7 @@ LongGraph[4]="gThumb - Image viewer & basic editor"
 LongGraph[5]="Simple-Scan - A simple scanner GUI"
 LongGraph[6]="Xsane - A full-featured GTK-based sane frontend"
 Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
-LongNet[1]="Chromium - Open source web browser from Google       "
+LongNet[1]="Chromium - Open source web browser from Google     "
 LongNet[2]="Epiphany - Gnome WebKitGTK+ browser (aka Web)"
 LongNet[3]="Filezilla - Fast and reliable FTP, FTPS & SFTP client"
 LongNet[4]="Firefox - Extensible browser from Mozilla"
@@ -380,14 +387,14 @@ LongNet[5]="qBittorent - Open source BitTorrent client"
 LongNet[6]="Thunderbird - Feature-rich email client from Mozilla"
 LongNet[7]="Transmission - Easy-to-use BitTorrent client"
 Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
-LongMulti[1]="Avidemux - Simple video editor                  "
+LongMulti[1]="Avidemux - Simple video editor              "
 LongMulti[2]="Banshee - Feature-rich audio player"
 LongMulti[3]="Handbrake - Simple yet powerful video transcoder"
 LongMulti[4]="Openshot - Easy-to-use non-linear video editor"
 LongMulti[5]="VLC - Middleweight video player"
 LongMulti[6]="Xfburn"
 Office="abiword gnumeric libreoffice orage scribus"
-LongOffice[1]="Abiword - Full-featured word processor            "
+LongOffice[1]="Abiword - Full-featured word processor        "
 LongOffice[2]="Gnumeric - Spreadsheet program from GNOME"
 LongOffice[3]="LibreOffice - Open-source office software suite"
 LongOffice[4]="Orage - Calendar and task manager (incl with Xfce)"
@@ -405,13 +412,13 @@ PickLuxuries() {
 local Complete=0
 LuxuriesList=""
 print_heading
-print_info "Now you have the option to add 'luxuries' such as a"
-print_info "web browser, office software, graphical tools, etc"
-print_info "Yaourt is now optional, and is located in 'Accessories'"
+print_info "Now you have the option to add 'luxuries' such as a web"
+print_info "browser, office software, graphical tools, etc. Yaourt"
+print_info "is also available as an option, in 'Desktop+System'"
 echo
 while [ $Complete -eq 0 ]
 do
-  Menu "$Categories" "Please choose a category: " "Categories"
+  menugen1 "$Categories" "Categories" "Done"
   Category=$Response
   if [ $Result = "Done" ]; then
     break
@@ -439,19 +446,21 @@ do
   print_heading
   print_info "Added so far: ${LuxuriesList}"
   echo
-  # Pass category to InfoMenu for user to choose one item;
+  # Pass category to menugen2 for user to choose one item;
   case $Category in
-    1) InfoMenu "$Accessories" "Accessories" "LongAccs"
+    1) menugen2 "$Accessories" "Accessories" "" "LongAccs"
     ;;
-    2) InfoMenu "$Graphical" "Graphical" "LongGraph"
+    2) menugen2 "$Desktop" "Desktop+System" "" "LongDesk"
     ;;
-    3) InfoMenu "$Internet" "Internet" "LongNet"
+    3) menugen2 "$Graphical" "Graphical" "" "LongGraph"
     ;;
-    4) InfoMenu "$Multimedia" "Multimedia" "LongMulti"
+    4) menugen2 "$Internet" "Internet" "" "LongNet"
     ;;
-    5) InfoMenu "$Office" "Office" "LongOffice"
+    5) menugen2 "$Multimedia" "Multimedia" "" "LongMulti"
     ;;
-    6) InfoMenu "$Programming" "Programming" "LongProg"
+    6) menugen2 "$Office" "Office" "" "LongOffice"
+    ;;
+    7) menugen2 "$Programming" "Programming" "" "LongProg"
     ;;
     *) break
   esac
@@ -552,9 +561,9 @@ do
   print_list "     Hostname = '$HostName'"
   print_list "     User = '$UserName'"
   print_list "10) The following extras have been selected ..."
-  print_list "     ${LuxuriesList}"
+  print_info "${LuxuriesList}"
   echo
-  print_list "Press [Enter] to install with these settings, or"
+  print_info "Press [Enter] to install with these settings, or"
   TPread "enter an item number if you wish to change it: "
   Change=$Response
   case $Change in

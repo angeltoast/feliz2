@@ -15,19 +15,17 @@
 # Mirrorlist           166
 # SetScope             194
 # SetKernel            220
-# MakePartitionList    337
-# arch_chroot           24
-# SetGrubDevice         28
-# umount_partitions     56
-# MountPartitions      130
-# InstallKernel        189
-# TestExistingDM       214
-# SetRootPassword      243
-# SetUserPassword      272
-# ------------------------
+# MakePartitionList    236
+# arch_chroot          249
+# SetGrubDevice        256
+# umount_partitions    266
+# MountPartitions      276
+# InstallKernel        286
+# TestExistingDM       296
+# SetRootPassword      306
+# SetUserPassword      316
 
-contains_element() { # (from AUI scripts)
-# check if an element exists in a string
+contains_element() { # check if an element exists in a string (from AUI scripts)
   for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
 }
 
@@ -45,8 +43,9 @@ print_heading() {
 }
 
 print_info() { # Aligned text according to screen size
+  # $1 is text to display; $2 is number of characters to left of centre
   T_COLS=`tput cols`
-  if [ $2 ]; then # $2 is number of characters to left of centre
+  if [ $2 ]; then
     lov=$2
   else
     lov=${#1}
@@ -166,10 +165,10 @@ done
 }
 
 ReflectorMirrorList() {
-# Use reflector to generate fast mirror list
+# Use reflector (added to archiso) to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> error.log
-  if [[ $? -gt 0 ]]; then
+  if [ $? -gt 0 ]; then
     LocalMirrorList
   else
     chmod +r /etc/pacman.d/mirrorlist 2>> error.log
@@ -233,8 +232,31 @@ SetKernel() {
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
+ConfirmVbox() {
+  Retry="Y"
+  until [ $Retry = "N" ]
+  do
+    print_heading
+    print_info "It appears that Achoo is running in Virtualbox."
+    print_info "If it is, Achoo can install Virtualbox guest"
+    print_info "utilities and make appropriate settings for you."
+    echo
+    TPread "Install Virtualbox utilities? (y/n): "
+    echo
+    case $Response in
+      "y" | "Y") IsInVbox="Virtualbox"
+        Retry="N"
+      ;;
+      "") invalid_option
+      ;;
+      *) IsInVbox=""
+        Retry="N"
+    esac
+  done
+}
+
 MakePartitionList() {
-# Call function to generate an array of partitions
+# Call BuildPartitionLists function to generate an array of partitions
 # This is not a first call, so first empty the existing array
  	local x=0
   local HowMany="${#PartitionArray[@]}"
@@ -257,18 +279,18 @@ SetGrubDevice() {
   GrubDevice=""
 	Counter=0
 	print_info "Select the device where Grub is to be installed."
-  print_info "Note that if you select the 'Done' option, Grub will"
+  print_info "Note that if you select the 'None' option, Grub will"
   print_info "not be installed, and you will have to make"
   print_info "alternative arrangements for booting your new system."
   echo
-	Menu "${DevicesList}" "Enter the number of your selection: " "Devices"
+	menugen1 "${DevicesList}" "Devices" "None"
   Reply=$Response
   for i in ${DevicesList}
 	do
     Item=$i
     Counter=$((Counter+1))
     if [ $Counter -eq $Reply ]; then
-      if [ $Item = "Done" ]; then
+      if [ $Item = "$Done" ]; then
         GrubDevice=""
       else
         GrubDevice=$Item
@@ -353,7 +375,7 @@ InstallKernel() {
   case $Kernel in
     1) TPecho "Installing LTS kernel"
         pacstrap /mnt linux-lts
-        if [ -n ${IsInVbox} ]; then # Installing in Virtualbox
+        if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
           TPecho "Installing virtualbox guest modules"
           pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
           echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
@@ -362,7 +384,7 @@ InstallKernel() {
       ;;  
     *) TPecho "Installing Latest kernel"
         pacstrap /mnt linux
-        if [ -n ${IsInVbox} ]; then # Installing latest kernel in Virtualbox
+        if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
           TPecho "Installing virtualbox guest modules"
           pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
           echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
@@ -423,7 +445,7 @@ SetRootPassword() {
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
      arch_chroot "passwd root" < /tmp/.passwd >/dev/null
      rm /tmp/.passwd 2>> error.log
-      Repeat="N"
+     Repeat="N"
     else
       print_heading
       print_info "Passwords don't match. Try again"

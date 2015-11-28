@@ -41,10 +41,10 @@ CheckParts() {
       print_info "partition is needed for the root directory. If you are"
       print_info "uncertain about partitioning, you should read the Arch Wiki."
       echo
-      print_info "Achoo can create a partition table for you, if you wish."
-      print_info "Alternatively, 'cfdisk' is available for you to create one"
-      print_info "yourself. If you choose 'Do nothing', the script"
-      print_info "will terminate to allow you to partition in some other way."
+      print_info "Option #1 - You can use 'cfdisk' to create a partition table"
+      print_info "Option #2 - Achoo can create partitions for you, if you wish."
+      print_info "If you choose option #3, the script will terminate to allow"
+      print_info "you to partition in some other way."
       echo
       Partitioning # Partitioning options
       if [ $Response = "3" ]; then
@@ -82,8 +82,8 @@ CheckParts() {
 		echo
     print_info "'cfdisk' is available for you to edit them, or Achoo can"
     print_info "overwrite them with a new partition table if you wish."
-    print_info "If you choose the 'Do nothing' option, the script"
-    print_info "will continue with the existing partitions."
+    print_info "If you choose the 'Do nothing' option, the script will"
+    print_info "enable you to allocate the existing partitions."
     echo
     Partitioning # Partitioning options
     # Call function to regenerate the array of partitions
@@ -97,7 +97,7 @@ Partitioning() {
   while [ -z $Proceed ]
   do
     print_info "1) Open cfdisk so I can partition manually"
-    print_list "2) Auto-partition"
+    print_list "2) Allow Achoo to partition the whole device"
     print_list "3) Do nothing"
     echo
     TPread "Enter the number of your selection : "
@@ -238,7 +238,7 @@ select_filesystem() { #	$1 = list passed as string by caller
 	print_info "Please now select the file system for ${Partition}"
 	print_info "It is not recommended to mix the btrfs file-system with others."
   echo
-	Menu "${TypeList}" "$Prompt1" "Filesystems"
+	menugen1 "${TypeList}" "Filesystems"
   for i in ${TypeList}
 	do
     Counter=$((Counter+1))
@@ -424,7 +424,7 @@ AllocateRoot() {
 	PartitionType=""
 	print_info "Please now select a partition to use for root."
   echo
-  InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+  menugen2 "$PartitionList" "Partitions" "" "PartitionArray"
   Reply=$Response
   if [ $Result != "Done" ]; then
     PassPart=$Result
@@ -492,7 +492,7 @@ then
   SwapPartition=""
   PickFrom="$PartitionList Swapfile"
   SwapFile=""
-  declare -a CopyArray # For passing to InfoMenu
+  declare -a CopyArray # For passing to menugen2
   local Counter=0
   for p in "${PartitionArray[@]}"
   do
@@ -502,7 +502,7 @@ then
   CopyArray[${Counter}]="Swapfile"
   print_info "If you select the 'Done' option, no swap will be allocated:"
   echo
-  InfoMenu "$PickFrom" "Partitions" "CopyArray"
+  menugen2 "$PickFrom" "Partitions" "" "CopyArray"
   Reply=$Response # Number of selected item
   if [ $Result != "Swapfile" ] && [ $Result != "Done" ]; then # Short ID of selected item
     PassPart=$Result
@@ -600,7 +600,7 @@ MorePartitions() {
     print_info "If you wish to use one, select it from the list,"
     print_info "or choose 'Done' to finish partitioning."
     echo
-    InfoMenu "$PartitionList" "Partitions" "PartitionArray"
+    menugen2 "$PartitionList" "Partitions" "" "PartitionArray"
     if [ $Result != "Done" ]; then
       PassPart=$Result
       SetLabel "$Result"
