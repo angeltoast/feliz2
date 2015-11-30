@@ -136,14 +136,12 @@ SetHostname
 SetScope
 
 # Use dmidecode (added to archiso) to check for Virtualbox installation
-IsInVbox=`dmidecode --type 1 | grep VirtualBox` # Installs guest modules
-if [ $? -gt 0 ]; then # Added for testing - dmidecode error suggests that 
-  IsInVbox="Virtualbox" # scripts are not running from Ach00 iso
-else
-  IsInQEMU=`dmidecode --type 1 | grep QEMU` # Not yet used
-fi
+IsInVbox=`dmidecode --type 1 | grep VirtualBox`
+# if [ $? -gt 0 ]; then # Added for testing - dmidecode not available 
+#  IsInVbox="Virtualbox"
+# fi
 if [ -n $IsInVbox ]; then
-  ConfirmVbox
+  ConfirmVbox # Installs Virtualbox guest modules
 fi
 
 # Allow user to change any variables
