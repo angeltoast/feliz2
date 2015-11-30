@@ -341,11 +341,9 @@ fi
 echo
 print_info "Congratulations. Installation is finished."
 echo
-Menu "Reboot Shutdown" "Please choose: " "" "nodone"
+menugen1 "Reboot Shutdown" "" "nodone"
 case $Response in
   1) systemctl reboot
-  ;;
-  2) shutdown now
   ;;
   *) shutdown now
 esac
