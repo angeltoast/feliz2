@@ -542,13 +542,11 @@ do
   else
     print_list "3)  No additional partitions have been allocated"
   fi
-  
   case $Kernel in
     1) print_list "3a)  The LTS kernel will be installed"
     ;;
     *) print_list "3a)  The latest kernel will be installed"
   esac
-  
   if [ $GrubDevice ]; then
   print_list "4)  Grub will be installed to $GrubDevice" 50
   else
@@ -557,6 +555,11 @@ do
   print_list "5)  Keyboard is $Countrykbd"
   print_list "6)  Locale will be set to $CountryLocale"
   print_list "7)  Zone/subZone will be $ZONE/$SUBZONE"
+  if [ -z $IsInVbox ]; then
+    print_list "7a)  Virtualbox guest utilities will not be installed"
+  else
+    print_list "7a)  Virtualbox guest utilities will be installed"
+  fi
   if [ $DesktopEnvironment ] && [ $DisplayManager != "None" ]; then
     print_list "8)  DE = $DesktopEnvironment : $DisplayManager"
   elif [ $DesktopEnvironment ]; then
@@ -592,6 +595,8 @@ do
     6) setlocale
     ;;
     7) SetTimeZone
+    ;;
+    7a) ConfirmVbox
     ;;
     8) ChooseDE
     ;;

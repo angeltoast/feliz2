@@ -137,9 +137,11 @@ SetScope
 
 # Use dmidecode (added to archiso) to check for Virtualbox installation
 IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
-# if [ $? -gt 0 ]; then # Added for testing (when dmidecode not available)
-#  IsInVbox="Virtualbox"
-# fi
+# Added for testing (dmidecode not available)
+if [ $? -gt 0 ]; then # Added for testing (dmidecode not available)
+  IsInVbox="VirtualBox"
+fi
+# Comment out for compiling
 if [ ${IsInVbox} = "VirtualBox" ]; then
   ConfirmVbox # Installs Virtualbox guest modules
 fi

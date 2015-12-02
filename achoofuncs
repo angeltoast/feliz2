@@ -245,7 +245,7 @@ ConfirmVbox() {
     TPread "Install Virtualbox guest utilities? (y/n): "
     echo
     case $Response in
-      "y" | "Y") IsInVbox="Virtualbox"
+      "y" | "Y") IsInVbox="VirtualBox"
         Retry="N"
       ;;
       "") invalid_option
