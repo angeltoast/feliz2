@@ -542,6 +542,13 @@ do
   else
     print_list "3)  No additional partitions have been allocated"
   fi
+  
+  case $Kernel in
+    1) print_list "3a)  The LTS kernel will be installed"
+    ;;
+    *) print_list "3a)  The latest kernel will be installed"
+  esac
+  
   if [ $GrubDevice ]; then
   print_list "4)  Grub will be installed to $GrubDevice" 50
   else
@@ -575,6 +582,8 @@ do
     ;;
     3) ChangePartitions
         MorePartitions
+    ;;
+    3a) SetKernel
     ;;
     4) SetGrubDevice
     ;;

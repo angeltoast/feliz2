@@ -10,20 +10,21 @@
 # -------------------------
 # Functions           Line
 # -------------------------
-# Input and output     23
-# Internet connection  122
-# Mirrorlist           166
-# SetScope             194
-# SetKernel            220
-# MakePartitionList    236
-# arch_chroot          249
-# SetGrubDevice        256
-# umount_partitions    266
-# MountPartitions      276
-# InstallKernel        286
-# TestExistingDM       296
-# SetRootPassword      306
-# SetUserPassword      316
+# Input and output     29
+# Internet connection  124
+# Mirrorlist           168
+# SetScope             196
+# SetKernel            223
+# ConfirmVbox          236
+# MakePartitionList    259
+# arch_chroot          272
+# SetGrubDevice        276
+# umount_partitions    304
+# MountPartitions      313
+# InstallKernel        372
+# TestExistingDM       399
+# SetRootPassword      428
+# SetUserPassword      457
 
 contains_element() { # check if an element exists in a string (from AUI scripts)
   for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
@@ -241,7 +242,7 @@ ConfirmVbox() {
     print_info "If it is, Achoo can install Virtualbox guest"
     print_info "utilities and make appropriate settings for you."
     echo
-    TPread "Install Virtualbox utilities? (y/n): "
+    TPread "Install Virtualbox guest utilities? (y/n): "
     echo
     case $Response in
       "y" | "Y") IsInVbox="Virtualbox"
@@ -377,7 +378,7 @@ InstallKernel() {
         pacstrap /mnt linux-lts
         if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
           TPecho "Installing virtualbox guest modules"
-          pacstrap /mnt virtualbox-guest-modules-lts virtualbox-guest-utils virtualbox-guest-dkms
+          pacstrap /mnt virtualbox-guest-utils virtualbox-guest-modules-lts  virtualbox-guest-dkms
           echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
           cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
         fi
@@ -386,7 +387,7 @@ InstallKernel() {
         pacstrap /mnt linux
         if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
           TPecho "Installing virtualbox guest modules"
-          pacstrap /mnt virtualbox-guest-modules virtualbox-guest-utils virtualbox-guest-dkms
+          pacstrap /mnt virtualbox-guest-utils virtualbox-guest-dkms
           echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
           cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
         fi
