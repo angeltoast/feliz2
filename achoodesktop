@@ -21,14 +21,14 @@
 getkeymap() {
 print_heading
 echo
-print_info "Now let's try to find your keyboard."
+PrintOne "Now let's try to find your keyboard."
 Repeat=1
 while [ $Repeat -eq 1 ]
 do
   echo
-  print_info "If you know the code for your keyboard layout, enter"
-  print_info "it now. If not, try entering an abbreviation for your"
-  print_info "country or language and a list will be displayed ..."
+  PrintOne "If you know the code for your keyboard layout, enter"
+  PrintOne "it now. If not, try entering an abbreviation for your"
+  PrintOne "country or language and a list will be displayed ..."
   echo
   TPread "(eg: 'atari' or 'us'): "
   local Term="${Response,,}"
@@ -38,8 +38,8 @@ do
   case ${ListKbs} in
     "") print_heading
       echo
-      print_info "No keyboards found containing '$Term'"
-      print_info "Try again"
+      PrintOne "No keyboards found containing '$Term'"
+      PrintOne "Try again"
       continue
       ;;
     *) menugen1 "$ListKbs" "Keyboards" "Retry"
@@ -50,7 +50,7 @@ do
       ;;
     *) Repeat=0
       Countrykbd="${Result}"
-    loadkeys ${Countrykbd} 2>> error.log
+    loadkeys ${Countrykbd} 2>> achoo.log
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
   esac
@@ -60,14 +60,14 @@ done
 setlocale() {
 SearchPrompt=" (for example: GB or en): "
 print_heading
-print_info "Next we will try to find your locale"
-print_info "This will be used to find the best mirrors"
-print_info "for downloading your system"
+PrintOne "Next we will try to find your locale"
+PrintOne "This will be used to find the best mirrors"
+PrintOne "for downloading your system"
 InvalidEntry=1
 while [ $InvalidEntry -eq 1 ]
 do
   local Counter=0
-  print_info "Please enter a two-letter code for your country or language."
+  PrintOne "Please enter a two-letter code for your country or language."
   echo
   TPread "$SearchPrompt"
   if [ -z ${Response} ]
@@ -82,7 +82,7 @@ do
       SEARCHTERM="${Response^^}"
       LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
     fi
-    print_info "Choose your locale from this list, or 'Try_Again': "
+    PrintOne "Choose your locale from this list, or 'Try_Again': "
     localelist=""
     for l in ${LocaleList[@]}
     do
@@ -110,8 +110,8 @@ while [ $Complete -eq 0 ]
 do
   local Counter=0
   print_heading
-  print_info "$SearchPrompt"
-  print_info "choose the World Zone of your location."
+  PrintOne "$SearchPrompt"
+  PrintOne "choose the World Zone of your location."
   Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
   echo
   zones=""
@@ -139,9 +139,9 @@ SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
 while [ $Complete -eq 0 ]
 do
   print_heading
-  print_info "World zone = $ZONE"
+  PrintOne "World zone = $ZONE"
   echo
-  print_info "Please enter the first letter"
+  PrintOne "Please enter the first letter"
   TPread "of your nearest major city: "
   if [ -z ${Response} ]
   then
@@ -169,9 +169,9 @@ done
 
 UserName() {
 	print_heading
-	print_info "Enter a name for the primary user of the new system."
-  print_info "If you don't create a username here, a default user called"
-  print_info "'archie' will be set up"
+	PrintOne "Enter a name for the primary user of the new system."
+  PrintOne "If you don't create a username here, a default user called"
+  PrintOne "'archie' will be set up"
   echo
 	TPread "Enter a username: "
   Entered=${Response,,}
@@ -180,15 +180,15 @@ UserName() {
 		;;
 		*) UserName=${Entered}
 	esac
-	print_info "$UserName will be created"
+	PrintOne "$UserName will be created"
 }
 
 SetHostname() {
 	Entered="arch-linux"
 	print_heading
-	print_info "A hostname is needed. This will be a unique name to identify"
-	print_info "your device on a network. If you do not enter one, the"
-	print_info "default hostname of 'arch-linux' will be used."
+	PrintOne "A hostname is needed. This will be a unique name to identify"
+	PrintOne "your device on a network. If you do not enter one, the"
+	PrintOne "default hostname of 'arch-linux' will be used."
    echo
 	TPread "Enter a hostname for your computer : "
   Entered=${Response,,}
@@ -197,7 +197,7 @@ SetHostname() {
 		;;
 		*) HostName=${Entered}
 	esac
-	print_info "Hostname set to: $HostName"
+	PrintOne "Hostname set to: $HostName"
 }
 
 ChooseDE() {
@@ -205,12 +205,12 @@ ChooseDE() {
 	DEList="Cinnamon Enlightenment Fluxbox Gnome LXDE LXQt Mate Xfce Openbox"
   print_heading
   echo
-  print_info "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
-  print_info "may need, such as a file manager, terminal emulator and text"
-  print_info "editor, whereas LXDE and LXQt and the Window Managers are"
-  print_info "more basic desktops onto which you can add your choice of tools"
-  print_info "during installation, or afterwards. Alternatively, you can choose"
-  print_info "to skip this option, and install something else manually later."
+  PrintOne "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
+  PrintOne "may need, such as a file manager, terminal emulator and text"
+  PrintOne "editor, whereas LXDE and LXQt and the Window Managers are"
+  PrintOne "more basic desktops onto which you can add your choice of tools"
+  PrintOne "during installation, or afterwards. Alternatively, you can choose"
+  PrintOne "to skip this option, and install something else manually later."
   echo
 	menugen1 "${DEList}" "Desktop-Environments"
 	Reply=$Response
@@ -278,13 +278,13 @@ GoodiesGnome=""
 while [ $Redo = "Y" ]
 do
   print_heading
-  print_info "'Gnome with extras' adds a text editor, disk"
-  print_info "manager, archive manager and a set of games"
-  print_info "If in doubt, choose '2) Standard Gnome'"
+  PrintOne "'Gnome with extras' adds a text editor, disk"
+  PrintOne "manager, archive manager and a set of games"
+  PrintOne "If in doubt, choose '2) Standard Gnome'"
   echo
-  print_info "1) Minimal Gnome (gnome-shell)"
-  print_list "2) Standard Gnome"
-  print_list "3) Gnome with extras"
+  PrintOne "1) Minimal Gnome (gnome-shell)"
+  PrintMany "2) Standard Gnome"
+  PrintMany "3) Gnome with extras"
   echo
   TPread "Enter the number of your selection : "
   echo
@@ -306,12 +306,12 @@ AddDEextras() {
  local Extras="$1"
  echo
  case $DesktopEnvironment in
-  "Openbox") print_info "tint2 is a system panel/taskbar that can be configured"
-    print_info "to include a system tray, task list, battery monitor, clock, etc."
+  "Openbox") PrintOne "tint2 is a system panel/taskbar that can be configured"
+    PrintOne "to include a system tray, task list, battery monitor, clock, etc."
     echo
     ;;
-  "Xfce") print_info "The xfce4-goodies pack includes includes the Whisker menu,"
-    print_info "extra plugins and a number of utilities such as the mousepad editor"
+  "Xfce") PrintOne "The xfce4-goodies pack includes includes the Whisker menu,"
+    PrintOne "extra plugins and a number of utilities such as the mousepad editor"
     echo
     ;;
   *) echo
@@ -322,9 +322,9 @@ AddDEextras() {
 ChooseDM() {
   Counter=0
   print_heading
-  print_info "Choose one of the following Display Managers for "$Item
-  print_info "Alternatively, you can choose to skip this option. Either way, you"
-  print_info "can always install something else manually later."
+  PrintOne "Choose one of the following Display Managers for "$Item
+  PrintOne "Alternatively, you can choose to skip this option. Either way, you"
+  PrintOne "can always install something else manually later."
   echo
   menugen1 "${DMList}" "Display-Managers" "None"
   Reply=$Response
@@ -412,9 +412,9 @@ PickLuxuries() {
 local Complete=0
 LuxuriesList=""
 print_heading
-print_info "Now you have the option to add 'luxuries' such as a web"
-print_info "browser, office software, graphical tools, etc. Yaourt"
-print_info "is also available as an option, in 'Desktop+System'"
+PrintOne "Now you have the option to add 'luxuries' such as a web"
+PrintOne "browser, office software, graphical tools, etc. Yaourt"
+PrintOne "is also available as an option, in 'Desktop+System'"
 echo
 while [ $Complete -eq 0 ]
 do
@@ -425,10 +425,10 @@ do
   else
     ShoppingList
     print_heading
-    print_info "Added so far: ${LuxuriesList}"
+    PrintOne "Added so far: ${LuxuriesList}"
     echo
-    print_info "You can now choose from any of the other lists,"
-    print_info "or choose 'Done' to finish this part of the setup"
+    PrintOne "You can now choose from any of the other lists,"
+    PrintOne "or choose 'Done' to finish this part of the setup"
   fi
 done
 LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
@@ -444,7 +444,7 @@ Passed="Choose your first item"
 while [ $Complete -eq 0 ]
 do
   print_heading
-  print_info "Added so far: ${LuxuriesList}"
+  PrintOne "Added so far: ${LuxuriesList}"
   echo
   # Pass category to menugen2 for user to choose one item;
   case $Category in
@@ -501,12 +501,12 @@ Response="1"
 while [ $Redo = "Y" ]
 do
   print_heading
-  print_info "LibreOffice was recently updated to version 5, but"
-  print_info "some people still prefer the older version. So Achoo"
-  print_info "gives you the option to choose."
+  PrintOne "LibreOffice was recently updated to version 5, but"
+  PrintOne "some people still prefer the older version. So Achoo"
+  PrintOne "gives you the option to choose."
   echo
-  print_info "Version 5 (also called libreoffice-fresh)"
-  print_list "Version 4 (now known as libreoffice-still)"
+  PrintOne "Version 5 (also called libreoffice-fresh)"
+  PrintMany "Version 4 (now known as libreoffice-still)"
   echo
   TPread "Enter the version number you prefer (5 or 4) : "
   echo
@@ -523,57 +523,57 @@ Repeat=1
 while [ $Repeat -gt 0 ]
 do
   print_heading
-  print_info "These are the settings you have entered. Please check them ..."
+  PrintOne "These are the settings you have entered. Please check them ..."
   echo
-  print_info "1)  Root partition ... $RootPartition : $RootType" 50
+  PrintOne "1)  Root partition ... $RootPartition : $RootType" 50
   if [ $SwapPartition ] || [ $SwapFile ]; then
-    print_list "2)  Swap partition ... $SwapPartition $SwapFile"
+    PrintMany "2)  Swap partition ... $SwapPartition $SwapFile"
   else
-    print_list "2)  No provision has been made for swap"
+    PrintMany "2)  No provision has been made for swap"
   fi
   if [ ${AddPartList} ]; then
     Counter=0
-    print_list "3)  Extra partitions ..."
+    PrintMany "3)  Extra partitions ..."
     for i in ${AddPartList[@]}	
     do
-      print_info "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+      PrintOne "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
       Counter=$((Counter+1))
     done
   else
-    print_list "3)  No additional partitions have been allocated"
+    PrintMany "3)  No additional partitions have been allocated"
   fi
   case $Kernel in
-    1) print_list "3a)  The LTS kernel will be installed"
+    1) PrintMany "4)  The LTS kernel will be installed"
     ;;
-    *) print_list "3a)  The latest kernel will be installed"
+    *) PrintMany "4)  The latest kernel will be installed"
   esac
   if [ $GrubDevice ]; then
-  print_list "4)  Grub will be installed to $GrubDevice" 50
+  PrintMany "5)  Grub will be installed to $GrubDevice" 50
   else
-    print_list "4)  No provision has been made for Grub"
+    PrintMany "5)  No provision has been made for Grub"
   fi
-  print_list "5)  Keyboard is $Countrykbd"
-  print_list "6)  Locale will be set to $CountryLocale"
-  print_list "7)  Zone/subZone will be $ZONE/$SUBZONE"
+  PrintMany "6)  Keyboard is $Countrykbd"
+  PrintMany "7)  Locale will be set to $CountryLocale"
+  PrintMany "8)  Zone/subZone will be $ZONE/$SUBZONE"
   if [ -z $IsInVbox ]; then
-    print_list "7a)  Virtualbox guest utilities will not be installed"
+    PrintMany "9)  Virtualbox guest utilities will not be installed"
   else
-    print_list "7a)  Virtualbox guest utilities will be installed"
+    PrintMany "9)  Virtualbox guest utilities will be installed"
   fi
   if [ $DesktopEnvironment ] && [ $DisplayManager != "None" ]; then
-    print_list "8)  DE = $DesktopEnvironment : $DisplayManager"
+    PrintMany "10)  DE = $DesktopEnvironment : $DisplayManager"
   elif [ $DesktopEnvironment ]; then
-    print_list "8)  DE = $DesktopEnvironment $GoodiesGnome $GoodiesOpenbox $GoodiesXfce"
+    PrintMany "10)  DE = $DesktopEnvironment $GoodiesGnome $GoodiesOpenbox $GoodiesXfce"
   else
-    print_list "8)  No DE selected"
+    PrintMany "10)  No DE selected"
   fi
-  print_list "9)  Root and user settings ..."
-  print_list "     Hostname = '$HostName'"
-  print_list "     User = '$UserName'"
-  print_list "10) The following extras have been selected ..."
-  print_info "${LuxuriesList}"
+  PrintMany "11)  Root and user settings ..."
+  PrintMany "     Hostname = '$HostName'"
+  PrintMany "     User = '$UserName'"
+  PrintMany "12) The following extras have been selected ..."
+  PrintOne "${LuxuriesList}"
   echo
-  print_info "Press [Enter] to install with these settings, or"
+  PrintOne "Press [Enter] to install with these settings, or"
   TPread "enter an item number if you wish to change it: "
   Change=$Response
   case $Change in
@@ -586,23 +586,23 @@ do
     3) ChangePartitions
         MorePartitions
     ;;
-    3a) SetKernel
+    4) SetKernel
     ;;
-    4) SetGrubDevice
+    5) SetGrubDevice
     ;;
-    5) getkeymap
+    6) getkeymap
     ;;
-    6) setlocale
+    7) setlocale
     ;;
-    7) SetTimeZone
+    8) SetTimeZone
     ;;
-    7a) ConfirmVbox
+    9) ConfirmVbox
     ;;
-    8) ChooseDE
+    10) ChooseDE
     ;;
-    9) ManualSettings
+    11) ManualSettings
     ;;
-    10) PickLuxuries
+    12) PickLuxuries
     ;;
     *) Repeat=0
   esac
@@ -615,10 +615,10 @@ ManualSettings() {
   while [ $Retry = "Y" ]
   do
     print_heading
-    print_info "Enter number for data to change, or [Enter] to finish:"
+    PrintOne "Enter number for data to change, or [Enter] to finish:"
     echo
-    print_info "1) Hostname (currently $HostName)"
-    print_list "2) Username (currently $UserName)"
+    PrintOne "1) Hostname (currently $HostName)"
+    PrintMany "2) Username (currently $UserName)"
     echo
     TPread "Enter the number of your selection : "
     echo

@@ -6,7 +6,7 @@
 # excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
 #
-# Partition variables
+# Partition variables and arrays
 #
 declare -a AddPartList	  # Array of additional partitions by system name. eg: /dev/sda5
 declare -a AddPartMount   # Array of mountpoints for the same partitions in the same order. eg: /home
@@ -101,7 +101,7 @@ fi
 CheckInternet
 StartTime=$(date +%s)
 
-# Check partition table and partitions, offer cfdisk
+# Check partition table & offer options
 CheckParts
 
 if [ $AutoPart -eq 0 ]; then
@@ -157,9 +157,9 @@ print_heading
 tput bold
 read_timed "Entering installation mode" 1
 tput sgr0
-read_timed "If you are re-using existing partitions, the system may pause to" 1
-read_timed "ask you to confirm that you wish to mount them ..." 1
-read_timed "this may happen more than once ..." 1
+read_timed "If you are re-using existing partitions, the system may" 1
+read_timed "pause to ask you to confirm that you wish to mount them." 1
+read_timed "This may happen more than once ..." 1
 read_timed "'y' would be an appropriate response." 1
 
 # Unmount any existing partitions and mount as defined in setup
@@ -176,30 +176,28 @@ InstallKernel
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
 
 TPecho "Generating fstab"
-genfstab -U -p /mnt > /mnt/etc/fstab 2>> error.log
+genfstab -U -p /mnt > /mnt/etc/fstab 2>> achoo.log
 if [ ${SwapFile} ]; then
   TPecho "Making /swapfile"
-  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> error.log
-  chmod 600 /mnt/swapfile >/dev/null 2>> error.log
-  mkswap /mnt/swapfile >/dev/null 2>> error.log
-  swapon /mnt/swapfile >/dev/null 2>> error.log
+  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> achoo.log
+  chmod 600 /mnt/swapfile >/dev/null 2>> achoo.log
+  mkswap /mnt/swapfile >/dev/null 2>> achoo.log
+  swapon /mnt/swapfile >/dev/null 2>> achoo.log
   echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab
 fi
 
 TPecho "Setting hostname"
-echo ${HostName} > /mnt/etc/hostname 2>> error.log
-sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> error.log
-sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> error.log
+echo ${HostName} > /mnt/etc/hostname 2>> achoo.log
+sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> achoo.log
+sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> achoo.log
 
-# Set up locale
+# Set up locale, etc
 TPecho "Preparing locale.gen"
-echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> error.log # eg: en_US.UTF-8 UTF-8
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> achoo.log # eg: en_US.UTF-8 UTF-8
 arch_chroot "locale-gen"
-
 TPecho "Preparing locale.conf"
-echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> error.log # eg: LANG=en_US.UTF-8
-export "LANG=${CountryLocale}" 2>> error.log # eg: LANG=en_US.UTF-8
-
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> achoo.log # eg: LANG=en_US.UTF-8
+export "LANG=${CountryLocale}" 2>> achoo.log # eg: LANG=en_US.UTF-8
 TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
@@ -208,15 +206,15 @@ if [ $Scope != "Basic" ]; then
   TPecho "Enabling dhcpcd"
   arch_chroot "systemctl enable dhcpcd.service"
   TPecho "Installing and configuring network services"
-  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> error.log
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> achoo.log
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 fi
 
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
-  pacstrap /mnt grub 2>> error.log
+  pacstrap /mnt grub 2>> achoo.log
   if [ $OSprober = "Y" ]; then
-    pacstrap /mnt os-prober 2>> error.log
+    pacstrap /mnt os-prober 2>> achoo.log
   fi
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -232,7 +230,7 @@ else
 fi
 
 # Set keyboard to selected language at next startup
-echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> error.log
+echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> achoo.log
 
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ];
@@ -246,83 +244,84 @@ then
     TPecho "Setting up user configuration"
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> error.log
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> achoo.log
   else
     TPecho "User already exists"
   fi
-
+  # Various bits
   TPecho "Adding Flash and other Multimedia Codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> error.log
-
+  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> achoo.log
   TPecho "Installing wireless tools"
-  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> error.log
-  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2>> error.log
-  
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> achoo.log
+  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2>> achoo.log
   TPecho "Installing X, graphics, etc"
-  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> error.log
-
+  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> achoo.log
+  TPecho "Installing synaptics touchpad driver"
+  pacstrap /mnt xf86-input-synaptics 2>> achoo.log
+  # cp 50-synaptics.conf /mnt/etc/X11/xorg.conf.d/ 2>> achoo.log # Configuration file for synaptics
+  # Display Manager
   TestExistingDM
   if [ ${DisplayManager} != "None" ]; then
     TPecho "Installing ${DisplayManager} Display Manager"
-    pacstrap /mnt ${DisplayManager} ${Greeter} 2>> error.log
+    pacstrap /mnt ${DisplayManager} ${Greeter} 2>> achoo.log
     arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   else
     TPecho "Not installing a Display Manager"
   fi
-
+  # Desktop Environment
   case ${DesktopEnvironment} in
     "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
-        pacstrap /mnt cinnamon gnome-terminal 2>> error.log
+        pacstrap /mnt cinnamon gnome-terminal 2>> achoo.log
         ;;
     "Enlightenment") TPecho "Installing 'Enlightenment' Desktop Environment"
-        pacstrap /mnt enlightenment 2>> error.log
+        pacstrap /mnt enlightenment 2>> achoo.log
         ;;
     "Fluxbox") TPecho "Installing 'Fluxbox' Window Manager"
-        pacstrap /mnt fluxbox 2>> error.log
+        pacstrap /mnt fluxbox 2>> achoo.log
         ;;
     "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-        pacstrap /mnt gnome ${GoodiesGnome} 2>> error.log
+        pacstrap /mnt gnome ${GoodiesGnome} 2>> achoo.log
         arch_chroot "systemctl enable gdm.service" >/dev/null
         ;;
     "gnome-shell") TPecho "Installing 'gnome-shell'"
-        pacstrap /mnt gnome-shell 2>> error.log
+        pacstrap /mnt gnome-shell 2>> achoo.log
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-        pacstrap /mnt lxde gedit 2>> error.log
+        pacstrap /mnt lxde gedit 2>> achoo.log
         arch_chroot "systemctl enable lxdm.service" >/dev/null
         echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
         ;;
     "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
-        pacstrap /mnt lxqt xterm 2>> error.log
+        pacstrap /mnt lxqt xterm 2>> achoo.log
         ;;
     "Mate") TPecho "Installing 'Mate' Desktop Environment"
-        pacstrap /mnt mate mate-extra 2>> error.log
+        pacstrap /mnt mate mate-extra 2>> achoo.log
         ;;
     "Openbox") TPecho "Installing 'Openbox' Window Manager"
-        pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> error.log
+        pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> achoo.log
         ;;
     "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
-        pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> error.log
+        pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> achoo.log
         ;;
     *) TPecho "Not installing a Desktop Environment"	
   esac
-
+  # Extras
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
       case $i in
         "yaourt") # Copy modified pacman.conf to new system and install Yaourt
           TPecho "Modifying pacman.conf and installing Yaourt"
-          cp pacman.conf /mnt/etc 2>> error.log # For installed system
-          cp pacman.conf /etc 2>> error.log # For installer
-          pacman -Sy 2>> error.log # Update
-          pacstrap /mnt yaourt 2>> error.log
+          cp pacman.conf /mnt/etc 2>> achoo.log # For installed system
+          cp pacman.conf /etc 2>> achoo.log # For installer
+          pacman -Sy 2>> achoo.log # Update
+          pacstrap /mnt yaourt 2>> achoo.log
         ;;
         "cairo-dock") TPecho "Installing $i and cairo-dock-plug-ins"
-          pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> error.log
+          pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> achoo.log
         ;;
       *) TPecho "Installing $i"
-        pacstrap /mnt $i 2>> error.log
+        pacstrap /mnt $i 2>> achoo.log
       esac
     done
   fi
@@ -337,9 +336,9 @@ SetRootPassword
 if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
-
+cp achoo.log /mnt/etc # Copy installation log for reference
 echo
-print_info "Congratulations. Installation is finished."
+PrintOne "Congratulations, installation is finished."
 echo
 menugen1 "Reboot Shutdown" "" "nodone"
 case $Response in

@@ -10,25 +10,21 @@
 # -------------------------
 # Functions           Line
 # -------------------------
-# Input and output     29
-# Internet connection  124
-# Mirrorlist           168
-# SetScope             196
-# SetKernel            223
-# ConfirmVbox          236
-# MakePartitionList    259
-# arch_chroot          272
-# SetGrubDevice        276
-# umount_partitions    304
-# MountPartitions      313
-# InstallKernel        372
-# TestExistingDM       399
-# SetRootPassword      428
-# SetUserPassword      457
-
-contains_element() { # check if an element exists in a string (from AUI scripts)
-  for e in "${@:2}"; do [[ $e == $1 ]] && break; done;
-}
+# Various input/output  29
+# Internet connection   94
+# Mirrorlist           138
+# SetScope             166
+# SetKernel            193
+# ConfirmVbox          206
+# MakePartitionList    229
+# arch_chroot          242
+# SetGrubDevice        246
+# umount_partitions    274
+# MountPartitions      283
+# InstallKernel        342
+# TestExistingDM       369
+# SetRootPassword      398
+# SetUserPassword      427
 
 invalid_option() { # (from AUI scripts)
   echo 
@@ -41,32 +37,6 @@ print_heading() {
   tput cup 1 $((($T_COLS/2)-20))
   printf "~ Achoo! The Arch Linux Installation Script ~\n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
-}
-
-print_info() { # Aligned text according to screen size
-  # $1 is text to display; $2 is number of characters to left of centre
-  T_COLS=`tput cols`
-  if [ $2 ]; then
-    lov=$2
-  else
-    lov=${#1}
-  fi
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
-    echo "$EMPTY $1"
-  else
-    echo "$1"
-  fi
-}
-
-print_list() { # Subsequent item(s) in an aligned list (menu)
-  if [ $2 ]; then
-    lov=$2
-    stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
-  fi
-  echo "$EMPTY $1"
 }
 
 TPecho() { # For displaying status while running on auto
@@ -126,9 +96,9 @@ CheckInternet() {
   Service="N"
   while [ $Service = "N" ]
   do
-    print_info "Welcome to the Achoo! Arch Linux installation script."
-    print_info "A working internet connection is needed for installation."
-    print_info "Checking your connection now ..."
+    PrintOne "Welcome to the Achoo! Arch Linux installation script."
+    PrintOne "A working internet connection is needed for installation."
+    PrintOne "Checking your connection now ..."
     CheckConnection
     case $Service in
       "N") read_timed "Sorry, installation cannot continue without an internet connection."
@@ -146,8 +116,8 @@ do
   if [[ ! $(ping -c 3 google.com) ]]; then
     wifi-menu
     if [[ ! $(ping -c 3 google.com) ]]; then
-      print_info "Unable to establish a connection. Ensure that your computer"
-      print_info "is able to access the internet."
+      PrintOne "Unable to establish a connection. Ensure that your computer"
+      PrintOne "is able to access the internet."
       TPread "Try again? (y/n): "
       Retry=$Response
       if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
@@ -168,11 +138,11 @@ done
 ReflectorMirrorList() {
 # Use reflector (added to archiso) to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
-  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> error.log
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> achoo.log
   if [ $? -gt 0 ]; then
     LocalMirrorList
   else
-    chmod +r /etc/pacman.d/mirrorlist 2>> error.log
+    chmod +r /etc/pacman.d/mirrorlist 2>> achoo.log
   fi
 }
 
@@ -181,16 +151,16 @@ LocalMirrorList() {
 # the mirrors defined in the CountryCode variable. Adapted from Lution AIS
 	TPecho "Reflector failed - generating local mirrorlist instead"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> error.log
+	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> achoo.log
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} 2>> error.log
+	curl -so ${MirrorTemp} ${URL} 2>> achoo.log
 	# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> error.log
+	sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> achoo.log
 	# Make a safe copy of existing mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> error.log
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> achoo.log
 	# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> error.log
-	chmod +r /etc/pacman.d/mirrorlist 2>> error.log
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> achoo.log
+	chmod +r /etc/pacman.d/mirrorlist 2>> achoo.log
 }
 
 SetScope() {
@@ -198,10 +168,10 @@ SetScope() {
   until [ $Retry = "N" ]
   do
     print_heading
-    print_info "You can continue with just a basic Arch Linux installation, "
-    print_info "suitable for more experienced users, "
-    print_info "or Achoo can add a Desktop Environment, set up a user, and"
-    print_info "automatically install codecs, wifi tools, graphics, etc"
+    PrintOne "You can continue with just a basic Arch Linux installation, "
+    PrintOne "suitable for more experienced users, "
+    PrintOne "or Achoo can add a Desktop Environment, set up a user, and"
+    PrintOne "automatically install codecs, wifi tools, graphics, etc"
     echo
     TPread "Add Desktop Environment, etc? (y/n): "
     echo
@@ -223,10 +193,10 @@ SetScope() {
 SetKernel() {
   print_heading
   echo
-  print_info "Choose your kernel"
-  print_info "The Long-Term-Support kernel (LTS) offers stabilty,"
-  print_info "while the Latest kernel has all the new features."
-  print_info "If in doubt, choose LTS."
+  PrintOne "Choose your kernel"
+  PrintOne "The Long-Term-Support kernel (LTS) offers stabilty,"
+  PrintOne "while the Latest kernel has all the new features."
+  PrintOne "If in doubt, choose LTS."
   echo
   local Counter=0
   menugen1 "LTS Latest" "Kernels" "nodone"
@@ -238,9 +208,9 @@ ConfirmVbox() {
   until [ $Retry = "N" ]
   do
     print_heading
-    print_info "It appears that Achoo is running in Virtualbox."
-    print_info "If it is, Achoo can install Virtualbox guest"
-    print_info "utilities and make appropriate settings for you."
+    PrintOne "It appears that Achoo is running in Virtualbox."
+    PrintOne "If it is, Achoo can install Virtualbox guest"
+    PrintOne "utilities and make appropriate settings for you."
     echo
     TPread "Install Virtualbox guest utilities? (y/n): "
     echo
@@ -270,7 +240,7 @@ MakePartitionList() {
 }
 
 arch_chroot() {  # From Lution AIS
-  arch-chroot /mnt /bin/bash -c "${1}" 2>> error.log
+  arch-chroot /mnt /bin/bash -c "${1}" 2>> achoo.log
 }  
 
 SetGrubDevice() {
@@ -279,10 +249,10 @@ SetGrubDevice() {
 	print_heading
   GrubDevice=""
 	Counter=0
-	print_info "Select the device where Grub is to be installed."
-  print_info "Note that if you select the 'None' option, Grub will"
-  print_info "not be installed, and you will have to make"
-  print_info "alternative arrangements for booting your new system."
+	PrintOne "Select the device where Grub is to be installed."
+  PrintOne "Note that if you select the 'None' option, Grub will"
+  PrintOne "not be installed, and you will have to make"
+  PrintOne "alternative arrangements for booting your new system."
   echo
 	menugen1 "${DevicesList}" "Devices" "None"
   Reply=$Response
@@ -304,9 +274,9 @@ SetGrubDevice() {
 umount_partitions(){ # from Lution/AUI
   MOUNTED=""
   MOUNTED=$(mount | grep "/mnt" | awk '{print $3}' | sort -r)
-  swapoff -a 2>> error.log
+  swapoff -a 2>> achoo.log
   for i in ${MOUNTED[@]}; do
-    umount $i >/dev/null 2>> error.log
+    umount $i >/dev/null 2>> achoo.log
   done
 }
 
@@ -320,7 +290,7 @@ MountPartitions() {
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${RootPartition}
     elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} 2>> error.log
+      mkfs.btrfs -f ${RootPartition} 2>> achoo.log
     else
       Partition=`echo $RootPartition | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
@@ -331,7 +301,7 @@ MountPartitions() {
     fi
   esac
   TPecho "Mounting /root partition"	
-  mount ${RootPartition} /mnt 2>> error.log # eg: mount /dev/sda1 /mnt
+  mount ${RootPartition} /mnt 2>> achoo.log # eg: mount /dev/sda1 /mnt
   if [ ${SwapPartition} ]; then
     if [ $MakeSwap = "Y" ]; then
       TPecho "Making /swap partition"
@@ -343,19 +313,19 @@ MountPartitions() {
       mkswap ${Label} ${SwapPartition} # eg: mkswap -L Arch-Swap /dev/sda2
     fi
     TPecho "Activating /swap"
-    swapon ${SwapPartition} 2>> error.log # eg: swapon /dev/sda2
+    swapon ${SwapPartition} 2>> achoo.log # eg: swapon /dev/sda2
   fi
   TPecho "Mounting additional partitions"
   local Counter=0
   for id in ${AddPartList}
   do
-    mkdir -p /mnt${AddPartMount[$Counter]} 2>> error.log	# eg: mkdir -p /mnt/home
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> achoo.log	# eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id}
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${id} 2>> error.log
+      mkfs.btrfs -f ${id} 2>> achoo.log
     elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=`echo ${id} | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
@@ -364,14 +334,14 @@ MountPartitions() {
       fi
       mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} 2>> error.log	# eg: mount /dev/sda3 /mnt/home
+    mount ${id} /mnt${AddPartMount[$Counter]} 2>> achoo.log	# eg: mount /dev/sda3 /mnt/home
 		Counter=$((Counter+1))
 	done
 }
 
 InstallKernel() {
   TPecho "Installing cli tools"
-  pacstrap /mnt bash bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi vim wget which xfsprogs base-devel btrfs-progs ntp sudo 2>> error.log
+  pacstrap /mnt  base-devel bash  btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo unrar unzip usbutils util-linux vi vim wget which xfsprogs xarchiver 2>> achoo.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   case $Kernel in
     1) TPecho "Installing LTS kernel"
@@ -379,8 +349,8 @@ InstallKernel() {
         if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
           TPecho "Installing virtualbox guest modules"
           pacstrap /mnt virtualbox-guest-utils virtualbox-guest-modules-lts  virtualbox-guest-dkms
-          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
-          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
+          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> achoo.log  # To overcome piix4 Virtualbox error
+          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> achoo.log
         fi
       ;;  
     *) TPecho "Installing Latest kernel"
@@ -388,12 +358,12 @@ InstallKernel() {
         if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
           TPecho "Installing virtualbox guest modules"
           pacstrap /mnt virtualbox-guest-utils virtualbox-guest-dkms
-          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> error.log  # To overcome piix4 Virtualbox error
-          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> error.log
+          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> achoo.log  # To overcome piix4 Virtualbox error
+          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> achoo.log
         fi
   esac
   TPecho "Installing opensource video drivers"
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> error.log # Install opensource video drivers
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> achoo.log # Install opensource video drivers
 }
 
 TestExistingDM() {
@@ -427,9 +397,9 @@ TestExistingDM() {
 
 SetRootPassword() {
   print_heading
- 	print_info  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+ 	PrintOne  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
   echo
- 	print_info "Finally we need to set passwords ..."
+ 	PrintOne "Finally we need to set passwords ..."
   echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
@@ -443,13 +413,13 @@ SetRootPassword() {
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
-     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
+     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> achoo.log
      arch_chroot "passwd root" < /tmp/.passwd >/dev/null
-     rm /tmp/.passwd 2>> error.log
+     rm /tmp/.passwd 2>> achoo.log
      Repeat="N"
     else
       print_heading
-      print_info "Passwords don't match. Try again"
+      PrintOne "Passwords don't match. Try again"
     fi
   done
 }
@@ -457,7 +427,7 @@ SetRootPassword() {
 SetUserPassword() {
   print_heading
   echo
-	print_info   "And now a password for $UserName: "
+	PrintOne   "And now a password for $UserName: "
   echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
@@ -471,9 +441,9 @@ SetUserPassword() {
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
-      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> error.log
+      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd 2>> achoo.log
       arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-      rm /tmp/.passwd 2>> error.log
+      rm /tmp/.passwd 2>> achoo.log
       Repeat="N"
     else
       echo "Passwords don't match. Try again"
