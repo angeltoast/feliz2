@@ -205,12 +205,15 @@ ChooseDE() {
 	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE LXDE LXQt Mate Xfce Openbox"
   print_heading
   echo
-  PrintOne "Cinnamon, Gnome, KDE, Mate and Xfce include all the basic tools"
+
+  PrintOne "Cinnamon, Gnome, Mate and Xfce include all the basic tools"
   PrintOne "you may need, such as a file manager, terminal emulator and"
   PrintOne "text editor, whereas LXDE and LXQt and the Window Managers are"
   PrintOne "more basic desktops onto which you can add your choice of tools"
   PrintOne "during installation, or afterwards. Alternatively, you can choose"
   PrintOne "to skip this option, and install something else manually later."
+  PrintOne "Note: If KDE is chosen, it will be the Plasma 5 meta"
+  PrintMany "package, installed with the full KDE applications pack."
   echo
 	menugen1 "${DEList}" "Desktop-Environments"
 	Reply=$Response

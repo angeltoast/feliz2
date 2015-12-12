@@ -285,8 +285,10 @@ then
     "gnome-shell") TPecho "Installing 'gnome-shell'"
         pacstrap /mnt gnome-shell 2>> achoo.log
         ;;
-    "KDE") TPecho "Installing 'KDE'"
+    "KDE") TPecho "Installing Plasma meta package"
         pacstrap /mnt plasma-meta 2>> achoo.log
+		TPecho "Installing KDE applications package"
+        pacstrap /mnt kde-applications 2>> achoo.log
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap /mnt lxde gedit 2>> achoo.log
