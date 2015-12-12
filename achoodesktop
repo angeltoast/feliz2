@@ -202,12 +202,12 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	DEList="Cinnamon Enlightenment Fluxbox Gnome LXDE LXQt Mate Xfce Openbox"
+	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE LXDE LXQt Mate Xfce Openbox"
   print_heading
   echo
-  PrintOne "Cinnamon, Gnome, Mate and Xfce include all the basic tools you"
-  PrintOne "may need, such as a file manager, terminal emulator and text"
-  PrintOne "editor, whereas LXDE and LXQt and the Window Managers are"
+  PrintOne "Cinnamon, Gnome, KDE, Mate and Xfce include all the basic tools"
+  PrintOne "you may need, such as a file manager, terminal emulator and"
+  PrintOne "text editor, whereas LXDE and LXQt and the Window Managers are"
   PrintOne "more basic desktops onto which you can add your choice of tools"
   PrintOne "during installation, or afterwards. Alternatively, you can choose"
   PrintOne "to skip this option, and install something else manually later."
@@ -233,6 +233,10 @@ ChooseDE() {
               ChooseDM
           ;;
         "Gnome") DisplayManager="None"
+            Greeter=""
+            GnomeOptions
+          ;;
+        "KDE") DisplayManager="sddm"
             Greeter=""
             GnomeOptions
           ;;

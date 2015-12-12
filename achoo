@@ -255,10 +255,9 @@ then
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> achoo.log
   pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2>> achoo.log
   TPecho "Installing X, graphics, etc"
-  pacstrap /mnt xorg-server  xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> achoo.log
-  TPecho "Installing synaptics touchpad driver"
+  pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> achoo.log
   pacstrap /mnt xf86-input-synaptics 2>> achoo.log
-  # cp 50-synaptics.conf /mnt/etc/X11/xorg.conf.d/ 2>> achoo.log # Configuration file for synaptics
+  pacstrap /mnt gvfs gamin 2>> achoo.log
   # Display Manager
   TestExistingDM
   if [ ${DisplayManager} != "None" ]; then
@@ -285,6 +284,9 @@ then
         ;;
     "gnome-shell") TPecho "Installing 'gnome-shell'"
         pacstrap /mnt gnome-shell 2>> achoo.log
+        ;;
+    "KDE") TPecho "Installing 'KDE'"
+        pacstrap /mnt plasma-meta 2>> achoo.log
         ;;
     "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
         pacstrap /mnt lxde gedit 2>> achoo.log
