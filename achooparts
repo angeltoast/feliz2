@@ -171,7 +171,7 @@ done
 AutoWarning() {
 while :
 do
-  PrintOne "This will erase any data on the device"
+  PrintOne "This will erase any data on ${UseDisk}"
   TPread "Are you sure you wish to continue? (y/n): "
   case $Response in
     "Y" | "y") RunAutoPart
@@ -192,7 +192,24 @@ RunAutoPart() {
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
   # Create partitions and set variables for mounting
   Parted "mklabel msdos"
-  if [ $DiskSize -gt 18 ]; then
+  if [ $DiskSize -gt 24 ]; then
+    # Device is large enough for a separate /home partition
+    # Swap 4GiB 
+    Parted "mkpart primary linux-swap 1MiB 4GiB"
+    SwapPartition="${GrubDevice}1"
+    MakeSwap="Y"
+    # Root partition 10GiB
+    Parted "mkpart primary ext4 4GiB 14GiB"
+    Parted "set 2 boot on"
+    RootPartition="${GrubDevice}2"
+    RootType="ext4"
+    # Home partition remainder (size from 10GiB to maximum available)
+    Parted "mkpart primary ext4 14GiB 100%"
+    AddPartList[1]="${GrubDevice}3" # Add to the array of additional partitions
+    AddPartMount[1]="/home"
+    AddPartType[1]="ext4"
+  elif [ $DiskSize -gt 18 ]; then
+    # Swap 4Gib and one main partition up to 20GiB
     Parted "mkpart primary linux-swap 1MiB 4GiB"
     SwapPartition="${GrubDevice}1"
     MakeSwap="Y"
@@ -201,6 +218,7 @@ RunAutoPart() {
     RootPartition="${GrubDevice}2"
     RootType="ext4"
   elif [ $DiskSize -gt 10 ]; then
+    # Swap 2Gib and one main partition up to 16GiB
     Parted "mkpart primary linux-swap 1MiB 2GiB"
     SwapPartition="${GrubDevice}1"
     Parted "mkpart primary ext4 2GiB 100%"
@@ -210,6 +228,7 @@ RunAutoPart() {
     SwapFile="2G"
     SwapPartition=""
   else # If disk < 10 Gb
+    # Swap file and one main partition up to 10GiB
     Parted "mkpart primary ext4 1MiB 100%"
     Parted "set 1 boot on"
     RootPartition="${GrubDevice}1"
@@ -217,15 +236,18 @@ RunAutoPart() {
     SwapFile="2G"
     SwapPartition=""
   fi
-  ShowPart1=""
-  ShowPart2=`lsblk -l | grep "${UseDisk}1" | awk '{print $4}'` >/dev/null
-  ShowPart3=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
+  ShowPart1=`lsblk -l | grep "${UseDisk}1" | awk '{print $4}'` >/dev/null
+  ShowPart2=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
   AutoPart=1 # Set flag to 'on' for mounting 
   print_heading
   PrintOne "Partitioning of ${GrubDevice} successful"
   PrintOne "-------------------------------------"
-  PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart2"
-  PrintMany "Root partition: ${RootPartition} ${RootType} $ShowPart3"
+  PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart1"
+  PrintMany "Root partition: ${RootPartition} ${RootType} $ShowPart2"
+  if [ ${HomePartition} ]; then
+    ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
+    PrintMany "Home partition: ${HomePartition} ${HomeType} $ShowPart3"
+  fi
   echo
   PrintOne "You will have the opportunity to review these later."
   echo

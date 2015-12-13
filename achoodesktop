@@ -212,8 +212,8 @@ ChooseDE() {
   PrintOne "more basic desktops onto which you can add your choice of tools"
   PrintOne "during installation, or afterwards. Alternatively, you can choose"
   PrintOne "to skip this option, and install something else manually later."
-  PrintOne "Note: If KDE is chosen, it will be the Plasma 5 meta"
-  PrintMany "package, installed with the full KDE applications pack."
+  PrintOne "Note: If KDE is chosen, it will be the Plasma 5 meta     "
+  PrintMany "package, installed with the full KDE applications bundle."
   echo
 	menugen1 "${DEList}" "Desktop-Environments"
 	Reply=$Response
@@ -241,7 +241,6 @@ ChooseDE() {
           ;;
         "KDE") DisplayManager="sddm"
             Greeter=""
-            GnomeOptions
           ;;
         "LXDE") DisplayManager="None"
             Greeter=""
