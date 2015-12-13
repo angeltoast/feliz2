@@ -540,7 +540,7 @@ do
   if [ ${AddPartList} ]; then
     Counter=0
     PrintMany "3)  Extra partitions ..."
-    for i in ${AddPartList[@]}	
+    for i in ${AddPartList[@]}
     do
       PrintOne "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
       Counter=$((Counter+1))
