@@ -537,7 +537,7 @@ do
   else
     PrintMany "2)  No provision has been made for swap"
   fi
-  if [ ${AddPartList} ]; then
+  if [ ${AddPartList[@]} ]; then
     Counter=0
     PrintMany "3)  Extra partitions ..."
     for i in ${AddPartList[@]}

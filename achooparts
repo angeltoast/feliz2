@@ -205,12 +205,9 @@ RunAutoPart() {
     RootType="ext4"
     # Home partition = remainder (size from 10GiB to maximum available)
     Parted "mkpart primary ext4 14GiB 100%"
-    AddPartList[1]="${GrubDevice}3" # Add to the array of additional partitions
-    echo ${AddPartList[1]}
-    AddPartMount[1]="/home"
-    echo ${AddPartMount[1]}
-    AddPartType[1]="ext4"
-    read -p "${AddPartType[1]}"
+    AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
+    AddPartMount[0]="/home"
+    AddPartType[0]="ext4"
   elif [ $DiskSize -gt 18 ]; then
     # Swap 4Gib and one main partition up to 20GiB
     Parted "mkpart primary linux-swap 1MiB 4GiB"
@@ -247,9 +244,9 @@ RunAutoPart() {
   PrintOne "-------------------------------------"
   PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart1"
   PrintMany "Root partition: ${RootPartition} ${RootType} $ShowPart2"
-  if [ ${HomePartition} ]; then
+  if [ -z ${#AddPartList[@]} ]; then
     ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
-    PrintMany "Home partition: ${AddPartList[1]} ${AddPartType[1]} $ShowPart3"
+    PrintMany "Home partition: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
   fi
   echo
   PrintOne "You will have the opportunity to review these later."
