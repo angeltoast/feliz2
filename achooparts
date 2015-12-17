@@ -260,7 +260,7 @@ select_filesystem() { #	$1 = list passed as string by caller
 	PrintOne "Please now select the file system for ${Partition}"
 	PrintOne "It is not recommended to mix the btrfs file-system with others."
   echo
-	menugen1 "${TypeList}" "Filesystems"
+	listgen1 "${TypeList}" "Filesystems"
   for i in ${TypeList}
 	do
     Counter=$((Counter+1))
@@ -446,7 +446,7 @@ AllocateRoot() {
 	PartitionType=""
 	PrintOne "Please now select a partition to use for root."
   echo
-  menugen2 "$PartitionList" "Partitions" "" "PartitionArray"
+  listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
   Reply=$Response
   if [ $Result != "Done" ]; then
     PassPart=$Result
@@ -514,7 +514,7 @@ then
   SwapPartition=""
   PickFrom="$PartitionList Swapfile"
   SwapFile=""
-  declare -a CopyArray # For passing to menugen2
+  declare -a CopyArray # For passing to listgen2
   local Counter=0
   for p in "${PartitionArray[@]}"
   do
@@ -524,7 +524,7 @@ then
   CopyArray[${Counter}]="Swapfile"
   PrintOne "If you select the 'Done' option, no swap will be allocated:"
   echo
-  menugen2 "$PickFrom" "Partitions" "" "CopyArray"
+  listgen2 "$PickFrom" "Partitions" "" "CopyArray"
   Reply=$Response # Number of selected item
   if [ $Result != "Swapfile" ] && [ $Result != "Done" ]; then # Short ID of selected item
     PassPart=$Result
@@ -571,6 +571,7 @@ then
       fi
     fi
   done
+  echo
   if [ $SwapPartition ]; then
     read_timed "$SwapPartition will be used for swap" 1
   elif [ $SwapFile ]; then
@@ -622,7 +623,7 @@ MorePartitions() {
     PrintOne "If you wish to use one, select it from the list,"
     PrintOne "or choose 'Done' to finish partitioning."
     echo
-    menugen2 "$PartitionList" "Partitions" "" "PartitionArray"
+    listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
     if [ $Result != "Done" ]; then
       PassPart=$Result
       SetLabel "$Result"

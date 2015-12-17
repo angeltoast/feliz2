@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# menugen - menu functions used throughout Achoo
+# listgen - menu functions used throughout Achoo
 
 # Developed by Elizabeth Mills
 
@@ -20,7 +20,7 @@ PrintMany() { # Subsequent item(s) in an aligned list
   echo "$EMPTY $1"
 }
 
-menugen1() { # Simple listing alternative to the bash 'select' function
+listgen1() { # Simple listing alternative to the bash 'select' function
 # Read Menuing.manual for full details
 local Complete=0
 while [ $Complete -eq 0 ]
@@ -29,7 +29,7 @@ do
     PrintOne "$Passed"
   fi
   local Done=$3
-  if [ -n $2 ]; then
+  if [ $2 ]; then
     PrintOne $2
     Underscore=`echo $2 | sed 's/./-/g'`
     PrintOne $Underscore
@@ -78,7 +78,7 @@ do
 done
 }
 
-menugen2() { # Previously 'InfoMenu'
+listgen2() { # Previously 'InfoMenu'
 # Advanced menuing function with extended descriptions linked to short name
 # Parameters:
 # 1) Primary file (string of single-word references)

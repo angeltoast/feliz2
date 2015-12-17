@@ -199,7 +199,7 @@ SetKernel() {
   PrintOne "If in doubt, choose LTS."
   echo
   local Counter=0
-  menugen1 "LTS Latest" "Kernels" "nodone"
+  listgen1 "LTS Latest" "Kernels" "nodone"
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
@@ -254,7 +254,7 @@ SetGrubDevice() {
   PrintOne "not be installed, and you will have to make"
   PrintOne "alternative arrangements for booting your new system."
   echo
-	menugen1 "${DevicesList}" "Devices" "None"
+	listgen1 "${DevicesList}" "Devices" "None"
   Reply=$Response
   for i in ${DevicesList}
 	do

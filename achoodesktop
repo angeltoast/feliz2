@@ -42,7 +42,7 @@ do
       PrintOne "Try again"
       continue
       ;;
-    *) menugen1 "$ListKbs" "Keyboards" "Retry"
+    *) listgen1 "$ListKbs" "Keyboards" "Retry"
   esac
   case ${Result} in
     "Retry") print_heading
@@ -66,10 +66,11 @@ PrintOne "for downloading your system"
 InvalidEntry=1
 while [ $InvalidEntry -eq 1 ]
 do
-  local Counter=0
+  echo
   PrintOne "Please enter a two-letter code for your country or language."
   echo
   TPread "$SearchPrompt"
+  print_heading
   if [ -z ${Response} ]
   then
     invalid_option
@@ -82,13 +83,20 @@ do
       SEARCHTERM="${Response^^}"
       LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
     fi
-    PrintOne "Choose your locale from this list, or 'Try_Again': "
+    local Counter=0
     localelist=""
     for l in ${LocaleList[@]}
     do
       localelist="${localelist} $l"
+      Counter=$((Counter+1))
     done
-    menugen1 "${localelist}" "" "Try_Again"
+    if [ $Counter -eq 0 ]; then
+      invalid_option
+      continue
+    fi
+    PrintOne "Choose your locale from this list, or 'Try_Again': "
+    echo
+    listgen1 "${localelist}" "" "Try_Again"
     case $Result in
       "Try_Again") continue
       ;;
@@ -108,7 +116,6 @@ Complete=0
 SearchPrompt="To set the system clock, please first"
 while [ $Complete -eq 0 ]
 do
-  local Counter=0
   print_heading
   PrintOne "$SearchPrompt"
   PrintOne "choose the World Zone of your location."
@@ -119,7 +126,7 @@ do
   do
     zones="$zones $x"
   done
-  menugen1 "${zones}" "Zones" "nodone"
+  listgen1 "${zones}" "Zones" "nodone"
   ZONE=$Result
   case $Result in
     "UTC") SUBZONE=""
@@ -143,6 +150,7 @@ do
   echo
   PrintOne "Please enter the first letter"
   TPread "of your nearest major city: "
+  echo
   if [ -z ${Response} ]
   then
     invalid_option
@@ -151,13 +159,19 @@ do
     Zone2="${Response^^}"
   fi
   subzones=""
+  local Counter=0
   for x in ${SubZones[@]}
   do
     if [ `echo $x | cut -c1` = $Zone2 ]; then
       subzones="$subzones $x"
+      Counter=$((Counter+1))
     fi
   done
-  menugen1 "$subzones" "" "Try_Again"
+  if [ ${Counter} -eq 0 ]; then
+    invalid_option
+    continue
+  fi
+  listgen1 "$subzones" "" "Try_Again"
   case $Result in
     "Try_Again") break
     ;;
@@ -189,7 +203,7 @@ SetHostname() {
 	PrintOne "A hostname is needed. This will be a unique name to identify"
 	PrintOne "your device on a network. If you do not enter one, the"
 	PrintOne "default hostname of 'arch-linux' will be used."
-   echo
+  echo
 	TPread "Enter a hostname for your computer : "
   Entered=${Response,,}
 	case $Entered in
@@ -202,20 +216,17 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE LXDE LXQt Mate Xfce Openbox"
+	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE+Plasma5 LXDE LXQt Mate Xfce Openbox"
   print_heading
+  PrintOne "Desktop Environments & Window Managers"
+  PrintOne "Cinnamon, Gnome, Mate and Xfce include all the basic tools you    "
+  PrintOne "may need, such as file manager, terminal emulator and text editor,"
+  PrintOne "while LXDE and LXQt and the Window Managers are more basic "
+  PrintOne "desktops, onto which you can add your choice of tools during "
+  PrintOne "installation, or afterwards. Alternatively, you can choose to"
+  PrintOne "skip this option and install something else manually later."
   echo
-
-  PrintOne "Cinnamon, Gnome, Mate and Xfce include all the basic tools"
-  PrintOne "you may need, such as a file manager, terminal emulator and"
-  PrintOne "text editor, whereas LXDE and LXQt and the Window Managers are"
-  PrintOne "more basic desktops onto which you can add your choice of tools"
-  PrintOne "during installation, or afterwards. Alternatively, you can choose"
-  PrintOne "to skip this option, and install something else manually later."
-  PrintOne "Note: If KDE is chosen, it will be the Plasma 5 meta     "
-  PrintMany "package, installed with the full KDE applications bundle."
-  echo
-	menugen1 "${DEList}" "Desktop-Environments"
+	listgen1 "${DEList}"
 	Reply=$Response
   SelectedDE=$Result
   for i in ${DEList}
@@ -310,6 +321,7 @@ done
 
 AddDEextras() {
  local Extras="$1"
+ print_heading
  echo
  case $DesktopEnvironment in
   "Openbox") PrintOne "tint2 is a system panel/taskbar that can be configured"
@@ -332,7 +344,7 @@ ChooseDM() {
   PrintOne "Alternatively, you can choose to skip this option. Either way, you"
   PrintOne "can always install something else manually later."
   echo
-  menugen1 "${DMList}" "Display-Managers" "None"
+  listgen1 "${DMList}" "Display-Managers" "None"
   Reply=$Response
   for item in ${DMList}
   do
@@ -424,7 +436,7 @@ PrintOne "is also available as an option, in 'Desktop+System'"
 echo
 while [ $Complete -eq 0 ]
 do
-  menugen1 "$Categories" "Categories" "Done"
+  listgen1 "$Categories" "Categories" "Done"
   Category=$Response
   if [ $Result = "Done" ]; then
     break
@@ -452,21 +464,21 @@ do
   print_heading
   PrintOne "Added so far: ${LuxuriesList}"
   echo
-  # Pass category to menugen2 for user to choose one item;
+  # Pass category to listgen2 for user to choose one item;
   case $Category in
-    1) menugen2 "$Accessories" "Accessories" "" "LongAccs"
+    1) listgen2 "$Accessories" "Accessories" "" "LongAccs"
     ;;
-    2) menugen2 "$Desktop" "Desktop+System" "" "LongDesk"
+    2) listgen2 "$Desktop" "Desktop+System" "" "LongDesk"
     ;;
-    3) menugen2 "$Graphical" "Graphical" "" "LongGraph"
+    3) listgen2 "$Graphical" "Graphical" "" "LongGraph"
     ;;
-    4) menugen2 "$Internet" "Internet" "" "LongNet"
+    4) listgen2 "$Internet" "Internet" "" "LongNet"
     ;;
-    5) menugen2 "$Multimedia" "Multimedia" "" "LongMulti"
+    5) listgen2 "$Multimedia" "Multimedia" "" "LongMulti"
     ;;
-    6) menugen2 "$Office" "Office" "" "LongOffice"
+    6) listgen2 "$Office" "Office" "" "LongOffice"
     ;;
-    7) menugen2 "$Programming" "Programming" "" "LongProg"
+    7) listgen2 "$Programming" "Programming" "" "LongProg"
     ;;
     *) break
   esac

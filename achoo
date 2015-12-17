@@ -90,10 +90,10 @@ else
   echo "missing file: achoodesktop"
   exit 1
 fi
-if [[ -f `pwd`/menugen ]]; then
-  source menugen
+if [[ -f `pwd`/listgen ]]; then
+  source listgen
 else
-  echo "missing file: menugen"
+  echo "missing file: listgen"
   exit 1
 fi
 
@@ -344,7 +344,7 @@ cp achoo.log /mnt/etc # Copy installation log for reference
 echo
 PrintOne "Congratulations, installation is finished."
 echo
-menugen1 "Reboot Shutdown" "" "nodone"
+listgen1 "Reboot Shutdown" "" "nodone"
 case $Response in
   1) systemctl reboot
   ;;
