@@ -41,10 +41,10 @@ CheckParts() {
       PrintOne "partition is needed for the root directory. If you are"
       PrintOne "uncertain about partitioning, you should read the Arch Wiki."
       echo
-      PrintOne "Option #1 - You can use 'cfdisk' to create a partition table"
-      PrintOne "Option #2 - Achoo can create partitions for you, if you wish."
-      PrintOne "If you choose option #3, the script will terminate to allow"
-      PrintOne "you to partition in some other way."
+      PrintOne "You can use 'cfdisk' to create a partition table, or "
+      PrintOne "Achoo can create partitions for you, if you wish."
+      PrintOne "If you choose 'Leave it as it is' the script will"
+      PrintOne "terminate to allow you to partition in some other way."
       echo
       Partitioning # Partitioning options
       if [ $Response = "3" ]; then
@@ -82,7 +82,7 @@ CheckParts() {
 		echo
     PrintOne "'cfdisk' is available for you to edit them, or Achoo can"
     PrintOne "overwrite them with a new partition table if you wish."
-    PrintOne "If you choose the 'Do nothing' option, the script will"
+    PrintOne "If you choose 'Leave it as it is' the script will"
     PrintOne "enable you to allocate the existing partitions."
     echo
     Partitioning # Partitioning options
@@ -98,7 +98,7 @@ Partitioning() {
   do
     PrintOne "1) Open cfdisk so I can partition manually"
     PrintMany "2) Allow Achoo to partition the whole device"
-    PrintMany "3) Do nothing"
+    PrintMany "3) Leave it as it is"
     echo
     TPread "Enter the number of your selection : "
     Proceed=$Response
@@ -338,7 +338,7 @@ BuildPartitionLists() {
     done
     Counter=$((Counter+1))
   done
-# 2) Use blkid again to find all up to sda99 with LABEL | select first field | remove /dev/ | Remove colon
+  # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
   ListLabelledIDs=`sudo blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g`
   # If at least one labelled partition found, get a matching list of labels (remove quotes)
   if [ -n "$ListLabelledIDs" ]; then
@@ -360,7 +360,7 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyLabelled="${#Labelled[@]}"
-# 3) Find any partitions flagged as bootable
+  # 3) Find any partitions flagged as bootable
   ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
   declare -a Flagged
   Counter=0
@@ -370,10 +370,10 @@ BuildPartitionLists() {
     Counter=$((Counter+1))
   done
   local HowManyFlagged="${#Flagged[@]}"
-# 4) Prepare list of short identifiers (sda1 sda2 ...)
+  # 4) Prepare list of short identifiers (sda1 sda2 ...)
   PartitionList="" 
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-# 5) Run through short identifiers, checking the three arrays for a match
+  # 5) Run through short identifiers, checking the three arrays for a match
   Counter=0 # For count of partitions
   Label=""
   for part in ${ShowPartitions}
@@ -410,30 +410,30 @@ BuildPartitionLists() {
 UpdateArray() { # Remove the selected partition from $PartitionArray[]
 	local Counter=0
   # Empty NewArray
-    local HowMany="${#NewArray[@]}"
-    local x=0
-    until [ ${x} -eq ${HowMany} ]
-    do
-      unset NewArray[$x]
-      x=$((x+1))
-    done
+  local HowMany="${#NewArray[@]}"
+  local x=0
+  until [ ${x} -eq ${HowMany} ]
+  do
+    unset NewArray[$x]
+    x=$((x+1))
+  done
   # Build NewArray without partition selected in calling function
-    for p in "${PartitionArray[@]}"
-    do
-      First=`echo $p | cut -c 1-5`
-      if [ ${Result} != ${First} ]; then
-        NewArray[${Counter}]="$p"
-        Counter=$((Counter+1))
-      fi
-    done
-  # Then copy NewArray into PartitionArray
-    Counter=0
-    for p in "${NewArray[@]}"
-    do
-      PartitionArray[${Counter}]=${NewArray[$Counter]}
+  for p in "${PartitionArray[@]}"
+  do
+    First=`echo $p | cut -c 1-5`
+    if [ ${Result} != ${First} ]; then
+      NewArray[${Counter}]="$p"
       Counter=$((Counter+1))
-    done
-    unset PartitionArray[$Counter] # Delete the last element
+    fi
+  done
+  # Then copy NewArray into PartitionArray
+  Counter=0
+  for p in "${NewArray[@]}"
+  do
+    PartitionArray[${Counter}]=${NewArray[$Counter]}
+    Counter=$((Counter+1))
+  done
+  unset PartitionArray[$Counter] # Delete the last element
 }
 
 AllocateRoot() {
@@ -664,7 +664,7 @@ MorePartitions() {
 }
 
 MakePartition() { # Called by MorePartitions
-# Add the selected partition to the array for extra partitions
+  # Add the selected partition to the array for extra partitions
   # 1) Save to AddPartList (eg: /dev/sda5)
 	ExtraPartitions=${#AddPartList[@]}
 	AddPartList[$ExtraPartitions]="${Partition}"

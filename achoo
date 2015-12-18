@@ -8,29 +8,29 @@
 #
 # Partition variables and arrays
 #
-declare -a AddPartList	  # Array of additional partitions by system name. eg: /dev/sda5
-declare -a AddPartMount   # Array of mountpoints for the same partitions in the same order. eg: /home
-declare -a AddPartType  	# Array of format type for the same partitions. eg: ext4
-declare -a PartitionArray # List of long identifiers for InfoMenu
+declare -a AddPartList	  # Array of additional partitions eg: /dev/sda5
+declare -a AddPartMount   # Array of mountpoints for the same partitions eg: /home
+declare -a AddPartType  	# Array of format type for the same partitions eg: ext4
+declare -a PartitionArray # List of long identifiers
 declare -a NewArray       # For copying any array
 declare -A LabellingArray # To hold full details of user labels for partitions
 declare -A Labelled       # Store labels
 declare -A FileSystem     # Store filesystem types (ext* swap)
-SwapPartition=""  # "/dev/sda3"
+SwapPartition=""  # eg: /dev/sda3
 FormatSwap="N"    # User selects whether to reuse swap
 MakeSwap="Y"
-SwapFile=""       # "2G"
+SwapFile=""       # eg: 2G
 IsSwap=""         # Result of lsblk test
-RootPartition=""  # "/dev/sda2"
-RootType=""       # "ext4"
-Partition=""      # "sda1"
+RootPartition=""  # eg: /dev/sda2
+RootType=""       # eg: ext4
+Partition=""      # eg: sda1
 AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"     # Used if more than one disk
 DiskDetails=0     # Size of selected disk
 #
 # Grub, kernel & EFI variables
 #
-GrubDevice=""     # "/dev/sda"
+GrubDevice=""     # eg: /dev/sda
 Kernel="1"        # Default 1 = LTS
 IsInVbox=""       # Result of test to see if installation is in Virtualbox
 DualBoot="N"      # Ready for dual-booting option
@@ -39,36 +39,31 @@ OSprober="Y"
 #
 # Location variables
 #
-CountryCode=""    # "GB" Country code for mirrorlist
-CountryLocale=""  # "en_GB.UTF-8"	Locale
-Countrykbd=""     # "uk" keyboard
-ZONE=""           # "Europe" For time
-SUBZONE=""        # "London" For time
+CountryCode=""    # eg: GB ... for mirrorlist
+CountryLocale=""  # eg: en_GB.UTF-8
+Countrykbd=""     # eg: uk
+ZONE=""           # eg: Europe For time
+SUBZONE=""        # eg: London
 #
 # Desktop environment, display manager and greeter variables
 #
-DesktopEnvironment="None"  # "xfce4"
+DesktopEnvironment="None"  # eg: xfce4
 GoodiesXfce=""
 GoodiesGnome=""
 GoodiesOpenbox=""
-DisplayManager="None"      # "lightdm"
-Greeter=""             # "lightdm-gtk-greeter" (Not required for some DMs)
+DisplayManager="None"      # eg: lightdm
+Greeter=""             # eg: lightdm-gtk-greeter (Not required for some DMs)
 #
 # Root and user variables
 #
-HostName=""  # "arch-linux"
-UserName=""  # "archie"
+HostName=""  # eg: arch-linux
+UserName=""  # eg: archie
 Scope=""     # Installation scope ... 'Full' or 'Basic'
 #
-# Input/Output variables
+# Global user input variables
 #
-OutPrompt="Press [Enter] to continue."
-AnyPrompt="Press any key to continue."
-Prompt1="Enter the number of your selection : "
-Response="" # Global user input variable
-Banner="~ https://wiki.archlinux.org ~"
-Complete=0
-
+Response="" 
+Result=""
 #
 # Include files
 #
@@ -111,8 +106,7 @@ if [ $AutoPart -eq 0 ]; then
   then
     AllocateSwap  # Display remaining partitions and allocate swap
   fi
-  # Check contents of PartitionList again. If not empty, call the MorePartitions function
-  if [ -n "${PartitionList}" ]
+  if [ -n "${PartitionList}" ]  # Check contents of PartitionList again
   then
     MorePartitions
   fi
@@ -135,15 +129,11 @@ SetHostname
 # Set scope of installation
 SetScope
 
-# Use dmidecode (added to archiso) to check for Virtualbox installation
+# Install dmidecode to check for Virtualbox installation
+pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log
 IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
-# Added for testing (dmidecode not available)
-if [ $? -gt 0 ]; then # Added for testing (dmidecode not available)
-  IsInVbox="VirtualBox"
-fi
-# Comment out for compiling
 if [ ${IsInVbox} = "VirtualBox" ]; then
-  ConfirmVbox # Installs Virtualbox guest modules
+  ConfirmVbox           # Installs Virtualbox guest modules
 fi
 
 # Allow user to change any variables
@@ -341,6 +331,7 @@ if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
 cp achoo.log /mnt/etc # Copy installation log for reference
+print_heading
 echo
 PrintOne "Congratulations, installation is finished."
 echo

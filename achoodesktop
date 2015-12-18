@@ -138,7 +138,6 @@ do
   esac
 done
 echo
-
 }
 
 SetSubZone() {
@@ -216,15 +215,15 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE+Plasma5 LXDE LXQt Mate Xfce Openbox"
+	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE LXDE LXQt Mate Xfce Openbox"
   print_heading
   PrintOne "Desktop Environments & Window Managers"
-  PrintOne "Cinnamon, Gnome, Mate and Xfce include all the basic tools you    "
+  PrintOne "Cinnamon, Gnome, KDE, Mate and Xfce include all the basic tools you"
   PrintOne "may need, such as file manager, terminal emulator and text editor,"
-  PrintOne "while LXDE and LXQt and the Window Managers are more basic "
-  PrintOne "desktops, onto which you can add your choice of tools during "
-  PrintOne "installation, or afterwards. Alternatively, you can choose to"
-  PrintOne "skip this option and install something else manually later."
+  PrintOne "while LXDE, LXQt and the Window Managers are more basic desktops"
+  PrintOne "onto which you can add your choice of tools during installation,"
+  PrintOne "or afterwards. Alternatively, you can choose to skip this option."
+  PrintOne "KDE will be installed with Plasma 5 and the full set of utilities."
   echo
 	listgen1 "${DEList}"
 	Reply=$Response
@@ -426,33 +425,33 @@ LongProg[5]="Git - open source distributed version control system"
 LongProg[6]="Netbeans - Integrated development environment (IDE)"
 
 PickLuxuries() {
-# User selects any combination from a list of luxuries
-local Complete=0
-LuxuriesList=""
-print_heading
-PrintOne "Now you have the option to add 'luxuries' such as a web"
-PrintOne "browser, office software, graphical tools, etc. Yaourt"
-PrintOne "is also available as an option, in 'Desktop+System'"
-echo
-while [ $Complete -eq 0 ]
-do
-  listgen1 "$Categories" "Categories" "Done"
-  Category=$Response
-  if [ $Result = "Done" ]; then
-    break
-  else
-    ShoppingList
-    print_heading
-    PrintOne "Added so far: ${LuxuriesList}"
-    echo
-    PrintOne "You can now choose from any of the other lists,"
-    PrintOne "or choose 'Done' to finish this part of the setup"
+  # User selects any combination from a list of luxuries
+  local Complete=0
+  LuxuriesList=""
+  print_heading
+  PrintOne "Now you have the option to add 'luxuries' such as a web"
+  PrintOne "browser, office software, graphical tools, etc. Yaourt"
+  PrintOne "is also available as an option, in 'Desktop+System'"
+  echo
+  while [ $Complete -eq 0 ]
+  do
+    listgen1 "$Categories" "Categories" "Done"
+    Category=$Response
+    if [ $Result = "Done" ]; then
+      break
+    else
+      ShoppingList
+      print_heading
+      PrintOne "Added so far: ${LuxuriesList}"
+      echo
+      PrintOne "You can now choose from any of the other lists,"
+      PrintOne "or choose 'Done' to finish this part of the setup"
+    fi
+  done
+  LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
+  if [ -n "${LuxuriesList}" ]; then
+    Scope="Extras"
   fi
-done
-LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
-if [ -n "${LuxuriesList}" ]; then
-  Scope="Extras"
-fi
 }
 
 ShoppingList() {
@@ -511,6 +510,7 @@ do
   fi
   Passed="Choose your next item" # Loop until user selects "Done" 
 done
+Passed=""
 }
 
 LibreVersion() {
