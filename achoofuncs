@@ -114,7 +114,7 @@ CheckConnection() {
 while [ $Service = "N" ]
 do
   if [[ ! $(ping -c 3 google.com) ]]; then
-    wifi-menu
+    wifi-menu 2>> achoo.log 
     if [[ ! $(ping -c 3 google.com) ]]; then
       PrintOne "Unable to establish a connection. Ensure that your computer"
       PrintOne "is able to access the internet."

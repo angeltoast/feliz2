@@ -244,7 +244,7 @@ RunAutoPart() {
   PrintOne "-------------------------------------"
   PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart1"
   PrintMany "Root partition: ${RootPartition} ${RootType} $ShowPart2"
-  if [ -z ${#AddPartList[@]} ]; then
+  if [ ${#AddPartList[@]} ]; then
     ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
     PrintMany "Home partition: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
   fi

@@ -10,7 +10,7 @@
 # Function   Line     Function           Line
 # ---------------     -----------------------
 # Keymap      25      Luxuries from       353
-# Locale      64      FinalCheck          523
+# Locale      64      FinalCheck          539
 # Timezone   122      ManualSettings      600
 # Subzone    161      ChangeRootPartition 626
 # Username   235      ChangeSwapPartition 634
@@ -554,7 +554,7 @@ do
     PrintMany "3)  Extra partitions ..."
     for i in ${AddPartList[@]}
     do
-      PrintOne "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+      PrintMany "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
       Counter=$((Counter+1))
     done
   else
@@ -573,10 +573,10 @@ do
   PrintMany "6)  Keyboard is $Countrykbd"
   PrintMany "7)  Locale will be set to $CountryLocale"
   PrintMany "8)  Zone/subZone will be $ZONE/$SUBZONE"
-  if [ -z $IsInVbox ]; then
-    PrintMany "9)  Virtualbox guest utilities will not be installed"
-  else
+  if [ $IsInVbox = "VirtualBox" ]; then
     PrintMany "9)  Virtualbox guest utilities will be installed"
+  else
+    PrintMany "9)  Virtualbox guest utilities will not be installed"
   fi
   if [ $DesktopEnvironment ] && [ $DisplayManager != "None" ]; then
     PrintMany "10)  DE = $DesktopEnvironment : $DisplayManager"

@@ -133,7 +133,9 @@ SetScope
 pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log
 IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
 if [ ${IsInVbox} = "VirtualBox" ]; then
-  ConfirmVbox           # Installs Virtualbox guest modules
+  ConfirmVbox
+else
+  IsInVbox=""
 fi
 
 # Allow user to change any variables
@@ -239,6 +241,7 @@ then
     TPecho "User already exists"
   fi
   # Various bits
+  pacstrap /mnt vrms 2>> achoo.log # Virtual Richard Michael Stallman
   TPecho "Adding Flash and other Multimedia Codecs"
   pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> achoo.log
   TPecho "Installing wireless tools"
