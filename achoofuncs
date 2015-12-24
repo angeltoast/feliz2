@@ -169,15 +169,14 @@ SetScope() {
   do
     print_heading
     PrintOne "You can continue with just a basic Arch Linux installation, "
-    PrintOne "suitable for more experienced users, "
-    PrintOne "or Achoo can add a Desktop Environment, set up a user, and"
-    PrintOne "automatically install codecs, wifi tools, graphics, etc"
+    PrintOne "suitable for more experienced users, or you can choose from"
+    PrintOne "a selection of utilities and desktop environments. Achoo can also"
+    PrintOne "add a user and automatically install codecs, wifi tools, graphics, etc"
     echo
-    TPread "Add Desktop Environment, etc? (y/n): "
+    TPread "Add utilities, desktop environment, etc? (y/n): "
     echo
     case $Response in
       "y" | "Y") Scope="Full"
-        ChooseDE
         PickLuxuries
         UserName
         Retry="N"

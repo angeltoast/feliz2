@@ -129,7 +129,7 @@ SetHostname
 # Set scope of installation
 SetScope
 
-# Install dmidecode to check for Virtualbox installation
+# Use dmidecode to check for Virtualbox installation
 pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log
 IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
 if [ ${IsInVbox} = "VirtualBox" ]; then
@@ -246,7 +246,7 @@ then
   pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> achoo.log
   TPecho "Installing wireless tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> achoo.log
-  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog 2>> achoo.log
+  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog wifi-menu 2>> achoo.log
   TPecho "Installing X, graphics, etc"
   pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> achoo.log
   pacstrap /mnt xf86-input-synaptics 2>> achoo.log
@@ -260,53 +260,50 @@ then
   else
     TPecho "Not installing a Display Manager"
   fi
-  # Desktop Environment
-  case ${DesktopEnvironment} in
-    "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
-        pacstrap /mnt cinnamon gnome-terminal 2>> achoo.log
-        ;;
-    "Enlightenment") TPecho "Installing 'Enlightenment' Desktop Environment"
-        pacstrap /mnt enlightenment 2>> achoo.log
-        ;;
-    "Fluxbox") TPecho "Installing 'Fluxbox' Window Manager"
-        pacstrap /mnt fluxbox 2>> achoo.log
-        ;;
-    "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-        pacstrap /mnt gnome ${GoodiesGnome} 2>> achoo.log
-        arch_chroot "systemctl enable gdm.service" >/dev/null
-        ;;
-    "gnome-shell") TPecho "Installing 'gnome-shell'"
-        pacstrap /mnt gnome-shell 2>> achoo.log
-        ;;
-    "KDE") TPecho "Installing Plasma meta package"
-        pacstrap /mnt plasma-meta 2>> achoo.log
-		TPecho "Installing KDE applications package"
-        pacstrap /mnt kde-applications 2>> achoo.log
-        ;;
-    "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-        pacstrap /mnt lxde gedit 2>> achoo.log
-        arch_chroot "systemctl enable lxdm.service" >/dev/null
-        echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
-        ;;
-    "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
-        pacstrap /mnt lxqt xterm 2>> achoo.log
-        ;;
-    "Mate") TPecho "Installing 'Mate' Desktop Environment"
-        pacstrap /mnt mate mate-extra 2>> achoo.log
-        ;;
-    "Openbox") TPecho "Installing 'Openbox' Window Manager"
-        pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> achoo.log
-        ;;
-    "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
-        pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> achoo.log
-        ;;
-    *) TPecho "Not installing a Desktop Environment"	
-  esac
+  
   # Extras
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
       case $i in
+        "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
+          pacstrap /mnt cinnamon gnome-terminal 2>> achoo.log
+          ;;
+        "Enlightenment") TPecho "Installing 'Enlightenment' Desktop Environment"
+          pacstrap /mnt enlightenment 2>> achoo.log
+          ;;
+        "Fluxbox") TPecho "Installing 'Fluxbox' Window Manager"
+          pacstrap /mnt fluxbox 2>> achoo.log
+          ;;
+        "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
+          pacstrap /mnt gnome ${GoodiesGnome} 2>> achoo.log
+          arch_chroot "systemctl enable gdm.service" >/dev/null
+          ;;
+        "gnome-shell") TPecho "Installing 'gnome-shell'"
+          pacstrap /mnt gnome-shell 2>> achoo.log
+          ;;
+        "KDE") TPecho "Installing Plasma meta package"
+          pacstrap /mnt plasma-meta 2>> achoo.log
+          TPecho "Installing KDE applications package"
+          pacstrap /mnt kde-applications 2>> achoo.log
+          ;;
+        "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
+          pacstrap /mnt lxde gedit 2>> achoo.log
+          arch_chroot "systemctl enable lxdm.service" >/dev/null
+          echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
+          ;;
+        "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
+          pacstrap /mnt lxqt xterm 2>> achoo.log
+          ;;
+        "Mate") TPecho "Installing 'Mate' Desktop Environment"
+          pacstrap /mnt mate mate-extra 2>> achoo.log
+          ;;
+        "Openbox") TPecho "Installing 'Openbox' Window Manager"
+          pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> achoo.log
+          ;;
+        "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
+          pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> achoo.log
+          ;;
         "yaourt") # Copy modified pacman.conf to new system and install Yaourt
           TPecho "Modifying pacman.conf and installing Yaourt"
           cp pacman.conf /mnt/etc 2>> achoo.log # For installed system

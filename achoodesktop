@@ -9,14 +9,14 @@
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      25      Luxuries from       353
-# Locale      64      FinalCheck          539
-# Timezone   122      ManualSettings      600
-# Subzone    161      ChangeRootPartition 626
-# Username   235      ChangeSwapPartition 634
-# Hostname   251      ChangePartitions    642
-# DE         206      AddExtras           654
-# DM         320
+# Keymap      21      Window Managers     382
+# Locale      60      Luxuries from       426
+# Timezone   122      FinalCheck          539
+# Subzone    161      ManualSettings      600
+# Username   235      ChangeRootPartition 626
+# Hostname   251      ChangeSwapPartition 634
+# DEs        216      ChangePartitions    642
+# DMs        352      AddExtras           654
 
 getkeymap() {
 print_heading
@@ -215,16 +215,17 @@ SetHostname() {
 
 ChooseDE() {
 	Counter=0
-	DEList="Cinnamon Enlightenment Fluxbox Gnome KDE LXDE LXQt Mate Xfce Openbox"
   print_heading
-  PrintOne "Desktop Environments & Window Managers"
-  PrintOne "Cinnamon, Gnome, KDE, Mate and Xfce include all the basic tools you"
-  PrintOne "may need, such as file manager, terminal emulator and text editor,"
-  PrintOne "while LXDE, LXQt and the Window Managers are more basic desktops"
-  PrintOne "onto which you can add your choice of tools during installation,"
-  PrintOne "or afterwards. Alternatively, you can choose to skip this option."
-  PrintOne "KDE will be installed with Plasma 5 and the full set of utilities."
+  PrintOne "Desktop Environments"
+  PrintOne "Cinnamon, Gnome, KDE, Mate and Xfce include all the basic tools"
+  PrintOne "you may need, such as file manager, terminal emulator and text"
+  PrintOne "editor, while LXDE, LXQt are more basic desktops, onto which you"
+  PrintOne "can add your choice of tools during installation or afterwards."
   echo
+  PrintOne "Note that KDE, if chosen, will be installed with Plasma 5"
+  PrintOne "and the full set of utilities."
+  echo
+	DEList="Cinnamon Enlightenment Gnome KDE LXDE LXQt Mate Xfce"
 	listgen1 "${DEList}"
 	Reply=$Response
   SelectedDE=$Result
@@ -237,13 +238,13 @@ ChooseDE() {
       DesktopEnvironment=$Item
       case $Item in
         "Cinnamon") DMList="LightDM LXDM"
-              ChooseDM
+              DMrestrict
           ;;
         "Enlightenment") DMList="LightDM LXDM"
-              ChooseDM
+              DMrestrict
           ;;
         "Fluxbox") DMList="LightDM LXDM"
-              ChooseDM
+              DMrestrict
           ;;
         "Gnome") DisplayManager="None"
             Greeter=""
@@ -259,7 +260,7 @@ ChooseDE() {
               Greeter=""
           ;;
         "Mate") DMList="LightDM LXDM"
-              ChooseDM
+              DMrestrict
           ;;
         "Openbox") DMList="LightDM LXDM"
             AddDEextras "tint2"
@@ -268,7 +269,7 @@ ChooseDE() {
               ;;
               *) GoodiesOpenbox=""
             esac
-              ChooseDM
+              DMrestrict
           ;;
         "Xfce") DMList="LightDM LXDM"
             AddDEextras "xfce4-goodies"
@@ -277,7 +278,7 @@ ChooseDE() {
               ;;
               *) GoodiesXfce=""
             esac
-            ChooseDM
+            DMrestrict
           ;;
         *) DesktopEnvironment="None"
             DisplayManager="None"
@@ -336,12 +337,24 @@ AddDEextras() {
  TPread "Include the $Extras pack? [y/n] : "
 }
 
+DMrestrict() {
+  # If a DE has already been chosen that imposes its own DM
+ # case $DisplayManager in
+ #   "None") ChangeDM="N"
+ #   ;;
+ #   "sddm") ChangeDM="N"
+ #   ;;
+ #  *) ChangeDM="Y"
+  DMList="LightDM LXDM sddm"
+  ChooseDM
+ # esac
+}
+
 ChooseDM() {
   Counter=0
   print_heading
   PrintOne "Choose one of the following Display Managers for "$Item
-  PrintOne "Alternatively, you can choose to skip this option. Either way, you"
-  PrintOne "can always install something else manually later."
+  PrintOne "Alternatively, you can choose to skip this option."
   echo
   listgen1 "${DMList}" "Display-Managers" "None"
   Reply=$Response
@@ -358,12 +371,59 @@ ChooseDM() {
         "LXDM") DisplayManager="lxdm"
               Greeter=""
           ;;
+        "sddm") DisplayManager="sddm"
+              Greeter=""
+          ;;
         *) DisplayManager="None"
               Greeter=""
       esac	
       break
     fi
   done
+}
+
+ChooseWM() {
+	Counter=0
+	WMList="Fluxbox JWM Openbox"
+  print_heading
+  PrintOne "Window Managers"
+  PrintOne "Here you can add a Window Manager, either to compliment your"
+  PrintOne "Desktop Environment, or as a basis for adding your choice of"
+  PrintOne "tools during installation, or afterwards."
+  echo
+	listgen1 "${WMList}"
+	Reply=$Response
+  SelectedDE=$Result
+  for i in ${WMList}
+  do
+    Item=$i
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]
+		then
+      WindowManager=$Item
+      case $Item in
+        "Fluxbox") DMList="LightDM LXDM"
+              DMrestrict
+          ;;
+        "JWM") DMList="LightDM LXDM"
+              DMrestrict
+          ;;
+        "Openbox") DMList="LightDM LXDM"
+            AddDEextras "tint2"
+            case $Response in
+              "Y" | "y") GoodiesOpenbox="tint2"
+              ;;
+              *) GoodiesOpenbox=""
+            esac
+              DMrestrict
+          ;;
+        *) DesktopEnvironment="None"
+            DisplayManager="None"
+              Greeter=""	
+ 			esac
+      break
+		fi
+	done	
 }
 
 # ---- LUXURIES ----
@@ -374,20 +434,21 @@ ChooseDM() {
 # ShoppingList   499
 # LibreVersion   555   
 
-Categories="Accessories Desktop+System Graphical Internet Multimedia Office Programming"
-Accessories="brasero gnome-calculator gedit nautilus xfce4-terminal terminator"
-LongAccs[1]="Brasero - Disc burning application from Gnome"
-LongAccs[2]="gCalculator - Calculator for your taskbar"
-LongAccs[3]="gEdit - The text editor from Gnome"
-LongAccs[4]="Nautilus - The file-manager from Gnome"
-LongAccs[5]="Terminal - The Xfce terminal emulator"
-LongAccs[6]="Terminator - Multi-tab terminal emulator"
-Desktop="conky cairo-dock docky gparted yaourt"
-LongDesk[1]="Conky - Desktop time and system information           "
-LongDesk[2]="Cairo Dock - Highly customizable dock and launcher application"
-LongDesk[3]="Docky - Application for opening applications and managing windows"
-LongDesk[4]="GParted - make/delete/resize partitions"
-LongDesk[5]="Yaourt - Easy to use AUR package installer"
+Categories="Accessories Desktops Graphical Internet Multimedia Office Programming"
+Accessories="brasero cairo-dock conky docky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
+LongAccs[1]="Brasero - Disc burning application from Gnome          "
+LongAccs[2]="Cairo Dock - Customizable dock and launcher application"
+LongAccs[3]="Conky - Desktop time and system information"
+LongAccs[4]="Docky - For opening applications and managing windows"
+LongAccs[5]="gCalculator - Calculator for your taskbar"
+LongAccs[6]="gEdit - The text editor from Gnome"
+LongAccs[7]="GParted - make/delete/resize partitions"
+LongAccs[8]="Nautilus - The file-manager from Gnome"
+LongAccs[9]="Terminal - The Xfce terminal emulator"
+LongAccs[10]="Yaourt - Easy to use AUR package installer"
+Desktops="DEs WMs"
+LongDesk[1]="A selection of popular Desktop Environments"
+LongDesk[2]="Window Managers"
 Graphical="evince gimp imagemagick gthumb simple-scan xsane"
 LongGraph[1]="Evince - Reader for PDF and other document formats"
 LongGraph[2]="GIMP - Advanced image editing suite"
@@ -431,7 +492,7 @@ PickLuxuries() {
   print_heading
   PrintOne "Now you have the option to add 'luxuries' such as a web"
   PrintOne "browser, office software, graphical tools, etc. Yaourt"
-  PrintOne "is also available as an option, in 'Desktop+System'"
+  PrintOne "is also available as an option, in 'Accessories'"
   echo
   while [ $Complete -eq 0 ]
   do
@@ -467,7 +528,7 @@ do
   case $Category in
     1) listgen2 "$Accessories" "Accessories" "" "LongAccs"
     ;;
-    2) listgen2 "$Desktop" "Desktop+System" "" "LongDesk"
+    2) listgen2 "$Desktops" "Desktops" "" "LongDesk"
     ;;
     3) listgen2 "$Graphical" "Graphical" "" "LongGraph"
     ;;
@@ -484,6 +545,12 @@ do
   if [ $Result = "Done" ]; then
     break
   fi
+  if [ $Result = "DEs" ]; then
+    ChooseDE
+    Result=$DesktopEnvironment
+  elif [ $Result = "WMs" ]; then
+    ChooseWM
+  fi 
   AddToList="Y"
   # First check that chosen item is not already on the list
   for lux in $LuxuriesList
