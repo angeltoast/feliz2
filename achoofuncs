@@ -149,7 +149,7 @@ ReflectorMirrorList() {
 LocalMirrorList() {
 # In case Reflector fails, generate and save a shortened mirrorlist of only 
 # the mirrors defined in the CountryCode variable. Adapted from Lution
-	TPecho "Reflector failed - generating local mirrorlist instead"
+	TPecho "Reflector not available - generating local mirrorlist instead"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> achoo.log
 	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
@@ -161,32 +161,6 @@ LocalMirrorList() {
 	# Replace existing mirrorlist with new local mirrorlist
 	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> achoo.log
 	chmod +r /etc/pacman.d/mirrorlist 2>> achoo.log
-}
-
-SetScope() {
-  Retry="Y"
-  until [ $Retry = "N" ]
-  do
-    print_heading
-    PrintOne "You can continue with just a basic Arch Linux installation, "
-    PrintOne "suitable for more experienced users, or you can choose from"
-    PrintOne "a selection of utilities and desktop environments. Achoo can also"
-    PrintOne "add a user and automatically install codecs, wifi tools, graphics, etc"
-    echo
-    TPread "Add utilities, desktop environment, etc? (y/n): "
-    echo
-    case $Response in
-      "y" | "Y") Scope="Full"
-        PickLuxuries
-        UserName
-        Retry="N"
-      ;;
-      "") invalid_option
-      ;;
-      *) Scope="Basic"
-        Retry="N"
-    esac
-  done
 }
 
 SetKernel() {

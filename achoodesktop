@@ -9,13 +9,12 @@
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      21      Window Managers     382
-# Locale      60      Luxuries from       426
-# Timezone   122      FinalCheck          539
-# Subzone    161      ManualSettings      600
-# Username   235      ChangeRootPartition 626
-# Hostname   251      ChangeSwapPartition 634
-# DEs        216      ChangePartitions    642
+# Keymap      21      Luxuries            310
+# Locale      60      FinalCheck          539
+# Timezone   122      ManualSettings      600
+# Subzone    161      ChangeRootPartition 626
+# Username   235      ChangeSwapPartition 634
+# Hostname   251      ChangePartitions    642
 # DMs        352      AddExtras           654
 
 getkeymap() {
@@ -213,82 +212,6 @@ SetHostname() {
 	PrintOne "Hostname set to: $HostName"
 }
 
-ChooseDE() {
-	Counter=0
-  print_heading
-  PrintOne "Desktop Environments"
-  PrintOne "Cinnamon, Gnome, KDE, Mate and Xfce include all the basic tools"
-  PrintOne "you may need, such as file manager, terminal emulator and text"
-  PrintOne "editor, while LXDE, LXQt are more basic desktops, onto which you"
-  PrintOne "can add your choice of tools during installation or afterwards."
-  echo
-  PrintOne "Note that KDE, if chosen, will be installed with Plasma 5"
-  PrintOne "and the full set of utilities."
-  echo
-	DEList="Cinnamon Enlightenment Gnome KDE LXDE LXQt Mate Xfce"
-	listgen1 "${DEList}"
-	Reply=$Response
-  SelectedDE=$Result
-  for i in ${DEList}
-  do
-    Item=$i
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Reply ]
-		then
-      DesktopEnvironment=$Item
-      case $Item in
-        "Cinnamon") DMList="LightDM LXDM"
-              DMrestrict
-          ;;
-        "Enlightenment") DMList="LightDM LXDM"
-              DMrestrict
-          ;;
-        "Fluxbox") DMList="LightDM LXDM"
-              DMrestrict
-          ;;
-        "Gnome") DisplayManager="None"
-            Greeter=""
-            GnomeOptions
-          ;;
-        "KDE") DisplayManager="sddm"
-            Greeter=""
-          ;;
-        "LXDE") DisplayManager="None"
-            Greeter=""
-          ;;
-        "LXQt") DisplayManager="sddm"
-              Greeter=""
-          ;;
-        "Mate") DMList="LightDM LXDM"
-              DMrestrict
-          ;;
-        "Openbox") DMList="LightDM LXDM"
-            AddDEextras "tint2"
-            case $Response in
-              "Y" | "y") GoodiesOpenbox="tint2"
-              ;;
-              *) GoodiesOpenbox=""
-            esac
-              DMrestrict
-          ;;
-        "Xfce") DMList="LightDM LXDM"
-            AddDEextras "xfce4-goodies"
-            case $Response in
-              "Y" | "y") GoodiesXfce="xfce4-goodies"
-              ;;
-              *) GoodiesXfce=""
-            esac
-            DMrestrict
-          ;;
-        *) DesktopEnvironment="None"
-            DisplayManager="None"
-              Greeter=""	
- 			esac
-      break
-		fi
-	done	
-}
-
 GnomeOptions() {
 Redo="Y"
 GoodiesGnome=""
@@ -382,50 +305,6 @@ ChooseDM() {
   done
 }
 
-ChooseWM() {
-	Counter=0
-	WMList="Fluxbox JWM Openbox"
-  print_heading
-  PrintOne "Window Managers"
-  PrintOne "Here you can add a Window Manager, either to compliment your"
-  PrintOne "Desktop Environment, or as a basis for adding your choice of"
-  PrintOne "tools during installation, or afterwards."
-  echo
-	listgen1 "${WMList}"
-	Reply=$Response
-  SelectedDE=$Result
-  for i in ${WMList}
-  do
-    Item=$i
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Reply ]
-		then
-      WindowManager=$Item
-      case $Item in
-        "Fluxbox") DMList="LightDM LXDM"
-              DMrestrict
-          ;;
-        "JWM") DMList="LightDM LXDM"
-              DMrestrict
-          ;;
-        "Openbox") DMList="LightDM LXDM"
-            AddDEextras "tint2"
-            case $Response in
-              "Y" | "y") GoodiesOpenbox="tint2"
-              ;;
-              *) GoodiesOpenbox=""
-            esac
-              DMrestrict
-          ;;
-        *) DesktopEnvironment="None"
-            DisplayManager="None"
-              Greeter=""	
- 			esac
-      break
-		fi
-	done	
-}
-
 # ---- LUXURIES ----
 # Function      Line 
 # ------------------ 
@@ -434,7 +313,7 @@ ChooseWM() {
 # ShoppingList   499
 # LibreVersion   555   
 
-Categories="Accessories Desktops Graphical Internet Multimedia Office Programming"
+Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
 Accessories="brasero cairo-dock conky docky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
 LongAccs[1]="Brasero - Disc burning application from Gnome          "
 LongAccs[2]="Cairo Dock - Customizable dock and launcher application"
@@ -446,9 +325,14 @@ LongAccs[7]="GParted - make/delete/resize partitions"
 LongAccs[8]="Nautilus - The file-manager from Gnome"
 LongAccs[9]="Terminal - The Xfce terminal emulator"
 LongAccs[10]="Yaourt - Easy to use AUR package installer"
-Desktops="DEs WMs"
-LongDesk[1]="A selection of popular Desktop Environments"
-LongDesk[2]="Window Managers"
+Desktops="Cinnamon Gnome KDE LXDE LXQt Mate Xfce"
+LongDesk[1]="Cinnamon - Slick DE from the Mint team"
+LongDesk[2]="Gnome - Full-featured, modern DE"
+LongDesk[3]="KDE - Plasma 5 and accessories pack"
+LongDesk[4]="LXDE - Traditional, lightweight DE"
+LongDesk[5]="LXQt - Lightweight and modern Qt DE"
+LongDesk[6]="Mate - Traditional DE from the Mint team"
+LongDesk[7]="Xfce - Lightweight, highly configurable DE"
 Graphical="evince gimp imagemagick gthumb simple-scan xsane"
 LongGraph[1]="Evince - Reader for PDF and other document formats"
 LongGraph[2]="GIMP - Advanced image editing suite"
@@ -465,7 +349,7 @@ LongNet[5]="qBittorent - Open source BitTorrent client"
 LongNet[6]="Thunderbird - Feature-rich email client from Mozilla"
 LongNet[7]="Transmission - Easy-to-use BitTorrent client"
 Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
-LongMulti[1]="Avidemux - Simple video editor              "
+LongMulti[1]="Avidemux - Simple video editor               "
 LongMulti[2]="Banshee - Feature-rich audio player"
 LongMulti[3]="Handbrake - Simple yet powerful video transcoder"
 LongMulti[4]="Openshot - Easy-to-use non-linear video editor"
@@ -484,6 +368,11 @@ LongProg[3]="Emacs - extensible, customizable text editor"
 LongProg[4]="Geany - Advanced text editor & IDE"
 LongProg[5]="Git - open source distributed version control system"
 LongProg[6]="Netbeans - Integrated development environment (IDE)"
+WindowManagers="Enlightenment Fluxbox JWM Openbox"
+LongWMs[1]="Enlightenment"
+LongWMs[2]="Fluxbox"
+LongWMs[3]="JWM"
+LongWMs[4]="Openbox"
 
 PickLuxuries() {
   # User selects any combination from a list of luxuries
@@ -491,8 +380,10 @@ PickLuxuries() {
   LuxuriesList=""
   print_heading
   PrintOne "Now you have the option to add 'luxuries' such as a web"
-  PrintOne "browser, office software, graphical tools, etc. Yaourt"
-  PrintOne "is also available as an option, in 'Accessories'"
+  PrintOne "browser, desktop environment, office software, etc."
+  PrintOne "Yaourt is also available as an option, in 'Accessories'"
+  echo
+  PrintOne "If you want only a base Arch installation, exit without choosing any extras."
   echo
   while [ $Complete -eq 0 ]
   do
@@ -507,12 +398,22 @@ PickLuxuries() {
       echo
       PrintOne "You can now choose from any of the other lists,"
       PrintOne "or choose 'Done' to finish this part of the setup"
+      echo
     fi
   done
   LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
   if [ -n "${LuxuriesList}" ]; then
-    Scope="Extras"
+    Scope="Full"
+  else
+    Scope="Basic"  
   fi
+  
+for i in ${LuxuriesList[@]} # Testing code - remove !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+do
+  echo $i
+done
+read -p "$Scope"
+  
 }
 
 ShoppingList() {
@@ -540,17 +441,14 @@ do
     ;;
     7) listgen2 "$Programming" "Programming" "" "LongProg"
     ;;
+    8) listgen2 "$WindowManagers" "Window_Managers" "" "LongWMs"
+    ;;
     *) break
   esac
+  Passed="Choose your next item" # Loop until user selects "Done" 
   if [ $Result = "Done" ]; then
     break
   fi
-  if [ $Result = "DEs" ]; then
-    ChooseDE
-    Result=$DesktopEnvironment
-  elif [ $Result = "WMs" ]; then
-    ChooseWM
-  fi 
   AddToList="Y"
   # First check that chosen item is not already on the list
   for lux in $LuxuriesList
@@ -558,24 +456,76 @@ do
     if [ ${lux} = ${Result} ]; then
       read_timed "Already in your shopping list"
       AddToList="N"
+      continue
     fi
   done
   # Then carry out any specific tests and add the item to the list
-  if [ ${AddToList} = "Y" ]; then
-    if [ ${Result} = "libreoffice" ]; then
-      LibreVersion
-      case $Response in
-        "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
-        ;;   
-        "4") LuxuriesList="${LuxuriesList} libreoffice-still"
-        ;;
-        *) echo "Wormhole detected"
-      esac
-    else
-      LuxuriesList="${LuxuriesList} ${Result}"
-    fi
+  SaveResult=$Result # (Because other subroutines return $Result)
+  if [ ${SaveResult} = "libreoffice" ]; then
+    LibreVersion
+    case $Result in
+      "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
+      ;;   
+      "4") LuxuriesList="${LuxuriesList} libreoffice-still"
+      ;;
+      *) echo "Wormhole detected"
+    esac
+    continue
   fi
-  Passed="Choose your next item" # Loop until user selects "Done" 
+  case $SaveResult in
+    "Cinnamon") DesktopEnvironment=$Result
+        DMrestrict
+      ;;
+    "Enlightenment") DesktopEnvironment=$Result
+        DMrestrict
+      ;;
+    "Fluxbox") DesktopEnvironment=$Result
+        DMrestrict
+      ;;
+    "Gnome") DesktopEnvironment=$Result
+        DisplayManager="None"
+        Greeter=""
+        GnomeOptions
+      ;;
+    "JWM") DesktopEnvironment=$Result
+        DMrestrict
+      ;;
+    "KDE") DesktopEnvironment=$Result
+        DisplayManager="sddm"
+        Greeter=""
+      ;;
+    "LXDE") DesktopEnvironment=$Result
+        DisplayManager="None"
+        Greeter=""
+      ;;
+    "LXQt") DesktopEnvironment=$Result
+        DisplayManager="sddm"
+        Greeter=""
+      ;;
+    "Mate") DesktopEnvironment=$Result
+        DMrestrict
+      ;;
+    "Openbox") DesktopEnvironment=$Result
+        AddDEextras "tint2"
+        case $Response in
+          "Y" | "y") GoodiesOpenbox="tint2"
+          ;;
+         *) GoodiesOpenbox=""
+        esac
+        DMrestrict
+      ;;
+    "Xfce") DesktopEnvironment=$Result
+         AddDEextras "xfce4-goodies"
+         case $Response in
+            "Y" | "y") GoodiesXfce="xfce4-goodies"
+           ;;
+           *) GoodiesXfce=""
+         esac
+         DMrestrict
+      ;;
+     *) echo	
+ 		esac
+    LuxuriesList="${LuxuriesList} ${SaveResult}"
 done
 Passed=""
 }

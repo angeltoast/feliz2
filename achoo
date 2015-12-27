@@ -126,8 +126,9 @@ SetTimeZone
 setlocale
 SetHostname
 
-# Set scope of installation
-SetScope
+# Add extras
+PickLuxuries
+UserName
 
 # Use dmidecode to check for Virtualbox installation
 pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log
@@ -231,6 +232,7 @@ then
   # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
     TPecho "Adding user ${UserName} ... "
+read -p "# New code from here - to be checked #"
     arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
     # Set up basic configuration files and permissions for user
     TPecho "Setting up user configuration"
@@ -261,7 +263,7 @@ then
     TPecho "Not installing a Display Manager"
   fi
   
-  # Extras
+  # Extras (now including DEs and 
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do

@@ -187,7 +187,7 @@ done
 
 RunAutoPart() {
   GrubDevice="/dev/${UseDisk}"
-  EFIPartition=""
+  Home="N"
 	# Get disk size
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
   # Create partitions and set variables for mounting
@@ -208,6 +208,7 @@ RunAutoPart() {
     AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
     AddPartMount[0]="/home"
     AddPartType[0]="ext4"
+    Home="Y"
   elif [ $DiskSize -gt 18 ]; then
     # Swap 4Gib and one main partition up to 20GiB
     Parted "mkpart primary linux-swap 1MiB 4GiB"
@@ -244,7 +245,7 @@ RunAutoPart() {
   PrintOne "-------------------------------------"
   PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart1"
   PrintMany "Root partition: ${RootPartition} ${RootType} $ShowPart2"
-  if [ ${#AddPartList[@]} ]; then
+  if [ ${Home} = "Y" ]; then
     ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
     PrintMany "Home partition: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
   fi
