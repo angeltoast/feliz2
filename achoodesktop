@@ -212,99 +212,6 @@ SetHostname() {
 	PrintOne "Hostname set to: $HostName"
 }
 
-GnomeOptions() {
-Redo="Y"
-GoodiesGnome=""
-while [ $Redo = "Y" ]
-do
-  print_heading
-  PrintOne "'Gnome with extras' adds a text editor, disk"
-  PrintOne "manager, archive manager and a set of games"
-  PrintOne "If in doubt, choose '2) Standard Gnome'"
-  echo
-  PrintOne "1) Minimal Gnome (gnome-shell)"
-  PrintMany "2) Standard Gnome"
-  PrintMany "3) Gnome with extras"
-  echo
-  TPread "Enter the number of your selection : "
-  echo
-  case $Response in
-    1) DesktopEnvironment="gnome-shell"
-      Redo="N"
-    ;;
-    2) Redo="N"
-    ;;
-    3) GoodiesGnome="gnome-extra"
-      Redo="N"
-    ;;
-    *) invalid_option
-  esac
-done
-}
-
-AddDEextras() {
- local Extras="$1"
- print_heading
- echo
- case $DesktopEnvironment in
-  "Openbox") PrintOne "tint2 is a system panel/taskbar that can be configured"
-    PrintOne "to include a system tray, task list, battery monitor, clock, etc."
-    echo
-    ;;
-  "Xfce") PrintOne "The xfce4-goodies pack includes includes the Whisker menu,"
-    PrintOne "extra plugins and a number of utilities such as the mousepad editor"
-    echo
-    ;;
-  *) echo
- esac
- TPread "Include the $Extras pack? [y/n] : "
-}
-
-DMrestrict() {
-  # If a DE has already been chosen that imposes its own DM
- # case $DisplayManager in
- #   "None") ChangeDM="N"
- #   ;;
- #   "sddm") ChangeDM="N"
- #   ;;
- #  *) ChangeDM="Y"
-  DMList="LightDM LXDM sddm"
-  ChooseDM
- # esac
-}
-
-ChooseDM() {
-  Counter=0
-  print_heading
-  PrintOne "Choose one of the following Display Managers for "$Item
-  PrintOne "Alternatively, you can choose to skip this option."
-  echo
-  listgen1 "${DMList}" "Display-Managers" "None"
-  Reply=$Response
-  for item in ${DMList}
-  do
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Reply ]
-    then
-      SelectedDM=$item
-      case $SelectedDM in
-        "LightDM") DisplayManager="lightdm"
-              Greeter="lightdm-gtk-greeter"	
-          ;;
-        "LXDM") DisplayManager="lxdm"
-              Greeter=""
-          ;;
-        "sddm") DisplayManager="sddm"
-              Greeter=""
-          ;;
-        *) DisplayManager="None"
-              Greeter=""
-      esac	
-      break
-    fi
-  done
-}
-
 # ---- LUXURIES ----
 # Function      Line 
 # ------------------ 
@@ -407,13 +314,6 @@ PickLuxuries() {
   else
     Scope="Basic"  
   fi
-  
-for i in ${LuxuriesList[@]} # Testing code - remove !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-do
-  echo $i
-done
-read -p "$Scope"
-  
 }
 
 ShoppingList() {
@@ -528,6 +428,92 @@ do
     LuxuriesList="${LuxuriesList} ${SaveResult}"
 done
 Passed=""
+}
+
+DMrestrict() {
+
+  DMList="LightDM LXDM sddm"
+  ChooseDM
+}
+
+ChooseDM() {
+  Counter=0
+  print_heading
+  PrintOne "Choose one of the following Display Managers for "$Item
+  PrintOne "Alternatively, you can choose to skip this option."
+  echo
+  listgen1 "${DMList}" "Display-Managers" "None"
+  Reply=$Response
+  for item in ${DMList}
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]
+    then
+      SelectedDM=$item
+      case $SelectedDM in
+        "LightDM") DisplayManager="lightdm"
+              Greeter="lightdm-gtk-greeter"	
+          ;;
+        "LXDM") DisplayManager="lxdm"
+              Greeter=""
+          ;;
+        "sddm") DisplayManager="sddm"
+              Greeter=""
+          ;;
+        *) DisplayManager="None"
+              Greeter=""
+      esac	
+      break
+    fi
+  done
+}
+
+GnomeOptions() {
+Redo="Y"
+GoodiesGnome=""
+while [ $Redo = "Y" ]
+do
+  print_heading
+  PrintOne "'Gnome with extras' adds a text editor, disk"
+  PrintOne "manager, archive manager and a set of games"
+  PrintOne "If in doubt, choose '2) Standard Gnome'"
+  echo
+  PrintOne "1) Minimal Gnome (gnome-shell)"
+  PrintMany "2) Standard Gnome"
+  PrintMany "3) Gnome with extras"
+  echo
+  TPread "Enter the number of your selection : "
+  echo
+  case $Response in
+    1) DesktopEnvironment="gnome-shell"
+      Redo="N"
+    ;;
+    2) Redo="N"
+    ;;
+    3) GoodiesGnome="gnome-extra"
+      Redo="N"
+    ;;
+    *) invalid_option
+  esac
+done
+}
+
+AddDEextras() {
+ local Extras="$1"
+ print_heading
+ echo
+ case $DesktopEnvironment in
+  "Openbox") PrintOne "tint2 is a system panel/taskbar that can be configured"
+    PrintOne "to include a system tray, task list, battery monitor, clock, etc."
+    echo
+    ;;
+  "Xfce") PrintOne "The xfce4-goodies pack includes includes the Whisker menu,"
+    PrintOne "extra plugins and a number of utilities such as the mousepad editor"
+    echo
+    ;;
+  *) echo
+ esac
+ TPread "Include the $Extras pack? [y/n] : "
 }
 
 LibreVersion() {
