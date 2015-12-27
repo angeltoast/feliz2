@@ -9,13 +9,13 @@
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      21      Luxuries            310
+# Keymap      21      Display Managers    352
 # Locale      60      FinalCheck          539
 # Timezone   122      ManualSettings      600
 # Subzone    161      ChangeRootPartition 626
 # Username   235      ChangeSwapPartition 634
 # Hostname   251      ChangePartitions    642
-# DMs        352      AddExtras           654
+# Luxuries   310      AddExtras           654    
 
 getkeymap() {
 print_heading
@@ -439,7 +439,7 @@ DMrestrict() {
 ChooseDM() {
   Counter=0
   print_heading
-  PrintOne "Choose one of the following Display Managers for "$Item
+  PrintOne "Choose can one of the following Display Managers"
   PrintOne "Alternatively, you can choose to skip this option."
   echo
   listgen1 "${DMList}" "Display-Managers" "None"
@@ -581,12 +581,10 @@ do
   else
     PrintMany "9)  Virtualbox guest utilities will not be installed"
   fi
-  if [ $DesktopEnvironment ] && [ $DisplayManager != "None" ]; then
-    PrintMany "10)  DE = $DesktopEnvironment : $DisplayManager"
-  elif [ $DesktopEnvironment ]; then
-    PrintMany "10)  DE = $DesktopEnvironment $GoodiesGnome $GoodiesOpenbox $GoodiesXfce"
+  if [ $DisplayManager != "None" ]; then
+    PrintMany "10)  Display Manager = $DisplayManager"
   else
-    PrintMany "10)  No DE selected"
+    PrintMany "10)  No Display Manager selected"
   fi
   PrintMany "11)  Root and user settings ..."
   PrintMany "     Hostname = '$HostName'"
@@ -619,7 +617,8 @@ do
     ;;
     9) ConfirmVbox
     ;;
-    10) ChooseDE
+    10) DisplayManager=""
+      ChooseDM
     ;;
     11) ManualSettings
     ;;

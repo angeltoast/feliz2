@@ -254,7 +254,7 @@ read -p "# New code from here - to be checked #"
   pacstrap /mnt xf86-input-synaptics 2>> achoo.log
   pacstrap /mnt gvfs gamin 2>> achoo.log
   # Display Manager
-  TestExistingDM
+  TestExistingDM # Clear any previously installed DM
   if [ ${DisplayManager} != "None" ]; then
     TPecho "Installing ${DisplayManager} Display Manager"
     pacstrap /mnt ${DisplayManager} ${Greeter} 2>> achoo.log
@@ -263,7 +263,7 @@ read -p "# New code from here - to be checked #"
     TPecho "Not installing a Display Manager"
   fi
   
-  # Extras (now including DEs and 
+  # Extras - first DEs
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
@@ -306,6 +306,15 @@ read -p "# New code from here - to be checked #"
         "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
           pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> achoo.log
           ;;
+        *) continue # Ignore others on this pass
+      esac
+    done
+  # ... then others
+    for i in ${LuxuriesList}
+    do
+      case $i in
+        "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "gnome-shell" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
+          ;;
         "yaourt") # Copy modified pacman.conf to new system and install Yaourt
           TPecho "Modifying pacman.conf and installing Yaourt"
           cp pacman.conf /mnt/etc 2>> achoo.log # For installed system
@@ -316,8 +325,8 @@ read -p "# New code from here - to be checked #"
         "cairo-dock") TPecho "Installing $i and cairo-dock-plug-ins"
           pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> achoo.log
         ;;
-      *) TPecho "Installing $i"
-        pacstrap /mnt $i 2>> achoo.log
+        *) TPecho "Installing $i"
+          pacstrap /mnt $i 2>> achoo.log
       esac
     done
   fi
