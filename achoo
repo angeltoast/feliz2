@@ -266,10 +266,9 @@ then
   pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> achoo.log
   pacstrap /mnt xf86-input-synaptics 2>> achoo.log
   pacstrap /mnt gvfs gamin 2>> achoo.log
-  # Display Manager
-  TestExistingDM # Clear any previously installed DM
 
-  # Extras - Check luxuries for DE
+  # Check luxuries for any DEs
+  TestExistingDM # First clear any previously installed DM before installing DE
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do

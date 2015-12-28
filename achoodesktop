@@ -462,6 +462,9 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
 }
     
 InstallDM() { # Called from Achoo when installing desktop environment
+  
+read -p "DM = $DisplayManager : DE = $i"
+  
   case ${DisplayManager} in
     "None" | "") TPecho "Not installing a Display Manager"
     ;;
