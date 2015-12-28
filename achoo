@@ -51,7 +51,7 @@ DesktopEnvironment="None"  # eg: xfce4
 GoodiesXfce=""
 GoodiesGnome=""
 GoodiesOpenbox=""
-DisplayManager="None"      # eg: lightdm
+DisplayManager=""      # eg: lightdm
 Greeter=""             # eg: lightdm-gtk-greeter (Not required for some DMs)
 #
 # Root and user variables
@@ -131,7 +131,7 @@ PickLuxuries
 UserName
 
 # Use dmidecode to check for Virtualbox installation
-pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log
+pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log # Comment this line for compiling
 IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
 if [ ${IsInVbox} = "VirtualBox" ]; then
   ConfirmVbox
@@ -141,6 +141,20 @@ fi
 
 # Allow user to change any variables
 FinalCheck
+
+# Repair display manager if necessary
+if [ -n "${LuxuriesList}" ]; then
+  for i in ${LuxuriesList}
+  do
+    case $i in
+      "Gnome") DisplayManager="Gnome"
+        ;;
+      "LXDE") DisplayManager="lxdm"
+        ;;
+      *) continue # Ignore others on this pass
+    esac
+  done
+fi
 
 #
 # No further user intervention from here
@@ -232,7 +246,6 @@ then
   # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
     TPecho "Adding user ${UserName} ... "
-read -p "# New code from here - to be checked #"
     arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
     # Set up basic configuration files and permissions for user
     TPecho "Setting up user configuration"
@@ -243,7 +256,7 @@ read -p "# New code from here - to be checked #"
     TPecho "User already exists"
   fi
   # Various bits
-  pacstrap /mnt vrms 2>> achoo.log # Virtual Richard Michael Stallman
+  pacstrap /mnt vrms 2>> achoo.log # Virtual Richard Michael Stallman to detect non-free software
   TPecho "Adding Flash and other Multimedia Codecs"
   pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> achoo.log
   TPecho "Installing wireless tools"
@@ -255,61 +268,64 @@ read -p "# New code from here - to be checked #"
   pacstrap /mnt gvfs gamin 2>> achoo.log
   # Display Manager
   TestExistingDM # Clear any previously installed DM
-  if [ ${DisplayManager} != "None" ]; then
-    TPecho "Installing ${DisplayManager} Display Manager"
-    pacstrap /mnt ${DisplayManager} ${Greeter} 2>> achoo.log
-    arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  else
-    TPecho "Not installing a Display Manager"
-  fi
-  
-  # Extras - first DEs
+
+  # Extras - Check luxuries for DE
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
       case $i in
         "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
+          InstallDM
           pacstrap /mnt cinnamon gnome-terminal 2>> achoo.log
           ;;
         "Enlightenment") TPecho "Installing 'Enlightenment' Desktop Environment"
+          InstallDM
           pacstrap /mnt enlightenment 2>> achoo.log
           ;;
         "Fluxbox") TPecho "Installing 'Fluxbox' Window Manager"
+          InstallDM
           pacstrap /mnt fluxbox 2>> achoo.log
           ;;
         "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-          pacstrap /mnt gnome ${GoodiesGnome} 2>> achoo.log
-          arch_chroot "systemctl enable gdm.service" >/dev/null
+          pacstrap /mnt gnome gedit ${GoodiesGnome} 2>> achoo.log
+          arch_chroot "systemctl enable gdm.service" 2>> achoo.log
           ;;
         "gnome-shell") TPecho "Installing 'gnome-shell'"
+          InstallDM
           pacstrap /mnt gnome-shell 2>> achoo.log
           ;;
         "KDE") TPecho "Installing Plasma meta package"
+          InstallDM
           pacstrap /mnt plasma-meta 2>> achoo.log
           TPecho "Installing KDE applications package"
           pacstrap /mnt kde-applications 2>> achoo.log
           ;;
         "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
           pacstrap /mnt lxde gedit 2>> achoo.log
-          arch_chroot "systemctl enable lxdm.service" >/dev/null
+          arch_chroot "systemctl enable lxdm.service" 2>> achoo.log
           echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
           ;;
         "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
+          InstallDM
           pacstrap /mnt lxqt xterm 2>> achoo.log
           ;;
         "Mate") TPecho "Installing 'Mate' Desktop Environment"
+          InstallDM
           pacstrap /mnt mate mate-extra 2>> achoo.log
           ;;
         "Openbox") TPecho "Installing 'Openbox' Window Manager"
+          InstallDM
           pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> achoo.log
           ;;
         "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
+          InstallDM
           pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> achoo.log
           ;;
         *) continue # Ignore others on this pass
       esac
     done
-  # ... then others
+
+  # ... then install the others
     for i in ${LuxuriesList}
     do
       case $i in

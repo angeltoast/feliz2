@@ -288,10 +288,11 @@ MountPartitions() {
     TPecho "Activating /swap"
     swapon ${SwapPartition} 2>> achoo.log # eg: swapon /dev/sda2
   fi
-  TPecho "Mounting additional partitions"
+
   local Counter=0
   for id in ${AddPartList}
   do
+    TPecho "Mounting ${id} as ${AddPartMount[$Counter]}"
     mkdir -p /mnt${AddPartMount[$Counter]} 2>> achoo.log	# eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`

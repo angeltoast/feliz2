@@ -9,7 +9,7 @@
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      21      Display Managers    352
+# Keymap      21      Display Managers    430
 # Locale      60      FinalCheck          539
 # Timezone   122      ManualSettings      600
 # Subzone    161      ChangeRootPartition 626
@@ -127,6 +127,7 @@ do
   done
   listgen1 "${zones}" "Zones" "nodone"
   ZONE=$Result
+  echo
   case $Result in
     "UTC") SUBZONE=""
         read_timed "Zone set to: '$ZONE'" 1
@@ -192,7 +193,7 @@ UserName() {
 		;;
 		*) UserName=${Entered}
 	esac
-	PrintOne "$UserName will be created"
+	PrintOne "$UserName will be created   "
 }
 
 SetHostname() {
@@ -374,36 +375,33 @@ do
   fi
   case $SaveResult in
     "Cinnamon") DesktopEnvironment=$Result
-        DMrestrict
+        ChooseDM
       ;;
     "Enlightenment") DesktopEnvironment=$Result
-        DMrestrict
+        ChooseDM
       ;;
     "Fluxbox") DesktopEnvironment=$Result
-        DMrestrict
+        ChooseDM
       ;;
     "Gnome") DesktopEnvironment=$Result
-        DisplayManager="None"
-        Greeter=""
+        DisplayManager="Gnome"
         GnomeOptions
       ;;
     "JWM") DesktopEnvironment=$Result
-        DMrestrict
+        ChooseDM
       ;;
     "KDE") DesktopEnvironment=$Result
         DisplayManager="sddm"
         Greeter=""
       ;;
     "LXDE") DesktopEnvironment=$Result
-        DisplayManager="None"
-        Greeter=""
+        DisplayManager="lxdm"
       ;;
     "LXQt") DesktopEnvironment=$Result
         DisplayManager="sddm"
-        Greeter=""
       ;;
     "Mate") DesktopEnvironment=$Result
-        DMrestrict
+        ChooseDM
       ;;
     "Openbox") DesktopEnvironment=$Result
         AddDEextras "tint2"
@@ -412,7 +410,7 @@ do
           ;;
          *) GoodiesOpenbox=""
         esac
-        DMrestrict
+        ChooseDM
       ;;
     "Xfce") DesktopEnvironment=$Result
          AddDEextras "xfce4-goodies"
@@ -421,7 +419,7 @@ do
            ;;
            *) GoodiesXfce=""
          esac
-         DMrestrict
+         ChooseDM
       ;;
      *) echo	
  		esac
@@ -430,42 +428,47 @@ done
 Passed=""
 }
 
-DMrestrict() {
-
-  DMList="LightDM LXDM sddm"
-  ChooseDM
+ChooseDM() { # Choose a display manager unless already fixed by certain DEs
+  if [ -z $DisplayManager ]; then
+    Counter=0
+    Greeter=""
+    DMList="LightDM LXDM sddm"
+    print_heading
+    PrintOne "Choose can one of the following Display Managers"
+    PrintOne "Alternatively, you can choose to skip this option."
+    echo
+    listgen1 "${DMList}" "Display-Managers" "None"
+    Reply=$Response
+    for item in ${DMList}
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]
+      then
+        SelectedDM=$item
+        case $SelectedDM in
+          "LightDM") DisplayManager="lightdm"
+                Greeter="lightdm-gtk-greeter"	
+            ;;
+          "LXDM") DisplayManager="lxdm"
+            ;;
+          "sddm") DisplayManager="sddm"
+            ;;
+          *) DisplayManager="None"
+        esac	
+        break
+      fi
+    done
+  fi
 }
-
-ChooseDM() {
-  Counter=0
-  print_heading
-  PrintOne "Choose can one of the following Display Managers"
-  PrintOne "Alternatively, you can choose to skip this option."
-  echo
-  listgen1 "${DMList}" "Display-Managers" "None"
-  Reply=$Response
-  for item in ${DMList}
-  do
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Reply ]
-    then
-      SelectedDM=$item
-      case $SelectedDM in
-        "LightDM") DisplayManager="lightdm"
-              Greeter="lightdm-gtk-greeter"	
-          ;;
-        "LXDM") DisplayManager="lxdm"
-              Greeter=""
-          ;;
-        "sddm") DisplayManager="sddm"
-              Greeter=""
-          ;;
-        *) DisplayManager="None"
-              Greeter=""
-      esac	
-      break
-    fi
-  done
+    
+InstallDM() { # Called from Achoo when installing desktop environment
+  case ${DisplayManager} in
+    "None" | "") TPecho "Not installing a Display Manager"
+    ;;
+    *) TPecho "Installing ${DisplayManager} Display Manager"
+      pacstrap /mnt ${DisplayManager} ${Greeter} 2>> achoo.log
+      arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  esac
 }
 
 GnomeOptions() {
@@ -552,7 +555,7 @@ do
   else
     PrintMany "2)  No provision has been made for swap"
   fi
-  if [ ${AddPartList[@]} ]; then
+  if [ ${#AddPartList[@]} ]; then
     Counter=0
     PrintMany "3)  Extra partitions ..."
     for i in ${AddPartList[@]}
