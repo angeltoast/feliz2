@@ -142,20 +142,6 @@ fi
 # Allow user to change any variables
 FinalCheck
 
-# Repair display manager if necessary
-if [ -n "${LuxuriesList}" ]; then
-  for i in ${LuxuriesList}
-  do
-    case $i in
-      "Gnome") DisplayManager="Gnome"
-        ;;
-      "LXDE") DisplayManager="lxdm"
-        ;;
-      *) continue # Ignore others on this pass
-    esac
-  done
-fi
-
 #
 # No further user intervention from here
 #
@@ -267,9 +253,9 @@ then
   pacstrap /mnt xf86-input-synaptics 2>> achoo.log
   pacstrap /mnt gvfs gamin 2>> achoo.log
 
-  # Check luxuries for any DEs
+  # Install desktop environments, window managers and display managers
   TestExistingDM # First clear any previously installed DM before installing DE
-  if [ -n "${LuxuriesList}" ]; then
+  if [ -n "${LuxuriesList}" ]; then   # Then parse through LuxuriesList checking for DEs
     for i in ${LuxuriesList}
     do
       case $i in
@@ -287,7 +273,11 @@ then
           ;;
         "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
           pacstrap /mnt gnome gedit ${GoodiesGnome} 2>> achoo.log
-          arch_chroot "systemctl enable gdm.service" 2>> achoo.log
+          if [ -z ${DisplayManager} ]; then
+            arch_chroot "systemctl enable gdm.service" 2>> achoo.log
+          else
+            InstallDM
+          fi
           ;;
         "gnome-shell") TPecho "Installing 'gnome-shell'"
           InstallDM
@@ -301,12 +291,16 @@ then
           ;;
         "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
           pacstrap /mnt lxde gedit 2>> achoo.log
-          arch_chroot "systemctl enable lxdm.service" 2>> achoo.log
-          echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
+          if [ -z ${DisplayManager} ]; then
+            arch_chroot "systemctl enable lxdm.service" 2>> achoo.log
+            echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
+          else
+            InstallDM
+          fi
           ;;
         "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
           InstallDM
-          pacstrap /mnt lxqt xterm 2>> achoo.log
+          pacstrap /mnt lxqt xterm oxygen-icons 2>> achoo.log
           ;;
         "Mate") TPecho "Installing 'Mate' Desktop Environment"
           InstallDM

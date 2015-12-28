@@ -32,7 +32,7 @@ do
   TPread "(eg: 'atari' or 'us'): "
   local Term="${Response,,}"
   echo
-  # ListKbs=`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
+  # ListKbs=`localectl list-keymaps | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'` # This line failed following change in Arch, so the following line has been substituted
   ListKbs=`cat keymaps.list | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
   case ${ListKbs} in
     "") print_heading
@@ -309,7 +309,6 @@ PickLuxuries() {
       echo
     fi
   done
-  LuxuriesList="${LuxuriesList,,}"  #Safety net in case any items have caps
   if [ -n "${LuxuriesList}" ]; then
     Scope="Full"
   else
@@ -374,36 +373,34 @@ do
     continue
   fi
   case $SaveResult in
-    "Cinnamon") DesktopEnvironment=$Result
+    "Cinnamon") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
-    "Enlightenment") DesktopEnvironment=$Result
+    "Enlightenment") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
-    "Fluxbox") DesktopEnvironment=$Result
+    "Fluxbox") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
-    "Gnome") DesktopEnvironment=$Result
-        DisplayManager="Gnome"
+    "Gnome") DesktopEnvironment=$SaveResult
         GnomeOptions
       ;;
-    "JWM") DesktopEnvironment=$Result
+    "JWM") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
-    "KDE") DesktopEnvironment=$Result
-        DisplayManager="sddm"
+    "KDE") DesktopEnvironment=$SaveResult
+        ChooseDM
         Greeter=""
       ;;
-    "LXDE") DesktopEnvironment=$Result
-        DisplayManager="lxdm"
+    "LXDE") DesktopEnvironment=$SaveResult
       ;;
-    "LXQt") DesktopEnvironment=$Result
-        DisplayManager="sddm"
-      ;;
-    "Mate") DesktopEnvironment=$Result
+    "LXQt") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
-    "Openbox") DesktopEnvironment=$Result
+    "Mate") DesktopEnvironment=$SaveResult
+        ChooseDM
+      ;;
+    "Openbox") DesktopEnvironment=$SaveResult
         AddDEextras "tint2"
         case $Response in
           "Y" | "y") GoodiesOpenbox="tint2"
@@ -412,7 +409,7 @@ do
         esac
         ChooseDM
       ;;
-    "Xfce") DesktopEnvironment=$Result
+    "Xfce") DesktopEnvironment=$SaveResult
          AddDEextras "xfce4-goodies"
          case $Response in
             "Y" | "y") GoodiesXfce="xfce4-goodies"
@@ -432,10 +429,13 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
   if [ -z $DisplayManager ]; then
     Counter=0
     Greeter=""
-    DMList="LightDM LXDM sddm"
+    DMList="GDM LightDM LXDM sddm SLIM XDM"
     print_heading
-    PrintOne "Choose can one of the following Display Managers"
-    PrintOne "Alternatively, you can choose to skip this option."
+    PrintOne "You can choose one of the following display managers."
+    PrintOne "Be aware that not all display managers work equally well"
+    PrintOne "with all desktop environments. If in doubt, choose LightDM."
+    PrintOne "If you do not install a display manager, you will have"
+    PrintOne "to launch your desktop environment manually."
     echo
     listgen1 "${DMList}" "Display-Managers" "None"
     Reply=$Response
@@ -446,12 +446,18 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
       then
         SelectedDM=$item
         case $SelectedDM in
+          "GDM") DisplayManager="gdm"
+            ;;
           "LightDM") DisplayManager="lightdm"
                 Greeter="lightdm-gtk-greeter"	
             ;;
           "LXDM") DisplayManager="lxdm"
             ;;
           "sddm") DisplayManager="sddm"
+            ;;
+          "SLIM") DisplayManager="slim"
+            ;;
+          "XDM") DisplayManager="xdm"
             ;;
           *) DisplayManager="None"
         esac	
@@ -462,9 +468,6 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
 }
     
 InstallDM() { # Called from Achoo when installing desktop environment
-  
-read -p "DM = $DisplayManager : DE = $i"
-  
   case ${DisplayManager} in
     "None" | "") TPecho "Not installing a Display Manager"
     ;;

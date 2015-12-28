@@ -7,24 +7,17 @@
 
 # Please read the introduction in the README file
 
-# -------------------------
-# Functions           Line
-# -------------------------
-# Various input/output  29
-# Internet connection   94
-# Mirrorlist           138
-# SetScope             166
-# SetKernel            193
-# ConfirmVbox          206
-# MakePartitionList    229
+# -------------------------      -------------------------
+# Functions           Line       Functions           Line
+# -------------------------      -------------------------
+# Various input/output  22       SetGrubDevice        246
+# Internet connection   87       umount_partitions    274
+# Mirrorlist           131       MountPartitions      283
+# SetScope             159       InstallKernel        342
+# SetKernel            193       TestExistingDM       336
+# ConfirmVbox          206       SetRootPassword      365
+# MakePartitionList    229       SetUserPassword      394
 # arch_chroot          242
-# SetGrubDevice        246
-# umount_partitions    274
-# MountPartitions      283
-# InstallKernel        342
-# TestExistingDM       369
-# SetRootPassword      398
-# SetUserPassword      427
 
 invalid_option() { # (from AUI scripts)
   echo 
