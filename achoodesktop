@@ -9,13 +9,13 @@
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      21      Display Managers    430
-# Locale      60      FinalCheck          539
+# Keymap      20      Display Managers    428
+# Locale      59      FinalCheck          539
 # Timezone   122      ManualSettings      600
 # Subzone    161      ChangeRootPartition 626
 # Username   235      ChangeSwapPartition 634
 # Hostname   251      ChangePartitions    642
-# Luxuries   310      AddExtras           654    
+# Luxuries   216      AddExtras           654    
 
 getkeymap() {
 print_heading
@@ -389,8 +389,6 @@ do
         ChooseDM
       ;;
     "KDE") DesktopEnvironment=$SaveResult
-        ChooseDM
-        Greeter=""
       ;;
     "LXDE") DesktopEnvironment=$SaveResult
       ;;
