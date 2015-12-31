@@ -364,9 +364,22 @@ TestExistingDM() {
 
 SetRootPassword() {
   print_heading
- 	PrintOne  "Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
   echo
- 	PrintOne "Finally we need to set passwords ..."
+  PrintOne "Success!"
+  echo
+  if [ $Scope = "Basic" ]; then
+    PrintOne "Finished installing basic Arch in $DIFFMIN minutes and $DIFFSEC seconds"
+  else
+    PrintOne "Finished installing Arch with ..."
+    echo
+    PrintOne "${LuxuriesList}"
+    echo
+    PrintOne "... in $DIFFMIN minutes and $DIFFSEC seconds"
+  fi
+  echo
+ 	PrintOne "-----------------------"
+  echo
+  PrintOne "Finally we need to set passwords ..."
   echo
   Repeat="Y"
   while [ $Repeat = "Y" ]

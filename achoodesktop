@@ -363,7 +363,7 @@ do
   SaveResult=$Result # (Because other subroutines return $Result)
   if [ ${SaveResult} = "libreoffice" ]; then
     LibreVersion
-    case $Result in
+    case $Response in
       "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
       ;;   
       "4") LuxuriesList="${LuxuriesList} libreoffice-still"
@@ -583,11 +583,11 @@ do
   PrintMany "6)  Keyboard is $Countrykbd"
   PrintMany "7)  Locale will be set to $CountryLocale"
   PrintMany "8)  Zone/subZone will be $ZONE/$SUBZONE"
-  if [ $IsInVbox = "VirtualBox" ]; then
-    PrintMany "9)  Virtualbox guest utilities will be installed"
-  else
-    PrintMany "9)  Virtualbox guest utilities will not be installed"
-  fi
+  case ${IsInVbox} in
+    "VirtualBox") PrintMany "9)  Virtualbox guest utilities will be installed"
+    ;;
+    *) PrintMany "9)  Virtualbox guest utilities will not be installed"
+  esac
   if [ -z $DisplayManager ]; then
     PrintMany "10)  No Display Manager selected"
   else

@@ -128,15 +128,16 @@ SetHostname
 
 # Add extras
 PickLuxuries
-UserName
-
-# Use dmidecode to check for Virtualbox installation
-pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log # Comment this line for compiling
-IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
-if [ ${IsInVbox} = "VirtualBox" ]; then
-  ConfirmVbox
-else
-  IsInVbox=""
+if [ $Scope != "Basic" ]; then
+  UserName
+  # Use dmidecode to check for Virtualbox installation
+  pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log # Comment this line for compiling
+  IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
+  if [ ${IsInVbox} = "VirtualBox" ]; then
+    ConfirmVbox
+  else
+    IsInVbox=""
+  fi
 fi
 
 # Allow user to change any variables
@@ -226,8 +227,7 @@ fi
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> achoo.log
 
 # Extra processes for desktop installation
-if [ $Scope != "Basic" ];
-then
+if [ $Scope != "Basic" ]; then
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
