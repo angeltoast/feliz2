@@ -457,7 +457,7 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
             ;;
           "XDM") DisplayManager="xdm"
             ;;
-          *) DisplayManager="None"
+          *) DisplayManager=""
         esac	
         break
       fi
@@ -467,7 +467,7 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
     
 InstallDM() { # Called from Achoo when installing desktop environment
   case ${DisplayManager} in
-    "None" | "") TPecho "Not installing a Display Manager"
+    "") TPecho "Not installing a Display Manager"
     ;;
     *) TPecho "Installing ${DisplayManager} Display Manager"
       pacstrap /mnt ${DisplayManager} ${Greeter} 2>> achoo.log
@@ -588,10 +588,10 @@ do
   else
     PrintMany "9)  Virtualbox guest utilities will not be installed"
   fi
-  if [ $DisplayManager != "None" ]; then
-    PrintMany "10)  Display Manager = $DisplayManager"
-  else
+  if [ -z $DisplayManager ]; then
     PrintMany "10)  No Display Manager selected"
+  else
+    PrintMany "10)  Display Manager = $DisplayManager"
   fi
   PrintMany "11)  Root and user settings ..."
   PrintMany "     Hostname = '$HostName'"
@@ -629,7 +629,8 @@ do
     ;;
     11) ManualSettings
     ;;
-    12) PickLuxuries
+    12) DisplayManager=""
+        PickLuxuries
     ;;
     *) Repeat=0
   esac
