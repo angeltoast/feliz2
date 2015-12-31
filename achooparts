@@ -10,15 +10,15 @@
 # -----------------------      ------------------------
 # Functions         Line       Functions           Line
 # -----------------------      ------------------------
-# CheckParts          24       BuildPartitionLists 299
-# Partitioning        94       UpdateArray         388
-# Parted             124       AllocateRoot        417
-# AutoPartition      128       CheckPartition      471
-# AutoWarning        171       AllocateSwap        481
-# RunAutoPart        188       SetSwapFile         564
-# select_filesystem  236       MorePartitions      588
-# SetLabel           253       MakePartition       643
-# EditLabel          275
+# CheckParts          24       BuildPartitionLists 322
+# Partitioning        94       UpdateArray         411
+# Parted             124       AllocateRoot        440
+# AutoPartition      128       CheckPartition      494
+# AutoWarning        171       AllocateSwap        504
+# RunAutoPart        188       SetSwapFile         588
+# select_filesystem  259       MorePartitions      612
+# SetLabel           276       MakePartition       667
+# EditLabel          298
 # -----------------------      ------------------------
 
 CheckParts() {

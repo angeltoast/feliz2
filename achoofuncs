@@ -128,8 +128,7 @@ do
 done
 }
 
-ReflectorMirrorList() {
-# Use reflector (added to archiso) to generate fast mirror list
+ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   TPecho "Using Reflector to generate mirrorlist"
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> achoo.log
   if [ $? -gt 0 ]; then
@@ -139,9 +138,8 @@ ReflectorMirrorList() {
   fi
 }
 
-LocalMirrorList() {
-# In case Reflector fails, generate and save a shortened mirrorlist of only 
-# the mirrors defined in the CountryCode variable. Adapted from Lution
+LocalMirrorList() { # In case Reflector fails, generate and save a shortened 
+  # mirrorlist of only the mirrors defined in the CountryCode variable.
 	TPecho "Reflector not available - generating local mirrorlist instead"
 	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
 	MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> achoo.log

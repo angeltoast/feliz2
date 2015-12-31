@@ -10,12 +10,12 @@
 # Function   Line     Function           Line
 # ---------------     -----------------------
 # Keymap      20      Display Managers    428
-# Locale      59      FinalCheck          539
-# Timezone   122      ManualSettings      600
-# Subzone    161      ChangeRootPartition 626
-# Username   235      ChangeSwapPartition 634
-# Hostname   251      ChangePartitions    642
-# Luxuries   216      AddExtras           654    
+# Locale      59      FinalCheck          549
+# Timezone   122      ManualSettings      640
+# Subzone    161      ChangeRootPartition 666
+# Username   235      ChangeSwapPartition 674
+# Hostname   251      ChangePartitions    682
+# Extras     216      AddExtras           694    
 
 getkeymap() {
 print_heading
@@ -213,13 +213,7 @@ SetHostname() {
 	PrintOne "Hostname set to: $HostName"
 }
 
-# ---- LUXURIES ----
-# Function      Line 
-# ------------------ 
-# Arrays         425
-# PickLuxuries   469
-# ShoppingList   499
-# LibreVersion   555   
+# ---- Extras ----
 
 Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
 Accessories="brasero cairo-dock conky docky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
@@ -282,12 +276,11 @@ LongWMs[2]="Fluxbox"
 LongWMs[3]="JWM"
 LongWMs[4]="Openbox"
 
-PickLuxuries() {
-  # User selects any combination from a list of luxuries
+PickLuxuries() { # User selects any combination from a store of extras
   local Complete=0
   LuxuriesList=""
   print_heading
-  PrintOne "Now you have the option to add 'luxuries' such as a web"
+  PrintOne "Now you have the option to add 'extras' such as a web"
   PrintOne "browser, desktop environment, office software, etc."
   PrintOne "Yaourt is also available as an option, in 'Accessories'"
   echo
@@ -680,15 +673,15 @@ ChangeSwapPartition() {
 }
 
 ChangePartitions() {
-# Copy RootPartition and SwapPartition into temporary array
-Ignorelist[0]=${RootPartition}
-local Counter=1
-if [ ${SwapPartition} ]; then
-  Ignorelist[1]=${SwapPartition}
-  Counter=2
-fi
-Ignores=${#Ignorelist[@]} # Save a count for later
-MakePartitionList
+  # Copy RootPartition and SwapPartition into temporary array
+  Ignorelist[0]=${RootPartition}
+  local Counter=1
+  if [ ${SwapPartition} ]; then
+    Ignorelist[1]=${SwapPartition}
+    Counter=2
+  fi
+  Ignores=${#Ignorelist[@]} # Save a count for later
+  MakePartitionList
 }
 
 AddExtras() {

@@ -131,7 +131,7 @@ PickLuxuries
 if [ $Scope != "Basic" ]; then
   UserName
   # Use dmidecode to check for Virtualbox installation
-  pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log # Comment this line for compiling
+  # pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log # Comment this line for compiling
   IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
   if [ ${IsInVbox} = "VirtualBox" ]; then
     ConfirmVbox
