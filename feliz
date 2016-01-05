@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Achoo! Arch Linux Installation Script
+# feliz (formerly Achoo!) Arch Linux Installation Script
 
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
@@ -67,22 +67,22 @@ Result=""
 #
 # Include files
 #
-if [[ -f `pwd`/achoofuncs ]]; then
-  source achoofuncs
+if [[ -f `pwd`/felizfuncs ]]; then
+  source felizfuncs
 else
-  echo "missing file: achoofuncs"
+  echo "missing file: felizfuncs"
   exit 1
 fi
-if [[ -f `pwd`/achooparts ]]; then
-  source achooparts
+if [[ -f `pwd`/felizparts ]]; then
+  source felizparts
 else
-  echo "missing file: achooparts"
+  echo "missing file: felizparts"
   exit 1
 fi
-if [[ -f `pwd`/achoodesktop ]]; then
-  source achoodesktop
+if [[ -f `pwd`/felizdesktop ]]; then
+  source felizdesktop
 else
-  echo "missing file: achoodesktop"
+  echo "missing file: felizdesktop"
   exit 1
 fi
 if [[ -f `pwd`/listgen ]]; then
@@ -129,7 +129,7 @@ PickLuxuries
 if [ $Scope != "Basic" ]; then
   UserName
   # Use dmidecode to check for Virtualbox installation
-  # pacman -Sy --noconfirm dmidecode >/dev/null 2>> achoo.log # Comment this line for compiling
+  # pacman -Sy --noconfirm dmidecode >/dev/null 2>> feliz.log # Comment this line for compiling
   IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
   if [ ${IsInVbox} = "VirtualBox" ]; then
     ConfirmVbox
@@ -168,28 +168,28 @@ InstallKernel
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
 
 TPecho "Generating fstab"
-genfstab -U -p /mnt > /mnt/etc/fstab 2>> achoo.log
+genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
 if [ ${SwapFile} ]; then
   TPecho "Making /swapfile"
-  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> achoo.log
-  chmod 600 /mnt/swapfile >/dev/null 2>> achoo.log
-  mkswap /mnt/swapfile >/dev/null 2>> achoo.log
-  swapon /mnt/swapfile >/dev/null 2>> achoo.log
+  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> feliz.log
+  chmod 600 /mnt/swapfile >/dev/null 2>> feliz.log
+  mkswap /mnt/swapfile >/dev/null 2>> feliz.log
+  swapon /mnt/swapfile >/dev/null 2>> feliz.log
   echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab
 fi
 
 TPecho "Setting hostname"
-echo ${HostName} > /mnt/etc/hostname 2>> achoo.log
-sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> achoo.log
-sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> achoo.log
+echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
+sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
+sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Set up locale, etc
 TPecho "Preparing locale.gen"
-echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> achoo.log # eg: en_US.UTF-8 UTF-8
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
 arch_chroot "locale-gen"
 TPecho "Preparing locale.conf"
-echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> achoo.log # eg: LANG=en_US.UTF-8
-export "LANG=${CountryLocale}" 2>> achoo.log # eg: LANG=en_US.UTF-8
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
+export "LANG=${CountryLocale}" 2>> feliz.log # eg: LANG=en_US.UTF-8
 TPecho "Setting clock"
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
@@ -198,15 +198,15 @@ if [ $Scope != "Basic" ]; then
   TPecho "Enabling dhcpcd"
   arch_chroot "systemctl enable dhcpcd.service"
   TPecho "Installing and configuring network services"
-  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> achoo.log
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 fi
 
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub to $GrubDevice"
-  pacstrap /mnt grub 2>> achoo.log
+  pacstrap /mnt grub 2>> feliz.log
   if [ $OSprober = "Y" ]; then
-    pacstrap /mnt os-prober 2>> achoo.log
+    pacstrap /mnt os-prober 2>> feliz.log
   fi
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -222,7 +222,7 @@ else
 fi
 
 # Set keyboard to selected language at next startup
-echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> achoo.log
+echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ]; then
@@ -235,21 +235,21 @@ if [ $Scope != "Basic" ]; then
     TPecho "Setting up user configuration"
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> achoo.log
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
   else
     TPecho "User already exists"
   fi
   # Various bits
-  pacstrap /mnt vrms 2>> achoo.log # Virtual Richard Michael Stallman to detect non-free software
+  pacstrap /mnt vrms 2>> feliz.log # Virtual Richard Michael Stallman to detect non-free software
   TPecho "Adding Flash and other Multimedia Codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> achoo.log
+  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
   TPecho "Installing wireless tools"
-  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> achoo.log
-  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog wifi-menu 2>> achoo.log
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
+  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog wifi-menu 2>> feliz.log
   TPecho "Installing X, graphics, etc"
-  pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> achoo.log
-  pacstrap /mnt xf86-input-synaptics 2>> achoo.log
-  pacstrap /mnt gvfs gamin 2>> achoo.log
+  pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> feliz.log
+  pacstrap /mnt xf86-input-synaptics 2>> feliz.log
+  pacstrap /mnt gvfs gamin 2>> feliz.log
 
   # Install desktop environments, window managers and display managers
   TestExistingDM # First clear any previously installed DM before installing DE
@@ -259,42 +259,42 @@ if [ $Scope != "Basic" ]; then
       case $i in
         "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
           InstallDM
-          pacstrap /mnt cinnamon gnome-terminal 2>> achoo.log
+          pacstrap /mnt cinnamon gnome-terminal 2>> feliz.log
           ;;
         "Enlightenment") TPecho "Installing 'Enlightenment' Desktop Environment"
           InstallDM
-          pacstrap /mnt enlightenment 2>> achoo.log
+          pacstrap /mnt enlightenment 2>> feliz.log
           ;;
         "Fluxbox") TPecho "Installing 'Fluxbox' Window Manager"
           InstallDM
-          pacstrap /mnt fluxbox 2>> achoo.log
+          pacstrap /mnt fluxbox 2>> feliz.log
           ;;
         "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-          pacstrap /mnt gnome gedit ${GoodiesGnome} 2>> achoo.log
+          pacstrap /mnt gnome gedit ${GoodiesGnome} 2>> feliz.log
           if [ -z ${DisplayManager} ]; then
-            arch_chroot "systemctl enable gdm.service" 2>> achoo.log
+            arch_chroot "systemctl enable gdm.service" 2>> feliz.log
           else
             InstallDM
           fi
           ;;
         "gnome-shell") TPecho "Installing 'gnome-shell'"
           InstallDM
-          pacstrap /mnt gnome-shell 2>> achoo.log
+          pacstrap /mnt gnome-shell 2>> feliz.log
           ;;
         "KDE") TPecho "Installing Plasma meta package"
-          pacstrap /mnt plasma-meta 2>> achoo.log
+          pacstrap /mnt plasma-meta 2>> feliz.log
           if [ -z ${DisplayManager} ]; then
-            arch_chroot "systemctl enable sddm.service" 2>> achoo.log
+            arch_chroot "systemctl enable sddm.service" 2>> feliz.log
           else
             InstallDM
           fi
           TPecho "Installing KDE applications package"
-          pacstrap /mnt kde-applications 2>> achoo.log
+          pacstrap /mnt kde-applications 2>> feliz.log
           ;;
         "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-          pacstrap /mnt lxde gedit 2>> achoo.log
+          pacstrap /mnt lxde gedit 2>> feliz.log
           if [ -z ${DisplayManager} ]; then
-            arch_chroot "systemctl enable lxdm.service" 2>> achoo.log
+            arch_chroot "systemctl enable lxdm.service" 2>> feliz.log
             echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
           else
             InstallDM
@@ -302,19 +302,19 @@ if [ $Scope != "Basic" ]; then
           ;;
         "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
           InstallDM
-          pacstrap /mnt lxqt xterm oxygen-icons 2>> achoo.log
+          pacstrap /mnt lxqt xterm oxygen-icons 2>> feliz.log
           ;;
         "Mate") TPecho "Installing 'Mate' Desktop Environment"
           InstallDM
-          pacstrap /mnt mate mate-extra 2>> achoo.log
+          pacstrap /mnt mate mate-extra 2>> feliz.log
           ;;
         "Openbox") TPecho "Installing 'Openbox' Window Manager"
           InstallDM
-          pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> achoo.log
+          pacstrap /mnt openbox xterm ${GoodiesOpenbox} 2>> feliz.log
           ;;
         "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
           InstallDM
-          pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> achoo.log
+          pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} 2>> feliz.log
           ;;
         *) continue # Ignore others on this pass
       esac
@@ -328,16 +328,16 @@ if [ $Scope != "Basic" ]; then
           ;;
         "yaourt") # Copy modified pacman.conf to new system and install Yaourt
           TPecho "Modifying pacman.conf and installing Yaourt"
-          cp pacman.conf /mnt/etc 2>> achoo.log # For installed system
-          cp pacman.conf /etc 2>> achoo.log # For installer
-          pacman -Sy 2>> achoo.log # Update
-          pacstrap /mnt yaourt 2>> achoo.log
+          cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
+          cp pacman.conf /etc 2>> feliz.log # For installer
+          pacman -Sy 2>> feliz.log # Update
+          pacstrap /mnt yaourt 2>> feliz.log
         ;;
         "cairo-dock") TPecho "Installing $i and cairo-dock-plug-ins"
-          pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> achoo.log
+          pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
         ;;
         *) TPecho "Installing $i"
-          pacstrap /mnt $i 2>> achoo.log
+          pacstrap /mnt $i 2>> feliz.log
       esac
     done
   fi
@@ -352,7 +352,7 @@ SetRootPassword
 if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
-cp achoo.log /mnt/etc # Copy installation log for reference
+cp feliz.log /mnt/etc # Copy installation log for reference
 print_heading
 echo
 PrintOne "Congratulations, installation is finished."
