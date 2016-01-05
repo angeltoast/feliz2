@@ -92,8 +92,6 @@ else
   exit 1
 fi
 
-# Test internet connection
-CheckInternet
 StartTime=$(date +%s)
 
 # Check partition table & offer options
