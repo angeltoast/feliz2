@@ -85,10 +85,10 @@ else
   echo "missing file: felizdesktop"
   exit 1
 fi
-if [[ -f `pwd`/listgen ]]; then
-  source listgen
+if [[ -f `pwd`/felizlistgen ]]; then
+  source felizlistgen
 else
-  echo "missing file: listgen"
+  echo "missing file: felizlistgen"
   exit 1
 fi
 
