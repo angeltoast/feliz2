@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Feliz (formerly Achoo!) Arch Linux Installation Script
+
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# This module tests the internet connection then downloads the files
+
+#
+# Basic functions required for this script
+#
+Centre() { # Aligned text according to screen size
+  width=`tput cols`
+  lov=${#1}
+  if [ ${lov} -lt ${width} ]; then
+    stpt=$(( ($width - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+    echo "$EMPTY $1"
+  else
+    echo "$1"
+  fi
+}
+
+TPread() { # Aligned prompt for user-entry - returns result through $Response
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+  elif [ ${lov} -gt ${T_COLS} ]; then
+    stpt=0
+  else
+    stpt=$(( ($T_COLS - 10) / 2 ))
+  fi
+  EMPTY="$(printf '%*s' $stpt)"
+  read -p "$EMPTY $1" Response
+}
+
+read_timed() { # $1 = text to display; $2 = duration
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
+  echo
+}
+
+CheckInternet() { # CLI welcome screen
+  Service="N"
+  while [ $Service = "N" ]
+  do
+    Centre "Welcome to the feliz! Arch Linux installation script."
+    Centre "A working internet connection is needed for installation."
+    Centre "Checking your connection now ..."
+    CheckConnection
+    case $Service in
+      "N") read_timed "Sorry, installation cannot continue without an internet connection."
+        exit
+      ;;
+      *) break
+    esac
+  done
+}
+
+CheckConnection() {
+while [ $Service = "N" ]
+do
+  tput setf 0 # Change foreground colour to black temporarily to hide messages
+  if [[ ! $(ping -c 3 google.com) ]]; then
+    wifi-menu 2>> feliz.log 
+    if [[ ! $(ping -c 3 google.com) ]]; then
+      tput sgr0 # Reset colour
+      Centre "Unable to establish a connection. Ensure that your computer"
+      Centre "is able to access the internet."
+      TPread "Try again? (y/n): "
+      Retry=$Response
+      if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
+        exit
+        break
+      fi
+    else
+      tput sgr0 # Reset colour
+      read_timed "Connection detected"
+      Service="Y"
+    fi
+  else
+    tput sgr0 # Reset colour
+    read_timed "Connection detected"
+    Service="Y"
+  fi
+done
+}
+
+UIselection() {
+  Retry="Y"
+  until [ $Retry = "N" ]
+  do
+    dialog --backtitle "VERSION" --title " Installer Version " \
+  --menu "\nYou can now choose between feliz's traditional, helpful, command-line interface, or a new semi-graphical dialog system ...\n \n" 20 50 2 \
+  "1" "Traditional command line" \
+  "2" "New! Semi-graphical" 2> output.file
+    # Note - in early testing, both options download the cli functions 
+    # "Downloading files - please wait ..."
+    case $(cat output.file) in
+      1) wget -N https://github.com/angeltoast/feliz/archive/cliff.zip 2>> feliz.log # CLI
+          unzip -o cliff.zip 2> feliz.log
+          cp feliz-cliff/* . 2> feliz.log
+          rm -rf feliz-cliff
+          Retry="N"
+      ;;
+      2) wget -N https://github.com/angeltoast/feliz/archive/cliff.zip 2>> feliz.log # Semi-graphical
+          unzip -o cliff.zip 2> feliz.log
+          cp feliz-cliff/* . 2> feliz.log
+          rm -rf feliz-cliff
+          Retry="N"
+      ;;
+      *) echo "code error at line: $LINENO" >> feliz.log
+    esac
+  done
+}
+
+#
+# Execute
+#
+clear
+CheckInternet
+echo
+Centre "Downloading files - please wait"
+tput setf 0 # Change foreground colour to black temporarily to hide messages
+# Download common functions from Github
+wget -N https://github.com/angeltoast/feliz/archive/master.zip 2>> feliz.log
+unzip -o master.zip 2>> feliz.log
+# Copy all the downloaded files to working directory
+cp feliz-master/* .
+rm -rf feliz-master
+rm LICENSE README
+tput sgr0 # Reset colour
+# Offer user alternative UI
+UIselection
+# Clean up then add main feliz function and run it
+rm *.zip
+source feliz
+feliz
+

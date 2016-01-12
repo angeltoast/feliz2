@@ -67,28 +67,28 @@ Result=""
 #
 # Include files
 #
-if [[ -f `pwd`/felizfuncs ]]; then
-  source felizfuncs
+if [[ -f `pwd`/various ]]; then
+  source various
 else
-  echo "missing file: felizfuncs"
+  echo "missing file: various"
   exit 1
 fi
-if [[ -f `pwd`/felizparts ]]; then
-  source felizparts
+if [[ -f `pwd`/partitioning ]]; then
+  source partitioning
 else
-  echo "missing file: felizparts"
+  echo "missing file: partitioning"
   exit 1
 fi
-if [[ -f `pwd`/felizdesktop ]]; then
-  source felizdesktop
+if [[ -f `pwd`/desktop ]]; then
+  source desktop
 else
-  echo "missing file: felizdesktop"
+  echo "missing file: desktop"
   exit 1
 fi
-if [[ -f `pwd`/felizlistgen ]]; then
-  source felizlistgen
+if [[ -f `pwd`/listgen ]]; then
+  source listgen
 else
-  echo "missing file: felizlistgen"
+  echo "missing file: listgen"
   exit 1
 fi
 
@@ -145,6 +145,10 @@ FinalCheck
 # No further user intervention from here
 #
 
+<<<<<<< HEAD
+
+# Unmount any existing partitions and mount as defined in setup
+=======
 print_heading
 tput bold
 read_timed "Entering installation mode" 1
@@ -156,6 +160,7 @@ read_timed "'y' would be an appropriate response." 1
 
 # Unmount any existing partitions and mount as defined in setup
 umount_partitions
+>>>>>>> 839bca0a6582a5c89205a512a944ef120accb950
 MountPartitions
 
 # Set mirrorlist

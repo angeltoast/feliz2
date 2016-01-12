@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# listgen - Dialog menu functions used throughout Feliz
+# Adapted by Elizabeth Mills from the cli version to use Dialog
+
+# Both functions return the selected item as text using global variable $Result
+# and errorcode as $Response (to remain consistent with the cli version as far as possible)
+
+# listgen1 receives three parameters:
+# 1) Primary file (string of single-word references)
+# 2) Optional one-word --title
+# 3) Optional hiding of <Cancel> ("nocancel")
+
+# listgen2 has extended descriptions using the name of the complex array
+# Passed as 4th parameter:
+
+# Global variable $Passed may be used as --backtitle
+
+listgen1() {
+  local Backtitle="$Passed"
+  local Title="$2"
+  if [ $3 ]; then
+    Nocancel="--nocancel"
+  else
+    Nocancel=""
+  fi
+  local Counter=0
+  declare -a Options
+  Width=50
+  # Prepare $1 for dialog menu
+  for item in $1 # Prepare string array of list items passed as $1
+  do
+    Counter=$((Counter+1))
+    Options[${Counter}]="$item"
+    Counter=$((Counter+1))
+    Options[${Counter}]="-"
+    Length=`echo ${#item}`
+    if [ $Length -gt $Width ]; then
+      Width=$((Length+15))
+    fi
+  done
+  Printit
+}
+
+listgen2() { 
+  local Backtitle="$Passed"
+  local Title="$2"
+  if [ $3 ]; then
+    Nocancel="--nocancel"
+  else
+    Nocancel=""
+  fi
+  declare -a Options
+  local Counter=0
+  for item in $1; do
+    Items[${Counter}]=$item
+    Counter=$((Counter+1))
+  done
+  Counter=0
+  local ItemCounter=0
+  # Import the complex array
+  name=$4[@]
+  LongName=("${!name}")
+  # Prepare $1 and $4 for dialog menu
+  Width=40
+  for item in "${LongName[@]}"; do
+    Options[$((Counter))]="${Items[${ItemCounter}]}"
+    Options[$((Counter+1))]="$item"
+    Counter=$((Counter+2))
+    ItemCounter=$((ItemCounter+1))
+    Length=`echo ${#item}`
+    if [ $Length -gt $Width ]; then
+      Width=$((Length+20))
+    fi
+  done
+  Printit # The final frontier
+}
+
+Printit() {
+  Counter=$((Counter/2))
+  # Use $Counter and ${Options[@]} array in dialog
+  dialog --backtitle "$Backtitle" --title " $Title " $Nocancel \
+      --menu "\n$Message\n" 18 $Width $Counter "${Options[@]}" 2> output.file
+      
+  Response=$? # Errorcode
+  Result=$(cat output.file) # Selected item
+}

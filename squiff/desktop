@@ -1,0 +1,499 @@
+#!/bin/bash
+
+# desktop - Dialog version. Functions relevant to users, locations,
+# desktop settings and data review called by the main feliz script
+
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# ----------------     -----------------------
+# Function    Line     Function           Line
+# ----------------     -----------------------
+# getkeymap    20     Display Managers    428
+# setlocale    35     FinalCheck          549
+# settimezone  52     ManualSettings      640
+#                     ChangeRootPartition 666
+# UserName     75     ChangeSwapPartition 674
+# Hostname   251      ChangePartitions    682
+# Extras     216      AddExtras           694    
+
+Backtitle="Desktop settings. If you need guidance, consult the Arch Wiki Beginner's Guide"
+Passed=$Backtitle
+
+getkeymap() {
+  Passed="Desktop settings"
+  ListKbs=`cat keymaps.list`
+  keyboards=""
+  for k in ${ListKbs[@]}; do
+    keyboards="$keyboards $k"
+  done
+  local Message="Scroll through this list, or type a letter, to find your keyboard."
+  listgen1 "${keyboards}" "Keyboards" "nocancel"
+  Countrykbd="$Result"
+  loadkeys ${Countrykbd} 2>> feliz.log
+  dialog --backtitle "$Backtitle" --title " Keyboard " \
+    --msgbox "\nThe keyboard is now set to: '$Countrykbd'" 8 50  
+}
+
+setlocale() {
+  LocaleList=`cat /etc/locale.gen`
+  local Counter=0
+  declare -a Options
+  for l in ${LocaleList}
+  do
+    Counter=$((Counter+1))
+    Options[${Counter}]="$l"
+  done
+  dialog --backtitle "$Backtitle" --title " Locale " --nocancel \
+      --menu "\nScroll through this list, or type a letter, to find your locale.\nThis will be used to find the best mirrors for downloading your system" 18 40 $Counter "${Options[@]}" 2> output.file
+  CountryLocale="$(cat output.file)"
+  CountryCode=(`cat output.file | cut -c4-5`)
+  dialog --backtitle "$Backtitle" --title " Locale " \
+    --msgbox "\nYour locale is now set to: '$CountryLocale'" 8 50
+}
+
+SetTimeZone() {
+  Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
+  passzones=""
+  for z in ${Zones[@]}; do
+    passzones="$passzones $z"
+  done
+  local Message="To set the system clock, please choose the World Zone of your location."
+  listgen1 "${passzones}" "World zones" "nocancel"
+  ZONE=$Result
+  SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
+  passzones=""
+  for z in ${SubZones[@]}; do
+    passzones="$passzones $z"
+  done
+  local Message="Now select your nearest city from this list."
+  listgen1 "$passzones" "Cities in ${ZONE}" "nocancel"
+  SUBZONE=$Result
+  dialog --backtitle "$Backtitle" --title " Locale " \
+    --msgbox "\nYour Zone and Subzone set to: '$ZONE/$SUBZONE'" 8 50
+}
+
+UserName() {
+	local Message="Enter a name for the primary user of the new system.\nIf you don't create a username here, a default user called 'archie' will be set up"
+  dialog --backtitle "$Backtitle" --title " User name " --nocancel\
+      --inputbox "\n$Message\n" 18 50 2> output.file
+  Response=$(cat output.file)
+  Entered=${Response,,}
+	case $Entered in
+		"") UserName="archie"
+		;;
+		*) UserName=${Entered}
+	esac
+  dialog --backtitle "$Backtitle" --title " User name " \
+    --msgbox "\nUser '$UserName' will be created" 8 50
+}
+
+SetHostname() {
+	Entered="arch-linux"
+	local Message="A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used."
+  dialog --backtitle "$Backtitle" --title " Hostname " --nocancel\
+      --inputbox "\n$Message\n" 16 40 2> output.file
+  Response=$(cat output.file)
+  Entered=${Response,,}
+	case $Entered in
+		"") HostName="arch-linux"
+		;;
+		*) HostName=${Entered}
+	esac
+	PrintOne ""
+  dialog --backtitle "$Backtitle" --title " Hostname " \
+    --msgbox "\nHostname set to '$HostName'" 8 40
+}
+
+# ---- Extras ----
+Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+Accessories="brasero cairo-dock conky docky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
+LongAccs[1]="Disc burning application from Gnome          "
+LongAccs[2]="Customizable dock and launcher application"
+LongAccs[3]="Desktop time and system information"
+LongAccs[4]="For opening applications and managing windows"
+LongAccs[5]="Calculator for your taskbar"
+LongAccs[6]="The text editor from Gnome"
+LongAccs[7]="make/delete/resize partitions"
+LongAccs[8]=" The file-manager from Gnome"
+LongAccs[9]="The Xfce terminal emulator"
+LongAccs[10]="Easy to use AUR package installer"
+Desktops="Cinnamon Gnome KDE LXDE LXQt Mate Xfce"
+LongDesk[1]="Slick DE from the Mint team"
+LongDesk[2]="Full-featured, modern DE"
+LongDesk[3]="Plasma 5 and accessories pack"
+LongDesk[4]="Traditional, lightweight DE"
+LongDesk[5]="Lightweight and modern Qt DE"
+LongDesk[6]="Traditional DE from the Mint team"
+LongDesk[7]="Lightweight, highly configurable DE"
+Graphical="evince gimp imagemagick gthumb simple-scan xsane"
+LongGraph[1]="Reader for PDF and other document formats"
+LongGraph[2]="Advanced image editing suite"
+LongGraph[3]="Command-line image manipulation"
+LongGraph[4]="Image viewer & basic editor"
+LongGraph[5]="A simple scanner GUI"
+LongGraph[6]="A full-featured GTK-based sane frontend"
+Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
+LongNet[1]="Open source web browser from Google     "
+LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
+LongNet[3]="Fast and reliable FTP, FTPS & SFTP client"
+LongNet[4]="Extensible browser from Mozilla"
+LongNet[5]="Open source BitTorrent client"
+LongNet[6]="Feature-rich email client from Mozilla"
+LongNet[7]="Easy-to-use BitTorrent client"
+Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
+LongMulti[1]="Simple video editor               "
+LongMulti[2]="Feature-rich audio player"
+LongMulti[3]="Simple yet powerful video transcoder"
+LongMulti[4]="Easy-to-use non-linear video editor"
+LongMulti[5]="Middleweight video player"
+LongMulti[6]="Xfburn"
+Office="abiword gnumeric libreoffice orage scribus"
+LongOffice[1]="Full-featured word processor        "
+LongOffice[2]="Spreadsheet program from GNOME"
+LongOffice[3]="Open-source office software suite"
+LongOffice[4]="Calendar and task manager (incl with Xfce)"
+LongOffice[5]="Desktop publishing program"
+Programming="bluefish codeblocks emacs geany git netbeans"
+LongProg[1]="GTK+ IDE with support for Python plugins  "
+LongProg[2]="Open source & cross-platform C/C++ IDE"
+LongProg[3]="extensible, customizable text editor"
+LongProg[4]="Advanced text editor & IDE"
+LongProg[5]="open source distributed version control system"
+LongProg[6]="Integrated development environment (IDE)"
+WindowManagers="Enlightenment Fluxbox JWM Openbox"
+LongWMs[1]="Enlightenment"
+LongWMs[2]="Fluxbox"
+LongWMs[3]="JWM"
+LongWMs[4]="Openbox"
+
+PickLuxuries() { # User selects any combination from a store of extras
+Category="Continue"
+until [ $Category = "Done" ]
+do
+  # First select a category
+  LuxuriesList=""
+  local Message="Now you have the option to add extras, such as a web browser, etc. Yaourt is available (in 'Accessories'). If you want only a base Arch installation, exit without choosing any extras."
+  listgen1 "$Categories" " Categories " ""
+  if [ $Response -gt 0 ]; then # <Cancel> selected
+    break
+  else
+    Category=$Result
+  fi
+  # Then shop in that category  
+  ShoppingList
+  local Message="Added so far: ${LuxuriesList}\nYou can now choose from any of the other lists, or choose <Cancel> to finish this part of the setup"
+done
+if [ -n "${LuxuriesList}" ]; then
+  Scope="Full"
+else
+  Scope="Basic"  
+fi
+}
+
+ShoppingList() {
+# Called by PickLuxuries after a category has been chosen.
+local Complete=0
+Title="Choose your first item"
+while [ $Complete -eq 0 ]
+do
+  local Message="Added so far: ${LuxuriesList}\nMessage"
+  # Pass category to listgen2 for user to choose one item;
+  case $Category in
+    "Accessories") listgen2 "$Accessories" "Accessories" "" "LongAccs"
+    ;;
+    "Desktop_Environments") listgen2 "$Desktops" "Desktops" "" "LongDesk"
+    ;;
+    "Graphical") listgen2 "$Graphical" "Graphical" "" "LongGraph"
+    ;;
+    "Internet") listgen2 "$Internet" "Internet" "" "LongNet"
+    ;;
+    "Multimedia") listgen2 "$Multimedia" "Multimedia" "" "LongMulti"
+    ;;
+    "Office") listgen2 "$Office" "Office" "" "LongOffice"
+    ;;
+    "Programming") listgen2 "$Programming" "Programming" "" "LongProg"
+    ;;
+    "Window_Managers") listgen2 "$WindowManagers" "Window_Managers" "" "LongWMs"
+    ;;
+    *) break
+  esac
+  if [ $Response -gt 0 ]; then
+    break
+  else
+    Picked=$Result
+  fi
+  
+  AddToList="Y"
+  # First check that chosen item is not already on the list
+  for lux in $LuxuriesList
+  do
+    if [ ${lux} = ${Picked} ]; then
+      dialog --backtitle "$Backtitle" --title " auto-partition " \
+    --msgbox "\nAlready in your shopping list" 15 40
+      AddToList="N"
+      continue
+    fi
+  done
+  # Then carry out any specific tests and add the item to the list
+  case $Picked in
+    "Cinnamon") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "Enlightenment") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "Fluxbox") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "Gnome") DesktopEnvironment=$Picked
+        GoodiesGnome=""
+        local Message="'Gnome with extras' adds a text editor, disk manager, archive manager and a set of games.\nIf in doubt, choose 'Standard Gnome'"
+        GnomeOptions[1]="Minimal Gnome (gnome-shell)"
+        GnomeOptions[2]="Standard Gnome"
+        GnomeOptions[3]="Gnome with extras"
+        listgen2 "Minimal Standard Extras" " Gnome options " "nocancel" "GnomeOptions"
+        Response=$Result
+        case $Response in
+          "Minimal") DesktopEnvironment="gnome-shell"
+            ;;
+          "Standard") Redo="N"
+            ;;
+          "Extras") GoodiesGnome="gnome-extra"
+            ;;
+          *) invalid_option
+        esac
+      ;;
+    "JWM") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "KDE") DesktopEnvironment=$Picked
+      ;;
+    "libreoffice") Picked="libreoffice-fresh"
+      ;;
+
+    "LXDE") DesktopEnvironment=$Picked
+      ;;
+    "LXQt") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "Mate") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "Openbox") DesktopEnvironment=$Picked
+        ChooseDM
+      ;;
+    "Xfce") DesktopEnvironment=$Picked
+        dialog --backtitle "$Backtitle" --title " Xfce desktop environment " \
+    --yesno "\nThe xfce4-goodies pack includes includes the Whisker menu, extra plugins and a number of utilities such as the mousepad editor\nInclude the $Extras pack?\n" 10 40
+        case $? in
+          0) GoodiesXfce="xfce4-goodies"
+           ;;
+          *) GoodiesXfce=""
+        esac
+        ChooseDM
+      ;;
+     *) echo "Error at $LINENO" >> feliz.log	
+ 		esac
+    LuxuriesList="${LuxuriesList} ${Picked}"
+done
+}
+
+ChooseDM() { # Choose a display manager unless already fixed by certain DEs
+  if [ -z $DisplayManager ]; then
+    Greeter=""
+    local Message="\nYou can choose one of the following display managers. Be aware that not all display managers work equally well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will haveto launch your desktop environment manually.\n"
+    listgen1 "GDM LightDM LXDM sddm SLIM XDM" " Display Manager/Greeter "
+    Response=$(cat output.file)
+    if [ $? -eq 0 ]; then
+      Reply=$Response
+      case $Reply in
+        "GDM") DisplayManager="gdm"
+         ;;
+        "LightDM") DisplayManager="lightdm"
+            Greeter="lightdm-gtk-greeter"	
+         ;;
+        "LXDM") DisplayManager="lxdm"
+         ;;
+        "sddm") DisplayManager="sddm"
+         ;;
+        "SLIM") DisplayManager="slim"
+         ;;
+        "XDM") DisplayManager="xdm"
+         ;;
+        *) DisplayManager=""
+    esac
+    fi
+  fi
+}
+ 
+InstallDM() { # Called from feliz when installing desktop environment
+  case ${DisplayManager} in
+    "") TPecho "Not installing a Display Manager"
+    ;;
+    *) TPecho "Installing ${DisplayManager} Display Manager"
+      pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
+      arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+  esac
+}
+
+FinalCheck() {
+Repeat=1
+while [ $Repeat -gt 0 ]
+do
+  local Message="These are the settings you have entered. Please check them ...\nPress <Cancel> to install with these settings, or choose an item if you wish to change it: "
+  declare -a Settings
+  Categories="1 2 3 4 5 6 7 8 9 10 11 12"
+  Settings[1]="Root partition ... $RootPartition $RootType"
+  if [ $SwapPartition ] || [ $SwapFile ]; then
+    Settings[2]="Swap partition ... $SwapPartition $SwapFile"
+  else
+    Settings[2]="No provision has been made for swap"
+  fi
+  if [ ${#AddPartList[@]} ]; then
+    Counter=0
+    Settings[3]="Extra partitions ...\n"
+    for i in ${AddPartList[@]}
+    do
+      Settings[3]="${Settings[3]}  ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}\n"
+      Counter=$((Counter+1))
+    done
+  else
+    Settings[3]="No additional partitions have been allocated"
+  fi
+  case $Kernel in
+    1) Settings[4]="The LTS kernel will be installed"
+    ;;
+    *) Settings[4]="The latest kernel will be installed"
+  esac
+  if [ $GrubDevice ]; then
+    Settings[5]="Grub will be installed to $GrubDevice"
+  else
+    Settings[5]="No provision has been made for Grub"
+  fi
+  Settings[6]="Keyboard is $Countrykbd"
+  Settings[7]="Locale will be set to $CountryLocale"
+  Settings[8]="Zone/subZone will be $ZONE/$SUBZONE"
+  case ${IsInVbox} in
+    "VirtualBox") Settings[9]="Virtualbox guest utilities will be installed"
+    ;;
+    *) Settings[9]="Virtualbox guest utilities will not be installed"
+  esac
+  if [ -z $DisplayManager ]; then
+    Settings[10]="No Display Manager selected"
+  else
+    Settings[10]="Display Manager = $DisplayManager"
+  fi
+  Settings[11]="Root and user settings ...\n     Hostname = '$HostName'\n     User = '$UserName'"
+  Settings[12]="The following extras have been selected ...\n${LuxuriesList}"
+  listgen2 "$Categories" " Final Check " "" "Settings"
+  Response=$(cat output.file)
+  Repeat=$?
+  if [ $Repeat -eq 0 ]; then
+  case $Response in
+    1) ChangeRootPartition
+        AllocateRoot
+    ;;
+    2) ChangeSwapPartition
+        AllocateSwap
+    ;;
+    3) ChangePartitions
+        MorePartitions
+    ;;
+    4) SetKernel
+    ;;
+    5) SetGrubDevice
+    ;;
+    6) getkeymap
+    ;;
+    7) setlocale
+    ;;
+    8) SetTimeZone
+    ;;
+    9) ConfirmVbox
+    ;;
+    10) DisplayManager=""
+      ChooseDM
+    ;;
+    11) ManualSettings
+    ;;
+    12) DisplayManager=""
+        PickLuxuries
+    ;;
+    *) Repeat=0
+  esac
+  fi
+done
+}
+
+ManualSettings() {
+  Retry="Y"
+  declare local Settings
+  while [ $Retry = "Y" ]
+  do
+    local Message=" Select data to change\n <Cancel> to finish:"
+    Settings[1]="(currently $HostName)"
+    Settings[2]="(currently $UserName)"
+    listgen2 "Hostname Username" " Data Review " "" "Settings"
+    Response=$(cat output.file)
+    if [ $? -eq 0 ]; then
+      case $Response in
+        "Hostname") dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
+         --inputbox "\nEnter new Hostname (currently $HostName)\n" 18 50 2> output.file
+         Response=$(cat output.file)
+         if [ $Response ]; then
+          HostName=$Response
+         fi
+        ;;
+        "Username") dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
+      --inputbox "\nEnter new name for user (currently $UserName)\n" 18 50 2> output.file
+         Response=$(cat output.file)
+        if [ $Response ]; then
+          UserName=${Response}
+        fi
+        ;;
+        *) Retry="N"
+          break
+      esac
+    fi
+  done
+}
+ 
+ChangeRootPartition() {
+# Start array with SwapPartition
+  Ignorelist[0]=${SwapPartition}
+  local Counter=1
+  AddExtras
+  MakePartitionList
+}
+  
+ChangeSwapPartition() {
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangePartitions() {
+  # Copy RootPartition and SwapPartition into temporary array
+  Ignorelist[0]=${RootPartition}
+  local Counter=1
+  if [ ${SwapPartition} ]; then
+    Ignorelist[1]=${SwapPartition}
+    Counter=2
+  fi
+  Ignores=${#Ignorelist[@]} # Save a count for later
+  MakePartitionList
+}
+
+AddExtras() {
+  # Called by ChangeSwapPartition and ChangeRootPartition with
+  # Ignorelist started and Counter set to next record number
+  # Add each field (extra partition) from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  Ignores=${#Ignorelist[@]} # Save a count for later
+}

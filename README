@@ -1,0 +1,15 @@
+The Feliz scripts work with you to produce a fast installation of Arch Linux. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
+
+Feliz exists to speed up installation of Arch Linux, plus a 'shopping list' of extras like desktop environments, web browsers, office software and programming tools. An initialising phase gathers essential data of location, username, and passwords, and works with the user to set up their partitioning, then the script runs without further intervention to the end.
+
+Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts a live session of Arch Linux, and runs the script. All you have to do is follow the prompts. Installation follows closely the Arch Wiki beginners' guide, and hopefully you will understand something of the process by the time it has finished; you may even like to try a manual installation with the help of the Wiki.
+
+Find our friendly and lively communities on Facebook and Google+.
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+A copy of the GNU General Public License is available from the Achoo page at http://sourceforge.net/projects/achoo/files or https://github.com/angeltoast/Achoo, or write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+Elizabeth Mills
