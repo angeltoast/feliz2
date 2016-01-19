@@ -19,8 +19,8 @@ own_window_argb_visual no
 own_window_argb_value 0
 
 double_buffer yes
-minimum_size 550 270
-maximum_width 550
+minimum_size 540 270
+maximum_width 540
 draw_shades no
 draw_outline no
 draw_borders no
@@ -30,8 +30,8 @@ default_shade_color red
 default_outline_color green
 
 alignment top_left
-gap_x 250
-gap_y 150
+gap_x 650
+gap_y 750
 no_buffers yes
 uppercase no
 cpu_avg_samples 2
@@ -40,8 +40,8 @@ override_utf8_locale yes
 use_spacer yes
 
 TEXT
-${voffset -10}${offset 20}${color #47C8E8}${font Ubuntu:pixelsize=37} Feliz Arch Linux${font}
+${voffset -10}${offset 70}${color #47C8E8}${font Ubuntu:pixelsize=37} Feliz Arch Linux${font}
 ${voffset 2}${font Ubuntu:pixelsize=22}${offset 125}Kernel: ${color #2014B5}${kernel}
 ${voffset -8}${font Ubuntu:pixelsize=90}${time %R}${font}${voffset -70}${offset 7}${color #EC0F2D}${font Ubuntu:pixelsize=40}${time %d}${voffset -8}${color #2014B5} ${font Ubuntu:pixelsize=24}${time %B }${time %Y}${font}${voffset 25}${font Ubuntu:pixelsize=34}${offset -220}${time %A}${font}
-${voffset 10}${font Ubuntu:pixelsize=17}${offset 45}${color #47C8E8}${offset 6}HD${offset 6}${color #2014B5}${fs_used /home} / ${fs_size /home}${offset 8}${color #47C8E8}RAM${offset 6}${color #2014B5}$mem / $memmax
-${offset 150}${color #47C8E8}CPU${offset 10}${color #2014B5}${cpu cpu0}% ${offset 20}${color #47C8E8}Temp: ${color #2014B5} ${acpitemp}c
+${voffset 10}${font Ubuntu:pixelsize=17}${color #47C8E8}${offset 6}HD${offset 6}${color #2014B5}${fs_used /home} / ${fs_size /home}${offset 8}${color #47C8E8}RAM${offset 6}${color #2014B5}$mem / $memmax
+${offset 150}${color #47C8E8}CPU${offset 10}${color #2014B5}${cpu cpu0}%

@@ -1,0 +1,316 @@
+#!/bin/bash
+
+# feliz (formerly Achoo!) Arch Linux Installation Script
+# squiff edition - Semi-graphical User Interface Functions
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+#
+# Include files
+#
+if [[ -f `pwd`/shared ]]; then
+  source shared
+else
+  echo "missing file: shared"
+  exit 1
+fi
+if [[ -f `pwd`/various ]]; then
+  source various
+else
+  echo "missing file: various"
+  exit 1
+fi
+if [[ -f `pwd`/partitioning ]]; then
+  source partitioning
+else
+  echo "missing file: partitioning"
+  exit 1
+fi
+if [[ -f `pwd`/desktop ]]; then
+  source desktop
+else
+  echo "missing file: desktop"
+  exit 1
+fi
+if [[ -f `pwd`/listgen ]]; then
+  source listgen
+else
+  echo "missing file: listgen"
+  exit 1
+fi
+
+Backtitle=" If you need guidance, consult the Arch Wiki Beginner's Guide"
+Passed=$Backtitle
+StartTime=$(date +%s)
+echo $StartTime > feliz.log
+
+# Check partition table & offer options
+CheckParts
+
+if [ $AutoPart -eq 0 ]; then
+  BuildPartitionLists # Display information about the available partitions
+  AllocateRoot
+  if [ -n "${PartitionList}" ]
+  then
+    AllocateSwap  # Display remaining partitions and allocate swap
+  fi
+  if [ -n "${PartitionList}" ]  # Check contents of PartitionList again
+  then
+    MorePartitions
+  fi
+fi
+
+# Select kernel and device for Grub
+SetKernel
+if [ $AutoPart -eq 0 ]; then
+  SetGrubDevice
+fi
+
+# Keyboard layout
+getkeymap
+
+# Localisation
+SetTimeZone
+setlocale
+SetHostname
+
+# Add extras
+PickLuxuries
+if [ $Scope != "Basic" ]; then
+  UserName
+  # Use dmidecode to check for Virtualbox installation
+  # pacman -Sy --noconfirm dmidecode >/dev/null &>> feliz.log # Comment this line for compiling
+  IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
+  if [ ${IsInVbox} = "VirtualBox" ]; then
+    ConfirmVbox
+  else
+    IsInVbox=""
+  fi
+fi
+
+# Allow user to change any variables
+FinalCheck
+
+#
+# No further user intervention from here
+#
+
+MountPartitions
+
+# Set mirrorlist
+ReflectorMirrorList
+
+# Install kernel
+InstallKernel
+
+# Set the default PATH variable
+arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
+
+PrintOne "Generating fstab"
+genfstab -U -p /mnt > /mnt/etc/fstab &>> feliz.log
+if [ ${SwapFile} ]; then
+  PrintOne "Making /swapfile"
+  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null &>> feliz.log
+  chmod 600 /mnt/swapfile >/dev/null &>> feliz.log
+  mkswap /mnt/swapfile >/dev/null &>> feliz.log
+  swapon /mnt/swapfile >/dev/null &>> feliz.log
+  echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab &>> feliz.log
+fi
+
+PrintOne "Setting hostname"
+echo ${HostName} > /mnt/etc/hostname &>> feliz.log
+sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
+sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
+
+# Set up locale, etc
+PrintOne "Preparing locale.gen"
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen &>> feliz.log # eg: en_US.UTF-8 UTF-8
+arch_chroot "locale-gen"
+PrintOne "Preparing locale.conf"
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf &>> feliz.log # eg: LANG=en_US.UTF-8
+export "LANG=${CountryLocale}" &>> feliz.log # eg: LANG=en_US.UTF-8
+PrintOne "Setting clock"
+arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
+arch_chroot "hwclock --systohc --utc"
+
+if [ $Scope != "Basic" ]; then
+  PrintOne "Enabling dhcpcd"
+  arch_chroot "systemctl enable dhcpcd.service"
+  PrintOne "Installing and configuring network services"
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe &>> feliz.log
+  arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+fi
+
+if [ ${GrubDevice} ]; then
+  PrintOne "Installing Grub to $GrubDevice"
+  pacstrap /mnt grub &>> feliz.log
+  if [ $OSprober = "Y" ]; then
+    pacstrap /mnt os-prober &>> feliz.log
+  fi
+  arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
+  arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+else
+  PrintOne "Not installing Grub"
+fi
+
+PrintOne "Running mkinitcpio"
+if [ $Kernel = "1" ]; then
+  arch_chroot "mkinitcpio -p linux-lts"
+else
+  arch_chroot "mkinitcpio -p linux"
+fi
+
+# Set keyboard to selected language at next startup
+echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf &>> feliz.log
+
+# Extra processes for desktop installation
+if [ $Scope != "Basic" ]; then
+  CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}` &>> feliz.log
+  # If not already exist, create user
+  if [ -z ${CheckUsers} ]; then
+    PrintOne "Adding user ${UserName} ... "
+    arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
+    # Set up basic configuration files and permissions for user
+    PrintOne "Setting up user configuration"
+    arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers &>> feliz.log
+  else
+    PrintOne "User already exists"
+  fi
+  # Various bits
+  pacstrap /mnt vrms &>> feliz.log # Virtual Richard Michael Stallman to detect non-free software
+  PrintOne "Adding Flash and other Multimedia Codecs"
+  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin &>> feliz.log
+  PrintOne "Installing wireless tools"
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware &>> feliz.log
+  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog wifi-menu &>> feliz.log
+  PrintOne "Installing X, graphics, etc" 13
+  pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm &>> feliz.log
+  pacstrap /mnt xf86-input-synaptics &>> feliz.log
+  pacstrap /mnt gvfs gamin &>> feliz.log
+
+  # Install desktop environments, window managers and display managers
+  TestExistingDM # First clear any previously installed DM before installing DE
+  if [ -n "${LuxuriesList}" ]; then   # Then parse through LuxuriesList checking for DEs
+    for i in ${LuxuriesList}
+    do
+      case $i in
+        "Cinnamon") PrintOne "Installing 'Cinnamon' Desktop Environment"
+          InstallDM
+          pacstrap /mnt cinnamon gnome-terminal &>> feliz.log
+          ;;
+        "Deepin") PrintOne "Installing Deepin Desktop Environment"
+          pacstrap /mnt deepin ${DDEextras} &>> feliz.log
+          if [ -z ${DisplayManager} ]; then
+            arch_chroot "systemctl enable lightdm.service" &>> feliz.log
+          else
+            InstallDM
+          fi
+          ;;
+        "Enlightenment") PrintOne "Installing 'Enlightenment' Desktop Environment"
+          InstallDM
+          pacstrap /mnt enlightenment &>> feliz.log
+          ;;
+        "Fluxbox") PrintOne "Installing 'Fluxbox' Window Manager"
+          InstallDM
+          pacstrap /mnt fluxbox &>> feliz.log
+          ;;
+        "Gnome") PrintOne "Installing 'Gnome' Desktop Environment"
+          pacstrap /mnt gnome gedit ${GoodiesGnome} &>> feliz.log
+          if [ -z ${DisplayManager} ]; then
+            arch_chroot "systemctl enable gdm.service" &>> feliz.log
+          else
+            InstallDM
+          fi
+          ;;
+        "gnome-shell") PrintOne "Installing 'gnome-shell'"
+          InstallDM
+          pacstrap /mnt gnome-shell &>> feliz.log
+          ;;
+        "KDE") PrintOne "Installing KDE Plasma meta package"
+          pacstrap /mnt plasma-meta &>> feliz.log
+          if [ -z ${DisplayManager} ]; then
+            arch_chroot "systemctl enable sddm.service" &>> feliz.log
+          else
+            InstallDM
+          fi
+          PrintOne "Installing KDE applications package"
+          pacstrap /mnt kde-applications &>> feliz.log
+          ;;
+        "LXDE") PrintOne "Installing 'LXDE' Desktop Environment"
+          pacstrap /mnt lxde gedit &>> feliz.log
+          if [ -z ${DisplayManager} ]; then
+            arch_chroot "systemctl enable lxdm.service" &>> feliz.log
+            echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf &>> feliz.log
+          else
+            InstallDM
+          fi
+          ;;
+        "LXQt") PrintOne "Installing 'LXQt' Desktop Environment"
+          InstallDM
+          pacstrap /mnt lxqt xterm oxygen-icons &>> feliz.log
+          ;;
+        "Mate") PrintOne "Installing 'Mate' Desktop Environment"
+          InstallDM
+          pacstrap /mnt mate mate-extra &>> feliz.log
+          ;;
+        "Openbox") PrintOne "Installing 'Openbox' Window Manager"
+          InstallDM
+          pacstrap /mnt openbox xterm &>> feliz.log
+          ;;
+        "Xfce") PrintOne "Installing 'Xfce' Desktop Environment"
+          InstallDM
+          pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} &>> feliz.log
+          ;;
+        *) continue # Ignore others on this pass
+      esac
+    done
+
+  # ... then install the others
+    for i in ${LuxuriesList}
+    do
+      case $i in
+        "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "gnome-shell" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
+          ;;
+        "yaourt") # Copy modified pacman.conf to new system and install Yaourt
+          PrintOne "Modifying pacman.conf and installing Yaourt" 5
+          cp pacman.conf /mnt/etc &>> feliz.log # For installed system
+          cp pacman.conf /etc &>> feliz.log # For installer
+          pacman -Sy &>> feliz.log # Update
+          pacstrap /mnt yaourt &>> feliz.log
+        ;;
+        "cairo-dock") PrintOne "Installing $i and cairo-dock-plug-ins"
+          pacstrap /mnt cairo-dock cairo-dock-plug-ins &>> feliz.log
+        ;;
+        "conky") PrintOne "Installing $i"
+          pacstrap /mnt conky &>> feliz.log
+          cp conkyrc /mnt/home/$UserName/.conkyrc &>> feliz.log
+          cp Conky.desktop /mnt/home/$UserName/.config.autostart &>> feliz.log
+        ;;
+        *) PrintOne "Installing $i"
+          pacstrap /mnt $i &>> feliz.log
+      esac
+    done
+  fi
+fi
+
+EndTime=$(date +%s)
+Difference=$(( $EndTime-$StartTime ))
+DIFFMIN=$(( $Difference/60 ))
+DIFFSEC=$(( $Difference % 60 ))
+
+SetRootPassword
+if [ $Scope != "Basic" ]; then
+  SetUserPassword
+fi
+cp feliz.log /mnt/etc # Copy installation log for reference
+dialog --title " Shutdown " --nocancel \
+  --menu "Congratulations, installation is finished." 12 40 2 \
+  - "Reboot" \
+  - "Shutdown" 2> output.file
+case $(cat output.file) in
+  "Reboot") systemctl reboot
+  ;;
+  *) shutdown now
+esac

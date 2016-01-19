@@ -5,6 +5,7 @@
 
 # Both functions return the selected item as text using global variable $Result
 # and errorcode as $Response (to remain consistent with the cli version as far as possible)
+# Window width and height are adjusted according to content
 
 # listgen1 receives three parameters:
 # 1) Primary file (string of single-word references)
@@ -20,13 +21,19 @@ listgen1() {
   local Backtitle="$Passed"
   local Title="$2"
   if [ $3 ]; then
-    Nocancel="--nocancel"
+    case $3 in
+      "nocancel") CancelButton="--nocancel"
+      ;;
+      *) CancelButton="--cancel-label $3"
+    esac
   else
-    Nocancel=""
+    CancelButton=""
   fi
   local Counter=0
   declare -a Options
-  Width=50
+  if [ ! $Width ]; then
+    Width=40
+  fi
   # Prepare $1 for dialog menu
   for item in $1 # Prepare string array of list items passed as $1
   do
@@ -36,7 +43,7 @@ listgen1() {
     Options[${Counter}]="-"
     Length=`echo ${#item}`
     if [ $Length -gt $Width ]; then
-      Width=$((Length+15))
+      Width=$((Length+20))
     fi
   done
   Printit
@@ -46,9 +53,13 @@ listgen2() {
   local Backtitle="$Passed"
   local Title="$2"
   if [ $3 ]; then
-    Nocancel="--nocancel"
+    case $3 in
+      "nocancel") CancelButton="--nocancel"
+      ;;
+      *) CancelButton="--cancel-label $3"
+    esac
   else
-    Nocancel=""
+    CancelButton=""
   fi
   declare -a Options
   local Counter=0
@@ -61,8 +72,10 @@ listgen2() {
   # Import the complex array
   name=$4[@]
   LongName=("${!name}")
+  if [ ! $Width ]; then
+    Width=50
+  fi
   # Prepare $1 and $4 for dialog menu
-  Width=40
   for item in "${LongName[@]}"; do
     Options[$((Counter))]="${Items[${ItemCounter}]}"
     Options[$((Counter+1))]="$item"
@@ -70,7 +83,7 @@ listgen2() {
     ItemCounter=$((ItemCounter+1))
     Length=`echo ${#item}`
     if [ $Length -gt $Width ]; then
-      Width=$((Length+20))
+      Width=$((Length+30))
     fi
   done
   Printit # The final frontier
@@ -78,10 +91,20 @@ listgen2() {
 
 Printit() {
   Counter=$((Counter/2))
+  # Calculate number of lines
+  echo $Message > output.file
+  countcharacters=`cat output.file | wc -c`  # Count number of characters in $Message
+  countlines=$((countcharacters/Width)) # Calculate lines
+  echo $Message | sed 's/[^\\]//g' > output.file   # Use sed to remove all except newlines
+  countnewlines=`cat output.file | wc -c` # Count newline characters
+  Height=$((countlines+countnewlines+Counter+15-Counter))
+  if [ $Height -gt 18 ]; then
+    Height=18
+    if [ $Width -lt 50 ]; then
+      Width=$((Width+10))
+    fi
+  fi
   # Use $Counter and ${Options[@]} array in dialog
-  dialog --backtitle "$Backtitle" --title " $Title " $Nocancel \
-      --menu "\n$Message\n" 18 $Width $Counter "${Options[@]}" 2> output.file
-      
-  Response=$? # Errorcode
-  Result=$(cat output.file) # Selected item
+  dialog --backtitle "$Backtitle" --title " $Title " $CancelButton \
+      --menu "\n$Message\n" $Height $Width $Counter "${Options[@]}" 2> output.file
 }

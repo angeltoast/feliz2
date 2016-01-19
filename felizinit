@@ -1,14 +1,13 @@
 #!/bin/bash
 
 # Feliz (formerly Achoo!) Arch Linux Installation Script
+# Initialising module: tests the internet connection and downloads the files
 
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
-# This module tests the internet connection then downloads the files
-
 #
-# Basic functions required for this script
+# Basic cli functions required for this script
 #
 Centre() { # Aligned text according to screen size
   width=`tput cols`
@@ -54,19 +53,36 @@ read_timed() { # $1 = text to display; $2 = duration
   echo
 }
 
-CheckInternet() { # CLI welcome screen
+CheckInternet() { 
   Service="N"
   while [ $Service = "N" ]
   do
-    Centre "Welcome to the feliz! Arch Linux installation script."
-    Centre "A working internet connection is needed for installation."
-    Centre "Checking your connection now ..."
-    CheckConnection
-    case $Service in
-      "N") read_timed "Sorry, installation cannot continue without an internet connection."
-        exit
-      ;;
-      *) break
+    case $Chosen in
+    1) Centre "Welcome to the Feliz Arch Linux installation script." # CLI welcome screen
+      Centre "A working internet connection is needed for installation."
+      Centre "Checking your connection now ..."
+      CheckConnection
+      case $Service in
+        "N") read_timed "Sorry, installation cannot continue without an internet connection."
+          exit
+        ;;
+        *) Centre "Downloading files - please wait"
+        break
+      esac
+    ;;
+    *) dialog --backtitle "VERSION" --title " Installer Version " \
+          --infobox "Welcome to the Feliz Arch Linux installation script.\nA working internet connection is needed for installation.\nChecking your connection now ..." 10 50
+      CheckConnection
+      case $Service in
+        "N") read_timed 
+          dialog --backtitle "VERSION" --title " Installer Version " \
+          --infobox "Sorry, installation cannot continue without an internet connection." 5 40
+          exit
+        ;;
+        *) dialog --backtitle "VERSION" --title " Installer Version " \
+          --infobox "Downloading files - please wait" 5 30
+        break
+      esac
     esac
   done
 }
@@ -74,80 +90,81 @@ CheckInternet() { # CLI welcome screen
 CheckConnection() {
 while [ $Service = "N" ]
 do
-  tput setf 0 # Change foreground colour to black temporarily to hide messages
-  if [[ ! $(ping -c 3 google.com) ]]; then
-    wifi-menu 2>> feliz.log 
-    if [[ ! $(ping -c 3 google.com) ]]; then
-      tput sgr0 # Reset colour
-      Centre "Unable to establish a connection. Ensure that your computer"
-      Centre "is able to access the internet."
-      TPread "Try again? (y/n): "
-      Retry=$Response
-      if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
-        exit
-        break
+  case $Chosen in
+    1) if [[ ! $(ping -c 3 google.com) ]]; then
+        wifi-menu &>> feliz.log 
+        if [[ ! $(ping -c 3 google.com) ]]; then
+          Centre "Unable to establish a connection. Ensure that your"
+          Centre "computer is able to access the internet."
+          TPread "Try again? (y/n): "
+          Retry=$Response
+          if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
+            exit
+            break
+          fi
+        else
+          read_timed "Connection detected"
+          Service="Y"
+        fi
+      else
+        read_timed "Connection detected"
+        Service="Y"
       fi
-    else
-      tput sgr0 # Reset colour
-      read_timed "Connection detected"
-      Service="Y"
-    fi
-  else
-    tput sgr0 # Reset colour
-    read_timed "Connection detected"
-    Service="Y"
-  fi
+    ;;
+    *) if [[ ! $(ping -c 3 google.com) ]]; then
+        wifi-menu &>> feliz.log 
+        if [[ ! $(ping -c 3 google.com) ]]; then
+          dialog --backtitle "VERSION" --title " Installer Version " --nocancel \
+          --yesno "Unable to establish a connection. Ensure that your computer is able to access the internet.\nTry again? (y/n): " 10 50
+          if [ $? -eq 1 ]; then
+            exit
+            break
+          fi
+        else
+          dialog --backtitle "VERSION" --title " Installer Version " \
+          --infobox "Connection detected" 5 30
+          Service="Y"
+        fi
+      else
+          dialog --backtitle "VERSION" --title " Installer Version " \
+          --infobox "Connection detected" 5 30
+          Service="Y"
+      fi
+  esac
 done
 }
 
 UIselection() {
-  Retry="Y"
-  until [ $Retry = "N" ]
-  do
-    dialog --backtitle "VERSION" --title " Installer Version " \
-  --menu "\nYou can now choose between feliz's traditional, helpful, command-line interface, or a new semi-graphical dialog system ...\n \n" 20 50 2 \
+  dialog --backtitle "VERSION" --title " Installer Version " --nocancel \
+  --menu "\nYou can now choose between feliz's traditional, helpful, command-line interface, or a new semi-graphical dialog system ...\n \n" 15 50 2 \
   "1" "Traditional command line" \
   "2" "New! Semi-graphical" 2> output.file
-    # Note - in early testing, both options download the cli functions 
-    # "Downloading files - please wait ..."
-    case $(cat output.file) in
-      1) wget -N https://github.com/angeltoast/feliz/archive/cliff.zip 2>> feliz.log # CLI
-          unzip -o cliff.zip 2> feliz.log
-          cp feliz-cliff/* . 2> feliz.log
-          rm -rf feliz-cliff
-          Retry="N"
-      ;;
-      2) wget -N https://github.com/angeltoast/feliz/archive/cliff.zip 2>> feliz.log # Semi-graphical
-          unzip -o cliff.zip 2> feliz.log
-          cp feliz-cliff/* . 2> feliz.log
-          rm -rf feliz-cliff
-          Retry="N"
-      ;;
-      *) echo "code error at line: $LINENO" >> feliz.log
-    esac
-  done
+    Chosen=$(cat output.file)
+    clear
 }
 
 #
 # Execute
 #
 clear
-CheckInternet
-echo
-Centre "Downloading files - please wait"
-tput setf 0 # Change foreground colour to black temporarily to hide messages
-# Download common functions from Github
-wget -N https://github.com/angeltoast/feliz/archive/master.zip 2>> feliz.log
-unzip -o master.zip 2>> feliz.log
-# Copy all the downloaded files to working directory
-cp feliz-master/* .
-rm -rf feliz-master
-rm LICENSE README
-tput sgr0 # Reset colour
 # Offer user alternative UI
 UIselection
-# Clean up then add main feliz function and run it
-rm *.zip
-source feliz
-feliz
 
+CheckInternet
+
+# Download and unzip the complete testing archive from Github
+wget -N https://github.com/angeltoast/feliz/archive/master.zip &>> feliz.log
+unzip -o master.zip &>> feliz.log
+cp feliz-testing-master/common/* . &>> feliz.log
+
+# Copy the appropriate files to working directory
+  case $Chosen in
+    1) cp feliz-master/cliff/* . &>> feliz.log # CLI
+    ;;
+    *) cp feliz-master/squiff/* . &>> feliz.log # Semi-graphical
+  esac
+
+# Clean up then run main feliz function
+rm -rf feliz-master &>> feliz.log
+rm *.zip &>> feliz.log
+./feliz

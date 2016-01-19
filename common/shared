@@ -1,0 +1,214 @@
+#!/bin/bash
+
+# shared - Part of the Feliz Arch Linux Installation Script
+
+# Developed by Elizabeth Mills, incorporating some code adapted from the
+# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+#
+# Partition variables and arrays
+#
+declare -a AddPartList	  # Array of additional partitions eg: /dev/sda5
+declare -a AddPartMount   # Array of mountpoints for the same partitions eg: /home
+declare -a AddPartType  	# Array of format type for the same partitions eg: ext4
+declare -a PartitionArray # Array of long identifiers
+declare -a NewArray       # For copying any array
+declare -A LabellingArray # Associative array of user labels for partitions
+declare -A Labelled       # Associative array of labelled partitions
+declare -A FileSystem     # Associative array of filesystem types (ext* swap)
+SwapPartition=""  # eg: /dev/sda3
+FormatSwap="N"    # User selects whether to reuse swap
+MakeSwap="Y"
+SwapFile=""       # eg: 2G
+IsSwap=""         # Result of lsblk test
+RootPartition=""  # eg: /dev/sda2
+RootType=""       # eg: ext4
+Partition=""      # eg: sda1
+AutoPart=0        # Flag - changes to 1 if auto-partition is chosen
+UseDisk="sda"     # Used if more than one disk
+DiskDetails=0     # Size of selected disk
+#
+# Grub, kernel & EFI variables
+#
+GrubDevice=""     # eg: /dev/sda
+Kernel="1"        # Default 1 = LTS
+IsInVbox=""       # Result of test to see if installation is in Virtualbox
+DualBoot="N"      # Ready for dual-booting option
+EFIPartition=""   # Will hold EFI partition mountpoint in format "/dev/sda1"
+OSprober="Y"
+#
+# Location variables
+#
+CountryCode=""    # eg: GB ... for mirrorlist
+CountryLocale=""  # eg: en_GB.UTF-8
+Countrykbd=""     # eg: uk
+ZONE=""           # eg: Europe For time
+SUBZONE=""        # eg: London
+#
+# Desktop environment, display manager and greeter variables
+#
+DesktopEnvironment="None"  # eg: xfce4
+GoodiesXfce=""
+GoodiesGnome=""
+GoodiesOpenbox=""
+DisplayManager=""      # eg: lightdm
+Greeter=""             # eg: lightdm-gtk-greeter (Not required for some DMs)
+#
+# Root and user variables
+#
+HostName=""  # eg: arch-linux
+UserName=""  # eg: archie
+Scope=""     # Installation scope ... 'Full' or 'Basic'
+#
+# Global user input variables
+#
+Response="" 
+Result=""
+#
+# ---- Extras ----
+#
+Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+Accessories="brasero conky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
+LongAccs[1]="Disc burning application from Gnome"
+LongAccs[2]="Desktop time and system information"
+LongAccs[3]="Calculator for your taskbar"
+LongAccs[4]="The text editor from Gnome"
+LongAccs[5]="Tool to make/delete/resize partitions"
+LongAccs[6]="The file-manager from Gnome"
+LongAccs[7]="The Xfce terminal emulator"
+LongAccs[8]="Easy to use AUR package installer"
+Desktops="Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
+LongDesk[1]="Slick DE from the Mint team  "
+LongDesk[2]="The Deepin desktop environment"
+LongDesk[3]="Full-featured, modern DE"
+LongDesk[4]="Plasma 5 and accessories pack"
+LongDesk[5]="Traditional, lightweight DE"
+LongDesk[6]="Lightweight and modern Qt DE"
+LongDesk[7]="Traditional DE from the Mint team"
+LongDesk[8]="Lightweight, highly configurable DE"
+Graphical="evince gimp imagemagick gthumb simple-scan xsane"
+LongGraph[1]="Reader for PDF & other document formats"
+LongGraph[2]="Advanced image editing suite"
+LongGraph[3]="Command-line image manipulation"
+LongGraph[4]="Image viewer & basic editor"
+LongGraph[5]="A simple scanner GUI"
+LongGraph[6]="Full-featured GTK-based sane frontend"
+Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
+LongNet[1]="Open source web browser from Google     "
+LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
+LongNet[3]="Fast & reliable FTP, FTPS & SFTP client"
+LongNet[4]="Extensible browser from Mozilla"
+LongNet[5]="Open source BitTorrent client"
+LongNet[6]="Feature-rich email client from Mozilla"
+LongNet[7]="Easy-to-use BitTorrent client"
+Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
+LongMulti[1]="Easy-to-use video editor               "
+LongMulti[2]="Feature-rich audio player"
+LongMulti[3]="Simple yet powerful video transcoder"
+LongMulti[4]="Easy-to-use non-linear video editor"
+LongMulti[5]="Middleweight video player"
+LongMulti[6]="GUI CD burner"
+Office="abiword gnumeric libreoffice orage scribus"
+LongOffice[1]="Full-featured word processor        "
+LongOffice[2]="Spreadsheet program from GNOME"
+LongOffice[3]="Open-source office software suite"
+LongOffice[4]="Calendar & task manager (incl with Xfce)"
+LongOffice[5]="Desktop publishing program"
+Programming="bluefish codeblocks emacs geany git netbeans"
+LongProg[1]="GTK+ IDE with support for Python plugins  "
+LongProg[2]="Open source & cross-platform C/C++ IDE"
+LongProg[3]="Extensible, customizable text editor"
+LongProg[4]="Advanced text editor & IDE"
+LongProg[5]="Open source distributed version control system"
+LongProg[6]="Integrated development environment (IDE)"
+WindowManagers="Enlightenment Fluxbox JWM Openbox cairo-dock docky fbpanel tint2"
+LongWMs[1]="Window manager and toolkit"
+LongWMs[2]="Light, fast and versatile WM"
+LongWMs[3]="(Joe's Window Manager) Featherweight WM"
+LongWMs[4]="Lightweight, powerful & configurable stacking WM"
+LongWMs[5]="Customizable dock & launcher application"
+LongWMs[6]="For opening applications & managing windows"
+LongWMs[7]="Desktop panel"
+LongWMs[8]="Desktop panel"
+#
+# Include files
+#
+if [[ -f `pwd`/various ]]; then
+  source various
+else
+  echo "missing file: various"
+  exit 1
+fi
+if [[ -f `pwd`/partitioning ]]; then
+  source partitioning
+else
+  echo "missing file: partitioning"
+  exit 1
+fi
+if [[ -f `pwd`/desktop ]]; then
+  source desktop
+else
+  echo "missing file: desktop"
+  exit 1
+fi
+if [[ -f `pwd`/listgen ]]; then
+  source listgen
+else
+  echo "missing file: listgen"
+  exit 1
+fi
+
+#
+# Common cli functions
+#
+read_timed() { # $1 = text to display; $2 = duration
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
+  echo
+}
+
+print_heading() {
+  clear
+  T_COLS=`tput cols`
+  tput cup 1 $((($T_COLS/2)-20))
+  printf "~ feliz! The Arch Linux Installation Script ~\n"
+  printf "%$(tput cols)s\n"|tr ' ' '-'
+}
+
+ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
+  PrintOne "Using Reflector to generate mirrorlist"
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist &>> feliz.log
+  if [ $? -gt 0 ]; then
+    LocalMirrorList
+  else
+    chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
+  fi
+}
+
+LocalMirrorList() { # In case Reflector fails, generate and save a shortened 
+  # mirrorlist of only the mirrors defined in the CountryCode variable.
+	PrintOne "Reflector not available - generating local mirrorlist instead"
+	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+	MirrorTemp=$(mktemp --suffix=-mirrorlist) &>> feliz.log
+	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+	curl -so ${MirrorTemp} ${URL} &>> feliz.log
+	# Use sed to filter entries
+	sed -i 's/^#Server/Server/g' ${MirrorTemp} &>> feliz.log
+	# Make a safe copy of existing mirrorlist
+	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig &>> feliz.log
+	# Replace existing mirrorlist with new local mirrorlist
+	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist &>> feliz.log
+	chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
+}

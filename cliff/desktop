@@ -213,69 +213,6 @@ SetHostname() {
 	PrintOne "Hostname set to: $HostName"
 }
 
-# ---- Extras ----
-
-Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
-Accessories="brasero cairo-dock conky docky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
-LongAccs[1]="Brasero - Disc burning application from Gnome          "
-LongAccs[2]="Cairo Dock - Customizable dock and launcher application"
-LongAccs[3]="Conky - Desktop time and system information"
-LongAccs[4]="Docky - For opening applications and managing windows"
-LongAccs[5]="gCalculator - Calculator for your taskbar"
-LongAccs[6]="gEdit - The text editor from Gnome"
-LongAccs[7]="GParted - make/delete/resize partitions"
-LongAccs[8]="Nautilus - The file-manager from Gnome"
-LongAccs[9]="Terminal - The Xfce terminal emulator"
-LongAccs[10]="Yaourt - Easy to use AUR package installer"
-Desktops="Cinnamon Gnome KDE LXDE LXQt Mate Xfce"
-LongDesk[1]="Cinnamon - Slick DE from the Mint team"
-LongDesk[2]="Gnome - Full-featured, modern DE"
-LongDesk[3]="KDE - Plasma 5 and accessories pack"
-LongDesk[4]="LXDE - Traditional, lightweight DE"
-LongDesk[5]="LXQt - Lightweight and modern Qt DE"
-LongDesk[6]="Mate - Traditional DE from the Mint team"
-LongDesk[7]="Xfce - Lightweight, highly configurable DE"
-Graphical="evince gimp imagemagick gthumb simple-scan xsane"
-LongGraph[1]="Evince - Reader for PDF and other document formats"
-LongGraph[2]="GIMP - Advanced image editing suite"
-LongGraph[3]="Imagemagick - Command-line image manipulation"
-LongGraph[4]="gThumb - Image viewer & basic editor"
-LongGraph[5]="Simple-Scan - A simple scanner GUI"
-LongGraph[6]="Xsane - A full-featured GTK-based sane frontend"
-Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
-LongNet[1]="Chromium - Open source web browser from Google     "
-LongNet[2]="Epiphany - Gnome WebKitGTK+ browser (aka Web)"
-LongNet[3]="Filezilla - Fast and reliable FTP, FTPS & SFTP client"
-LongNet[4]="Firefox - Extensible browser from Mozilla"
-LongNet[5]="qBittorent - Open source BitTorrent client"
-LongNet[6]="Thunderbird - Feature-rich email client from Mozilla"
-LongNet[7]="Transmission - Easy-to-use BitTorrent client"
-Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
-LongMulti[1]="Avidemux - Simple video editor               "
-LongMulti[2]="Banshee - Feature-rich audio player"
-LongMulti[3]="Handbrake - Simple yet powerful video transcoder"
-LongMulti[4]="Openshot - Easy-to-use non-linear video editor"
-LongMulti[5]="VLC - Middleweight video player"
-LongMulti[6]="Xfburn"
-Office="abiword gnumeric libreoffice orage scribus"
-LongOffice[1]="Abiword - Full-featured word processor        "
-LongOffice[2]="Gnumeric - Spreadsheet program from GNOME"
-LongOffice[3]="LibreOffice - Open-source office software suite"
-LongOffice[4]="Orage - Calendar and task manager (incl with Xfce)"
-LongOffice[5]="Scribus - Desktop publishing program"
-Programming="bluefish codeblocks emacs geany git netbeans"
-LongProg[1]="Bluefish - GTK+ IDE with support for Python plugins  "
-LongProg[2]="Code::Blocks - Open source & cross-platform C/C++ IDE"
-LongProg[3]="Emacs - extensible, customizable text editor"
-LongProg[4]="Geany - Advanced text editor & IDE"
-LongProg[5]="Git - open source distributed version control system"
-LongProg[6]="Netbeans - Integrated development environment (IDE)"
-WindowManagers="Enlightenment Fluxbox JWM Openbox"
-LongWMs[1]="Enlightenment"
-LongWMs[2]="Fluxbox"
-LongWMs[3]="JWM"
-LongWMs[4]="Openbox"
-
 PickLuxuries() { # User selects any combination from a store of extras
   local Complete=0
   LuxuriesList=""
@@ -368,6 +305,14 @@ do
   case $SaveResult in
     "Cinnamon") DesktopEnvironment=$SaveResult
         ChooseDM
+      ;;
+    "Deepin") DesktopEnvironment="Deepin"
+             AddDEextras "xfce4-goodies"
+        case $Response in
+          0) DDEextras="deepin-extra"
+           ;;
+          *) DDEextras=""
+        esac
       ;;
     "Enlightenment") DesktopEnvironment=$SaveResult
         ChooseDM
@@ -503,6 +448,10 @@ AddDEextras() {
  print_heading
  echo
  case $DesktopEnvironment in
+  "Deepin") PrintOne "The deepin-extras pack includes includes the Deepin game "
+    PrintOne "center, media players, terminal & screenshot tools"
+    echo
+    ;;
   "Openbox") PrintOne "tint2 is a system panel/taskbar that can be configured"
     PrintOne "to include a system tray, task list, battery monitor, clock, etc."
     echo

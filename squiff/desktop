@@ -9,19 +9,15 @@
 # ----------------     -----------------------
 # Function    Line     Function           Line
 # ----------------     -----------------------
-# getkeymap    20     Display Managers    428
-# setlocale    35     FinalCheck          549
-# settimezone  52     ManualSettings      640
-#                     ChangeRootPartition 666
-# UserName     75     ChangeSwapPartition 674
-# Hostname   251      ChangePartitions    682
-# Extras     216      AddExtras           694    
-
-Backtitle="Desktop settings. If you need guidance, consult the Arch Wiki Beginner's Guide"
-Passed=$Backtitle
+# getkeymap    20     Display Managers    328
+# setlocale    35     FinalCheck          333
+# settimezone  52     ManualSettings      430
+# UserName     75     ChangeRootPartition 456
+# Hostname     85     ChangeSwapPartition 464
+# Extras       101    ChangePartitions    472
+#                     AddExtras           483    
 
 getkeymap() {
-  Passed="Desktop settings"
   ListKbs=`cat keymaps.list`
   keyboards=""
   for k in ${ListKbs[@]}; do
@@ -29,28 +25,25 @@ getkeymap() {
   done
   local Message="Scroll through this list, or type a letter, to find your keyboard."
   listgen1 "${keyboards}" "Keyboards" "nocancel"
-  Countrykbd="$Result"
+  Countrykbd=$(cat output.file)
   loadkeys ${Countrykbd} 2>> feliz.log
-  dialog --backtitle "$Backtitle" --title " Keyboard " \
-    --msgbox "\nThe keyboard is now set to: '$Countrykbd'" 8 50  
 }
 
 setlocale() {
-  LocaleList=`cat /etc/locale.gen`
-  local Counter=0
-  declare -a Options
-  for l in ${LocaleList}
-  do
+  LocaleList=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | sed 's/#//g'`)
+  for item in ${LocaleList[@]}; do
     Counter=$((Counter+1))
-    Options[${Counter}]="$l"
+    Options[${Counter}]="$item"
+    Counter=$((Counter+1))
+    Options[${Counter}]="UTF-8"
   done
-  dialog --backtitle "$Backtitle" --title " Locale " --nocancel \
-      --menu "\nScroll through this list, or type a letter, to find your locale.\nThis will be used to find the best mirrors for downloading your system" 18 40 $Counter "${Options[@]}" 2> output.file
-  CountryLocale="$(cat output.file)"
+  local Message="Scroll through this list, or type a letter, to find your locale. This will be used to find the best mirrors for downloading your system"
+  dialog --backtitle "$Backtitle" --title " Locales " --nocancel \
+      --menu "\n$Message\n" 18 55 $Counter "${Options[@]}" 2> output.file
+  CountryLocale="$(cat output.file).UTF-8"
   CountryCode=(`cat output.file | cut -c4-5`)
-  dialog --backtitle "$Backtitle" --title " Locale " \
-    --msgbox "\nYour locale is now set to: '$CountryLocale'" 8 50
 }
+
 
 SetTimeZone() {
   Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
@@ -60,7 +53,7 @@ SetTimeZone() {
   done
   local Message="To set the system clock, please choose the World Zone of your location."
   listgen1 "${passzones}" "World zones" "nocancel"
-  ZONE=$Result
+  ZONE=$(cat output.file)
   SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
   passzones=""
   for z in ${SubZones[@]}; do
@@ -68,9 +61,7 @@ SetTimeZone() {
   done
   local Message="Now select your nearest city from this list."
   listgen1 "$passzones" "Cities in ${ZONE}" "nocancel"
-  SUBZONE=$Result
-  dialog --backtitle "$Backtitle" --title " Locale " \
-    --msgbox "\nYour Zone and Subzone set to: '$ZONE/$SUBZONE'" 8 50
+  SUBZONE=$(cat output.file)
 }
 
 UserName() {
@@ -84,8 +75,6 @@ UserName() {
 		;;
 		*) UserName=${Entered}
 	esac
-  dialog --backtitle "$Backtitle" --title " User name " \
-    --msgbox "\nUser '$UserName' will be created" 8 50
 }
 
 SetHostname() {
@@ -100,89 +89,24 @@ SetHostname() {
 		;;
 		*) HostName=${Entered}
 	esac
-	PrintOne ""
-  dialog --backtitle "$Backtitle" --title " Hostname " \
-    --msgbox "\nHostname set to '$HostName'" 8 40
 }
-
-# ---- Extras ----
-Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
-Accessories="brasero cairo-dock conky docky gnome-calculator gedit gparted nautilus xfce4-terminal yaourt"
-LongAccs[1]="Disc burning application from Gnome          "
-LongAccs[2]="Customizable dock and launcher application"
-LongAccs[3]="Desktop time and system information"
-LongAccs[4]="For opening applications and managing windows"
-LongAccs[5]="Calculator for your taskbar"
-LongAccs[6]="The text editor from Gnome"
-LongAccs[7]="make/delete/resize partitions"
-LongAccs[8]=" The file-manager from Gnome"
-LongAccs[9]="The Xfce terminal emulator"
-LongAccs[10]="Easy to use AUR package installer"
-Desktops="Cinnamon Gnome KDE LXDE LXQt Mate Xfce"
-LongDesk[1]="Slick DE from the Mint team"
-LongDesk[2]="Full-featured, modern DE"
-LongDesk[3]="Plasma 5 and accessories pack"
-LongDesk[4]="Traditional, lightweight DE"
-LongDesk[5]="Lightweight and modern Qt DE"
-LongDesk[6]="Traditional DE from the Mint team"
-LongDesk[7]="Lightweight, highly configurable DE"
-Graphical="evince gimp imagemagick gthumb simple-scan xsane"
-LongGraph[1]="Reader for PDF and other document formats"
-LongGraph[2]="Advanced image editing suite"
-LongGraph[3]="Command-line image manipulation"
-LongGraph[4]="Image viewer & basic editor"
-LongGraph[5]="A simple scanner GUI"
-LongGraph[6]="A full-featured GTK-based sane frontend"
-Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
-LongNet[1]="Open source web browser from Google     "
-LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
-LongNet[3]="Fast and reliable FTP, FTPS & SFTP client"
-LongNet[4]="Extensible browser from Mozilla"
-LongNet[5]="Open source BitTorrent client"
-LongNet[6]="Feature-rich email client from Mozilla"
-LongNet[7]="Easy-to-use BitTorrent client"
-Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
-LongMulti[1]="Simple video editor               "
-LongMulti[2]="Feature-rich audio player"
-LongMulti[3]="Simple yet powerful video transcoder"
-LongMulti[4]="Easy-to-use non-linear video editor"
-LongMulti[5]="Middleweight video player"
-LongMulti[6]="Xfburn"
-Office="abiword gnumeric libreoffice orage scribus"
-LongOffice[1]="Full-featured word processor        "
-LongOffice[2]="Spreadsheet program from GNOME"
-LongOffice[3]="Open-source office software suite"
-LongOffice[4]="Calendar and task manager (incl with Xfce)"
-LongOffice[5]="Desktop publishing program"
-Programming="bluefish codeblocks emacs geany git netbeans"
-LongProg[1]="GTK+ IDE with support for Python plugins  "
-LongProg[2]="Open source & cross-platform C/C++ IDE"
-LongProg[3]="extensible, customizable text editor"
-LongProg[4]="Advanced text editor & IDE"
-LongProg[5]="open source distributed version control system"
-LongProg[6]="Integrated development environment (IDE)"
-WindowManagers="Enlightenment Fluxbox JWM Openbox"
-LongWMs[1]="Enlightenment"
-LongWMs[2]="Fluxbox"
-LongWMs[3]="JWM"
-LongWMs[4]="Openbox"
 
 PickLuxuries() { # User selects any combination from a store of extras
 Category="Continue"
+LuxuriesList=""
+local Message="Now you have the option to add extras, such as a web browser, etc. If you want only a base Arch installation, exit without choosing any extras."
 until [ $Category = "Done" ]
 do
   # First select a category
-  LuxuriesList=""
-  local Message="Now you have the option to add extras, such as a web browser, etc. Yaourt is available (in 'Accessories'). If you want only a base Arch installation, exit without choosing any extras."
-  listgen1 "$Categories" " Categories " ""
-  if [ $Response -gt 0 ]; then # <Cancel> selected
+  listgen1 "$Categories" " Categories " "Done"
+  if [ $? -gt 0 ]; then # <Cancel> selected
     break
   else
-    Category=$Result
+    Category=$(cat output.file)
   fi
   # Then shop in that category  
   ShoppingList
-  local Message="Added so far: ${LuxuriesList}\nYou can now choose from any of the other lists, or choose <Cancel> to finish this part of the setup"
+  local Message="Added so far: ${LuxuriesList}\nYou can now choose from any of the other lists, or choose <Done> to finish this part of the setup"
 done
 if [ -n "${LuxuriesList}" ]; then
   Scope="Full"
@@ -197,31 +121,31 @@ local Complete=0
 Title="Choose your first item"
 while [ $Complete -eq 0 ]
 do
-  local Message="Added so far: ${LuxuriesList}\nMessage"
+  local Message="Added so far: ${LuxuriesList}"
   # Pass category to listgen2 for user to choose one item;
   case $Category in
-    "Accessories") listgen2 "$Accessories" "Accessories" "" "LongAccs"
+    "Accessories") listgen2 "$Accessories" "Accessories" "Done" "LongAccs"
     ;;
-    "Desktop_Environments") listgen2 "$Desktops" "Desktops" "" "LongDesk"
+    "Desktop_Environments") listgen2 "$Desktops" "Desktops" "Done" "LongDesk"
     ;;
-    "Graphical") listgen2 "$Graphical" "Graphical" "" "LongGraph"
+    "Graphical") listgen2 "$Graphical" "Graphical" "Done" "LongGraph"
     ;;
-    "Internet") listgen2 "$Internet" "Internet" "" "LongNet"
+    "Internet") listgen2 "$Internet" "Internet" "Done" "LongNet"
     ;;
-    "Multimedia") listgen2 "$Multimedia" "Multimedia" "" "LongMulti"
+    "Multimedia") listgen2 "$Multimedia" "Multimedia" "Done" "LongMulti"
     ;;
     "Office") listgen2 "$Office" "Office" "" "LongOffice"
     ;;
-    "Programming") listgen2 "$Programming" "Programming" "" "LongProg"
+    "Programming") listgen2 "$Programming" "Programming" "Done" "LongProg"
     ;;
-    "Window_Managers") listgen2 "$WindowManagers" "Window_Managers" "" "LongWMs"
+    "Window_Managers") listgen2 "$WindowManagers" "Window_Managers" "Done" "LongWMs"
     ;;
     *) break
   esac
-  if [ $Response -gt 0 ]; then
+  if [ $? -gt 0 ]; then # <Cancel> selected
     break
   else
-    Picked=$Result
+    Picked=$(cat output.file)
   fi
   
   AddToList="Y"
@@ -237,23 +161,32 @@ do
   done
   # Then carry out any specific tests and add the item to the list
   case $Picked in
-    "Cinnamon") DesktopEnvironment=$Picked
+    "Cinnamon") DesktopEnvironment="Cinnamon"
         ChooseDM
       ;;
-    "Enlightenment") DesktopEnvironment=$Picked
+    "Deepin") DesktopEnvironment="Deepin"
+        dialog --backtitle "$Backtitle" --title " Deepin desktop environment " \
+    --yesno "\nThe deepin-extras pack includes includes the Deepin game center, media players, terminal & screenshot tools. Include the extras pack?\n" 10 40
+        case $? in
+          0) DDEextras="deepin-extra"
+           ;;
+          *) DDEextras=""
+        esac
+      ;;
+    "Enlightenment") DesktopEnvironment="Enlightenment"
         ChooseDM
       ;;
-    "Fluxbox") DesktopEnvironment=$Picked
+    "Fluxbox") DesktopEnvironment="Fluxbox"
         ChooseDM
       ;;
-    "Gnome") DesktopEnvironment=$Picked
+    "Gnome") DesktopEnvironment="Gnome"
         GoodiesGnome=""
         local Message="'Gnome with extras' adds a text editor, disk manager, archive manager and a set of games.\nIf in doubt, choose 'Standard Gnome'"
         GnomeOptions[1]="Minimal Gnome (gnome-shell)"
         GnomeOptions[2]="Standard Gnome"
         GnomeOptions[3]="Gnome with extras"
         listgen2 "Minimal Standard Extras" " Gnome options " "nocancel" "GnomeOptions"
-        Response=$Result
+        Response=$(cat output.file)
         case $Response in
           "Minimal") DesktopEnvironment="gnome-shell"
             ;;
@@ -264,26 +197,25 @@ do
           *) invalid_option
         esac
       ;;
-    "JWM") DesktopEnvironment=$Picked
+    "JWM") DesktopEnvironment="JWM"
         ChooseDM
       ;;
-    "KDE") DesktopEnvironment=$Picked
+    "KDE") DesktopEnvironment="KDE"
       ;;
     "libreoffice") Picked="libreoffice-fresh"
       ;;
-
-    "LXDE") DesktopEnvironment=$Picked
+    "LXDE") DesktopEnvironment="LXDE"
       ;;
-    "LXQt") DesktopEnvironment=$Picked
+    "LXQt") DesktopEnvironment="LXQt"
         ChooseDM
       ;;
-    "Mate") DesktopEnvironment=$Picked
+    "Mate") DesktopEnvironment="Mate"
         ChooseDM
       ;;
-    "Openbox") DesktopEnvironment=$Picked
+    "Openbox") DesktopEnvironment="Openbox"
         ChooseDM
       ;;
-    "Xfce") DesktopEnvironment=$Picked
+    "Xfce") DesktopEnvironment="Xfce"
         dialog --backtitle "$Backtitle" --title " Xfce desktop environment " \
     --yesno "\nThe xfce4-goodies pack includes includes the Whisker menu, extra plugins and a number of utilities such as the mousepad editor\nInclude the $Extras pack?\n" 10 40
         case $? in
@@ -303,7 +235,7 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
   if [ -z $DisplayManager ]; then
     Greeter=""
     local Message="\nYou can choose one of the following display managers. Be aware that not all display managers work equally well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will haveto launch your desktop environment manually.\n"
-    listgen1 "GDM LightDM LXDM sddm SLIM XDM" " Display Manager/Greeter "
+    listgen1 "GDM LightDM LXDM sddm SLIM XDM" " Display Manager/Greeter " "Done"
     Response=$(cat output.file)
     if [ $? -eq 0 ]; then
       Reply=$Response
@@ -329,10 +261,10 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
  
 InstallDM() { # Called from feliz when installing desktop environment
   case ${DisplayManager} in
-    "") TPecho "Not installing a Display Manager"
+    "") PrintOne "Not installing a Display Manager"
     ;;
-    *) TPecho "Installing ${DisplayManager} Display Manager"
-      pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
+    *) PrintOne "Installing ${DisplayManager} Display Manager"
+      pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
       arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   esac
 }
@@ -341,7 +273,7 @@ FinalCheck() {
 Repeat=1
 while [ $Repeat -gt 0 ]
 do
-  local Message="These are the settings you have entered. Please check them ...\nPress <Cancel> to install with these settings, or choose an item if you wish to change it: "
+  local Message="These are the settings you have entered. Please check them ...\nPress <Continue> to install with these settings, or choose an item if you wish to change it: "
   declare -a Settings
   Categories="1 2 3 4 5 6 7 8 9 10 11 12"
   Settings[1]="Root partition ... $RootPartition $RootType"
@@ -352,7 +284,7 @@ do
   fi
   if [ ${#AddPartList[@]} ]; then
     Counter=0
-    Settings[3]="Extra partitions ...\n"
+    Settings[3]="Extra partitions: "
     for i in ${AddPartList[@]}
     do
       Settings[3]="${Settings[3]}  ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}\n"
@@ -384,9 +316,9 @@ do
   else
     Settings[10]="Display Manager = $DisplayManager"
   fi
-  Settings[11]="Root and user settings ...\n     Hostname = '$HostName'\n     User = '$UserName'"
-  Settings[12]="The following extras have been selected ...\n${LuxuriesList}"
-  listgen2 "$Categories" " Final Check " "" "Settings"
+  Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
+  Settings[12]="The following extras have been selected: ${LuxuriesList}"
+  listgen2 "$Categories" " Final Check " "Continue" "Settings"
   Response=$(cat output.file)
   Repeat=$?
   if [ $Repeat -eq 0 ]; then
