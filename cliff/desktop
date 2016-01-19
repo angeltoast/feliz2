@@ -256,22 +256,63 @@ do
   PrintOne "Added so far: ${LuxuriesList}"
   echo
   # Pass category to listgen2 for user to choose one item;
+  local Counter=1
   case $Category in
-    1) listgen2 "$Accessories" "Accessories" "" "LongAccs"
+    1) for i in ${Accessories}
+        do
+          LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Accessories" "Accessories" "" "LongAccs1"
     ;;
-    2) listgen2 "$Desktops" "Desktops" "" "LongDesk"
+    2)  for i in ${Desktops}
+        do
+          LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Desktops" "Desktops" "" "LongDesk1"
     ;;
-    3) listgen2 "$Graphical" "Graphical" "" "LongGraph"
+    3) for i in ${Graphical}
+        do
+          LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Graphical" "Graphical" "" "LongGraph1"
     ;;
-    4) listgen2 "$Internet" "Internet" "" "LongNet"
+    4) for i in ${Internet}
+        do
+          LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Internet" "Internet" "" "LongNet1"
     ;;
-    5) listgen2 "$Multimedia" "Multimedia" "" "LongMulti"
+    5) for i in ${Multimedia}
+        do
+          LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Multimedia" "Multimedia" "" "LongMulti1"
     ;;
-    6) listgen2 "$Office" "Office" "" "LongOffice"
+    6) for i in ${Office}
+        do
+          LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Office" "Office" "" "LongOffice1"
     ;;
-    7) listgen2 "$Programming" "Programming" "" "LongProg"
+    7) for i in ${Programming}
+        do
+          LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Programming" "Programming" "" "LongProg1"
     ;;
-    8) listgen2 "$WindowManagers" "Window_Managers" "" "LongWMs"
+    8) for i in ${WindowManagers}
+        do
+          LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$WindowManagers" "Window_Managers" "" "LongWMs1"
     ;;
     *) break
   esac

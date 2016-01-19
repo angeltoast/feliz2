@@ -179,14 +179,6 @@ read_timed() { # $1 = text to display; $2 = duration
   echo
 }
 
-print_heading() {
-  clear
-  T_COLS=`tput cols`
-  tput cup 1 $((($T_COLS/2)-20))
-  printf "~ feliz! The Arch Linux Installation Script ~\n"
-  printf "%$(tput cols)s\n"|tr ' ' '-'
-}
-
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   PrintOne "Using Reflector to generate mirrorlist"
   reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist &>> feliz.log

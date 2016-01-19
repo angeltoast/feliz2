@@ -15,9 +15,9 @@
 # Parted              99       AllocateRoot        404
 # AutoPartition      103       CheckPartition      460
 # AutoWarning        152       AllocateSwap        476
-# RunAutoPart        167       SetSwapFile         500
-# FileSystem         232       MorePartitions      544
-# SetLabel           247       MakePartition       600
+# RunAutoPart        167       SetSwapFile         520
+# FileSystem         232       MorePartitions      560
+# SetLabel           247       MakePartition       614
 # EditLabel          269
 # -----------------------      ------------------------
 
@@ -572,7 +572,9 @@ MorePartitions() { # For any unallocated partitions. Uses PartitionList and Part
     listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
     Result=`cat output.file`
     Response=$?
-    if [ $Response -eq 0 ]; then # ie: not <Cancel>
+    if [ $Response -gt 0 ]; then # ie: <Cancel>
+      break
+    else
       PassPart=$Result
       SetLabel "$Result"
       UpdateArray # Remove the selected partition from $PartitionArray[]
@@ -595,12 +597,7 @@ MorePartitions() { # For any unallocated partitions. Uses PartitionList and Part
       fi
     done
     PartitionList=$Remaining	# Replace original PartitionList with temp list
-    if [ $Result = "Done" ]; then
-      Elements=0
-      break
-    else
-      Elements=$AddedToRemaining
-    fi
+    Elements=$AddedToRemaining
   done
   # Ensure that if AddPartList (the defining array) is empty, all others are too
   if [ -z ${#AddPartList[@]} ]

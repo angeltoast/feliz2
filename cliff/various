@@ -20,6 +20,14 @@
 # ConfirmVbox          206       SetRootPassword      365
 # MakePartitionList    229       SetUserPassword      394
 
+print_heading() {
+  clear
+  T_COLS=`tput cols`
+  tput cup 1 $((($T_COLS/2)-20))
+  printf "~ Feliz - The Arch Linux Installation Script ~\n"
+  printf "%$(tput cols)s\n"|tr ' ' '-'
+}
+
 invalid_option() { # (from AUI scripts)
   echo 
   read_timed "Invalid option. Try again ..." 1

@@ -305,12 +305,6 @@ if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
 cp feliz.log /mnt/etc # Copy installation log for reference
-dialog --title " Shutdown " --nocancel \
-  --menu "Congratulations, installation is finished." 12 40 2 \
-  - "Reboot" \
-  - "Shutdown" 2> output.file
-case $(cat output.file) in
-  "Reboot") systemctl reboot
-  ;;
-  *) shutdown now
-esac
+dialog --msgbox "\nCongratulations, installation is finished. It's time to exit the Feliz installer and start your new Arch Linux system. Don't forget to remove the installation media before restarting." 12 40
+
+shutdown -h now
