@@ -142,7 +142,7 @@ if [ $Scope != "Basic" ]; then
 fi
 
 if [ ${GrubDevice} ]; then
-  PrintOne "Installing Grub to $GrubDevice"
+  DisplayProgress "Installing Grub to $GrubDevice" 20
   pacstrap /mnt grub &>> feliz.log
   if [ $OSprober = "Y" ]; then
     pacstrap /mnt os-prober &>> feliz.log
@@ -150,10 +150,10 @@ if [ ${GrubDevice} ]; then
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
-  PrintOne "Not installing Grub"
+  echo "Not installing Grub" >> feliz.log
 fi
 
-PrintOne "Running mkinitcpio"
+DisplayProgress "Running mkinitcpio" 20
 if [ $Kernel = "1" ]; then
   arch_chroot "mkinitcpio -p linux-lts"
 else
@@ -180,12 +180,12 @@ if [ $Scope != "Basic" ]; then
   fi
   # Various bits
   pacstrap /mnt vrms &>> feliz.log # Virtual Richard Michael Stallman to detect non-free software
-  PrintOne "Adding Flash and other Multimedia Codecs"
+  DisplayProgress "Adding Flash and other Multimedia Codecs" 40
   pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin &>> feliz.log
   PrintOne "Installing wireless tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware &>> feliz.log
   pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog wifi-menu &>> feliz.log
-  PrintOne "Installing X, graphics, etc" 13
+  PrintOne "Installing X, graphics, etc"
   pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm &>> feliz.log
   pacstrap /mnt xf86-input-synaptics &>> feliz.log
   pacstrap /mnt gvfs gamin &>> feliz.log
@@ -196,39 +196,36 @@ if [ $Scope != "Basic" ]; then
     for i in ${LuxuriesList}
     do
       case $i in
-        "Cinnamon") PrintOne "Installing 'Cinnamon' Desktop Environment"
+        "Cinnamon") DisplayProgress "Installing 'Cinnamon' Desktop Environment" 40
           InstallDM
           pacstrap /mnt cinnamon gnome-terminal &>> feliz.log
           ;;
-        "Deepin") PrintOne "Installing Deepin Desktop Environment"
+        "Deepin") DisplayProgress "Installing Deepin Desktop Environment" 30
           pacstrap /mnt deepin ${DDEextras} &>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable lightdm.service" &>> feliz.log
           else
             InstallDM
           fi
+          sed -i '/greeter-session=/ c\greeter-session=lightdm-deepin-greeter' /etc/lightdm/lightdm.conf &>> feliz.log # 
           ;;
-        "Enlightenment") PrintOne "Installing 'Enlightenment' Desktop Environment"
+        "Enlightenment") DisplayProgress "Installing 'Enlightenment' Desktop Environment" 30
           InstallDM
           pacstrap /mnt enlightenment &>> feliz.log
           ;;
-        "Fluxbox") PrintOne "Installing 'Fluxbox' Window Manager"
+        "Fluxbox") DisplayProgress "Installing 'Fluxbox' Window Manager" 30
           InstallDM
           pacstrap /mnt fluxbox &>> feliz.log
           ;;
-        "Gnome") PrintOne "Installing 'Gnome' Desktop Environment"
-          pacstrap /mnt gnome gedit ${GoodiesGnome} &>> feliz.log
+        "Gnome") DisplayProgress "Installing 'Gnome' Desktop Environment" 120
+          pacstrap /mnt gnome gedit &>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable gdm.service" &>> feliz.log
           else
             InstallDM
           fi
           ;;
-        "gnome-shell") PrintOne "Installing 'gnome-shell'"
-          InstallDM
-          pacstrap /mnt gnome-shell &>> feliz.log
-          ;;
-        "KDE") PrintOne "Installing KDE Plasma meta package"
+        "KDE") DisplayProgress "Installing KDE Plasma meta package" 80
           pacstrap /mnt plasma-meta &>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable sddm.service" &>> feliz.log
@@ -238,7 +235,7 @@ if [ $Scope != "Basic" ]; then
           PrintOne "Installing KDE applications package"
           pacstrap /mnt kde-applications &>> feliz.log
           ;;
-        "LXDE") PrintOne "Installing 'LXDE' Desktop Environment"
+        "LXDE") DisplayProgress "Installing 'LXDE' Desktop Environment" 30
           pacstrap /mnt lxde gedit &>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable lxdm.service" &>> feliz.log
@@ -247,19 +244,19 @@ if [ $Scope != "Basic" ]; then
             InstallDM
           fi
           ;;
-        "LXQt") PrintOne "Installing 'LXQt' Desktop Environment"
+        "LXQt") DisplayProgress "Installing 'LXQt' Desktop Environment" 30
           InstallDM
           pacstrap /mnt lxqt xterm oxygen-icons &>> feliz.log
           ;;
-        "Mate") PrintOne "Installing 'Mate' Desktop Environment"
+        "Mate") DisplayProgress "Installing 'Mate' Desktop Environment" 120
           InstallDM
           pacstrap /mnt mate mate-extra &>> feliz.log
           ;;
-        "Openbox") PrintOne "Installing 'Openbox' Window Manager"
+        "Openbox") DisplayProgress "Installing 'Openbox' Window Manager" 30
           InstallDM
           pacstrap /mnt openbox xterm &>> feliz.log
           ;;
-        "Xfce") PrintOne "Installing 'Xfce' Desktop Environment"
+        "Xfce") DisplayProgress "Installing 'Xfce' Desktop Environment" 40
           InstallDM
           pacstrap /mnt xfce4 polkit-gnome ${GoodiesXfce} &>> feliz.log
           ;;
@@ -274,7 +271,7 @@ if [ $Scope != "Basic" ]; then
         "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "gnome-shell" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
           ;;
         "yaourt") # Copy modified pacman.conf to new system and install Yaourt
-          PrintOne "Modifying pacman.conf and installing Yaourt" 5
+          PrintOne "Modifying pacman.conf and installing Yaourt"
           cp pacman.conf /mnt/etc &>> feliz.log # For installed system
           cp pacman.conf /etc &>> feliz.log # For installer
           pacman -Sy &>> feliz.log # Update
@@ -286,7 +283,6 @@ if [ $Scope != "Basic" ]; then
         "conky") PrintOne "Installing $i"
           pacstrap /mnt conky &>> feliz.log
           cp conkyrc /mnt/home/$UserName/.conkyrc &>> feliz.log
-          cp Conky.desktop /mnt/home/$UserName/.config.autostart &>> feliz.log
         ;;
         *) PrintOne "Installing $i"
           pacstrap /mnt $i &>> feliz.log

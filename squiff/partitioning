@@ -570,30 +570,30 @@ MorePartitions() { # For any unallocated partitions. Uses PartitionList and Part
     Remaining=""
     local Message="The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose <Cancel> to finish partitioning."
     listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
-    Result=`cat output.file`
     Response=$?
     if [ $Response -gt 0 ]; then # ie: <Cancel>
+      Elements=0
       break
     else
+      Result=`cat output.file`
       PassPart=$Result
       SetLabel "$Result"
       UpdateArray # Remove the selected partition from $PartitionArray[]
     fi
-    echo
     for Part in ${PartitionList} # Iterate through the list to find selected item
     do
       Partition=""
       PartitionType=""
-      if [ $Part = $Result ] && [ $Response -eq 0 ]; then # Not <Cancel> and part is selected
+      if [ $Part = $Result ]; then
         Partition="/dev/$Part"
         MakePartition # Call complete details
         Label="${Labelled[${PassPart}]}"
         if [ -n "${Label}" ]; then
           EditLabel $PassPart
         fi
-      elif [ $Response -eq 0 ]; then # Not <Cancel> and part is not selected
+      else # This part is not selected
         Remaining="$Remaining $Part" # Add unused partition to temp list
-        (( AddedToRemaining+=1 ))
+        (( AddedToRemaining+=1 )) # And increment the count
       fi
     done
     PartitionList=$Remaining	# Replace original PartitionList with temp list

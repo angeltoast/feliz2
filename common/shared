@@ -161,23 +161,6 @@ fi
 #
 # Common cli functions
 #
-read_timed() { # $1 = text to display; $2 = duration
-  T_COLS=`tput cols`
-  lov=${#1}
-  if [ $2 ]; then
-    tim=$2
-  else
-    tim=2
-  fi
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
-  else
-    EMPTY=""
-  fi
-  read -t ${tim} -p "$EMPTY $1"
-  echo
-}
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   PrintOne "Using Reflector to generate mirrorlist"

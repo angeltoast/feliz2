@@ -181,21 +181,21 @@ do
       ;;
     "Gnome") DesktopEnvironment="Gnome"
         GoodiesGnome=""
-        local Message="'Gnome with extras' adds a text editor, disk manager, archive manager and a set of games.\nIf in doubt, choose 'Standard Gnome'"
-        GnomeOptions[1]="Minimal Gnome (gnome-shell)"
-        GnomeOptions[2]="Standard Gnome"
-        GnomeOptions[3]="Gnome with extras"
-        listgen2 "Minimal Standard Extras" " Gnome options " "nocancel" "GnomeOptions"
-        Response=$(cat output.file)
-        case $Response in
-          "Minimal") DesktopEnvironment="gnome-shell"
-            ;;
-          "Standard") Redo="N"
-            ;;
-          "Extras") GoodiesGnome="gnome-extra"
-            ;;
-          *) invalid_option
-        esac
+      #  local Message="'Gnome with extras' adds a text editor, disk manager, archive manager and a set of games.\nIf in doubt, choose 'Standard Gnome'"
+      # GnomeOptions[1]="Minimal Gnome (gnome-shell)"
+      #  GnomeOptions[2]="Standard Gnome"
+      #  GnomeOptions[3]="Gnome with extras"
+      #  listgen2 "Minimal Standard Extras" " Gnome options " "nocancel" "GnomeOptions"
+      #  Response=$(cat output.file)
+      #  case $Response in
+      #    "Minimal") DesktopEnvironment="gnome-shell"
+      #      ;;
+      #    "Standard") Redo="N"
+      #      ;;
+      #    "Extras") GoodiesGnome="gnome-extra"
+      #      ;;
+      #    *) invalid_option
+      #  esac
       ;;
     "JWM") DesktopEnvironment="JWM"
         ChooseDM

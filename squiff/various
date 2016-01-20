@@ -10,16 +10,37 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# PrintOne              22       MountPartitions       86
-# SetKernel             26       InstallKernel        148
-# ConfirmVbox           38       TestExistingDM       175
-# MakePartitionList     56       SetRootPassword      204
-# arch_chroot           69       SetUserPassword      231
-# SetGrubDevice         73       
+# PrintOne              22       SetGrubDevice         93
+# DisplayProgress       25       MountPartitions      106
+# SetKernel             46       InstallKernel        168
+# ConfirmVbox           58       TestExistingDM       195
+# MakePartitionList     76       SetRootPassword      224
+# arch_chroot           89       SetUserPassword      251
       
 
 PrintOne() { # Just because 
- dialog --title " Information " --infobox "$1" 6 50 ; sleep 1
+  dialog --title " - Information - " --infobox "$1" 6 50 ; sleep 1
+}
+
+DisplayProgress() { # New code for displaying progress for longer processes
+  local Message="$1"
+  local Duration=$2
+  local Sleep=$((Duration/10))
+  local Percent=10
+
+  (
+  while [ $Percent -lt 110 ]
+  do
+    echo "XXX"
+    echo $Percent
+    echo "$Message"
+    echo "XXX"
+    Percent=`expr $Percent + 10`
+    sleep $Sleep
+  done
+  ) |
+
+  dialog --title " - Information - " --gauge "" 6 60 0 &
 }
 
 SetKernel() {
@@ -84,7 +105,7 @@ SetGrubDevice() {
 
 MountPartitions() {
   case $RootType in
-  "") echo "Not formatting root partition" >> feliz.log
+  "") echo "Not formatting root partition" &>> feliz.log
   ;;
   *) echo "Formatting /root partition" >> feliz.log
     umount ${RootPartition} /mnt >/dev/null &>> feliz.log
@@ -145,11 +166,15 @@ MountPartitions() {
 }
 
 InstallKernel() {
-  PrintOne "Installing cli tools\nPlease wait"
-  pacstrap /mnt  base-devel bash  btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo unrar unzip usbutils util-linux vi vim wget which xfsprogs xarchiver &>> feliz.log
+  DisplayProgress "Installing base-devel & bash" 70
+  pacstrap /mnt base-devel bash &>> feliz.log
+  DisplayProgress "Installing cli tools" 20
+  pacstrap /mnt btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs &>> feliz.log
+  DisplayProgress "Installing extra tools" 50
+  pacstrap /mnt gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reflector reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver &>> feliz.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   case $Kernel in
-  1) PrintOne "Installing LTS kernel\nPlease wait"
+  1) DisplayProgress "Installing LTS kernel" 60
     pacstrap /mnt linux-lts &>> feliz.log
     if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
       PrintOne "Installing virtualbox guest modules"
@@ -158,7 +183,7 @@ InstallKernel() {
       cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
     fi
   ;;  
-  *) PrintOne "Installing Latest kernel\nPlease wait"
+  *) DisplayProgress "Installing Latest kernel" 60
     pacstrap /mnt linux &>> feliz.log
     if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
       PrintOne "Installing virtualbox guest modules"
@@ -178,24 +203,24 @@ TestExistingDM() {
   DMLine=`cat /mnt/etc/output.log` &>> feliz.log
   local Counter=1
   case ${DMLine} in
-  "") PrintOne "No previous DM discovered"
+  "") echo "No previous DM discovered" >> feliz.log
   ;;
   *) local Continue="Y"
     while [ ${Continue} = "Y" ]
     do
-      ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '`  &>> feliz.log # First of pair is DM
+      ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` &>> feliz.log # First of pair is DM
       if [ -z ${ExDM} ]; then
         Continue="N" # Quit if no further entries
         break
       fi
-      Counter=$((Counter+1))
-      ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '`  &>> feliz.log # Second is status
+      (( Counter+=1 ))
+      ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` &>> feliz.log # Second is status
       case ${ExDMStatus} in
-      "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null &>> feliz.log
+      "enabled") arch_chroot "systemctl disable ${ExDM} >/dev/null"
       ;;
-      *) PrintOne "${ExDM} already disabled"
+      *) echo "${ExDM} already disabled" >> feliz.log
       esac
-      Counter=$((Counter+1))
+      (( Counter+=1 ))
     done
   esac
 }
