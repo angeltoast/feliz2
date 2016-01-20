@@ -142,7 +142,7 @@ if [ $Scope != "Basic" ]; then
 fi
 
 if [ ${GrubDevice} ]; then
-  DisplayProgress "Installing Grub to $GrubDevice" 20
+  DisplayProgress "Installing Grub to $GrubDevice" 10
   pacstrap /mnt grub &>> feliz.log
   if [ $OSprober = "Y" ]; then
     pacstrap /mnt os-prober &>> feliz.log
@@ -235,7 +235,7 @@ if [ $Scope != "Basic" ]; then
           PrintOne "Installing KDE applications package"
           pacstrap /mnt kde-applications &>> feliz.log
           ;;
-        "LXDE") DisplayProgress "Installing 'LXDE' Desktop Environment" 30
+        "LXDE") DisplayProgress "Installing 'LXDE' Desktop Environment" 10
           pacstrap /mnt lxde gedit &>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable lxdm.service" &>> feliz.log
@@ -283,6 +283,7 @@ if [ $Scope != "Basic" ]; then
         "conky") PrintOne "Installing $i"
           pacstrap /mnt conky &>> feliz.log
           cp conkyrc /mnt/home/$UserName/.conkyrc &>> feliz.log
+          chown $UserName /mnt/home/$UserName/.conkyrc &>> feliz.log
         ;;
         *) PrintOne "Installing $i"
           pacstrap /mnt $i &>> feliz.log

@@ -166,15 +166,17 @@ MountPartitions() {
 }
 
 InstallKernel() {
-  DisplayProgress "Installing base-devel & bash" 70
-  pacstrap /mnt base-devel bash &>> feliz.log
-  DisplayProgress "Installing cli tools" 20
+  DisplayProgress "Installing base-devel" 70 &
+  pacstrap /mnt base-devel &>> feliz.log
+  PrintOne "Installing bash"
+  pacstrap /mnt bash &>> feliz.log
+  DisplayProgress "Installing cli tools" 50 &
   pacstrap /mnt btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs &>> feliz.log
-  DisplayProgress "Installing extra tools" 50
+  PrintOne "Installing extra tools"
   pacstrap /mnt gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reflector reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver &>> feliz.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   case $Kernel in
-  1) DisplayProgress "Installing LTS kernel" 60
+  1) DisplayProgress "Installing LTS kernel" 60 &
     pacstrap /mnt linux-lts &>> feliz.log
     if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
       PrintOne "Installing virtualbox guest modules"
@@ -222,6 +224,16 @@ TestExistingDM() {
       esac
       (( Counter+=1 ))
     done
+  esac
+}
+ 
+InstallDM() { # Called from feliz when installing desktop environment
+  case ${DisplayManager} in
+    "") echo "Not installing a Display Manager" >> feliz.log
+    ;;
+    *) PrintOne "Installing ${DisplayManager} Display Manager"
+      pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
+      arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
   esac
 }
 

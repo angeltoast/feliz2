@@ -9,13 +9,13 @@
 # ----------------     -----------------------
 # Function    Line     Function           Line
 # ----------------     -----------------------
-# getkeymap    20     Display Managers    328
-# setlocale    35     FinalCheck          333
-# settimezone  52     ManualSettings      430
-# UserName     75     ChangeRootPartition 456
-# Hostname     85     ChangeSwapPartition 464
-# Extras       101    ChangePartitions    472
-#                     AddExtras           483    
+# getkeymap    20     Display Managers    262
+# setlocale    35     FinalCheck          272
+# settimezone  52     ManualSettings      330
+# UserName     75     ChangeRootPartition 356
+# Hostname     85     ChangeSwapPartition 364
+# Extras       101    ChangePartitions    372
+#                     AddExtras           383    
 
 getkeymap() {
   ListKbs=`cat keymaps.list`
@@ -181,21 +181,6 @@ do
       ;;
     "Gnome") DesktopEnvironment="Gnome"
         GoodiesGnome=""
-      #  local Message="'Gnome with extras' adds a text editor, disk manager, archive manager and a set of games.\nIf in doubt, choose 'Standard Gnome'"
-      # GnomeOptions[1]="Minimal Gnome (gnome-shell)"
-      #  GnomeOptions[2]="Standard Gnome"
-      #  GnomeOptions[3]="Gnome with extras"
-      #  listgen2 "Minimal Standard Extras" " Gnome options " "nocancel" "GnomeOptions"
-      #  Response=$(cat output.file)
-      #  case $Response in
-      #    "Minimal") DesktopEnvironment="gnome-shell"
-      #      ;;
-      #    "Standard") Redo="N"
-      #      ;;
-      #    "Extras") GoodiesGnome="gnome-extra"
-      #      ;;
-      #    *) invalid_option
-      #  esac
       ;;
     "JWM") DesktopEnvironment="JWM"
         ChooseDM
@@ -258,16 +243,6 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
     fi
   fi
 }
- 
-InstallDM() { # Called from feliz when installing desktop environment
-  case ${DisplayManager} in
-    "") PrintOne "Not installing a Display Manager"
-    ;;
-    *) PrintOne "Installing ${DisplayManager} Display Manager"
-      pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
-      arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  esac
-}
 
 FinalCheck() {
 Repeat=1
@@ -275,19 +250,23 @@ while [ $Repeat -gt 0 ]
 do
   local Message="These are the settings you have entered. Please check them ...\nPress <Continue> to install with these settings, or choose an item if you wish to change it: "
   declare -a Settings
-  Categories="1 2 3 4 5 6 7 8 9 10 11 12"
-  Settings[1]="Root partition ... $RootPartition $RootType"
+  Categories="Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras"
+  Settings[1]="$RootPartition $RootType                                         "
   if [ $SwapPartition ] || [ $SwapFile ]; then
-    Settings[2]="Swap partition ... $SwapPartition $SwapFile"
+    Settings[2]="$SwapPartition $SwapFile"
   else
     Settings[2]="No provision has been made for swap"
   fi
   if [ ${#AddPartList[@]} ]; then
     Counter=0
-    Settings[3]="Extra partitions: "
+    Settings[3]=""
     for i in ${AddPartList[@]}
     do
-      Settings[3]="${Settings[3]}  ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}\n"
+      if [ $Counter -eq 0 ]; then
+        Settings[3]="${AddPartList[$Counter]} ${AddPartType[$Counter]} ${AddPartMount[$Counter]}"
+      else
+        Settings[3]="${Settings[3]} : ${AddPartList[$Counter]} ${AddPartType[$Counter]} ${AddPartMount[$Counter]} "
+      fi
       Counter=$((Counter+1))
     done
   else
@@ -314,42 +293,42 @@ do
   if [ -z $DisplayManager ]; then
     Settings[10]="No Display Manager selected"
   else
-    Settings[10]="Display Manager = $DisplayManager"
+    Settings[10]="$DisplayManager"
   fi
   Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
-  Settings[12]="The following extras have been selected: ${LuxuriesList}"
+  Settings[12]="${LuxuriesList}"
   listgen2 "$Categories" " Final Check " "Continue" "Settings"
   Response=$(cat output.file)
   Repeat=$?
   if [ $Repeat -eq 0 ]; then
   case $Response in
-    1) ChangeRootPartition
+    "Root") ChangeRootPartition
         AllocateRoot
     ;;
-    2) ChangeSwapPartition
+    "Swap") ChangeSwapPartition
         AllocateSwap
     ;;
-    3) ChangePartitions
+    "Additional") ChangePartitions
         MorePartitions
     ;;
-    4) SetKernel
+    "Kernel") SetKernel
     ;;
-    5) SetGrubDevice
+    "Grub") SetGrubDevice
     ;;
-    6) getkeymap
+    "Keyboard") getkeymap
     ;;
-    7) setlocale
+    "Locale") setlocale
     ;;
-    8) SetTimeZone
+    "Timezone") SetTimeZone
     ;;
-    9) ConfirmVbox
+    "Virtualbox") ConfirmVbox
     ;;
-    10) DisplayManager=""
+    "Display_Manager") DisplayManager=""
       ChooseDM
     ;;
-    11) ManualSettings
+    "Identity") ManualSettings
     ;;
-    12) DisplayManager=""
+    "Extras") DisplayManager=""
         PickLuxuries
     ;;
     *) Repeat=0
