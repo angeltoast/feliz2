@@ -199,7 +199,7 @@ if [ $Scope != "Basic" ]; then
       case $i in
         "Cinnamon") TPecho "Installing 'Cinnamon' Desktop Environment"
           InstallDM
-          pacstrap /mnt cinnamon gnome-terminal 2>> feliz.log
+          pacstrap /mnt cinnamon 2>> feliz.log
           ;;
         "Deepin") TPecho "Installing Deepin Desktop Environment"
           pacstrap /mnt deepin ${DDEextras} &>> feliz.log
@@ -218,7 +218,7 @@ if [ $Scope != "Basic" ]; then
           pacstrap /mnt fluxbox 2>> feliz.log
           ;;
         "Gnome") TPecho "Installing 'Gnome' Desktop Environment"
-          pacstrap /mnt gnome gedit ${GoodiesGnome} 2>> feliz.log
+          pacstrap /mnt gnome ${GoodiesGnome} 2>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable gdm.service" 2>> feliz.log
           else
@@ -240,7 +240,7 @@ if [ $Scope != "Basic" ]; then
           pacstrap /mnt kde-applications 2>> feliz.log
           ;;
         "LXDE") TPecho "Installing 'LXDE' Desktop Environment"
-          pacstrap /mnt lxde gedit 2>> feliz.log
+          pacstrap /mnt lxde 2>> feliz.log
           if [ -z ${DisplayManager} ]; then
             arch_chroot "systemctl enable lxdm.service" 2>> feliz.log
             echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf
@@ -250,7 +250,7 @@ if [ $Scope != "Basic" ]; then
           ;;
         "LXQt") TPecho "Installing 'LXQt' Desktop Environment"
           InstallDM
-          pacstrap /mnt lxqt xterm oxygen-icons 2>> feliz.log
+          pacstrap /mnt lxqt oxygen-icons 2>> feliz.log
           ;;
         "Mate") TPecho "Installing 'Mate' Desktop Environment"
           InstallDM
@@ -258,7 +258,7 @@ if [ $Scope != "Basic" ]; then
           ;;
         "Openbox") TPecho "Installing 'Openbox' Window Manager"
           InstallDM
-          pacstrap /mnt openbox xterm 2>> feliz.log
+          pacstrap /mnt openbox 2>> feliz.log
           ;;
         "Xfce") TPecho "Installing 'Xfce' Desktop Environment"
           InstallDM

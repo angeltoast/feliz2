@@ -9,13 +9,13 @@
 # ----------------     -----------------------
 # Function    Line     Function           Line
 # ----------------     -----------------------
-# getkeymap    20     Display Managers    262
-# setlocale    35     FinalCheck          272
-# settimezone  52     ManualSettings      330
-# UserName     75     ChangeRootPartition 356
-# Hostname     85     ChangeSwapPartition 364
-# Extras       101    ChangePartitions    372
-#                     AddExtras           383    
+# getkeymap     20     Display Managers    262
+# setlocale     35     FinalCheck          272
+# settimezone   52     ManualSettings      330
+# UserName      75     ChangeRootPartition 356
+# Hostname      85     ChangeSwapPartition 364
+# PickLuxuries  93     ChangePartitions    372
+# ShoppingList 120     AddExtras           383    
 
 getkeymap() {
   ListKbs=`cat keymaps.list`
@@ -43,7 +43,6 @@ setlocale() {
   CountryLocale="$(cat output.file).UTF-8"
   CountryCode=(`cat output.file | cut -c4-5`)
 }
-
 
 SetTimeZone() {
   Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
@@ -93,8 +92,11 @@ SetHostname() {
 
 PickLuxuries() { # User selects any combination from a store of extras
 Category="Continue"
-LuxuriesList=""
-local Message="Now you have the option to add extras, such as a web browser, etc. If you want only a base Arch installation, exit without choosing any extras."
+case "${LuxuriesList}" in
+  "") local Message="Now you have the option to add extras, such as a web browser, etc. If you want only a base Arch installation, exit without choosing any extras."
+  ;;
+  *) local Message="You can add more items, or select items to delete."
+  esac
 until [ $Category = "Done" ]
 do
   # First select a category
@@ -118,7 +120,11 @@ fi
 ShoppingList() {
 # Called by PickLuxuries after a category has been chosen.
 local Complete=0
-Title="Choose your first item"
+case "$LuxuriesList" in
+  "") local Title="Choose your first category"
+  ;;
+  *) local Title="Choose your next category"
+  esac
 while [ $Complete -eq 0 ]
 do
   local Message="Added so far: ${LuxuriesList}"
@@ -134,7 +140,7 @@ do
     ;;
     "Multimedia") listgen2 "$Multimedia" "Multimedia" "Done" "LongMulti"
     ;;
-    "Office") listgen2 "$Office" "Office" "" "LongOffice"
+    "Office") listgen2 "$Office" "Office" "Done" "LongOffice"
     ;;
     "Programming") listgen2 "$Programming" "Programming" "Done" "LongProg"
     ;;
@@ -148,15 +154,26 @@ do
     Picked=$(cat output.file)
   fi
   
-  AddToList="Y"
   # First check that chosen item is not already on the list
   for lux in $LuxuriesList
   do
     if [ ${lux} = ${Picked} ]; then
-      dialog --backtitle "$Backtitle" --title " auto-partition " \
-    --msgbox "\nAlready in your shopping list" 15 40
-      AddToList="N"
-      continue
+      Temp=""
+      dialog --yes-label "Keep" --no-label "Delete" \
+      --backtitle "$Backtitle" --title " Information " --no-shadow \
+    --yesno "\n  '$Picked' is already in your shopping list. Do you wish to delete it or keep it?" 10 60
+      case $? in
+        0) continue 2 # Keep $LuxuriesList as it is and return to top of enclosing loop
+         ;;
+        *) for lux in $LuxuriesList
+          do
+            if [ ${lux} != ${Picked} ]; then
+              Temp="$Temp $lux"
+            fi
+          done
+          LuxuriesList="$Temp"
+          continue 2 # Revise $LuxuriesList and return to top of enclosing loop
+      esac
     fi
   done
   # Then carry out any specific tests and add the item to the list
@@ -166,7 +183,7 @@ do
       ;;
     "Deepin") DesktopEnvironment="Deepin"
         dialog --backtitle "$Backtitle" --title " Deepin desktop environment " \
-    --yesno "\nThe deepin-extras pack includes includes the Deepin game center, media players, terminal & screenshot tools. Include the extras pack?\n" 10 40
+    --yesno "The deepin-extras pack includes the Deepin game center, media players, terminal & screenshot tools. Include the extras pack?\n" 10 40
         case $? in
           0) DDEextras="deepin-extra"
            ;;
@@ -174,6 +191,13 @@ do
         esac
       ;;
     "Enlightenment") DesktopEnvironment="Enlightenment"
+        dialog --backtitle "$Backtitle" --title " Enlightenment " \
+    --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability. Include them?" 10 40
+        case $? in
+          0) EnExtras="connman terminology"
+           ;;
+          *) EnExtras=""
+        esac
         ChooseDM
       ;;
     "Fluxbox") DesktopEnvironment="Fluxbox"
@@ -219,7 +243,7 @@ done
 ChooseDM() { # Choose a display manager unless already fixed by certain DEs
   if [ -z $DisplayManager ]; then
     Greeter=""
-    local Message="\nYou can choose one of the following display managers. Be aware that not all display managers work equally well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will haveto launch your desktop environment manually.\n"
+    local Message="\nYou can choose one of the following display managers. Be aware that not all display managers work equally well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will haveto launch your desktop environment manually."
     listgen1 "GDM LightDM LXDM sddm SLIM XDM" " Display Manager/Greeter " "Done"
     Response=$(cat output.file)
     if [ $? -eq 0 ]; then
@@ -250,7 +274,7 @@ while [ $Repeat -gt 0 ]
 do
   local Message="These are the settings you have entered. Please check them ...\nPress <Continue> to install with these settings, or choose an item if you wish to change it: "
   declare -a Settings
-  Categories="Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras"
+  Options="Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras"
   Settings[1]="$RootPartition $RootType                                         "
   if [ $SwapPartition ] || [ $SwapFile ]; then
     Settings[2]="$SwapPartition $SwapFile"
@@ -297,7 +321,7 @@ do
   fi
   Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
   Settings[12]="${LuxuriesList}"
-  listgen2 "$Categories" " Final Check " "Continue" "Settings"
+  listgen2 "$Options" " Final Check " "Continue" "Settings"
   Response=$(cat output.file)
   Repeat=$?
   if [ $Repeat -eq 0 ]; then
@@ -328,8 +352,7 @@ do
     ;;
     "Identity") ManualSettings
     ;;
-    "Extras") DisplayManager=""
-        PickLuxuries
+    "Extras") PickLuxuries
     ;;
     *) Repeat=0
   esac

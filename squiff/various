@@ -10,37 +10,61 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# PrintOne              22       SetGrubDevice         93
-# DisplayProgress       25       MountPartitions      106
-# SetKernel             46       InstallKernel        168
-# ConfirmVbox           58       TestExistingDM       195
-# MakePartitionList     76       SetRootPassword      224
-# arch_chroot           89       SetUserPassword      251
+# PrintOne              22       SetGrubDevice        128
+# DisplayProgress       25       MountPartitions      135
+# ProgressArray         47
+# SetKernel             61       InstallKernel        190
+# ConfirmVbox           73       InstallDM            227
+# MakePartitionList    104       SetRootPassword      244
+# arch_chroot          116       SetUserPassword      261
       
-
-PrintOne() { # Just because 
-  dialog --title " - Information - " --infobox "$1" 6 50 ; sleep 1
+PrintOne() {  # Arguments: "Component" "Patient"
+  dialog --backtitle "$Backtitle" --title " Information " --no-shadow --infobox "$1\n$2\n" 5 55 ; sleep 1 &
 }
 
-DisplayProgress() { # New code for displaying progress for longer processes
-  local Message="$1"
-  local Duration=$2
-  local Sleep=$((Duration/10))
-  local Percent=10
-
+DisplayProgress() { # Revised code for displaying progress for longer processes
+  Estimate=$2 # Numeric value passed as multiple of 10
+  local Message="$1" # Text passed to appear above progress bar
+  local Sleep=$(( $Estimate / 10 )) # Set sleep period to one tenth of total time 
+  local Percent=0
   (
-  while [ $Percent -lt 110 ]
+  until [ $Percent -gt 100 ]
   do
     echo "XXX"
     echo $Percent
-    echo "$Message"
+    echo "\n  $Message\n  Processing may continue after gauge shows 100%\n  Please be patient ..."
     echo "XXX"
     Percent=`expr $Percent + 10`
     sleep $Sleep
   done
   ) |
+  dialog --backtitle "$Backtitle" --title " Progress " --no-shadow --gauge "" 9 60 0 &
+}
 
-  dialog --title " - Information - " --gauge "" 6 60 0 &
+ProgressArray() {
+# For installing multiple programs with pacstrap and displaying gauge
+  local Title=" $1 "
+  # Receives PassArray comprising all the programs
+  # 1) Count items in the array
+  n=${#PassArray[*]}; 
+  # 2) Redirect dialog commands input using substitution
+  dialog --title "$Title" --no-shadow --gauge "" 8 60 < <(
+  # 3) set counter - it will increase on each parse
+   i=0
+  # 4) read each item from the array 
+  for f in "${PassArray[@]}"
+  do
+    # ... calculate progress
+    PCT=$(( 100*(++i)/n ))
+    # ... update dialog box 
+    echo "XXX"
+    echo "$PCT"
+    echo "\n  Installing $f"
+    echo "XXX"
+    # ... install $f
+    pacstrap /mnt $f &>> feliz.log
+  done
+  )
 }
 
 SetKernel() {
@@ -107,7 +131,7 @@ MountPartitions() {
   case $RootType in
   "") echo "Not formatting root partition" &>> feliz.log
   ;;
-  *) echo "Formatting /root partition" >> feliz.log
+  *) PrintOne "Preparing and mounting partitions" ""
     umount ${RootPartition} /mnt >/dev/null &>> feliz.log
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` &>> feliz.log
@@ -124,12 +148,10 @@ MountPartitions() {
       mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
     fi
   esac
-  PrintOne "Mounting /root partition"	
   mount ${RootPartition} /mnt &>> feliz.log # eg: mount /dev/sda1 /mnt
   if [ ${SwapPartition} ]; then
     swapoff -a &>> feliz.log
     if [ $MakeSwap = "Y" ]; then
-      PrintOne "Making /swap partition"
       Partition=`echo $SwapPartition | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
@@ -137,13 +159,11 @@ MountPartitions() {
       fi
       mkswap ${Label} ${SwapPartition} &>> feliz.log # eg: mkswap -L Arch-Swap /dev/sda2
     fi
-    PrintOne "Activating /swap"
     swapon ${SwapPartition} &>> feliz.log # eg: swapon /dev/sda2
   fi
   local Counter=0
   for id in ${AddPartList}
   do
-    PrintOne "Mounting ${id} as ${AddPartMount[$Counter]}"
     umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null &>> feliz.log
     mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log	# eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
@@ -165,75 +185,45 @@ MountPartitions() {
 	done
 }
 
-InstallKernel() {
-  DisplayProgress "Installing base-devel" 70 &
-  pacstrap /mnt base-devel &>> feliz.log
-  PrintOne "Installing bash"
-  pacstrap /mnt bash &>> feliz.log
-  DisplayProgress "Installing cli tools" 50 &
-  pacstrap /mnt btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs &>> feliz.log
-  PrintOne "Installing extra tools"
-  pacstrap /mnt gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reflector reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver &>> feliz.log
+InstallKernel() { # Kernel and some other core systems
+  DisplayProgress "Installing base-devel and bash" 40
+  pacstrap /mnt base-devel bash &>> feliz.log 
+  # Create array of all the programs to pass to installing function
+  PassArray=() # Ensure array is empty
+  PassArray=( btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reflector reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver xorg-xedit xterm )
+  ProgressArray " Installing cli tools and extras " # Install each one using pacstrap
+  # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
+  
   case $Kernel in
-  1) DisplayProgress "Installing LTS kernel" 60 &
+  1) DisplayProgress "Installing LTS kernel" 50
     pacstrap /mnt linux-lts &>> feliz.log
     if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
-      PrintOne "Installing virtualbox guest modules"
       pacstrap /mnt virtualbox-guest-utils virtualbox-guest-modules-lts  virtualbox-guest-dkms &>> feliz.log
       echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
       cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
     fi
   ;;  
-  *) DisplayProgress "Installing Latest kernel" 60
+  *) DisplayProgress "Installing Latest kernel" 50
     pacstrap /mnt linux &>> feliz.log
     if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
-      PrintOne "Installing virtualbox guest modules"
       pacstrap /mnt virtualbox-guest-utils virtualbox-guest-dkms &>> feliz.log
       echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
       cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
     fi
-  esac
-  PrintOne "Installing opensource video drivers"
+  esac                                                   
+  
+ # PrintOne "Installing opensource video drivers" ""
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
 }
 
-TestExistingDM() {
-  # Test for existing display manager and disable if necessary
-  arch-chroot /mnt touch etc/output.log  &>> feliz.log # Create empty file
-  arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service' > mnt/etc/output.log &>> feliz.log
-  DMLine=`cat /mnt/etc/output.log` &>> feliz.log
-  local Counter=1
-  case ${DMLine} in
-  "") echo "No previous DM discovered" >> feliz.log
-  ;;
-  *) local Continue="Y"
-    while [ ${Continue} = "Y" ]
-    do
-      ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` &>> feliz.log # First of pair is DM
-      if [ -z ${ExDM} ]; then
-        Continue="N" # Quit if no further entries
-        break
-      fi
-      (( Counter+=1 ))
-      ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` &>> feliz.log # Second is status
-      case ${ExDMStatus} in
-      "enabled") arch_chroot "systemctl disable ${ExDM} >/dev/null"
-      ;;
-      *) echo "${ExDM} already disabled" >> feliz.log
-      esac
-      (( Counter+=1 ))
-    done
-  esac
-}
- 
 InstallDM() { # Called from feliz when installing desktop environment
   case ${DisplayManager} in
-    "") echo "Not installing a Display Manager" >> feliz.log
+    "") echo "No Display Manager selected" >> feliz.log
     ;;
-    *) PrintOne "Installing ${DisplayManager} Display Manager"
+    *) PrintOne "Installing ${DisplayManager} Display Manager" "" &>> feliz.log
       pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
-      arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
+      arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
   esac
 }
 

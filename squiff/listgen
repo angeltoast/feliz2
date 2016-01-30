@@ -97,14 +97,14 @@ Printit() {
   countlines=$((countcharacters/Width)) # Calculate lines
   echo $Message | sed 's/[^\\]//g' > output.file   # Use sed to remove all except newlines
   countnewlines=`cat output.file | wc -c` # Count newline characters
-  Height=$((countlines+countnewlines+Counter+15-Counter))
-  if [ $Height -gt 18 ]; then
-    Height=18
+  Height=$((countlines+countnewlines+Counter+16-Counter))
+  if [ $Height -gt 19 ]; then
+    Height=19
     if [ $Width -lt 50 ]; then
       Width=$((Width+10))
     fi
   fi
   # Use $Counter and ${Options[@]} array in dialog
-  dialog --backtitle "$Backtitle" --title " $Title " $CancelButton \
-      --menu "\n$Message\n" $Height $Width $Counter "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " $Title " --no-shadow --ok-button "Select" $CancelButton \
+      --menu "$Message\n" $Height $Width $Counter "${Options[@]}" 2> output.file
 }

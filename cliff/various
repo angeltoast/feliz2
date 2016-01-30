@@ -13,12 +13,12 @@
 # Various input/output  22       arch_chroot          242
 # Internet connection   87       SetGrubDevice        246
 # Various input/output  22       SetGrubDevice        246
-# Internet connection   87       umount_partitions    274
-# Mirrorlist           131       MountPartitions      283
-# SetScope             159       InstallKernel        342
-# SetKernel            193       TestExistingDM       336
-# ConfirmVbox          206       SetRootPassword      365
-# MakePartitionList    229       SetUserPassword      394
+# Internet connection   87       MountPartitions      283
+# Mirrorlist           131       InstallKernel        342
+# SetScope             159       TestExistingDM       336
+# SetKernel            193       SetRootPassword      365
+# ConfirmVbox          206       SetUserPassword      394
+# MakePartitionList    229       
 
 print_heading() {
   clear
@@ -33,7 +33,8 @@ invalid_option() { # (from AUI scripts)
   read_timed "Invalid option. Try again ..." 1
 }
 
-TPread() { # Aligned prompt for user-entry - returns result through $Response
+TPread() { # Aligned prompt for user-entry
+  # $1 = prompt ... Returns result through $Response
   T_COLS=`tput cols`
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
@@ -230,8 +231,8 @@ MountPartitions() {
 }
 
 InstallKernel() {
-  TPecho "Installing cli tools"
-  pacstrap /mnt  base-devel bash  btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo unrar unzip usbutils util-linux vi vim wget which xfsprogs xarchiver 2>> feliz.log
+  TPecho "Installing cli tools and extras"
+  pacstrap /mnt  base-devel bash  btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo unrar unzip usbutils util-linux vi vim wget which xfsprogs xarchiver xorg-xedit xterm 2>> feliz.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   case $Kernel in
     1) TPecho "Installing LTS kernel"

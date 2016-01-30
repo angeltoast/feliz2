@@ -215,13 +215,17 @@ SetHostname() {
 
 PickLuxuries() { # User selects any combination from a store of extras
   local Complete=0
-  LuxuriesList=""
   print_heading
-  PrintOne "Now you have the option to add 'extras' such as a web"
-  PrintOne "browser, desktop environment, office software, etc."
-  PrintOne "Yaourt is also available as an option, in 'Accessories'"
-  echo
-  PrintOne "If you want only a base Arch installation, exit without choosing any extras."
+  case "$LuxuriesList" in
+  "") PrintOne "Now you have the option to add 'extras' such as a web"
+    PrintOne "browser, desktop environment, office software, etc."
+    PrintOne "Yaourt is also available as an option, in 'Accessories'"
+    echo
+    PrintOne "If you want only a base Arch installation, exit without choosing any extras."
+  ;;
+  *) PrintOne "You can add more items to your list,"
+    PrintOne "or delete those you don't want."
+  esac
   echo
   while [ $Complete -eq 0 ]
   do
@@ -244,6 +248,35 @@ PickLuxuries() { # User selects any combination from a store of extras
   else
     Scope="Basic"  
   fi
+}
+
+KeepOrDelete() {
+Bagged="$1"
+# 1) Display message and wait for input
+Validated="N"
+until [ $Validated = "Y" ]
+do
+  print_heading
+  PrintOne "$Bagged is already in your shopping list"
+  TPread "Do you wish to delete it or keep it? (d/k): "
+# 2) Process
+  case $Response in
+    "k"|"K") Validated="Y"
+      Temp="$LuxuriesList"
+    ;;
+    "d"|"D") Validated="Y"
+      Temp=""
+      for lux in $LuxuriesList
+      do
+        if [ ${lux} != ${Bagged} ]; then
+          Temp="$Temp $lux"
+        fi
+      done
+    ;;
+    *) invalid_option
+  esac
+done 
+LuxuriesList="$Temp"
 }
 
 ShoppingList() {
@@ -325,8 +358,8 @@ do
   for lux in $LuxuriesList
   do
     if [ ${lux} = ${Result} ]; then
-      read_timed "Already in your shopping list"
-      AddToList="N"
+      KeepOrDelete "$Result" # New function
+      Result=""
       continue
     fi
   done
@@ -348,7 +381,7 @@ do
         ChooseDM
       ;;
     "Deepin") DesktopEnvironment="Deepin"
-             AddDEextras "xfce4-goodies"
+           AddDEextras "deepin-extra"
         case $Response in
           0) DDEextras="deepin-extra"
            ;;
@@ -394,6 +427,8 @@ do
            *) GoodiesXfce=""
          esac
          ChooseDM
+      ;;
+      "") continue
       ;;
      *) echo	
  		esac
@@ -612,8 +647,7 @@ do
     ;;
     11) ManualSettings
     ;;
-    12) DisplayManager=""
-        PickLuxuries
+    12) PickLuxuries
     ;;
     *) Repeat=0
   esac

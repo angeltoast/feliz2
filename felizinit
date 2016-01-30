@@ -58,29 +58,29 @@ CheckInternet() {
   while [ $Service = "N" ]
   do
     case $Chosen in
-    1) Centre "Welcome to the Feliz Arch Linux installation script." # CLI welcome screen
-      Centre "A working internet connection is needed for installation."
-      Centre "Checking your connection now ..."
+    1) Centre "$Backtitle" # CLI welcome screen
+      Centre "$Needed"
+      Centre "$Checking"
       CheckConnection
       case $Service in
-        "N") read_timed "Sorry, installation cannot continue without an internet connection."
+        "N") read_timed "$Sorry"
           exit
         ;;
-        *) Centre "Downloading files - please wait"
+        *) Centre "$Downloading"
         break
       esac
     ;;
-    *) dialog --backtitle "VERSION" --title " Installer Version " \
-          --infobox "Welcome to the Feliz Arch Linux installation script.\nA working internet connection is needed for installation.\nChecking your connection now ..." 10 50
+    *) dialog --backtitle "$Backtitle" --title "$Title" \
+          --infobox "$Needed\n$Checking" 8 50
       CheckConnection
       case $Service in
         "N") read_timed 
-          dialog --backtitle "VERSION" --title " Installer Version " \
-          --infobox "Sorry, installation cannot continue without an internet connection." 5 40
+          dialog --backtitle"$Backtitle" --title "$Title" \
+          --infobox "$Sorry" 5 40
           exit
         ;;
-        *) dialog --backtitle "VERSION" --title " Installer Version " \
-          --infobox "Downloading files - please wait" 5 30
+        *) dialog --backtitle "$Backtitle" --title "$Title" \
+          --infobox "$Downloading" 5 30
         break
       esac
     esac
@@ -94,8 +94,8 @@ do
     1) if [[ ! $(ping -c 3 google.com) ]]; then
         wifi-menu &>> feliz.log 
         if [[ ! $(ping -c 3 google.com) ]]; then
-          Centre "Unable to establish a connection. Ensure that your"
-          Centre "computer is able to access the internet."
+          Centre "$Unable"
+          Centre "$Ensure"
           TPread "Try again? (y/n): "
           Retry=$Response
           if [ $Retry != "Y" ] && [ $Retry != "y" ]; then
@@ -103,31 +103,31 @@ do
             break
           fi
         else
-          read_timed "Connection detected"
+          read_timed "$Connection"
           Service="Y"
         fi
       else
-        read_timed "Connection detected"
+        read_timed "$Connection"
         Service="Y"
       fi
     ;;
     *) if [[ ! $(ping -c 3 google.com) ]]; then
         wifi-menu &>> feliz.log 
         if [[ ! $(ping -c 3 google.com) ]]; then
-          dialog --backtitle "VERSION" --title " Installer Version " --nocancel \
-          --yesno "Unable to establish a connection. Ensure that your computer is able to access the internet.\nTry again? (y/n): " 10 50
+          dialog --backtitle "$Backtitle" --title "$Title" --nocancel \
+          --yesno "$Unable\n$Ensure\nTry again?" 10 50
           if [ $? -eq 1 ]; then
             exit
             break
           fi
         else
-          dialog --backtitle "VERSION" --title " Installer Version " \
-          --infobox "Connection detected" 5 30
+          dialog --backtitle "$Backtitle" --title "$Title" \
+          --infobox "$Connection" 5 30
           Service="Y"
         fi
       else
-          dialog --backtitle "VERSION" --title " Installer Version " \
-          --infobox "Connection detected" 5 30
+          dialog --backtitle "$Backtitle" --title "$Title" \
+          --infobox "$Connection" 5 30
           Service="Y"
       fi
   esac
@@ -135,8 +135,9 @@ done
 }
 
 UIselection() {
-  dialog --backtitle "VERSION" --title " Installer Version " --nocancel \
-  --menu "\nYou can now choose between feliz's traditional, helpful, command-line interface, or a new semi-graphical dialog system ...\n \n" 15 50 2 \
+  dialog --backtitle "$Backtitle" --title " Installer Version " --nocancel \
+  --menu "You can now choose between feliz's traditional, helpful, \
+command-line interface, or a new, semi-graphical, dialog system ..." 12 52 2 \
   "1" "Traditional command line" \
   "2" "New! Semi-graphical" 2> output.file
     Chosen=$(cat output.file)
@@ -147,12 +148,20 @@ UIselection() {
 # Execute
 #
 clear
+Backtitle="Welcome to the Feliz Arch Linux installation script"
 # Offer user alternative UI
 UIselection
-
+Title=" Internet Connection "
+Needed="A working internet connection is needed for installation."
+Checking="Checking your connection now ..."
+Connection="Connection detected"
+Downloading="Downloading files - please wait ..."
+Unable="Unable to establish a connection."
+Ensure="Ensure that your computer is able to access the internet."
+Sorry="Sorry, installation cannot continue without an internet connection."
 CheckInternet
 
-# Download and unzip the complete testing archive from Github
+# Download and unzip the complete stable archive from Github
 wget -N https://github.com/angeltoast/feliz/archive/master.zip &>> feliz.log
 unzip -o master.zip &>> feliz.log
 cp feliz-master/common/* . &>> feliz.log
