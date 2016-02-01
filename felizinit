@@ -71,7 +71,7 @@ CheckInternet() {
       esac
     ;;
     *) dialog --backtitle "$Backtitle" --title "$Title" \
-          --infobox "$Needed\n$Checking" 8 50
+          --infobox "$Needed\n\n$Checking" 8 50
       CheckConnection
       case $Service in
         "N") read_timed 
@@ -137,9 +137,9 @@ done
 UIselection() {
   dialog --backtitle "$Backtitle" --title " Installer Version " --nocancel \
   --menu "You can now choose between feliz's traditional, helpful, \
-command-line interface, or a new, semi-graphical, dialog system ..." 12 52 2 \
+command-line interface (from the Achoo project), or a new, semi-graphical, dialog system ..." 12 52 2 \
   "1" "Traditional command line" \
-  "2" "New! Semi-graphical" 2> output.file
+  "2" "Semi-graphical" 2> output.file
     Chosen=$(cat output.file)
     clear
 }
