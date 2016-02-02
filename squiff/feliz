@@ -250,7 +250,6 @@ if [ $Scope != "Basic" ]; then
         "Xfce") DisplayProgress "Installing 'Xfce' Desktop Environment" 30
           InstallDM
           pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
-
         ;;
         *) continue # Ignore others on this pass
       esac

@@ -138,8 +138,8 @@ UIselection() {
   dialog --backtitle "$Backtitle" --title " Installer Version " --nocancel \
   --menu "You can now choose between feliz's traditional, helpful, \
 command-line interface (from the Achoo project), or a new, semi-graphical, dialog system ..." 12 52 2 \
-  "1" "Traditional command line" \
-  "2" "Semi-graphical" 2> output.file
+  "cli" "Traditional command line" \
+  "s-g" "Semi-graphical interface" 2> output.file
     Chosen=$(cat output.file)
     clear
 }
@@ -168,7 +168,7 @@ cp feliz-master/common/* . &>> feliz.log
 
 # Copy the appropriate files to working directory
   case $Chosen in
-    1) cp feliz-master/cliff/* . &>> feliz.log # CLI
+    "cli") cp feliz-master/cliff/* . &>> feliz.log # CLI
     ;;
     *) cp feliz-master/squiff/* . &>> feliz.log # Semi-graphical
   esac
