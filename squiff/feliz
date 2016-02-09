@@ -42,7 +42,7 @@ fi
 Backtitle=" If you need guidance, consult the Arch Wiki - https://wiki.archlinux.org/"
 Passed=$Backtitle
 StartTime=$(date +%s)
-echo $StartTime > feliz.log
+echo "Begin" > feliz.log
 
 # Check partition table & offer options
 CheckParts
@@ -129,7 +129,7 @@ if [ $Scope != "Basic" ]; then
 fi
 
 if [ ${GrubDevice} ]; then
-  DisplayProgress "Installing Grub to $GrubDevice" 10 &
+  PrintOne "Installing Grub to $GrubDevice" ""
   pacstrap /mnt grub &>> feliz.log
   if [ $OSprober = "Y" ]; then
     pacstrap /mnt os-prober &>> feliz.log
@@ -161,6 +161,7 @@ if [ $Scope != "Basic" ]; then
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
     sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers &>> feliz.log
+    mkdir /mnt/home/${UserName}/Documents Pictures
   else
     echo "User already exists" >> feliz.log
   fi
@@ -171,115 +172,7 @@ if [ $Scope != "Basic" ]; then
   ProgressArray "Adding Codecs, X, graphics, etc" # Display gauge while installing with pacstrap
   
   # Install desktop environments, window managers and display managers
-  if [ -n "${LuxuriesList}" ]; then   # Then parse through LuxuriesList checking for DEs
-    for i in ${LuxuriesList}
-    do
-      case $i in
-        "Cinnamon") DisplayProgress "Installing Cinnamon desktop environment" 30
-          InstallDM
-          pacstrap /mnt cinnamon &>> feliz.log
-        ;;
-        "Deepin") DisplayProgress "Installing Deepin desktop environment" 30
-          # If there is no defined display manager
-          if [ -z ${DisplayManager} ]; then
-            # Install LightDM and Deepin greeter
-            pacstrap /mnt lightdm deepin-session-ui &>> feliz.log
-            # Activate daemon
-            arch_chroot "systemctl -f enable lightdm.service" &>> feliz.log
-            # Change the greeter line in lightdm.conf
-            sed -i '/#greeter-session=/ c\greeter-session=lightdm-deepin-greeter' /mnt/etc/lightdm/lightdm.conf &>> feliz.log
-          else
-            InstallDM
-          fi
-          pacstrap /mnt deepin ${DDEextras} &>> feliz.log
-          # Copy pro-forma xinitrc file ...
-          cp /mnt/etc/X11/xinit/xinitrc /mnt/home/${UserName}/.xinitrc
-          # Then add line at end to ensure DDE is used ...
-          sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc &>> feliz.log
-        ;;
-        "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop environment" 30
-          InstallDM
-          pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log
-        ;;
-        "Fluxbox") DisplayProgress "Installing 'Fluxbox' Window Manager" 20
-          InstallDM
-          pacstrap /mnt fluxbox &>> feliz.log
-        ;;
-        "Gnome") DisplayProgress "Installing 'Gnome' Desktop Environment" 30
-          if [ -z ${DisplayManager} ]; then
-            pacstrap /mnt gnome &>> feliz.log
-            arch_chroot "systemctl -f enable gdm.service" &>> feliz.log
-          else
-            InstallDM
-            pacstrap /mnt gnome &>> feliz.log
-          fi
-        ;;
-        "KDE") DisplayProgress "Installing KDE Plasma meta package" 40
-          if [ -z ${DisplayManager} ]; then
-            pacstrap /mnt plasma-meta &>> feliz.log
-            arch_chroot "systemctl -f enable sddm.service" &>> feliz.log
-          else
-            InstallDM
-            pacstrap /mnt plasma-meta &>> feliz.log
-          fi
-          DisplayProgress "Installing KDE applications package" 40
-          pacstrap /mnt kde-applications &>> feliz.log
-        ;;
-        "LXDE") DisplayProgress "Installing 'LXDE' Desktop Environment" 20
-          if [ -z ${DisplayManager} ]; then
-            pacstrap /mnt lxde &>> feliz.log
-            arch_chroot "systemctl -f enable lxdm.service" &>> feliz.log
-            echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf &>> feliz.log
-          else
-            InstallDM
-            pacstrap /mnt lxde &>> feliz.log
-          fi
-        ;;
-        "LXQt") DisplayProgress "Installing 'LXQt' Desktop Environment" 20
-          InstallDM
-          pacstrap /mnt lxqt oxygen-icons &>> feliz.log
-        ;;
-        "Mate") DisplayProgress "Installing 'Mate' Desktop Environment" 30
-          InstallDM
-          pacstrap /mnt mate mate-extra &>> feliz.log
-        ;;
-        "Openbox") DisplayProgress "Installing 'Openbox' Window Manager" 20
-          InstallDM
-          pacstrap /mnt openbox &>> feliz.log
-        ;;
-        "Xfce") DisplayProgress "Installing 'Xfce' Desktop Environment" 30
-          InstallDM
-          pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
-        ;;
-        *) continue # Ignore others on this pass
-      esac
-    done
-  # ... then install the others
-    for i in ${LuxuriesList}
-    do
-      case $i in
-        "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
-        ;;
-        "yaourt") # Copy modified pacman.conf to new system and install Yaourt
-          PrintOne "Adding your extra items" "Modifying pacman.conf and installing Yaourt"
-          cp pacman.conf /mnt/etc &>> feliz.log # For installed system
-          cp pacman.conf /etc &>> feliz.log # For installer
-          pacman -Sy &>> feliz.log # Update
-          pacstrap /mnt yaourt &>> feliz.log
-        ;;
-        "cairo-dock") PrintOne "Adding your extra items" "Installing $i and cairo-dock-plug-ins"
-          pacstrap /mnt cairo-dock cairo-dock-plug-ins &>> feliz.log
-        ;;
-        "conky") PrintOne "Adding your extra items" "Installing $i"
-          pacstrap /mnt conky &>> feliz.log
-          cp conkyrc /mnt/home/$UserName/.conkyrc &>> feliz.log
-          chown $UserName /mnt/home/$UserName/.conkyrc &>> feliz.log
-        ;;
-        *) PrintOne "Adding your extra items" "Installing $i"
-          pacstrap /mnt $i &>> feliz.log
-      esac
-    done
-  fi
+  InstallLuxuries
 fi
 
 EndTime=$(date +%s)
@@ -291,6 +184,7 @@ SetRootPassword
 if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
+
 cp feliz.log /mnt/etc # Copy installation log for reference
 dialog --msgbox "\nCongratulations, installation is finished. It's time to exit the Feliz installer and start your new Arch Linux system. Don't forget to remove the installation media before restarting." 12 40
 

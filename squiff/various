@@ -11,12 +11,11 @@
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
 # PrintOne              22       SetGrubDevice        128
-# DisplayProgress       25       MountPartitions      135
-# ProgressArray         47
+# DisplayProgress       25       arch_chroot          126
+# ProgressArray         47       MountPartitions      130
 # SetKernel             61       InstallKernel        190
-# ConfirmVbox           73       InstallDM            227
-# MakePartitionList    104       SetRootPassword      244
-# arch_chroot          116       SetUserPassword      261
+# ConfirmVbox           73       SetRootPassword      244
+# MakePartitionList    104       SetUserPassword      261
       
 PrintOne() {  # Arguments: "Component" "Patient"
   dialog --backtitle "$Backtitle" --title " Information " --no-shadow --infobox "$1\n$2\n" 5 55 ; sleep 1 &
@@ -110,10 +109,6 @@ MakePartitionList() {
   BuildPartitionLists # Then rebuild
 }
 
-arch_chroot() {  # From Lution AIS
-  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
-}  
-
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
@@ -126,6 +121,10 @@ SetGrubDevice() {
    GrubDevice=$(cat output.file)
   fi
 }
+
+arch_chroot() {  # From Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
+}  
 
 MountPartitions() {
   case $RootType in
@@ -186,11 +185,11 @@ MountPartitions() {
 }
 
 InstallKernel() { # Kernel and some other core systems
-  DisplayProgress "Installing base-devel and bash" 40
+  DisplayProgress "Installing shell" 40
   pacstrap /mnt base-devel bash &>> feliz.log 
   # Create array of all the programs to pass to installing function
   PassArray=() # Ensure array is empty
-  PassArray=( btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reflector reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver xorg-xedit xterm )
+  PassArray=( btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver xorg-xedit xterm )
   ProgressArray " Installing cli tools and extras " # Install each one using pacstrap
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
@@ -215,16 +214,6 @@ InstallKernel() { # Kernel and some other core systems
   
  # PrintOne "Installing opensource video drivers" ""
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
-}
-
-InstallDM() { # Called from feliz when installing desktop environment
-  case ${DisplayManager} in
-    "") echo "No Display Manager selected" >> feliz.log
-    ;;
-    *) PrintOne "Installing ${DisplayManager} Display Manager" "" &>> feliz.log
-      pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
-      arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
-  esac
 }
 
 SetRootPassword() {

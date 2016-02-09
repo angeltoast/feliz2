@@ -138,8 +138,8 @@ UIselection() {
   dialog --backtitle "$Backtitle" --title " Installer Version " --nocancel \
   --menu "You can now choose between feliz's traditional, helpful, \
 command-line interface (from the Achoo project), or a new, semi-graphical, dialog system ..." 12 52 2 \
-  "cli" "Traditional command line" \
-  "s-g" "Semi-graphical interface" 2> output.file
+  "cli" "Command-line interface" \
+  "sgi" "Semi-graphical interface" 2> output.file
     Chosen=$(cat output.file)
     clear
 }
@@ -155,7 +155,7 @@ Title=" Internet Connection "
 Needed="A working internet connection is needed for installation."
 Checking="Checking your connection now ..."
 Connection="Connection detected"
-Downloading="Downloading files - please wait ..."
+Downloading="Downloading latest scripts - please wait ..."
 Unable="Unable to establish a connection."
 Ensure="Ensure that your computer is able to access the internet."
 Sorry="Sorry, installation cannot continue without an internet connection."

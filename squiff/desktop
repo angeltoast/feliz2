@@ -200,6 +200,10 @@ do
         esac
         ChooseDM
       ;;
+    "Feliz") DesktopEnvironment="Xfce"
+        GoodiesXfce="xfce4-goodies"
+        ChooseDM
+      ;;
     "Fluxbox") DesktopEnvironment="Fluxbox"
         ChooseDM
       ;;

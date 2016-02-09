@@ -77,14 +77,16 @@ LongAccs[5]="Tool to make/delete/resize partitions"
 LongAccs[6]="The file-manager from Gnome"
 LongAccs[7]="The Gnome terminal emulator"
 LongAccs[8]="Easy to use AUR package installer"
-Desktops="Cinnamon Gnome KDE LXDE LXQt Mate Xfce"
-LongDesk[1]="Slick DE from the Mint team  "
-LongDesk[2]="Full-featured, modern DE"
-LongDesk[3]="Plasma 5 and accessories pack"
-LongDesk[4]="Traditional, lightweight DE"
-LongDesk[5]="Lightweight and modern Qt DE"
-LongDesk[6]="Traditional DE from the Mint team"
-LongDesk[7]="Lightweight, highly configurable DE"
+Desktops="Cinnamon Deepin Feliz Gnome KDE LXDE LXQt Mate Xfce"
+LongDesk[1]="Slick DE from the Mint team      "
+LongDesk[2]="The Deepin Desktop Environment"
+LongDesk[3]="Exclusive Customized Xfce desktop"
+LongDesk[4]="Full-featured, modern DE"
+LongDesk[5]="Plasma 5 and accessories pack"
+LongDesk[6]="Traditional, lightweight DE"
+LongDesk[7]="Lightweight and modern Qt DE"
+LongDesk[8]="Traditional DE from the Mint team"
+LongDesk[9]="Lightweight, highly configurable DE"
 Graphical="evince gimp imagemagick gthumb simple-scan xsane"
 LongGraph[1]="Reader for PDF & other document formats"
 LongGraph[2]="Advanced image editing suite"
@@ -130,7 +132,7 @@ LongWMs[6]="For opening applications & managing windows"
 LongWMs[7]="Desktop panel"
 LongWMs[8]="Desktop panel"
 #
-# Include files
+# Include source files
 #
 if [[ -f `pwd`/various ]]; then
   source various
@@ -157,9 +159,15 @@ else
   exit 1
 fi
 
-#
-# Common cli functions
-#
+# -------------------------
+# Functions           Line 
+# -------------------------
+# ReflectorMirrorList  172       
+# LocalMirrorList      182
+# MakePartitionList    197
+# RunAutoPart          210
+# InstallDM            268
+# InstallLuxuries      279
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   PrintOne "Generating mirrorlist"
@@ -186,10 +194,7 @@ LocalMirrorList() { # In case Reflector fails, generate and save a shortened
 	chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
 }
 
-MakePartitionList() { # This function was missing from all parts of Feliz
-  # It has been recovered from Achoo, to see if this is the cause of 
-  # problems with displaying partitions.
-  
+MakePartitionList() {   
   # Call BuildPartitionLists function to generate an array of partitions
   # This is not a first call, so first empty the existing array
  	local x=0
@@ -258,4 +263,138 @@ RunAutoPart() {
   ShowPart2=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
   ShowPart3=""
   AutoPart=1 # Set flag to 'on' for mounting 
+}
+
+# Install display manager
+InstallDM() { # Called from feliz when installing desktop environment
+  case ${DisplayManager} in
+    "") echo "No Display Manager selected" >> feliz.log
+    ;;
+    *) PrintOne "Installing ${DisplayManager} Display Manager" "" &>> feliz.log
+      pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
+      arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
+  esac
+}
+
+# Install desktops and other extras
+InstallLuxuries() {
+  if [ -n "${LuxuriesList}" ]; then   # Parse through LuxuriesList checking for DEs
+    for i in ${LuxuriesList}
+    do
+      case $i in
+      "Cinnamon") DisplayProgress "Installing Cinnamon desktop environment" 50
+        InstallDM
+        pacstrap /mnt cinnamon &>> feliz.log
+      ;;
+      "Deepin") DisplayProgress "Installing Deepin desktop environment" 30
+        # If there is no defined display manager
+        if [ -z ${DisplayManager} ]; then
+          # Install LightDM and Deepin greeter
+          pacstrap /mnt lightdm deepin-session-ui &>> feliz.log
+          # Activate daemon
+          arch_chroot "systemctl -f enable lightdm.service" &>> feliz.log
+          # Change the greeter line in lightdm.conf
+          sed -i '/#greeter-session=/ c\greeter-session=lightdm-deepin-greeter' /mnt/etc/lightdm/lightdm.conf &>> feliz.log
+        else
+          InstallDM
+        fi
+        pacstrap /mnt deepin ${DDEextras} &>> feliz.log
+        # Copy pro-forma xinitrc file ...
+        cp /mnt/etc/X11/xinit/xinitrc /mnt/home/${UserName}/.xinitrc
+        # Then add line at end to ensure DDE is used ...
+        sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc &>> feliz.log
+      ;;
+      "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop environment" 30
+        InstallDM
+        pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log
+      ;;
+      "Feliz") DisplayProgress "Installing 'Feliz-Xfce' Desktop Environment" 30
+        InstallDM
+        pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
+        # Change wallpaper, copy config files
+        cp -f wallpaper.jpg /mnt/usr/share/backgrounds/xfce/xfce-teal.jpg &>> feliz.log # Overwrite default wallpaper
+        cp uca.xml /mnt/etc/xdg/Thunar/ &>> feliz.log            # Copy over the file containing extra Thunar actions
+      ;;
+      "Fluxbox") DisplayProgress "Installing 'Fluxbox' Window Manager" 20
+        InstallDM
+        pacstrap /mnt fluxbox &>> feliz.log
+      ;;
+      "Gnome") DisplayProgress "Installing 'Gnome' Desktop Environment" 30
+        if [ -z ${DisplayManager} ]; then
+          pacstrap /mnt gnome &>> feliz.log
+          arch_chroot "systemctl -f enable gdm.service" &>> feliz.log
+        else
+          InstallDM
+          pacstrap /mnt gnome &>> feliz.log
+        fi
+      ;;
+      "KDE") DisplayProgress "Installing KDE Plasma meta package" 40
+        if [ -z ${DisplayManager} ]; then
+          pacstrap /mnt plasma-meta &>> feliz.log
+          arch_chroot "systemctl -f enable sddm.service" &>> feliz.log
+        else
+          InstallDM
+          pacstrap /mnt plasma-meta &>> feliz.log
+        fi
+        DisplayProgress "Installing KDE applications package" 40
+        pacstrap /mnt kde-applications &>> feliz.log
+      ;;
+      "LXDE") DisplayProgress "Installing 'LXDE' Desktop Environment" 20
+        if [ -z ${DisplayManager} ]; then
+          pacstrap /mnt lxde &>> feliz.log
+          arch_chroot "systemctl -f enable lxdm.service" &>> feliz.log
+          echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf &>> feliz.log
+        else
+          InstallDM
+          pacstrap /mnt lxde &>> feliz.log
+        fi
+      ;;
+      "LXQt") DisplayProgress "Installing 'LXQt' Desktop Environment" 20
+        InstallDM
+        pacstrap /mnt lxqt oxygen-icons &>> feliz.log
+      ;;
+      "Mate") DisplayProgress "Installing 'Mate' Desktop Environment" 50
+        InstallDM
+        pacstrap /mnt mate mate-extra &>> feliz.log
+      ;;
+      "Openbox") DisplayProgress "Installing 'Openbox' Window Manager" 20
+        InstallDM
+        pacstrap /mnt openbox &>> feliz.log
+      ;;
+      "Xfce") DisplayProgress "Installing 'Xfce' Desktop Environment" 30
+        InstallDM
+        pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
+      ;;
+      *) continue # Ignore others on this pass
+      esac
+    done
+  # ... then install the others
+    for i in ${LuxuriesList}
+    do
+      case $i in
+      "Cinnamon" | "Deepin" | "Enlightenment" | "Feliz" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
+      ;;
+      "yaourt") # Copy modified pacman.conf to new system and install Yaourt
+        PrintOne "Adding your extra items" "Modifying pacman.conf and installing Yaourt"
+        cp pacman.conf /mnt/etc &>> feliz.log # For installed system
+        cp pacman.conf /etc &>> feliz.log # For installer
+        pacman -Sy &>> feliz.log # Update
+        pacstrap /mnt yaourt &>> feliz.log
+      ;;
+      "cairo-dock") PrintOne "Adding your extra items" "Installing cairo-dock and cairo-dock-plug-ins"
+        pacstrap /mnt cairo-dock cairo-dock-plug-ins &>> feliz.log
+      ;;
+      "conky") PrintOne "Adding your extra items" "Installing Conky"
+        pacstrap /mnt conky &>> feliz.log
+        if [ $DesktopEnvironment = "Feliz" ]; then
+          cp conkyrc /mnt/home/$UserName/.conkyrc &>> feliz.log
+          arch_chroot "chown $UserName /home/$UserName/.conkyrc"
+          cp conky.desktop /mnt/etc/xdg/autostart/ &>> feliz.log
+        fi
+      ;;
+      *) PrintOne "Adding your extra items" "Installing $i"
+        pacstrap /mnt $i &>> feliz.log
+      esac
+    done
+  fi
 }

@@ -76,17 +76,17 @@ Partitioning() {
   do
     dialog --backtitle "$Backtitle" --title " Partitioning " --cancel-label "Do nothing"\
       --menu "$Message" 20 55 2 \
-        "1" "Open cfdisk so I can partition manually" \
-        "2" "Allow feliz to partition the whole device" 2> output.file
+        "Manual" "Open cfdisk so I can partition manually" \
+        "Auto" "Allow feliz to partition the whole device" 2> output.file
     Proceed=$(cat output.file)
     case $Proceed in
-      1) cfdisk 2>> feliz.log
+      "Manual") cfdisk 2>> feliz.log
         tput setf 0 # Change foreground colour to black temporarily to hide error message
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0 # Reset colour
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
-      2) AutoPartition
+      "Auto") AutoPartition
       ;;
       *) Proceed=3
      esac

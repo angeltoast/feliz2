@@ -49,7 +49,7 @@ do
       ;;
     *) Repeat=0
       Countrykbd="${Result}"
-    loadkeys ${Countrykbd} 2>> feliz.log
+    loadkeys ${Countrykbd} &>> feliz.log
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
   esac
@@ -391,6 +391,10 @@ do
     "Enlightenment") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
+    "Feliz") DesktopEnvironment=$SaveResult
+        GoodiesXfce="xfce4-goodies"
+        ChooseDM
+      ;;
     "Fluxbox") DesktopEnvironment=$SaveResult
         ChooseDM
       ;;
@@ -477,16 +481,6 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
       fi
     done
   fi
-}
-    
-InstallDM() { # Called from feliz when installing desktop environment
-  case ${DisplayManager} in
-    "") TPecho "Not installing a Display Manager"
-    ;;
-    *) TPecho "Installing ${DisplayManager} Display Manager"
-      pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
-      arch_chroot "systemctl enable ${DisplayManager}.service" >/dev/null
-  esac
 }
 
 GnomeOptions() {

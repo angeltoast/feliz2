@@ -103,9 +103,9 @@ Partitioning() {
     Proceed=$Response
     echo
     case $Proceed in
-      1) cfdisk 2>> feliz.log
+      1) cfdisk &>> feliz.log
         tput setf 0 # Change foreground colour to black temporarily to hide error message
-        partprobe 2>> feliz.log #Inform kernel of changes to partitions
+        partprobe &>> feliz.log #Inform kernel of changes to partitions
         tput sgr0 # Reset colour
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
@@ -121,7 +121,7 @@ Partitioning() {
 }
 
 Parted() {
-  parted --script /dev/${UseDisk} "$1" 2>> feliz.log
+  parted --script /dev/${UseDisk} "$1" &>> feliz.log
 }
 
 AutoPartition() {
