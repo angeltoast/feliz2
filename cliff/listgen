@@ -6,14 +6,13 @@
 
 PrintOne() { # Aligned text according to screen size
   width=`tput cols`
+  EMPTY=" "
   lov=${#1}
   if [ ${lov} -lt ${width} ]; then
     stpt=$(( ($width - $lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
-    echo "$EMPTY $1"
-  else
-    echo "$1"
   fi
+  echo "$EMPTY $1"
 }
 
 PrintMany() { # Subsequent item(s) in an aligned list

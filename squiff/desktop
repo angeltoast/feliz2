@@ -201,6 +201,7 @@ do
         ChooseDM
       ;;
     "Feliz") DesktopEnvironment="Xfce"
+          FelizXfce="Yes"
         GoodiesXfce="xfce4-goodies"
         ChooseDM
       ;;
@@ -247,13 +248,13 @@ done
 ChooseDM() { # Choose a display manager unless already fixed by certain DEs
   if [ -z $DisplayManager ]; then
     Greeter=""
-    local Message="\nYou can choose one of the following display managers. Be aware that not all display managers work equally well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will haveto launch your desktop environment manually."
+    local Message="\nYou can choose one of the following display managers. Not all display managers work well with all desktop environments. If in doubt, choose LightDM. If you do not install a display manager, you will have to launch your desktop environment manually."
     listgen1 "GDM LightDM LXDM sddm SLIM XDM" " Display Manager/Greeter " "Done"
     Response=$(cat output.file)
     if [ $? -eq 0 ]; then
       Reply=$Response
       case $Reply in
-        "GDM") DisplayManager="gdm"
+        "GDM") DisplayManager="gdm        "
          ;;
         "LightDM") DisplayManager="lightdm"
             Greeter="lightdm-gtk-greeter"	
@@ -327,8 +328,7 @@ do
   Settings[12]="${LuxuriesList}"
   listgen2 "$Options" " Final Check " "Continue" "Settings"
   Response=$(cat output.file)
-  Repeat=$?
-  if [ $Repeat -eq 0 ]; then
+  if [ $? -eq 0 ]; then
   case $Response in
     "Root") ChangeRootPartition
         AllocateRoot
@@ -395,43 +395,4 @@ ManualSettings() {
       esac
     fi
   done
-}
- 
-ChangeRootPartition() {
-# Start array with SwapPartition
-  Ignorelist[0]=${SwapPartition}
-  local Counter=1
-  AddExtras
-  MakePartitionList
-}
-  
-ChangeSwapPartition() {
-# Start array with RootPartition
-  Ignorelist[0]=${RootPartition}
-  Counter=1
-  AddExtras
-  MakePartitionList
-}
-
-ChangePartitions() {
-  # Copy RootPartition and SwapPartition into temporary array
-  Ignorelist[0]=${RootPartition}
-  local Counter=1
-  if [ ${SwapPartition} ]; then
-    Ignorelist[1]=${SwapPartition}
-    Counter=2
-  fi
-  Ignores=${#Ignorelist[@]} # Save a count for later
-  MakePartitionList
-}
-
-AddExtras() {
-  # Called by ChangeSwapPartition and ChangeRootPartition with
-  # Ignorelist started and Counter set to next record number
-  # Add each field (extra partition) from AddPartList into the array:
-  for a in ${AddPartList[@]}; do
-    Ignorelist[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-  Ignores=${#Ignorelist[@]} # Save a count for later
 }

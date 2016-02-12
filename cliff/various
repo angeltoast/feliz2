@@ -49,7 +49,7 @@ TPread() { # Aligned prompt for user-entry
 }
 
 DisplayProgress() { # For compatibility with Squiff
-  TPecho "$1"
+  TPecho "$1" "$2"
 }
 
 TPecho() { # For displaying status while running on auto
@@ -59,16 +59,16 @@ TPecho() { # For displaying status while running on auto
   DIFFMIN=$(( $Difference/60 ))
   DIFFSEC=$(( $Difference % 60 ))
   T_COLS=`tput cols`
-  tput bold
+  EMPTY=" "
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( ($T_COLS - $lov) / 3 ))
     EMPTY="$(printf '%*s' $stpt)"
-    echo -e "$EMPTY ${DIFFMIN}m ${DIFFSEC}s - $1 \n"
-  else
-    echo -e "${DIFFMIN}m ${DIFFSEC}s - $1 \n"
   fi
+  tput bold
+  echo -e "$EMPTY $1 \n"
   tput sgr0
+  echo -e "$EMPTY $2 \n"
   echo
 }
 
@@ -140,7 +140,7 @@ MakePartitionList() {
 }
 
 arch_chroot() {  # From Lution AIS
-  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
+  arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
 }  
 
 SetGrubDevice() {
@@ -176,13 +176,13 @@ MountPartitions() {
     "") TPecho "Not formatting root partition"
     ;;
     *) TPecho "Formatting /root partition"
-      umount ${RootPartition} /mnt >/dev/null &>> feliz.log
+      umount ${RootPartition} /mnt >/dev/null 2>> feliz.log
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${RootPartition}
     elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} &>> feliz.log
+      mkfs.btrfs -f ${RootPartition} 2>> feliz.log
     else
       Partition=`echo $RootPartition | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
@@ -193,9 +193,9 @@ MountPartitions() {
     fi
   esac
   TPecho "Mounting /root partition"	
-  mount ${RootPartition} /mnt &>> feliz.log # eg: mount /dev/sda1 /mnt
+  mount ${RootPartition} /mnt 2>> feliz.log # eg: mount /dev/sda1 /mnt
   if [ ${SwapPartition} ]; then
-    swapoff -a &>> feliz.log
+    swapoff -a 2>> feliz.log
     if [ $MakeSwap = "Y" ]; then
       TPecho "Making /swap partition"
       Partition=`echo $SwapPartition | cut -c 6-`
@@ -206,21 +206,21 @@ MountPartitions() {
       mkswap ${Label} ${SwapPartition} # eg: mkswap -L Arch-Swap /dev/sda2
     fi
     TPecho "Activating /swap"
-    swapon ${SwapPartition} &>> feliz.log # eg: swapon /dev/sda2
+    swapon ${SwapPartition} 2>> feliz.log # eg: swapon /dev/sda2
   fi
 
   local Counter=0
   for id in ${AddPartList}
   do
     TPecho "Mounting ${id} as ${AddPartMount[$Counter]}"
-    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null &>> feliz.log
-    mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log	# eg: mkdir -p /mnt/home
+    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null 2>> feliz.log
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log	# eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id}
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${id} &>> feliz.log
+      mkfs.btrfs -f ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=`echo ${id} | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
@@ -229,14 +229,14 @@ MountPartitions() {
       fi
       mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log	# eg: mount /dev/sda3 /mnt/home
+    mount ${id} /mnt${AddPartMount[$Counter]} 2>> feliz.log	# eg: mount /dev/sda3 /mnt/home
 		Counter=$((Counter+1))
 	done
 }
 
 InstallKernel() {
   TPecho "Installing cli tools and extras"
-  pacstrap /mnt  base-devel bash  btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo unrar unzip usbutils util-linux vi vim wget which xfsprogs xarchiver xorg-xedit xterm &>> feliz.log
+  pacstrap /mnt  base-devel bash  btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils gawk gcc-libs gettext gksu glibc grep gzip inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pacman pciutils pcmciautils perl procps-ng psmisc reflector reiserfsprogs s-nail screenfetch sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo unrar unzip usbutils util-linux vi vim wget which xfsprogs xarchiver xorg-xedit xterm 2>> feliz.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   case $Kernel in
     1) TPecho "Installing LTS kernel"
@@ -244,8 +244,8 @@ InstallKernel() {
         if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
           TPecho "Installing virtualbox guest modules"
           pacstrap /mnt virtualbox-guest-utils virtualbox-guest-modules-lts  virtualbox-guest-dkms
-          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
-          cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
+          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
+          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
         fi
       ;;  
     *) TPecho "Installing Latest kernel"
@@ -253,12 +253,12 @@ InstallKernel() {
         if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
           TPecho "Installing virtualbox guest modules"
           pacstrap /mnt virtualbox-guest-utils virtualbox-guest-dkms
-          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
-          cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
+          echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
+          cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
         fi
   esac
   TPecho "Installing opensource video drivers"
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> feliz.log # Install opensource video drivers
 }
 
 TestExistingDM() {
@@ -326,7 +326,7 @@ SetRootPassword() {
     if [ $Pass1 = $Pass2 ]; then
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
      arch_chroot "passwd root" < /tmp/.passwd >/dev/null
-     rm /tmp/.passwd &>> feliz.log
+     rm /tmp/.passwd 2>> feliz.log
      Repeat="N"
     else
       print_heading
@@ -354,7 +354,7 @@ SetUserPassword() {
     if [ $Pass1 = $Pass2 ]; then
       echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
       arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
-      rm /tmp/.passwd &>> feliz.log
+      rm /tmp/.passwd 2>> feliz.log
       Repeat="N"
     else
       echo "Passwords don't match. Try again"

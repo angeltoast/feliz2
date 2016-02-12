@@ -147,6 +147,7 @@ command-line interface (from the Achoo project), or a new, semi-graphical, dialo
 #
 # Execute
 #
+echo "Begin" > feliz.log
 clear
 Backtitle="Welcome to the Feliz Arch Linux installation script"
 # Offer user alternative UI
@@ -164,7 +165,7 @@ CheckInternet
 # Download and unzip the complete stable archive from Github
 wget -N https://github.com/angeltoast/feliz/archive/master.zip &>> feliz.log
 unzip -o master.zip &>> feliz.log
-cp feliz-master/common/* . &>> feliz.log
+cp -r feliz-master/common/* . &>> feliz.log
 
 # Copy the appropriate files to working directory
   case $Chosen in

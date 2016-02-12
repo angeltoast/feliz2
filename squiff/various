@@ -21,6 +21,10 @@ PrintOne() {  # Arguments: "Component" "Patient"
   dialog --backtitle "$Backtitle" --title " Information " --no-shadow --infobox "$1\n$2\n" 5 55 ; sleep 1 &
 }
 
+TPecho() { # For compatibility with Cliff
+    PrintOne "$1" "$2"
+}
+
 DisplayProgress() { # Revised code for displaying progress for longer processes
   Estimate=$2 # Numeric value passed as multiple of 10
   local Message="$1" # Text passed to appear above progress bar

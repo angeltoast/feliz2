@@ -42,7 +42,7 @@ fi
 Backtitle=" If you need guidance, consult the Arch Wiki - https://wiki.archlinux.org/"
 Passed=$Backtitle
 StartTime=$(date +%s)
-echo "Begin" > feliz.log
+echo "Begin" >> feliz.log
 
 # Check partition table & offer options
 CheckParts
@@ -152,27 +152,15 @@ echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf &>> feliz.log
 
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ]; then
-  # If not already exist, create user
-  CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}` &>> feliz.log
-  if [ -z ${CheckUsers} ]; then
-    PrintOne "Setting up user configuration" ""
-    arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
-    # Set up basic configuration files and permissions for user
-    arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
-    arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers &>> feliz.log
-    mkdir /mnt/home/${UserName}/Documents Pictures
-  else
-    echo "User already exists" >> feliz.log
-  fi
-  
   # Various bits
   PassArray=() # Ensure the array is empty
   PassArray=( a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware iw wireless_tools wpa_actiond wpa_supplicant dialog xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-input-synaptics gvfs gamin )
   ProgressArray "Adding Codecs, X, graphics, etc" # Display gauge while installing with pacstrap
   
   # Install desktop environments, window managers and display managers
-  InstallLuxuries
+  InstallLuxuries # common/shared
+  #
+  UserAdd
 fi
 
 EndTime=$(date +%s)

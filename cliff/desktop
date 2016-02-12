@@ -9,13 +9,13 @@
 # ---------------     -----------------------
 # Function   Line     Function           Line
 # ---------------     -----------------------
-# Keymap      20      Display Managers    428
-# Locale      59      FinalCheck          549
-# Timezone   122      ManualSettings      640
-# Subzone    161      ChangeRootPartition 666
-# Username   235      ChangeSwapPartition 674
-# Hostname   251      ChangePartitions    682
-# Extras     216      AddExtras           694    
+# Keymap        20      Display Managers    428
+# Locale        59      FinalCheck          549
+# Timezone     122      ManualSettings      640
+# Subzone      161      ChangeRootPartition 666
+# Username     235      ChangeSwapPartition 674
+# Hostname     251      ChangePartitions    682
+# PickLuxuries 216      AddExtras           694    
 
 getkeymap() {
 print_heading
@@ -49,7 +49,7 @@ do
       ;;
     *) Repeat=0
       Countrykbd="${Result}"
-    loadkeys ${Countrykbd} &>> feliz.log
+    loadkeys ${Countrykbd} 2>> feliz.log
     echo
     read_timed "The keyboard is now set to: '$Countrykbd'" 1
   esac
@@ -392,6 +392,7 @@ do
         ChooseDM
       ;;
     "Feliz") DesktopEnvironment=$SaveResult
+          FelizXfce="Yes"
         GoodiesXfce="xfce4-goodies"
         ChooseDM
       ;;
@@ -672,43 +673,4 @@ ManualSettings() {
          break
     esac
   done
-}
-
-ChangeRootPartition() {
-# Start array with SwapPartition
-  Ignorelist[0]=${SwapPartition}
-  local Counter=1
-  AddExtras
-  MakePartitionList
-}
-  
-ChangeSwapPartition() {
-# Start array with RootPartition
-  Ignorelist[0]=${RootPartition}
-  Counter=1
-  AddExtras
-  MakePartitionList
-}
-
-ChangePartitions() {
-  # Copy RootPartition and SwapPartition into temporary array
-  Ignorelist[0]=${RootPartition}
-  local Counter=1
-  if [ ${SwapPartition} ]; then
-    Ignorelist[1]=${SwapPartition}
-    Counter=2
-  fi
-  Ignores=${#Ignorelist[@]} # Save a count for later
-  MakePartitionList
-}
-
-AddExtras() {
-  # Called by ChangeSwapPartition and ChangeRootPartition with
-  # Ignorelist started and Counter set to next record number
-  # Add each field (extra partition) from AddPartList into the array:
-  for a in ${AddPartList[@]}; do
-    Ignorelist[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-  Ignores=${#Ignorelist[@]} # Save a count for later
 }
