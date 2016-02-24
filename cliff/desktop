@@ -366,14 +366,7 @@ do
   # Then carry out any specific tests and add the item to the list
   SaveResult=$Result # (Because other subroutines return $Result)
   if [ ${SaveResult} = "libreoffice" ]; then
-    LibreVersion
-    case $Response in
-      "5") LuxuriesList="${LuxuriesList} libreoffice-fresh"
-      ;;   
-      "4") LuxuriesList="${LuxuriesList} libreoffice-still"
-      ;;
-      *) echo "Wormhole detected"
-    esac
+    LuxuriesList="${LuxuriesList} libreoffice-fresh"
     continue
   fi
   case $SaveResult in
