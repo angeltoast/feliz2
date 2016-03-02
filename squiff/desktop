@@ -118,51 +118,50 @@ fi
 }
 
 ShoppingList() {
-# Called by PickLuxuries after a category has been chosen.
-local Complete=0
-case "$LuxuriesList" in
+  # Called by PickLuxuries after a category has been chosen.
+  local Complete=0
+  case "$LuxuriesList" in
   "") local Title="Choose your first category"
   ;;
   *) local Title="Choose your next category"
   esac
-while [ $Complete -eq 0 ]
-do
-  local Message="Added so far: ${LuxuriesList}"
-  # Pass category to listgen2 for user to choose one item;
-  case $Category in
-    "Accessories") listgen2 "$Accessories" "Accessories" "Done" "LongAccs"
-    ;;
-    "Desktop_Environments") listgen2 "$Desktops" "Desktops" "Done" "LongDesk"
-    ;;
-    "Graphical") listgen2 "$Graphical" "Graphical" "Done" "LongGraph"
-    ;;
-    "Internet") listgen2 "$Internet" "Internet" "Done" "LongNet"
-    ;;
-    "Multimedia") listgen2 "$Multimedia" "Multimedia" "Done" "LongMulti"
-    ;;
-    "Office") listgen2 "$Office" "Office" "Done" "LongOffice"
-    ;;
-    "Programming") listgen2 "$Programming" "Programming" "Done" "LongProg"
-    ;;
-    "Window_Managers") listgen2 "$WindowManagers" "Window_Managers" "Done" "LongWMs"
-    ;;
-    *) break
-  esac
-  if [ $? -gt 0 ]; then # <Cancel> selected
-    break
-  else
-    Picked=$(cat output.file)
-  fi
-  
-  # First check that chosen item is not already on the list
-  for lux in $LuxuriesList
+  while [ $Complete -eq 0 ]
   do
-    if [ ${lux} = ${Picked} ]; then
-      Temp=""
-      dialog --yes-label "Keep" --no-label "Delete" \
+    local Message="Added so far: ${LuxuriesList}"
+    # Pass category to listgen2 for user to choose one item;
+    case $Category in
+      "Accessories") listgen2 "$Accessories" "Accessories" "Done" "LongAccs"
+      ;;
+      "Desktop_Environments") listgen2 "$Desktops" "Desktops" "Done" "LongDesk"
+      ;;
+      "Graphical") listgen2 "$Graphical" "Graphical" "Done" "LongGraph"
+      ;;
+      "Internet") listgen2 "$Internet" "Internet" "Done" "LongNet"
+      ;;
+      "Multimedia") listgen2 "$Multimedia" "Multimedia" "Done" "LongMulti"
+      ;;
+      "Office") listgen2 "$Office" "Office" "Done" "LongOffice"
+      ;;
+      "Programming") listgen2 "$Programming" "Programming" "Done" "LongProg"
+      ;;
+      "Window_Managers") listgen2 "$WindowManagers" "Window_Managers" "Done" "LongWMs"
+      ;;
+      *) break
+    esac
+    if [ $? -gt 0 ]; then # <Cancel> selected
+      break
+    else
+      Picked=$(cat output.file)
+    fi
+    # Check that chosen item is not already on the list
+    for lux in $LuxuriesList
+    do
+      if [ ${lux} = ${Picked} ]; then
+        Temp=""
+        dialog --yes-label "Keep" --no-label "Delete" \
       --backtitle "$Backtitle" --title " Information " --no-shadow \
     --yesno "\n  '$Picked' is already in your shopping list. Do you wish to delete it or keep it?" 10 60
-      case $? in
+        case $? in
         0) continue 2 # Keep $LuxuriesList as it is and return to top of enclosing loop
          ;;
         *) for lux in $LuxuriesList
@@ -173,11 +172,11 @@ do
           done
           LuxuriesList="$Temp"
           continue 2 # Revise $LuxuriesList and return to top of enclosing loop
-      esac
-    fi
-  done
-  # Then carry out any specific tests and add the item to the list
-  case $Picked in
+        esac
+      fi
+    done
+    # Then carry out any specific tests and add the item to the list
+    case $Picked in
     "Cinnamon") DesktopEnvironment="Cinnamon"
         ChooseDM
       ;;
@@ -203,6 +202,26 @@ do
     "Feliz") DesktopEnvironment="Xfce"
           FelizXfce="Yes"
         GoodiesXfce="xfce4-goodies"
+        # Check that yaourt and conky are not already on the list
+        AddYaourt="Yes"
+        AddConky="Yes"
+        for lux in $LuxuriesList
+        do
+          if [ ${lux} = "yaourt" ]; then
+            AddYaourt="No"
+            continue
+          elif [ ${lux} = "conky" ]; then  
+            AddConky="No"
+            continue
+          fi
+        done
+        # If not, add them
+        if [ $AddYaourt = "Yes" ]; then
+          LuxuriesList="${LuxuriesList} yaourt"
+        fi
+        if [ $AddConky = "Yes" ]; then
+          LuxuriesList="${LuxuriesList} conky"
+        fi
         ChooseDM
       ;;
     "Fluxbox") DesktopEnvironment="Fluxbox"
@@ -232,16 +251,16 @@ do
     "Xfce") DesktopEnvironment="Xfce"
         dialog --backtitle "$Backtitle" --title " Xfce desktop environment " \
     --yesno "\nThe xfce4-goodies pack includes includes the Whisker menu, extra plugins and a number of utilities such as the mousepad editor\nInclude the $Extras pack?\n" 10 40
-        case $? in
-          0) GoodiesXfce="xfce4-goodies"
-           ;;
-          *) GoodiesXfce=""
-        esac
-        ChooseDM
-      ;;
-     *) echo "Error at $LINENO" >> feliz.log	
- 		esac
-    LuxuriesList="${LuxuriesList} ${Picked}"
+      case $? in
+        0) GoodiesXfce="xfce4-goodies"
+        ;;
+        *) GoodiesXfce=""
+      esac
+      ChooseDM
+     ;;
+    *) echo "Error at $LINENO" >> feliz.log	
+    esac
+  LuxuriesList="${LuxuriesList} ${Picked}"
 done
 }
 

@@ -82,7 +82,7 @@ LongAccs[8]="Easy to use AUR package installer"
 Desktops="Cinnamon Deepin Feliz Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Slick DE from the Mint team      "
 LongDesk[2]="The Deepin Desktop Environment"
-LongDesk[3]="Exclusive Customized Xfce desktop"
+LongDesk[3]="Exclusive Feliz Customized Xfce desktop"
 LongDesk[4]="Full-featured, modern DE"
 LongDesk[5]="Plasma 5 and accessories pack"
 LongDesk[6]="Traditional, lightweight DE"
@@ -217,60 +217,50 @@ RunAutoPart() {
   # Create partitions and set variables for mounting
   Parted "mklabel msdos"
   if [ $DiskSize -ge 40 ]; then
-    # Device is large enough for a separate /home partition and larger
-    # /root (20 GiB) and /swap (8 GiB)
-    Parted "mkpart primary linux-swap 1MiB 8GiB"
+    # Device is large enough for a separate /home partition and larger root
+    # /swap 4 GiB
+    Parted "mkpart primary linux-swap 1MiB 4GiB"
     SwapPartition="${GrubDevice}1"
     MakeSwap="Y"
-    # Root partition 15GiB
-    Parted "mkpart primary ext4 8GiB 28GiB"
+    # /root 20GiB
+    Parted "mkpart primary ext4 4GiB 24GiB"
     Parted "set 2 boot on"
     RootPartition="${GrubDevice}2"
     RootType="ext4"
-    # Home partition = remainder (size from 19GiB to maximum available)
-    Parted "mkpart primary ext4 28GiB 100%"
+    # /home from 24GiB to maximum available
+    Parted "mkpart primary ext4 24GiB 100%"
     AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
     AddPartMount[0]="/home"
     AddPartType[0]="ext4"
     Home="Y"
   elif [ $DiskSize -ge 30 ]; then
     # Device is just large enough for a separate /home partition
-    # Swap 4GiB 
+    # /swap 4GiB 
     Parted "mkpart primary linux-swap 1MiB 4GiB"
     SwapPartition="${GrubDevice}1"
     MakeSwap="Y"
-    # Root partition 15GiB
+    # /root 15GiB
     Parted "mkpart primary ext4 4GiB 19GiB"
     Parted "set 2 boot on"
     RootPartition="${GrubDevice}2"
     RootType="ext4"
-    # Home partition = remainder (size from 19GiB to maximum available)
+    # /home from 19GiB to maximum available
     Parted "mkpart primary ext4 19GiB 100%"
     AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
     AddPartMount[0]="/home"
     AddPartType[0]="ext4"
     Home="Y"
-  elif [ $DiskSize -ge 18 ]; then
-    # Swap 4Gib and one main partition up to 20GiB
-    Parted "mkpart primary linux-swap 1MiB 4GiB"
-    SwapPartition="${GrubDevice}1"
-    MakeSwap="Y"
-    Parted "mkpart primary ext4 4GiB 100%"
-    Parted "set 2 boot on"
-    RootPartition="${GrubDevice}2"
-    RootType="ext4"
-  elif [ $DiskSize -gt 10 ]; then
-    # Swap 2Gib and one main partition up to 16GiB
+  elif [ $DiskSize -ge 20 ]; then
+    # /swap 2GiB
     Parted "mkpart primary linux-swap 1MiB 2GiB"
     SwapPartition="${GrubDevice}1"
+    MakeSwap="Y"
+    # /root from 2GiB to maximum available
     Parted "mkpart primary ext4 2GiB 100%"
     Parted "set 2 boot on"
     RootPartition="${GrubDevice}2"
-    RootType="ext4"   
-    SwapFile="2G"
-    SwapPartition=""
-  else # If disk < 10 Gb
-    # Swap file and one main partition up to 10GiB
+    RootType="ext4"
+  else # If disk < 20 Gb make swap file and one partition up to maximum available
     Parted "mkpart primary ext4 1MiB 100%"
     Parted "set 1 boot on"
     RootPartition="${GrubDevice}1"

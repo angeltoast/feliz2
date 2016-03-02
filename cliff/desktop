@@ -387,6 +387,26 @@ do
     "Feliz") DesktopEnvironment=$SaveResult
           FelizXfce="Yes"
         GoodiesXfce="xfce4-goodies"
+        # Check that yaourt and conky are not already on the list
+        AddYaourt="Yes"
+        AddConky="Yes"
+        for lux in $LuxuriesList
+        do
+          if [ ${lux} = "yaourt" ]; then
+            AddYaourt="No"
+            continue
+          elif [ ${lux} = "conky" ]; then  
+            AddConky="No"
+            continue
+          fi
+        done
+        # If not, add them
+        if [ $AddYaourt = "Yes" ]; then
+          LuxuriesList="${LuxuriesList} yaourt"
+        fi
+        if [ $AddConky = "Yes" ]; then
+          LuxuriesList="${LuxuriesList} conky"
+        fi
         ChooseDM
       ;;
     "Fluxbox") DesktopEnvironment=$SaveResult
