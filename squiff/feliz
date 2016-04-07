@@ -2,47 +2,21 @@
 
 # feliz (formerly Achoo!) Arch Linux Installation Script
 # squiff edition - Semi-graphical User Interface Functions
-# Developed by Elizabeth Mills, incorporating some code adapted from the
-# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# Developed by Elizabeth Mills with acknowledgement to Carl Duff
+# Version: 2016-04-07
 
 #
-# Include files
+# Include source files
 #
-if [[ -f `pwd`/shared ]]; then
-  source shared
-else
-  echo "missing file: shared"
-  exit 1
-fi
-if [[ -f `pwd`/various ]]; then
-  source various
-else
-  echo "missing file: various"
-  exit 1
-fi
-if [[ -f `pwd`/partitioning ]]; then
-  source partitioning
-else
-  echo "missing file: partitioning"
-  exit 1
-fi
-if [[ -f `pwd`/desktop ]]; then
-  source desktop
-else
-  echo "missing file: desktop"
-  exit 1
-fi
-if [[ -f `pwd`/listgen ]]; then
-  source listgen
-else
-  echo "missing file: listgen"
-  exit 1
-fi
+source shared
+source various
+source partitioning
+source desktop
+source listgen
 
-Backtitle=" If you need guidance, consult the Arch Wiki - https://wiki.archlinux.org/"
-Passed=$Backtitle
 StartTime=$(date +%s)
-echo "Begin" >> feliz.log
+echo "${StartTime}" >> feliz.log
 
 # Check partition table & offer options
 CheckParts
@@ -100,8 +74,10 @@ ReflectorMirrorList
 InstallKernel
 
 PrintOne "Preparing local services" ""
+
 # Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
+
 # Generate fstab
 genfstab -U -p /mnt > /mnt/etc/fstab &>> feliz.log
 if [ ${SwapFile} ]; then
@@ -115,10 +91,10 @@ echo ${HostName} > /mnt/etc/hostname &>> feliz.log
 sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
 sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
 # Set up locale, etc
-echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen &>> feliz.log # eg: en_US.UTF-8 UTF-8
+echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
 arch_chroot "locale-gen"
-echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf &>> feliz.log # eg: LANG=en_US.UTF-8
-export "LANG=${CountryLocale}" &>> feliz.log # eg: LANG=en_US.UTF-8
+echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
+export "LANG=${CountryLocale}" 2>> feliz.log # eg: LANG=en_US.UTF-8
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 # Networking
@@ -129,7 +105,7 @@ if [ $Scope != "Basic" ]; then
 fi
 
 if [ ${GrubDevice} ]; then
-  PrintOne "Installing Grub to $GrubDevice" ""
+  PrintOne "Installing Grub2 to $GrubDevice" ""
   pacstrap /mnt grub &>> feliz.log
   if [ $OSprober = "Y" ]; then
     pacstrap /mnt os-prober &>> feliz.log
@@ -154,9 +130,9 @@ echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf &>> feliz.log
 if [ $Scope != "Basic" ]; then
   # Various bits
   PassArray=() # Ensure the array is empty
-  PassArray=( a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware iw wireless_tools wpa_actiond wpa_supplicant dialog xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm xf86-input-synaptics gvfs gamin )
-  ProgressArray "Adding Codecs, X, graphics, etc" # Display gauge while installing with pacstrap
-  
+  PassArray=( a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware iw wireless_tools wpa_actiond dialog xorg-server-utils xorg-xinit xorg-twm xf86-input-synaptics gvfs gamin )
+  ProgressArray "Adding Codecs, etc" # Display gauge while installing with pacstrap
+
   # Install desktop environments, window managers and display managers
   InstallLuxuries # common/shared
   #
@@ -174,6 +150,6 @@ if [ $Scope != "Basic" ]; then
 fi
 
 cp feliz.log /mnt/etc # Copy installation log for reference
-dialog --msgbox "\nCongratulations, installation is finished. It's time to exit the Feliz installer and start your new Arch Linux system. Don't forget to remove the installation media before restarting." 12 40
+dialog --backtitle "$Backtitle" --no-shadow --msgbox "\nCongratulations, installation is complete, and it is time to restart the computer into your new system.\nHave fun with Arch Linux." 10 40
 
 shutdown -h now

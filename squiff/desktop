@@ -15,7 +15,7 @@
 # UserName      75     ChangeRootPartition 356
 # Hostname      85     ChangeSwapPartition 364
 # PickLuxuries  93     ChangePartitions    372
-# ShoppingList 120     AddExtras           383    
+# ShoppingList 142     AddExtras           383
 
 getkeymap() {
   ListKbs=`cat keymaps.list`
@@ -24,7 +24,7 @@ getkeymap() {
     keyboards="$keyboards $k"
   done
   local Message="Scroll through this list, or type a letter, to find your keyboard."
-  listgen1 "${keyboards}" "Keyboards" "nocancel"
+  listgen1 "$keyboards" "Keyboards" "nocancel"
   Countrykbd=$(cat output.file)
   loadkeys ${Countrykbd} 2>> feliz.log
 }
@@ -37,9 +37,8 @@ setlocale() {
     Counter=$((Counter+1))
     Options[${Counter}]="UTF-8"
   done
-  local Message="Scroll through this list, or type a letter, to find your locale. This will be used to find the best mirrors for downloading your system"
-  dialog --backtitle "$Backtitle" --title " Locales " --nocancel \
-      --menu "\n$Message\n" 18 55 $Counter "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " - Locales - " --nocancel \
+      --menu "\nScroll through this list, or type a letter, to find your locale. This will be used to set fonts and language and to find the best mirrors for downloading your system\n" 18 55 $Counter "${Options[@]}" 2> output.file
   CountryLocale="$(cat output.file).UTF-8"
   CountryCode=(`cat output.file | cut -c4-5`)
 }
@@ -50,8 +49,8 @@ SetTimeZone() {
   for z in ${Zones[@]}; do
     passzones="$passzones $z"
   done
-  local Message="To set the system clock, please choose the World Zone of your location."
-  listgen1 "${passzones}" "World zones" "nocancel"
+  local Message="To set the system clock, please first choose the World Zone of your location."
+  listgen1 "${passzones}" "World_Zones" "nocancel"
   ZONE=$(cat output.file)
   SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
   passzones=""
@@ -59,96 +58,118 @@ SetTimeZone() {
     passzones="$passzones $z"
   done
   local Message="Now select your nearest city from this list."
-  listgen1 "$passzones" "Cities in ${ZONE}" "nocancel"
+  listgen1 "$passzones" "${ZONE}" "nocancel"
   SUBZONE=$(cat output.file)
 }
 
 UserName() {
-	local Message="Enter a name for the primary user of the new system.\nIf you don't create a username here, a default user called 'archie' will be set up"
-  dialog --backtitle "$Backtitle" --title " User name " --nocancel\
-      --inputbox "\n$Message\n" 18 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " - User Name - " --nocancel\
+      --inputbox "Enter a name for the primary user of the new system.\nIf you don't create a username here, a default user called 'archie' will be set up\n" 18 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
-	case $Entered in
-		"") UserName="archie"
-		;;
-		*) UserName=${Entered}
-	esac
+  case $Entered in
+    "") UserName="archie"
+    ;;
+    *) UserName=${Entered}
+  esac
 }
 
 SetHostname() {
-	Entered="arch-linux"
-	local Message="A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used."
-  dialog --backtitle "$Backtitle" --title " Hostname " --nocancel\
-      --inputbox "\n$Message\n" 16 40 2> output.file
+  Entered=""
+  dialog --backtitle "$Backtitle" --title " - Hostname - " --nocancel\
+      --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.
+      If you do not enter one, the default hostname of 'arch-linux' will be used\n" 18 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
-	case $Entered in
-		"") HostName="arch-linux"
-		;;
-		*) HostName=${Entered}
-	esac
+  case $Entered in
+    "") HostName="arch-linux"
+    ;;
+    *) HostName=${Entered}
+  esac
 }
 
 PickLuxuries() { # User selects any combination from a store of extras
-Category="Continue"
-case "${LuxuriesList}" in
-  "") local Message="Now you have the option to add extras, such as a web browser, etc. If you want only a base Arch installation, exit without choosing any extras."
+  _Categories_List="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+  case "${LuxuriesList}" in
+  "") local Message="Now you have the option to add extras, such as a web browser, etc.\n If you want only a base Arch installation, exit without choosing any extras"
   ;;
   *) local Message="You can add more items, or select items to delete."
   esac
-until [ $Category = "Done" ]
-do
-  # First select a category
-  listgen1 "$Categories" " Categories " "Done"
-  if [ $? -gt 0 ]; then # <Cancel> selected
-    break
+  Category="Continue"
+  until [ $Category = "Done" ]
+  do
+  # First select a category. _Categories_List is a string variable in same order as the Categories array
+    HowMany=`echo ${_Categories_List} | wc -w` # Count words
+    echo ${_Categories_List} | sed "s/ /\\n/g" > feliz.output # Copy categories to file
+    Counter=1
+    ItemCounter=1
+    Width=50
+    Options=()
+    until [ $ItemCounter -gt $HowMany ] # Prepare numbered list from file
+    do
+      Options[$((Counter))]=${ItemCounter}
+      Counter=$((Counter+1))
+      Options[${Counter}]=`sed -n "$ItemCounter p" feliz.output`
+      Counter=$((Counter+1))
+      ItemCounter=$((ItemCounter+1))
+    done
+    # Use $ItemCounter and ${Options[@]} array in menu dialog
+    dialog --backtitle "$_Backtitle" --title " - Categories - " --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 18 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
+    RetVal=$?
+    if [ $RetVal -gt 0 ]; then # <Cancel> selected
+      break
+    else
+      Selected=`cat feliz.output`
+      # Use selected number to get category for script use
+      Category=${Categories[${Selected}]} # English
+      # Get selection description in user language from $Options array
+      # Selected=$((Selected*2))
+      # _Category=${Options[${Selected}]} # User language
+    fi
+    # Then shop in that category
+    ShoppingList
+    local Message="Added so far: ${LuxuriesList}\n You can now choose from any of the other lists, or choose <Done> to finish this part of the setup"
+  done
+  if [ -n "${LuxuriesList}" ]; then
+    Scope="Full"
   else
-    Category=$(cat output.file)
+    Scope="Basic"
   fi
-  # Then shop in that category  
-  ShoppingList
-  local Message="Added so far: ${LuxuriesList}\nYou can now choose from any of the other lists, or choose <Done> to finish this part of the setup"
-done
-if [ -n "${LuxuriesList}" ]; then
-  Scope="Full"
-else
-  Scope="Basic"  
-fi
 }
 
 ShoppingList() {
   # Called by PickLuxuries after a category has been chosen.
   local Complete=0
   case "$LuxuriesList" in
-  "") local Title="Choose your first category"
-  ;;
-  *) local Title="Choose your next category"
-  esac
+    "") local Title="Choose your first category"
+    ;;
+    *) local Title="Choose your next category"
+    esac
   while [ $Complete -eq 0 ]
   do
     local Message="Added so far: ${LuxuriesList}"
     # Pass category to listgen2 for user to choose one item;
     case $Category in
-      "Accessories") listgen2 "$Accessories" "Accessories" "Done" "LongAccs"
+      "Accessories") listgen2 "$Accessories" "${Category}" "Done" "LongAccs"
       ;;
-      "Desktop_Environments") listgen2 "$Desktops" "Desktops" "Done" "LongDesk"
+      "Desktop_Environments") listgen2 "$Desktops" "${Category}" "Done" "LongDesk"
       ;;
-      "Graphical") listgen2 "$Graphical" "Graphical" "Done" "LongGraph"
+      "Graphical") listgen2 "$Graphical" "${Category}" "Done" "LongGraph"
       ;;
-      "Internet") listgen2 "$Internet" "Internet" "Done" "LongNet"
+      "Internet") listgen2 "$Internet" "${Category}" "Done" "LongNet"
       ;;
-      "Multimedia") listgen2 "$Multimedia" "Multimedia" "Done" "LongMulti"
+      "Multimedia") listgen2 "$Multimedia" "${Category}" "Done" "LongMulti"
       ;;
-      "Office") listgen2 "$Office" "Office" "Done" "LongOffice"
+      "Office") listgen2 "$Office" "${Category}" "Done" "LongOffice"
       ;;
-      "Programming") listgen2 "$Programming" "Programming" "Done" "LongProg"
+      "Programming") listgen2 "$Programming" "${Category}" "Done" "LongProg"
       ;;
-      "Window_Managers") listgen2 "$WindowManagers" "Window_Managers" "Done" "LongWMs"
+      "Window_Managers") listgen2 "$WindowManagers" "${Category}" "Done" "LongWMs"
       ;;
       *) break
     esac
-    if [ $? -gt 0 ]; then # <Cancel> selected
+    RetVal=$?
+    if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
     else
       Picked=$(cat output.file)
@@ -158,25 +179,23 @@ ShoppingList() {
     do
       if [ ${lux} = ${Picked} ]; then
         Temp=""
-        dialog --yes-label "Keep" --no-label "Delete" \
-      --backtitle "$Backtitle" --title " Information " --no-shadow \
-    --yesno "\n  '$Picked' is already in your shopping list. Do you wish to delete it or keep it?" 10 60
+        dialog --yes-label "Keep" --no-label "Delete" --backtitle "$Backtitle" --title " - Information - " --no-shadow --yesno "\n  '$Picked' is already in your shopping list\n Do you wish to keep it or delete it?" 10 60
         case $? in
-        0) continue 2 # Keep $LuxuriesList as it is and return to top of enclosing loop
-         ;;
-        *) for lux in $LuxuriesList
-          do
-            if [ ${lux} != ${Picked} ]; then
-              Temp="$Temp $lux"
-            fi
-          done
-          LuxuriesList="$Temp"
-          continue 2 # Revise $LuxuriesList and return to top of enclosing loop
+          0) continue 2 # Keep $LuxuriesList as it is and return to top of enclosing loop
+          ;;
+          *) for lux in $LuxuriesList
+            do
+              if [ ${lux} != ${Picked} ]; then
+                Temp="$Temp $lux"
+              fi
+            done
+            LuxuriesList="$Temp"
+            continue 2 # Revise $LuxuriesList and return to top of enclosing loop
         esac
       fi
     done
-    # Then carry out any specific tests and add the item to the list
-    case $Picked in
+    # Carry out any specific tests and add the item to the list
+  case $Picked in
     "Cinnamon") DesktopEnvironment="Cinnamon"
         ChooseDM
       ;;
@@ -190,38 +209,13 @@ ShoppingList() {
         esac
       ;;
     "Enlightenment") DesktopEnvironment="Enlightenment"
-        dialog --backtitle "$Backtitle" --title " Enlightenment " \
+        dialog --backtitle "$Backtitle" --title " - Enlightenment - " \
     --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability. Include them?" 10 40
         case $? in
           0) EnExtras="connman terminology"
            ;;
           *) EnExtras=""
         esac
-        ChooseDM
-      ;;
-    "Feliz") DesktopEnvironment="Xfce"
-          FelizXfce="Yes"
-        GoodiesXfce="xfce4-goodies"
-        # Check that yaourt and conky are not already on the list
-        AddYaourt="Yes"
-        AddConky="Yes"
-        for lux in $LuxuriesList
-        do
-          if [ ${lux} = "yaourt" ]; then
-            AddYaourt="No"
-            continue
-          elif [ ${lux} = "conky" ]; then  
-            AddConky="No"
-            continue
-          fi
-        done
-        # If not, add them
-        if [ $AddYaourt = "Yes" ]; then
-          LuxuriesList="${LuxuriesList} yaourt"
-        fi
-        if [ $AddConky = "Yes" ]; then
-          LuxuriesList="${LuxuriesList} conky"
-        fi
         ChooseDM
       ;;
     "Fluxbox") DesktopEnvironment="Fluxbox"
@@ -249,26 +243,26 @@ ShoppingList() {
         ChooseDM
       ;;
     "Xfce") DesktopEnvironment="Xfce"
-        dialog --backtitle "$Backtitle" --title " Xfce desktop environment " \
-    --yesno "\nThe xfce4-goodies pack includes includes the Whisker menu, extra plugins and a number of utilities such as the mousepad editor\nInclude the $Extras pack?\n" 10 40
-      case $? in
-        0) GoodiesXfce="xfce4-goodies"
-        ;;
-        *) GoodiesXfce=""
-      esac
-      ChooseDM
-     ;;
-    *) echo "Error at $LINENO" >> feliz.log	
+        dialog --backtitle "$Backtitle" --title " - Desktop Environment - " \
+    --yesno "\nThe xfce4-goodies pack includes includes the Whisker menu, extra\nplugins and a number of utilities such as the mousepad editor\nInclude the Goodies pack?\n" 10 40
+        case $? in
+          0) GoodiesXfce="xfce4-goodies"
+           ;;
+          *) GoodiesXfce=""
+        esac
+        ChooseDM
+      ;;
+     *) echo "${Picked} added in desktop at $LINENO" >> feliz.log
     esac
-  LuxuriesList="${LuxuriesList} ${Picked}"
+    LuxuriesList="${LuxuriesList} ${Picked}"
 done
 }
 
 ChooseDM() { # Choose a display manager unless already fixed by certain DEs
   if [ -z $DisplayManager ]; then
     Greeter=""
-    local Message="\nYou can choose one of the following display managers. Not all display managers work well with all desktop environments. If in doubt, choose LightDM. If you do not install a display manager, you will have to launch your desktop environment manually."
-    listgen1 "GDM LightDM LXDM sddm SLIM XDM" " Display Manager/Greeter " "Done"
+    local Message="You can choose one of the following display managers.\nNot all display managers work well with all desktop environments. If in doubt, choose LightDM.\n If you do not install a display manager, you will have to launch your desktop environment manually."
+    listgen1 "GDM LightDM LXDM sddm SLIM XDM" "ChooseDM/Greeter}" "Done"
     Response=$(cat output.file)
     if [ $? -eq 0 ]; then
       Reply=$Response
@@ -276,7 +270,7 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
         "GDM") DisplayManager="gdm        "
          ;;
         "LightDM") DisplayManager="lightdm"
-            Greeter="lightdm-gtk-greeter"	
+            Greeter="lightdm-gtk-greeter"
          ;;
         "LXDM") DisplayManager="lxdm"
          ;;
@@ -296,7 +290,7 @@ FinalCheck() {
 Repeat=1
 while [ $Repeat -gt 0 ]
 do
-  local Message="These are the settings you have entered. Please check them ...\nPress <Continue> to install with these settings, or choose an item if you wish to change it: "
+  local Message="These are the settings you have entered. Please check them ...\n Press <Continue> to install with these settings, or choose an item if you wish to change it"
   declare -a Settings
   Options="Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras"
   Settings[1]="$RootPartition $RootType                                         "
@@ -345,40 +339,51 @@ do
   fi
   Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
   Settings[12]="${LuxuriesList}"
-  listgen2 "$Options" " Final Check " "Continue" "Settings"
+  listgen2 "$Options" "Final_Check" "Continue" "Settings"
+  RetVal=$?
   Response=$(cat output.file)
-  if [ $? -eq 0 ]; then
-  case $Response in
-    "Root") ChangeRootPartition
-        AllocateRoot
+  if [ $RetVal -eq 0 ]; then
+    Count=1
+    for i in ${Options[@]} # Convert selection into item number in list
+    do
+      if [ $i = $Response ]; then
+        break
+      fi
+      Count=$((Count+1))
+    done
+    case $Count in
+      1) ChangeRootPartition
+          AllocateRoot
+      ;;
+      2) ChangeSwapPartition
+          AllocateSwap
+      ;;
+      3) ChangePartitions
+          MorePartitions
+      ;;
+      4) SetKernel
+      ;;
+      5) SetGrubDevice
     ;;
-    "Swap") ChangeSwapPartition
-        AllocateSwap
-    ;;
-    "Additional") ChangePartitions
-        MorePartitions
-    ;;
-    "Kernel") SetKernel
-    ;;
-    "Grub") SetGrubDevice
-    ;;
-    "Keyboard") getkeymap
-    ;;
-    "Locale") setlocale
-    ;;
-    "Timezone") SetTimeZone
-    ;;
-    "Virtualbox") ConfirmVbox
-    ;;
-    "Display_Manager") DisplayManager=""
+      6) getkeymap
+      ;;
+      7) setlocale
+      ;;
+      8) SetTimeZone
+      ;;
+      9) ConfirmVbox
+      ;;
+      10) DisplayManager=""
       ChooseDM
-    ;;
-    "Identity") ManualSettings
-    ;;
-    "Extras") PickLuxuries
-    ;;
-    *) Repeat=0
-  esac
+      ;;
+      11) ManualSettings
+      ;;
+      12) PickLuxuries
+      ;;
+      *) Repeat=0
+    esac
+  else
+    Repeat=0
   fi
 done
 }
@@ -388,21 +393,31 @@ ManualSettings() {
   declare local Settings
   while [ $Retry = "Y" ]
   do
-    local Message=" Select data to change\n <Cancel> to finish:"
+    local Message=" Select data to change.\n or <Cancel> to finish"
     Settings[1]="(currently $HostName)"
     Settings[2]="(currently $UserName)"
-    listgen2 "Hostname Username" " Data Review " "" "Settings"
+    Options="Hostname Username"
+    listgen2 "$Options" " Data Review " "" "Settings"
+    RetVal=$?
     Response=$(cat output.file)
-    if [ $? -eq 0 ]; then
+    Count=1
+    for i in ${Options[@]} # Convert selection into item number in list
+    do
+      if [ $i = $Response ]; then
+        break
+      fi
+      Count=$((Count+1))
+    done
+    if [ $RetVal -eq 0 ]; then
       case $Response in
-        "Hostname") dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
-         --inputbox "\nEnter new Hostname (currently $HostName)\n" 18 50 2> output.file
+        1) dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
+         --inputbox "\n${_Enter_new} ${_Hostname} (${_currently} $HostName)\n" 18 50 2> output.file
          Response=$(cat output.file)
          if [ $Response ]; then
           HostName=$Response
          fi
         ;;
-        "Username") dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
+        2) dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
       --inputbox "\nEnter new name for user (currently $UserName)\n" 18 50 2> output.file
          Response=$(cat output.file)
         if [ $Response ]; then

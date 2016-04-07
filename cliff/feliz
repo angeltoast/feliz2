@@ -1,48 +1,23 @@
 #!/bin/bash
 
 # feliz (formerly Achoo!) Arch Linux Installation Script
+# cliff edition - Command Line Interface Functions
 
-# Developed by Elizabeth Mills, incorporating some code adapted from the
-# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# Developed by Elizabeth Mills with acknowledgement to Carl Duff
+# Version: 2016-04-07
 
 #
-# Include files
+# Include source files
 #
-if [[ -f `pwd`/shared ]]; then
-  source shared
-else
-  echo "missing file: shared"
-  exit 1
-fi
-if [[ -f `pwd`/various ]]; then
-  source various
-else
-  echo "missing file: various"
-  exit 1
-fi
-if [[ -f `pwd`/partitioning ]]; then
-  source partitioning
-else
-  echo "missing file: partitioning"
-  exit 1
-fi
-if [[ -f `pwd`/desktop ]]; then
-  source desktop
-else
-  echo "missing file: desktop"
-  exit 1
-fi
-if [[ -f `pwd`/listgen ]]; then
-  source listgen
-else
-  echo "missing file: listgen"
-  exit 1
-fi
+source shared
+source various
+source partitioning
+source desktop
+source listgen
 
-# Backtitle=" If you need guidance, consult the Arch Wiki Beginner's Guide"
-# Passed=$Backtitle
 StartTime=$(date +%s)
-echo "Begin" >> feliz.log
+echo "$StartTime" >> feliz.log
+clear
 
 # Check partition table & offer options
 CheckParts
@@ -90,18 +65,21 @@ fi
 FinalCheck
 
 #
-# No further user intervention from here
+# No further user intervention from here -------------------------------
 #
 
-# InstallationMode # WHAT IS THIS?
+print_heading
+read_timed "Entering the automatic phase of installation." 1
+read_timed "No further user intervention is necessary." 1
+read_timed "Go make yourself a cup of tea; you deserve it." 1
 
 MountPartitions # cliff/various
 
 # Set mirrorlist
-ReflectorMirrorList
+ReflectorMirrorList # common/shared
 
 # Install kernel
-InstallKernel
+InstallKernel # cliff/various
 
 # Set the default PATH variable
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
@@ -150,10 +128,10 @@ if [ ${GrubDevice} ]; then
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
 else
-  TPecho "Not installing Grub"
+  TPecho "Not installing Grub" >> feliz.log
 fi
 
-TPecho "Running mkinitcpio"
+TPecho "Running mkinitcpio}"
 if [ $Kernel = "1" ]; then
   arch_chroot "mkinitcpio -p linux-lts"
 else
@@ -166,14 +144,13 @@ echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ]; then
   # Various bits
-  pacstrap /mnt vrms 2>> feliz.log # Virtual Richard Michael Stallman to detect non-free software
-  TPecho "Adding Flash and other Multimedia Codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac jasper lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 xvidcore gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
-  TPecho "Installing wireless tools"
+  TPecho "Adding codecs"
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
+  TPecho "Installing Wireless Tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
-  pacstrap /mnt iw wireless_tools wpa_actiond wpa_supplicant dialog wifi-menu 2>> feliz.log
-  TPecho "Installing X, graphics, etc"
-  pacstrap /mnt xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm 2>> feliz.log
+  pacstrap /mnt iw wireless_tools wpa_actiond dialog wifi-menu 2>> feliz.log
+  TPecho "Installing X, Graphics, etc"
+  pacstrap /mnt xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
   pacstrap /mnt xf86-input-synaptics 2>> feliz.log
   pacstrap /mnt gvfs gamin 2>> feliz.log
 
@@ -194,11 +171,7 @@ if [ $Scope != "Basic" ]; then
 fi
 cp feliz.log /mnt/etc # Copy installation log for reference
 print_heading
-PrintOne="Congratulations, installation is finished."
-echo
-listgen1 "Reboot Shutdown" "" "nodone"
-case $Response in
-  1) systemctl reboot
-  ;;
-  *) shutdown now
-esac
+read_timed "Congratulations, installation is complete."
+read_timed "It is time to restart the computer into"
+read_timed "your new system. Have fun with Arch Linux."
+shutdown now

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # shared - Part of the Feliz Arch Linux Installation Script
+# Version: 2016-04-07
 
 # Developed by Elizabeth Mills, incorporating some code adapted from the
 # excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
@@ -8,9 +9,9 @@
 #
 # Partition variables and arrays
 #
-declare -a AddPartList	  # Array of additional partitions eg: /dev/sda5
+declare -a AddPartList    # Array of additional partitions eg: /dev/sda5
 declare -a AddPartMount   # Array of mountpoints for the same partitions eg: /home
-declare -a AddPartType  	# Array of format type for the same partitions eg: ext4
+declare -a AddPartType    # Array of format type for the same partitions eg: ext4
 declare -a PartitionArray # Array of long identifiers
 declare -a NewArray       # For copying any array
 declare -A LabellingArray # Associative array of user labels for partitions
@@ -35,7 +36,7 @@ Kernel="1"        # Default 1 = LTS
 IsInVbox=""       # Result of test to see if installation is in Virtualbox
 DualBoot="N"      # Ready for dual-booting option
 EFIPartition=""   # Will hold EFI partition mountpoint in format "/dev/sda1"
-OSprober="N"
+OSprober="Y"
 #
 # Location variables
 #
@@ -53,7 +54,6 @@ GoodiesGnome=""
 GoodiesOpenbox=""
 DisplayManager=""      # eg: lightdm
 Greeter=""             # eg: lightdm-gtk-greeter (Not required for some DMs)
-FelizXfce="No"
 FirefoxIncluded="No"
 #
 # Root and user variables
@@ -64,12 +64,21 @@ Scope=""     # Installation scope ... 'Full' or 'Basic'
 #
 # Global user input variables
 #
-Response="" 
+Response=""
 Result=""
 #
-# ---- Extras ----
+# ---- Extra Applications ----
 #
-Categories="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+_Categories_List="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+Categories[1]="Accessories"                                        #
+Categories[2]="Desktop_Environments"                               #
+Categories[3]="Graphical"                                          #
+Categories[4]="Internet"                                           #
+Categories[5]="Multimedia"                                         #
+Categories[6]="Office"                                             #
+Categories[7]="Programming"                                        #
+Categories[8]="Window_Managers"                                    #
+# Accessories
 Accessories="brasero conky gnome-calculator gedit gparted nautilus gnome-terminal yaourt"
 LongAccs[1]="Disc burning application from Gnome"
 LongAccs[2]="Desktop time and system information"
@@ -79,16 +88,17 @@ LongAccs[5]="Tool to make/delete/resize partitions"
 LongAccs[6]="The file-manager from Gnome"
 LongAccs[7]="The Gnome terminal emulator"
 LongAccs[8]="Easy to use AUR package installer"
-Desktops="Cinnamon Deepin Feliz Gnome KDE LXDE LXQt Mate Xfce"
+# Desktops
+Desktops="Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Slick DE from the Mint team      "
 LongDesk[2]="The Deepin Desktop Environment"
-LongDesk[3]="Exclusive Feliz Customized Xfce desktop"
-LongDesk[4]="Full-featured, modern DE"
-LongDesk[5]="Plasma 5 and accessories pack"
-LongDesk[6]="Traditional, lightweight DE"
-LongDesk[7]="Lightweight and modern Qt DE"
-LongDesk[8]="Traditional DE from the Mint team"
-LongDesk[9]="Lightweight, highly configurable DE"
+LongDesk[3]="Full-featured, modern DE"
+LongDesk[4]="Plasma 5 and accessories pack"
+LongDesk[5]="Traditional, lightweight DE"
+LongDesk[6]="Lightweight and modern Qt DE"
+LongDesk[7]="Traditional DE from the Mint team"
+LongDesk[8]="Lightweight, highly configurable DE"
+# Graphical
 Graphical="evince gimp imagemagick gthumb simple-scan xsane"
 LongGraph[1]="Reader for PDF & other document formats"
 LongGraph[2]="Advanced image editing suite"
@@ -96,6 +106,7 @@ LongGraph[3]="Command-line image manipulation"
 LongGraph[4]="Image viewer & basic editor"
 LongGraph[5]="A simple scanner GUI"
 LongGraph[6]="Full-featured GTK-based sane frontend"
+# Internet
 Internet="chromium epiphany filezilla firefox qbittorrent thunderbird transmission-gtk"
 LongNet[1]="Open source web browser from Google     "
 LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
@@ -104,6 +115,7 @@ LongNet[4]="Extensible browser from Mozilla"
 LongNet[5]="Open source BitTorrent client"
 LongNet[6]="Feature-rich email client from Mozilla"
 LongNet[7]="Easy-to-use BitTorrent client"
+# Multimedia
 Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
 LongMulti[1]="Easy-to-use video editor               "
 LongMulti[2]="Feature-rich audio player"
@@ -111,12 +123,14 @@ LongMulti[3]="Simple yet powerful video transcoder"
 LongMulti[4]="Easy-to-use non-linear video editor"
 LongMulti[5]="Middleweight video player"
 LongMulti[6]="GUI CD burner"
+# Office
 Office="abiword gnumeric libreoffice orage scribus"
 LongOffice[1]="Full-featured word processor        "
 LongOffice[2]="Spreadsheet program from GNOME"
 LongOffice[3]="Open-source office software suite"
 LongOffice[4]="Calendar & task manager (incl with Xfce)"
 LongOffice[5]="Desktop publishing program"
+# Programming
 Programming="bluefish codeblocks emacs geany git netbeans"
 LongProg[1]="GTK+ IDE with support for Python plugins  "
 LongProg[2]="Open source & cross-platform C/C++ IDE"
@@ -124,6 +138,7 @@ LongProg[3]="Extensible, customizable text editor"
 LongProg[4]="Advanced text editor & IDE"
 LongProg[5]="Open source distributed version control system"
 LongProg[6]="Integrated development environment (IDE)"
+# WindowManagers
 WindowManagers="Enlightenment Fluxbox JWM Openbox cairo-dock docky fbpanel tint2"
 LongWMs[1]="Window manager and toolkit"
 LongWMs[2]="Light, fast and versatile WM"
@@ -133,43 +148,20 @@ LongWMs[5]="Customizable dock & launcher application"
 LongWMs[6]="For opening applications & managing windows"
 LongWMs[7]="Desktop panel"
 LongWMs[8]="Desktop panel"
-#
-# Include source files
-#
-if [[ -f `pwd`/various ]]; then
-  source various
-else
-  echo "missing file: various"
-  exit 1
-fi
-if [[ -f `pwd`/partitioning ]]; then
-  source partitioning
-else
-  echo "missing file: partitioning"
-  exit 1
-fi
-if [[ -f `pwd`/desktop ]]; then
-  source desktop
-else
-  echo "missing file: desktop"
-  exit 1
-fi
-if [[ -f `pwd`/listgen ]]; then
-  source listgen
-else
-  echo "missing file: listgen"
-  exit 1
-fi
 
 # -------------------------
-# Functions           Line 
+# Functions           Line
 # -------------------------
-# ReflectorMirrorList  172       
-# LocalMirrorList      182
-# MakePartitionList    197
-# RunAutoPart          210
-# InstallDM            268
-# InstallLuxuries      279
+# arch_chroot          164
+# ReflectorMirrorList  168
+# LocalMirrorList      178
+# Partitioning         193
+# Review Stage         282
+# Install Stage        326
+
+arch_chroot() {  # From Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
+}
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   TPecho "Generating mirrorlist"
@@ -181,25 +173,29 @@ ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirr
   fi
 }
 
-LocalMirrorList() { # In case Reflector fails, generate and save a shortened 
+LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   # mirrorlist of only the mirrors defined in the CountryCode variable.
-	URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-	MirrorTemp=$(mktemp --suffix=-mirrorlist) &>> feliz.log
-	# Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-	curl -so ${MirrorTemp} ${URL} &>> feliz.log
-	# Use sed to filter entries
-	sed -i 's/^#Server/Server/g' ${MirrorTemp} &>> feliz.log
-	# Make a safe copy of existing mirrorlist
-	mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig &>> feliz.log
-	# Replace existing mirrorlist with new local mirrorlist
-	mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist &>> feliz.log
-	chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
+  URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+  MirrorTemp=$(mktemp --suffix=-mirrorlist) &>> feliz.log
+  # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+  curl -so ${MirrorTemp} ${URL} &>> feliz.log
+  # Use sed to filter entries
+  sed -i 's/^#Server/Server/g' ${MirrorTemp} &>> feliz.log
+  # Make a safe copy of existing mirrorlist
+  mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig &>> feliz.log
+  # Replace existing mirrorlist with new local mirrorlist
+  mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist &>> feliz.log
+  chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
 }
 
-MakePartitionList() {   
+Parted() {
+  parted --script /dev/${UseDisk} "$1" &>> feliz.log
+}
+
+MakePartitionList() {
   # Call BuildPartitionLists function to generate an array of partitions
   # This is not a first call, so first empty the existing array
- 	local x=0
+  local x=0
   local HowMany="${#PartitionArray[@]}"
   until [ ${x} -eq ${HowMany} ]
   do
@@ -209,58 +205,183 @@ MakePartitionList() {
   BuildPartitionLists # Then rebuild
 }
 
+BuildPartitionLists() { # First called by CheckParts to generate details of partitions
+  # for display, then by feliz to prepare partition arrays for selection for root, swap and others
+  # 1) First get a list of all partitions up to sda99 | select first field | remove /dev/ | remove colon
+  ListTypeIDs=`sudo blkid /dev/sd* | grep ' TYPE' | awk '{print $1}' | cut -c 6- | sed s/://g`
+  # Then get matching list of types, removing unwanted text (TYPE=) and quotes
+  ListTypes=`sudo blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -c 6- | sed s/\"//g`
+  # Add records from those two indexed arrays into the associative array
+  local Counter=0
+  for i in ${ListTypeIDs}
+  do
+    x=0
+    for l in ${ListTypes}
+    do
+      if [ $x -eq $Counter ]; then
+        FileSystem[$i]=$l # ... get the matching type
+      break
+      fi
+      x=$((x+1))
+    done
+    Counter=$((Counter+1))
+  done
+  # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
+  ListLabelledIDs=`sudo blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g`
+  # If at least one labelled partition found, get a matching list of labels (remove quotes)
+  if [ -n "$ListLabelledIDs" ]; then
+    ListLabelledLabels=`sudo blkid /dev/sd* | grep LABEL | awk '{print $2}' | cut -c 7- | sed s/\"//g`
+  fi
+  # Add records from those two indexed arrays into associative array
+  Counter=0
+  for i in ${ListLabelledIDs}
+  do
+    x=0
+    for l in ${ListLabelledLabels}
+    do
+      if [ $x -eq $Counter ]; then
+        Labelled[$i]=$l # ... get the matching label
+      break
+      fi
+      x=$((x+1))
+    done
+    Counter=$((Counter+1))
+  done
+  local HowManyLabelled="${#Labelled[@]}"
+  # 3) Find any partitions flagged as bootable
+  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
+  declare -a Flagged
+  Counter=0
+  for i in $ListAll
+  do
+    Flagged[${Counter}]="$i"
+    Counter=$((Counter+1))
+  done
+  local HowManyFlagged="${#Flagged[@]}"
+  # 4) Prepare list of short identifiers (sda1 sda2 ...)
+  PartitionList=""
+  ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+  # 5) Run through short identifiers, checking the three arrays for a match
+  Counter=0 # For count of partitions
+  Label=""
+  for part in ${ShowPartitions}
+  do
+  # First test Flagged
+    local x=0
+    until [ ${x} -eq ${HowManyFlagged} ]
+    do
+      if [ $part = "${Flagged[$x]}" ]; then
+        Bootable="(Bootable)"
+        break
+      else
+        Bootable=""
+      fi
+      x=$((x+1))
+    done
+    # Next test Labelled
+    ThisPart=${Labelled[${part}]} # Find the record in Labelled that matches the current iteration
+    if [ -n "${ThisPart}" ]; then
+      Label="${ThisPart}"
+    fi
+    # Finally get the filesystem type
+    ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
+    LongID=`lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}'`
+    PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
+    Label=""
+    # Save the short ID for later functions
+    PartitionList="${PartitionList} ${part}"
+    (( Counter+=1 ))
+  done
+  PARTITIONS=${Counter}
+}
+
+UpdateArray() { # Remove the selected partition from $PartitionArray[]
+  # Called by AllocateRoot, AllocateSwap and MorePartitions
+  local Counter=0
+  declare -a NewArray  # Empty NewArray
+  # Build NewArray excluding the partition selected in the calling function
+  for p in "${PartitionArray[@]}"
+  do
+    First=`echo $p | cut -c 1-5`
+    if [ $First ]; then
+      if [ ${PassPart} != ${First} ]; then
+        NewArray[${Counter}]="$p"
+        (( Counter+=1 ))
+      fi
+    fi
+  done
+  # Then copy NewArray into PartitionArray
+  Counter=0
+  for p in "${NewArray[@]}"
+  do
+    PartitionArray[${Counter}]=${NewArray[$Counter]}
+    Counter=$((Counter+1))
+  done
+  unset PartitionArray[$Counter] # Delete the last element
+}
+
 RunAutoPart() {
   GrubDevice="/dev/${UseDisk}"
   Home="N"
-	# Get disk size
+  # Get disk size
   DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
   # Create partitions and set variables for mounting
   Parted "mklabel msdos"
   if [ $DiskSize -ge 40 ]; then
-    # Device is large enough for a separate /home partition and larger root
-    # /swap 4 GiB
-    Parted "mkpart primary linux-swap 1MiB 4GiB"
+    # Device is large enough for a separate /home partition and larger
+    # /root (20 GiB) and /swap (8 GiB)
+    Parted "mkpart primary linux-swap 1MiB 8GiB"
     SwapPartition="${GrubDevice}1"
     MakeSwap="Y"
-    # /root 20GiB
-    Parted "mkpart primary ext4 4GiB 24GiB"
+    # Root partition 15GiB
+    Parted "mkpart primary ext4 8GiB 28GiB"
     Parted "set 2 boot on"
     RootPartition="${GrubDevice}2"
     RootType="ext4"
-    # /home from 24GiB to maximum available
-    Parted "mkpart primary ext4 24GiB 100%"
+    # Home partition = remainder (size from 19GiB to maximum available)
+    Parted "mkpart primary ext4 28GiB 100%"
     AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
     AddPartMount[0]="/home"
     AddPartType[0]="ext4"
     Home="Y"
   elif [ $DiskSize -ge 30 ]; then
     # Device is just large enough for a separate /home partition
-    # /swap 4GiB 
+    # Swap 4GiB
     Parted "mkpart primary linux-swap 1MiB 4GiB"
     SwapPartition="${GrubDevice}1"
     MakeSwap="Y"
-    # /root 15GiB
+    # Root partition 15GiB
     Parted "mkpart primary ext4 4GiB 19GiB"
     Parted "set 2 boot on"
     RootPartition="${GrubDevice}2"
     RootType="ext4"
-    # /home from 19GiB to maximum available
+    # Home partition = remainder (size from 19GiB to maximum available)
     Parted "mkpart primary ext4 19GiB 100%"
     AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
     AddPartMount[0]="/home"
     AddPartType[0]="ext4"
     Home="Y"
-  elif [ $DiskSize -ge 20 ]; then
-    # /swap 2GiB
-    Parted "mkpart primary linux-swap 1MiB 2GiB"
+  elif [ $DiskSize -ge 18 ]; then
+    # Swap 4Gib and one main partition up to 20GiB
+    Parted "mkpart primary linux-swap 1MiB 4GiB"
     SwapPartition="${GrubDevice}1"
     MakeSwap="Y"
-    # /root from 2GiB to maximum available
+    Parted "mkpart primary ext4 4GiB 100%"
+    Parted "set 2 boot on"
+    RootPartition="${GrubDevice}2"
+    RootType="ext4"
+  elif [ $DiskSize -gt 10 ]; then
+    # Swap 2Gib and one main partition up to 16GiB
+    Parted "mkpart primary linux-swap 1MiB 2GiB"
+    SwapPartition="${GrubDevice}1"
     Parted "mkpart primary ext4 2GiB 100%"
     Parted "set 2 boot on"
     RootPartition="${GrubDevice}2"
     RootType="ext4"
-  else # If disk < 20 Gb make swap file and one partition up to maximum available
+    SwapFile="2G"
+    SwapPartition=""
+  else # If disk < 10 Gb
+    # Swap file and one main partition up to 10GiB
     Parted "mkpart primary ext4 1MiB 100%"
     Parted "set 1 boot on"
     RootPartition="${GrubDevice}1"
@@ -271,11 +392,33 @@ RunAutoPart() {
   ShowPart1="Swap: `lsblk -l | grep "${UseDisk}1" | awk '{print $4}'`" >/dev/null
   ShowPart2=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
   ShowPart3=""
-  AutoPart=1 # Set flag to 'on' for mounting 
+  AutoPart=1 # Set flag to 'on' for mounting
+}
+
+SetLabel() { # Called from the root, swap and extra partitions routines
+# ... each passing a single argument containing the partition ID
+# Build an associative array of partitions (LabellingArray[]) as
+# declared in felizrunning with other arrays
+PartitionID=$1
+local HowMany="${#PartitionArray[@]}"
+local x=0
+until [ ${x} -eq ${HowMany} ]
+do
+  CompareID=`echo ${PartitionArray[${x}]} | awk '{print $1}'`
+  if [ -z ${CompareID} ]; then
+    x=$((x+1))
+    continue
+  fi
+  if [ ${CompareID} = ${PartitionID} ]; then # If the partition is in the array, it has a label
+  #  Label=`echo ${PartitionArray[${x}]} | awk '{print $4}'` # Save the label
+  Label=`echo ${PartitionArray[${x}]}`
+  fi
+  x=$((x+1))
+done
 }
 
 #
-# Review stage
+# Review stage ---------------------------------------------------------
 #
 
 ChangeRootPartition() {
@@ -285,7 +428,7 @@ ChangeRootPartition() {
   AddExtras
   MakePartitionList
 }
-  
+
 ChangeSwapPartition() {
 # Start array with RootPartition
   Ignorelist[0]=${RootPartition}
@@ -318,7 +461,7 @@ AddExtras() {
 }
 
 #
-# Install stage
+# Install stage --------------------------------------------------------
 #
 
 # Install display manager
@@ -326,7 +469,7 @@ InstallDM() { # Called from feliz when installing desktop environment
   case ${DisplayManager} in
     "") echo "No Display Manager selected" >> feliz.log
     ;;
-    *) TPecho "Installing ${DisplayManager} Display Manager" "" 2>> feliz.log
+    *) TPecho "Installing ${DisplayManager} display manager" "" &>> feliz.log
       pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
       arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
   esac
@@ -338,11 +481,11 @@ InstallLuxuries() {
     for i in ${LuxuriesList}
     do
       case $i in
-      "Cinnamon") DisplayProgress "Installing Cinnamon desktop environment" 50
+      "Cinnamon") DisplayProgress "Installing Cinnamon desktop Environment" 50
         InstallDM
         pacstrap /mnt cinnamon &>> feliz.log
       ;;
-      "Deepin") DisplayProgress "Installing Deepin desktop environment" 30
+      "Deepin") DisplayProgress "Installing Deepin desktop Environment" 30
         # If there is no defined display manager
         if [ -z ${DisplayManager} ]; then
           # Install LightDM and Deepin greeter
@@ -350,7 +493,7 @@ InstallLuxuries() {
           # Activate daemon
           arch_chroot "systemctl -f enable lightdm.service"
           # Change the greeter line in lightdm.conf
-          sed -i '/#greeter-session=/ c\greeter-session=lightdm-deepin-greeter' /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
+          sed -i '/#greeter-session=/ c\greeter-session=lightdm-deepin-greeter' /mnt/etc/lightdm/lightdm.conf &>> feliz.log # Check result - this line changed to &>> from 2>> 
         else
           InstallDM
         fi
@@ -358,39 +501,17 @@ InstallLuxuries() {
         # Copy pro-forma xinitrc file ...
         cp /mnt/etc/X11/xinit/xinitrc /mnt/home/${UserName}/.xinitrc
         # Then add line at end to ensure DDE is used ...
-        sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc 2>> feliz.log
+        sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc &>> feliz.log # Check result - this line changed to &>> from 2>> 
       ;;
-      "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop environment" 30
+      "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop Environment" 30
         InstallDM
         pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log
       ;;
-      "Feliz") DisplayProgress "Installing 'Feliz-Xfce' Desktop Environment" 30
-        InstallDM
-        pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
-        # 1) Overwrite default wallpaper
-        cp -f wallpaper.jpg /mnt/usr/share/backgrounds/xfce/xfce-teal.jpg 2>> feliz.log
-        # 2) Copy global Thunar action files
-        cp uca.xml /mnt/etc/xdg/Thunar/ 2>> feliz.log # Extra Thunar actions in xdg
-        # 3) Copy global panel and desktop files
-        mkdir -p /mnt/etc/xdg/xfce4/xconf/xfce-perchannel-xml/ 2>> feliz.log 2>> feliz.log # Panel in xdg
-        cp -f xfce4-panel.xml /mnt/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/ 2>> feliz.log # Panel in xdg
-        cp xfce4-desktop.xml /mnt/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/ 2>> feliz.log  # Panel in xdg
-        # 4) Copy users' panel launcher files explicitly (tied to xfce4-panel.xml)
-        mkdir -p /mnt/etc/skel/.config/xfce4/panel/launcher-9/  2>> feliz.log               # Panel launcher in skel
-        cp 14551956411.desktop /mnt/etc/skel/.config/xfce4/panel/launcher-9/ 2>> feliz.log  # Panel launcher in skel
-        mkdir -p /mnt/etc/skel/.config/xfce4/panel/launcher-11/  2>> feliz.log              # Panel launcher in skel
-        cp 14551956532.desktop /mnt/etc/skel/.config/xfce4/panel/launcher-11/ 2>> feliz.log # Panel launcher in skel
-        mkdir -p /mnt/etc/skel/.config/xfce4/panel/launcher-14/  2>> feliz.log              # Panel launcher in skel
-        cp 14551957903.desktop /mnt/etc/skel/.config/xfce4/panel/launcher-14/ 2>> feliz.log # Panel launcher in skel
-        # 5) Copy Whisker menu config file
-        cp whiskermenu-4.rc /mnt/etc/skel/.config/xfce4/panel/ 2>> feliz.log           # Whisker menu config in skel
-        mkdir /mnt/etc/skel/Documents /mnt/etc/skel/Downloads /mnt/etc/skel/Pictures /mnt/etc/skel/Public  
-      ;;
-      "Fluxbox") DisplayProgress "Installing 'Fluxbox' Window Manager" 20
+      "Fluxbox") DisplayProgress "Installing 'Fluxbox' window manager" 20
         InstallDM
         pacstrap /mnt fluxbox &>> feliz.log
       ;;
-      "Gnome") DisplayProgress "Installing 'Gnome' Desktop Environment" 30
+      "Gnome") DisplayProgress "Installing 'Gnome' desktop Environment" 30
         if [ -z ${DisplayManager} ]; then
           pacstrap /mnt gnome &>> feliz.log
           arch_chroot "systemctl -f enable gdm.service"
@@ -410,29 +531,29 @@ InstallLuxuries() {
         DisplayProgress "Installing KDE applications package" 40
         pacstrap /mnt kde-applications &>> feliz.log
       ;;
-      "LXDE") DisplayProgress "Installing 'LXDE' Desktop Environment" 20
+      "LXDE") DisplayProgress "Installing 'LXDE' desktop Environment" 20
         if [ -z ${DisplayManager} ]; then
           pacstrap /mnt lxde &>> feliz.log
           arch_chroot "systemctl -f enable lxdm.service"
-          echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
+          echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf &>> feliz.log # Check result - this line changed to &>> from 2>> 
         else
           InstallDM
           pacstrap /mnt lxde &>> feliz.log
         fi
       ;;
-      "LXQt") DisplayProgress "Installing 'LXQt' Desktop Environment" 20
+      "LXQt") DisplayProgress "Installing 'LXQt' desktop Environment" 20
         InstallDM
         pacstrap /mnt lxqt oxygen-icons &>> feliz.log
       ;;
-      "Mate") DisplayProgress "Installing 'Mate' Desktop Environment" 50
+      "Mate") DisplayProgress "Installing 'Mate' desktop Environment" 50
         InstallDM
         pacstrap /mnt mate mate-extra &>> feliz.log
       ;;
-      "Openbox") DisplayProgress "Installing 'Openbox' Window Manager" 20
+      "Openbox") DisplayProgress "Installing 'Openbox' window manager" 20
         InstallDM
         pacstrap /mnt openbox &>> feliz.log
       ;;
-      "Xfce") DisplayProgress "Installing 'Xfce' Desktop Environment" 30
+      "Xfce") DisplayProgress "Installing 'Xfce' desktop Environment" 30
         InstallDM
         pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
       ;;
@@ -447,32 +568,27 @@ InstallLuxuries() {
       "Cinnamon" | "Deepin" | "Enlightenment" | "Feliz" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
       ;;
       "yaourt") # Copy modified pacman.conf to new system and install Yaourt
-        TPecho "Adding your extra items" "Modifying pacman.conf and installing Yaourt"
-        cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
-        cp pacman.conf /etc 2>> feliz.log # For installer
+        TPecho "Installing extra items" "Modifying pacman.conf and installing Yaourt"
+        cp pacman.conf /mnt/etc &>> feliz.log # For installed system # Check result - this line changed to &>> from 2>> 
+        cp pacman.conf /etc &>> feliz.log # For installer # Check result - this line changed to &>> from 2>> 
+        pacman-key --init &>> feliz.log
+        pacman-key --populate archlinux &>> feliz.log
         pacman -Sy &>> feliz.log # Update
         pacstrap /mnt yaourt &>> feliz.log
       ;;
-      "cairo-dock") TPecho "Adding your extra items" "Installing cairo-dock and cairo-dock-plug-ins"
+      "cairo-dock") TPecho "Installing extra items" "Installing cairo-dock & cairo-dock-plug-ins"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins &>> feliz.log
       ;;
-      "conky") TPecho "Adding your extra items" "Installing Conky"
+      "conky") TPecho "Installing extra items" "Installing Conky"
         pacstrap /mnt conky &>> feliz.log
-        if [ $FelizXfce = "Yes" ]; then
-          cp conkyrc /mnt/etc/skel/.conkyrc 2>> feliz.log
-          cp conky.desktop /mnt/etc/xdg/autostart/ 2>> feliz.log # Conky in xdg
-        fi
       ;;
-      *) TPecho "Adding your extra items" "Installing $i"
+      *) TPecho "Installing extra items" "Installing $i"
         pacstrap /mnt $i &>> feliz.log
         if [ $i = "firefox" ]; then
           FirefoxIncluded="Yes"
         fi
       esac
     done
-  fi
-  if [ $FelizXfce = "Yes" ] && [ $FirefoxIncluded = "No" ]; then
-    pacstrap /mnt firefox &>> feliz.log
   fi
 }
 
@@ -486,8 +602,37 @@ UserAdd() {
     TPecho "Setting up user configuration"
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
-    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers &>> feliz.log # Check result - this line changed to &>> from 2>> 
   else
     TPecho "User already exists"
-  fi  
+  fi
+}
+
+TestExistingDM() {
+  # Test for existing display manager and disable if necessary
+  arch-chroot /mnt touch etc/output.log # Create empty file
+  arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service' > mnt/etc/output.log
+  DMLine=`cat /mnt/etc/output.log`
+  local Counter=1
+  case ${DMLine} in
+    "") echo "No previous DM discovered" >> feliz.log
+    ;;
+    *) local Continue="Y"
+      while [ ${Continue} = "Y" ]
+      do
+        ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '` # First of pair is DM
+        if [ -z ${ExDM} ]; then
+          Continue="N" # Quit if no further entries
+          break
+        fi
+        Counter=$((Counter+1))
+        ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` # Second is status
+        case ${ExDMStatus} in
+          "enabled") arch_chroot "systemctl disable ${ExDM}" >/dev/null
+          ;;
+          *) echo "${ExDM} already disabled" >> feliz.log
+        esac
+        Counter=$((Counter+1))
+      done
+  esac
 }

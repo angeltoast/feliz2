@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# various - Various functions - Dialog version
+# Various functions - Dialog version
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
@@ -10,15 +10,15 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# PrintOne              22       SetGrubDevice        128
-# DisplayProgress       25       arch_chroot          126
-# ProgressArray         47       MountPartitions      130
-# SetKernel             61       InstallKernel        190
-# ConfirmVbox           73       SetRootPassword      244
-# MakePartitionList    104       SetUserPassword      261
-      
+# PrintOne              44       SetGrubDevice        150
+# DisplayProgress       47       arch_chroot          155
+# ProgressArray         64       MountPartitions      150
+# SetKernel             83       InstallKernel        169
+# ConfirmVbox           95       SetRootPassword      266
+# MakePartitionList    126       SetUserPassword      285
+
 PrintOne() {  # Arguments: "Component" "Patient"
-  dialog --backtitle "$Backtitle" --title " Information " --no-shadow --infobox "$1\n$2\n" 5 55 ; sleep 1 &
+  dialog --backtitle "$Backtitle" --title " - Information - " --no-shadow --infobox "$1\n$2\n" 5 55 ; sleep 1 &
 }
 
 TPecho() { # For compatibility with Cliff
@@ -28,7 +28,7 @@ TPecho() { # For compatibility with Cliff
 DisplayProgress() { # Revised code for displaying progress for longer processes
   Estimate=$2 # Numeric value passed as multiple of 10
   local Message="$1" # Text passed to appear above progress bar
-  local Sleep=$(( $Estimate / 10 )) # Set sleep period to one tenth of total time 
+  local Sleep=$(( $Estimate / 10 )) # Set sleep period to one tenth of total time
   local Percent=0
   (
   until [ $Percent -gt 100 ]
@@ -41,7 +41,7 @@ DisplayProgress() { # Revised code for displaying progress for longer processes
     sleep $Sleep
   done
   ) |
-  dialog --backtitle "$Backtitle" --title " Progress " --no-shadow --gauge "" 9 60 0 &
+  dialog --backtitle "$Backtitle" --title " - Progress - " --no-shadow --gauge "" 9 60 0 &
 }
 
 ProgressArray() {
@@ -49,17 +49,17 @@ ProgressArray() {
   local Title=" $1 "
   # Receives PassArray comprising all the programs
   # 1) Count items in the array
-  n=${#PassArray[*]}; 
+  n=${#PassArray[*]};
   # 2) Redirect dialog commands input using substitution
   dialog --title "$Title" --no-shadow --gauge "" 8 60 < <(
   # 3) set counter - it will increase on each parse
    i=0
-  # 4) read each item from the array 
+  # 4) read each item from the array
   for f in "${PassArray[@]}"
   do
     # ... calculate progress
     PCT=$(( 100*(++i)/n ))
-    # ... update dialog box 
+    # ... update dialog box
     echo "XXX"
     echo "$PCT"
     echo "\n  Installing $f"
@@ -71,54 +71,36 @@ ProgressArray() {
 }
 
 SetKernel() {
-  local Message="The Long-Term-Support kernel (LTS) offers stabilty,while the Latest kernel has all the new features. If in doubt, choose LTS."
-  listgen1 "LTS Latest" " Choose your kernel " "nocancel"
+  local Message="The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS."
+  listgen1 "LTS Latest" " - Choose your kernel - " "nocancel"
   case $(cat output.file) in
     "LTS") Kernel=1 # Set the Kernel variable (1 = LTS; 2 = Latest)
     ;;
     "Latest") Kernel=2 # Set the Kernel variable (1 = LTS; 2 = Latest)
     ;;
-    *) echo "Illogical, cap'n" >> feliz.log
+    *) echo "${Debug}" >> feliz.log
   esac
 }
 
 ConfirmVbox() {
-  Retry="Y"
-  until [ $Retry = "N" ]
-  do
-    local Message="It appears that feliz is running in Virtualbox.\nIf it is, feliz can install Virtualbox guest utilities and make appropriate settings for you.\n\nInstall Virtualbox guest utilities? (y/n): "
-    dialog --backtitle "$Backtitle" --title " auto-partition " \
-    --yesno "\n$Message\n" 10 40
-    # Use $? (exit status) ...
-    case $? in
+  local Message="It appears that feliz is running in Virtualbox.\nIf you wish, feliz can install Virtualbox guest utilities and make appropriate settings for you.\n\nInstall Virtualbox guest utilities?"
+    dialog --backtitle "$Backtitle" --title " - Virtualbox guest modules - " --no-shadow --yesno "$Message\n" 13 50
+    RetVal=$?
+    case $RetVal in
       0) IsInVbox="VirtualBox"
         Retry="N"
       ;;
       *) IsInVbox=""
         Retry="N"
     esac
-  done
-}
-
-MakePartitionList() {
-# Call BuildPartitionLists function to generate an array of partitions
-# This is not a first call, so first empty the existing array
- 	local x=0
-  local HowMany="${#PartitionArray[@]}"
-  until [ ${x} -eq ${HowMany} ]
-  do
-    unset PartitionArray[$x]
-    x=$((x+1))
-  done
-  BuildPartitionLists # Then rebuild
 }
 
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
   GrubDevice=""
-	local Message="Select the device where Grub is to be installed.\nNote that if you select the <Cancel> option, Grub will not be installed, and you will have to make alternative arrangements for booting your new system."
-	listgen1 "${DevicesList}" "Devices" ""
+  local Message="Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system."
+  listgen1 "${DevicesList}" "Devices" ""
   if [ $? -gt 0 ]; then # <Cancel> selected
    GrubDevice=""
   else
@@ -126,13 +108,9 @@ SetGrubDevice() {
   fi
 }
 
-arch_chroot() {  # From Lution AIS
-  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
-}  
-
 MountPartitions() {
   case $RootType in
-  "") echo "Not formatting root partition" &>> feliz.log
+  "") echo "Not formatting root partition" >> feliz.log
   ;;
   *) PrintOne "Preparing and mounting partitions" ""
     umount ${RootPartition} /mnt >/dev/null &>> feliz.log
@@ -168,7 +146,7 @@ MountPartitions() {
   for id in ${AddPartList}
   do
     umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null &>> feliz.log
-    mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log	# eg: mkdir -p /mnt/home
+    mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log  # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
@@ -183,57 +161,51 @@ MountPartitions() {
       fi
       mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log	# eg: mount /dev/sda3 /mnt/home
-		Counter=$((Counter+1))
-	done
+    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
+    Counter=$((Counter+1))
+  done
 }
 
 InstallKernel() { # Kernel and some other core systems
-  DisplayProgress "Installing shell" 40
-  pacstrap /mnt base-devel bash &>> feliz.log 
+  DisplayProgress "Installing bash" 40
+  pacstrap /mnt base-devel bash &>> feliz.log
   # Create array of all the programs to pass to installing function
   PassArray=() # Ensure array is empty
-  PassArray=( btrfs-progs bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs file filesystem findutils glibc inetutils iproute2 iputils jfsutils less licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux wget which xfsprogs gawk gcc-libs gettext gksu grep zip nano openssh pacman perl reiserfsprogs screenfetch sed unrar unzip vi vim xarchiver xorg-xedit xterm )
-  ProgressArray " Installing cli tools and extras " # Install each one using pacstrap
+  PassArray=( btrfs-progs cryptsetup dhcpcd gksu inetutils iproute2 iputils jfsutils licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail systemd-sysvcompat usbutils wget xfsprogs zip nano openssh reiserfsprogs screenfetch unrar unzip vi vim xarchiver xorg-xedit xterm )
+  ProgressArray " Installing cli tools " # Install each one using pacstrap
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  
+
   case $Kernel in
   1) DisplayProgress "Installing LTS kernel" 50
     pacstrap /mnt linux-lts &>> feliz.log
-    if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
-      pacstrap /mnt virtualbox-guest-utils virtualbox-guest-modules-lts  virtualbox-guest-dkms &>> feliz.log
-      echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
-      cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
-    fi
-  ;;  
+  ;;
   *) DisplayProgress "Installing Latest kernel" 50
     pacstrap /mnt linux &>> feliz.log
-    if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
-      pacstrap /mnt virtualbox-guest-utils virtualbox-guest-dkms &>> feliz.log
-      echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
-      cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
-    fi
-  esac                                                   
-  
+  esac
+  if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
+    pacstrap /mnt virtualbox-guest-utils &>> feliz.log 
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
+    cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
+  fi
  # PrintOne "Installing opensource video drivers" ""
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
 }
 
 SetRootPassword() {
   Backtitle="Success! Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
-  Title=" Passwords "
   Repeat="Y"
+  ExtraMessage=""
   while [ $Repeat = "Y" ]
   do
-    dialog --backtitle "$Backtitle" --title "$Title" --nocancel \
-     --insecure --passwordbox "Enter a password for root" 8 40 2> output.file
+    dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel \
+     --insecure --passwordbox "$ExtraMessage\nEnter a password for root" 10 40 2> output.file
     Pass1=`cat output.file`
-    dialog --backtitle "$Backtitle" --title "$Title" --nocancel \
-      --insecure --passwordbox "Re-enter root password" 8 40 2> output.file
+    dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel \
+      --insecure --passwordbox "Re-enter password for root" 8 40 2> output.file
     Pass2=`cat output.file`
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
-      PrintOne "Passwords cannot be blank. Try again ..."
+      ExtraMessage="Passwords cannot be blank. Try again ..."
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
@@ -242,23 +214,24 @@ SetRootPassword() {
      rm /tmp/.passwd &>> feliz.log
      Repeat="N"
     else
-      PrintOne "Passwords don't match. Try again"
+      ExtraMessage="Passwords don't match. Try again"
     fi
   done
 }
 
 SetUserPassword() {
   Repeat="Y"
+  ExtraMessage=""
   while [ $Repeat = "Y" ]
   do
-    dialog --backtitle "$Backtitle" --title "$Title" --nocancel\
-      --insecure --passwordbox "Enter a password for $UserName" 8 40 2> output.file
+    dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel\
+      --insecure --passwordbox "$ExtraMessage\nEnter a password for $UserName" 10 40 2> output.file
     Pass1=`cat output.file`
-    dialog --backtitle "$Backtitle" --title "$Title" --nocancel \
-      --insecure --passwordbox "Re-enter ${UserName}'s password" 8 40 2> output.file
+    dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel \
+      --insecure --passwordbox "Re-enter password for ${UserName}" 8 40 2> output.file
     Pass2=`cat output.file`
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
-      PrintOne "Passwords cannot be blank. Try again"
+      ExtraMessage="Passwords cannot be blank. Try again"
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
@@ -267,7 +240,7 @@ SetUserPassword() {
       rm /tmp/.passwd &>> feliz.log
       Repeat="N"
     else
-      PrintOne "Passwords don't match. Try again"
+      ExtraMessage="Passwords don't match. Try again"
     fi
   done
 }

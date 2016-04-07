@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # listgen - menu functions used throughout Feliz
-
+# Command-line version
 # Developed by Elizabeth Mills
 
 PrintOne() { # Aligned text according to screen size
@@ -24,9 +24,7 @@ listgen1() { # Simple listing alternative to the bash 'select' function
 local Complete=0
 while [ $Complete -eq 0 ]
 do
-  if [ -n "${Passed}" ]; then
-    PrintOne "$Passed"
-  fi
+  PrintOne "$Backtitle"
   local Done=$3
   if [ $2 ]; then
     PrintOne $2
@@ -77,15 +75,12 @@ do
 done
 }
 
-listgen2() { # Previously 'InfoMenu'
-# Advanced menuing function with extended descriptions linked to short name
+listgen2() { # Advanced menuing function with extended descriptions
 # Parameters:
 # 1) Primary file (string of single-word references)
 # 2) An optional one-word menu heading (which will be underlined on display)
-# 4) Secondary file (the name of the array containing long descriptions)
 # 3) Optional alternative word to 'Done'
-# Global variable $Passed may be used as page heading 
-# If $Passed is not empty, it is displayed at the top of the page
+# 4) Secondary file (the name of the array containing long descriptions)
 local Complete=0
 while [ $Complete -eq 0 ]
 do
@@ -95,9 +90,7 @@ do
   name=$4[@]
   LongDescription=("${!name}")
   local Counter=0
-  if [ -n "${Passed}" ]; then
-    PrintOne "$Passed"
-  fi
+  PrintOne "$Backtitle"
   echo
   if [ -n $2 ]; then
     PrintOne $2
@@ -125,7 +118,7 @@ do
   esac
   echo
   TPread "Please enter the number of your selection: "
-  
+
    case $Response in
     ''|*[!0-9]*) invalid_option
     ;;
@@ -144,7 +137,7 @@ do
         done
         Complete=1
       fi
-  esac 
+  esac
   clear
 done
 }
