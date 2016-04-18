@@ -74,8 +74,7 @@ Partitioning() {
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    dialog --backtitle "$Backtitle" --title " - Partitioning - " -- no-shadow --cancel-label "Do nothing"\
-      --menu "$Message" 20 55 2 \
+    dialog --backtitle "$Backtitle" --title " - Partitioning - " --no-shadow --cancel-label "Do nothing" --menu "$Message" 20 55 2 \
         "Manual" "Open cfdisk so I can partition manually" \
         "Auto" "Allow feliz to partition the whole device" 2> output.file
     Proceed=$(cat output.file)
