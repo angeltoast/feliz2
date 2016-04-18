@@ -185,7 +185,7 @@ InstallKernel() { # Kernel and some other core systems
   *) DisplayProgress "Installing Latest kernel" 50
     pacstrap /mnt linux &>> feliz.log
   esac
-  if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
+  if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
     pacstrap /mnt virtualbox-guest-utils &>> feliz.log
     echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
     cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
