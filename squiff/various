@@ -10,7 +10,7 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# PrintOne              44       SetGrubDevice        150
+# PrintOne              44       SetGrubDevice        101
 # DisplayProgress       47       arch_chroot          155
 # ProgressArray         64       MountPartitions      150
 # SetKernel             83       InstallKernel        169
@@ -18,7 +18,7 @@
 # MakePartitionList    126       SetUserPassword      285
 
 PrintOne() {  # Arguments: "Component" "Patient"
-  dialog --backtitle "$Backtitle" --title " - Information - " --no-shadow --infobox "$1\n$2\n" 5 55 ; sleep 1 &
+  dialog --backtitle "$Backtitle" --title " - Information - " --no-shadow --infobox "$1\n$2\n" 5 50 ; sleep 1 &
 }
 
 TPecho() { # For compatibility with Cliff
@@ -35,7 +35,7 @@ DisplayProgress() { # Revised code for displaying progress for longer processes
   do
     echo "XXX"
     echo $Percent
-    echo "\n  $Message\n  Processing may continue after gauge shows 100%\n  Please be patient ..."
+    echo "$Message\nProcessing may continue after gauge shows 100%\nPlease be patient ..."
     echo "XXX"
     Percent=`expr $Percent + 10`
     sleep $Sleep
@@ -72,7 +72,8 @@ ProgressArray() {
 
 SetKernel() {
   local Message="The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS."
-  listgen1 "LTS Latest" " - Choose your kernel - " "nocancel"
+  listgen1 "LTS Latest"
+  dialog --backtitle "$Backtitle" --title " - Choose your kernel - " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> output.file
   case $(cat output.file) in
     "LTS") Kernel=1 # Set the Kernel variable (1 = LTS; 2 = Latest)
     ;;
@@ -83,8 +84,8 @@ SetKernel() {
 }
 
 ConfirmVbox() {
-  local Message="It appears that feliz is running in Virtualbox.\nIf you wish, feliz can install Virtualbox guest utilities and make appropriate settings for you.\n\nInstall Virtualbox guest utilities?"
-    dialog --backtitle "$Backtitle" --title " - Virtualbox guest modules - " --no-shadow --yesno "$Message\n" 13 50
+  local Message="It appears that feliz is running in Virtualbox. If you wish, feliz can install Virtualbox guest utilities and make appropriate settings for you.\n\nInstall Virtualbox guest utilities?"
+    dialog --backtitle "$Backtitle" --title " - Virtualbox guest modules - " --no-shadow --yesno "$Message\n" 10 50
     RetVal=$?
     case $RetVal in
       0) IsInVbox="VirtualBox"
@@ -99,9 +100,10 @@ SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
   GrubDevice=""
-  local Message="Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system."
-  listgen1 "${DevicesList}" "Devices" ""
-  if [ $? -gt 0 ]; then # <Cancel> selected
+  listgen1 "${DevicesList}"
+  dialog --backtitle "$Backtitle" --title " - Devices - " --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> output.file
+  RetVal=$?
+  if [ $RetVal -gt 0 ]; then # <Cancel> selected
    GrubDevice=""
   else
    GrubDevice=$(cat output.file)
@@ -121,7 +123,7 @@ MountPartitions() {
     elif [ $RootType = "btrfs" ]; then
       mkfs.btrfs -f ${RootPartition} &>> feliz.log
     else
-      Partition=`echo $RootPartition | cut -c 6-` &>> feliz.log
+      Partition=`echo $RootPartition | cut -c 6-` 2>> feliz.log
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -154,7 +156,7 @@ MountPartitions() {
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} &>> feliz.log
     elif [ ${AddPartType[$Counter]} != "" ]; then
-      Partition=`echo ${id} | cut -c 6-` &>> feliz.log
+      Partition=`echo ${id} | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -184,9 +186,9 @@ InstallKernel() { # Kernel and some other core systems
     pacstrap /mnt linux &>> feliz.log
   esac
   if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing latest kernel in Virtualbox
-    pacstrap /mnt virtualbox-guest-utils &>> feliz.log 
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf &>> feliz.log  # To overcome piix4 Virtualbox error
-    cp virtualbox.conf /mnt/etc/modules-load.d/ &>> feliz.log
+    pacstrap /mnt virtualbox-guest-utils &>> feliz.log
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
+    cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
   fi
  # PrintOne "Installing opensource video drivers" ""
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
@@ -217,6 +219,7 @@ SetRootPassword() {
       ExtraMessage="Passwords don't match. Try again"
     fi
   done
+  rm output.file
 }
 
 SetUserPassword() {
@@ -243,4 +246,5 @@ SetUserPassword() {
       ExtraMessage="Passwords don't match. Try again"
     fi
   done
+  rm output.file
 }

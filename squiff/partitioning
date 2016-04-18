@@ -59,10 +59,10 @@ CheckParts() { # First check of available partitions on the system
     ExistingPartitions=""
     for part in ${PartitionList}
     do
-      ExistingPartitions="$ExistingPartitions ${PartitionArray[$Partitions]}\n"
+      ExistingPartitions="$ExistingPartitions \n ${PartitionArray[$Partitions]}"
       (( Partitions+=1 ))
     done
-    local Message="Here is a list of available partitions on all connected devices ...\n $ExistingPartitions\nIf you choose to do nothing now, the script will next enable you to allocate the existing partitions."
+    local Message="Here is a list of available partitions on all connected devices:\n$ExistingPartitions\n\nIf you choose to do nothing now, the script will next enable you to allocate the existing partitions."
     Partitioning # Partitioning options
     # Call function to regenerate the array of partitions
     MakePartitionList
@@ -74,7 +74,7 @@ Partitioning() {
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    dialog --backtitle "$Backtitle" --title " Partitioning " --cancel-label "Do nothing"\
+    dialog --backtitle "$Backtitle" --title " - Partitioning - " -- no-shadow --cancel-label "Do nothing"\
       --menu "$Message" 20 55 2 \
         "Manual" "Open cfdisk so I can partition manually" \
         "Auto" "Allow feliz to partition the whole device" 2> output.file
@@ -120,8 +120,7 @@ do
     while [ -z $UseDisk ]
     do
       local Message="There are $Counter devices available\n $ExistingPartitions\nWhich do you wish to use for installation?\n(Remember, this is auto-partition, and any data on the chosen device will be lost)"
-      dialog --backtitle "$Backtitle" --title " auto-partition " \
-      --inputbox "\n$Message\n" 18 50 2> output.file
+      dialog --backtitle "$Backtitle" --title " - auto-partition - " --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
       UseDisk=$(cat output.file)
       #  Check entry against list
       for i in $DiskDetails
@@ -144,15 +143,14 @@ done
 AutoWarning() {
 while :
 do
-  dialog --backtitle "$Backtitle" --title " - auto-partition - " --yesno "\nThis will erase any data on '${UseDisk}'\nAre you sure you wish to continue?\n" 10 40
+  dialog --backtitle "$Backtitle" --title " - auto-partition - " --no-shadow --yesno "\nThis will erase any data on '${UseDisk}'\nAre you sure you wish to continue?\n" 10 40
   case $? in
     0) RunAutoPart
       if [ ${Home} = "Y" ]; then
         ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
         PrintHome="Home partition: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
       fi
-      dialog --backtitle "$Backtitle" --title " auto-partition " \
-    --msgbox "Partitioning of ${GrubDevice} successful\n\n$ShowPart1 ${SwapPartition}${SwapFile}\n $ShowPart2  ${RootPartition} ${RootType}\n$PrintHome\n\nYou will have the opportunity to review these later." 15 40
+      dialog --backtitle "$Backtitle" --title " auto-partition " --no-shadow --msgbox "Partitioning of ${GrubDevice} successful\n\n$ShowPart1 ${SwapPartition}${SwapFile}\n $ShowPart2  ${RootPartition} ${RootType}\n$PrintHome\n\nYou will have the opportunity to review these later." 15 40
       break
       ;;
     *) UseDisk=""
@@ -167,8 +165,7 @@ FileSystem() {
   ;;
   *) local Cancel="--cancel-label $1"
   esac
-  dialog --backtitle "$Backtitle" --title " - Partitioning - " ${Cancel} \
-      --menu "\n$Message\n" 18 50 4 \
+  dialog --backtitle "$Backtitle" --title " - Partitioning - " --no-shadow ${Cancel} --menu "\n$Message\n" 16 50 4 \
         "ext2" "-" \
         "ext3" "-" \
         "ext4" "-" \
@@ -184,8 +181,7 @@ EditLabel() { # Called by AllocateRoot, AllocateSwap and MorePartitions
 # Allows user to keep, edit or remove an existing label
 Label="${Labelled[$1]}"
 if [ -n ${Label} ]; then
-  dialog --backtitle "$Backtitle" --title " - Edit Partition Label - " --no-shadow \
-      --menu "The partition you have chosen is labelled '${Label}'" 18 50 3 \
+  dialog --backtitle "$Backtitle" --title " - Edit Partition Label - " --no-shadow --menu "The partition you have chosen is labelled '${Label}'" 18 50 3 \
         "1" "Keep existing label" \
         "2" "Delete label" \
         "3" "Enter a new label" 2> output.file
@@ -195,8 +191,7 @@ if [ -n ${Label} ]; then
     ;;
     2) LabellingArray[$PartitionID]="" # Empty label
     ;;
-    *) dialog --backtitle "$Backtitle" --title " - Edit Partition Label - " --no-shadow \
-      --inputbox "$PartitionID \nEnter a new label ..." 10 50 2> output.file
+    *) dialog --backtitle "$Backtitle" --title " - Edit Partition Label - " --no-shadow --inputbox "$PartitionID \nEnter a new label ..." 10 50 2> output.file
       Response=$(cat output.file)
       LabellingArray[$PartitionID]=$Response # Save new label
   esac
@@ -209,8 +204,8 @@ AllocateRoot() {
   Remaining=""
   Partition=""
   PartitionType=""
-  local Message="Please now select a partition to use for /root\n"
-  listgen2 "$PartitionList" "Partitions" "nocancel" "PartitionArray"
+  listgen2 "$PartitionList" "PartitionArray"
+  dialog --backtitle "$Backtitle" --title " - Partitions - " --no-shadow --ok-button "Select" --nocancel --menu "Please now select a partition to use for /root\n" 14 60 $Counter "${Options[@]}" 2> output.file
   Reply=$(cat output.file)
   PassPart="$Reply"
   SetLabel "$Reply"
@@ -274,10 +269,10 @@ then
                                      # Prepare for passing to listgen2
   CopyArray[${Counter}]="Swapfile"   # Add 'Swapfile' to array of available partitions
   PickFrom="$PartitionList Swapfile" # and make copy of PartitionList with 'Swapfile' added
-  Width=50                           # Set window minimum width for listgen2
-  local Message="Select a partition for swap from the ones that remain, or you can allocate a swap file. Warning: Btrfs does not support swap files." # Passed to listgen2
-  listgen2 "$PickFrom" "Partitions" "None" "CopyArray" # listgen2 builds complex dialog menu
-  if [ $? -ne 0 ]; then              # If <Cancel> selected
+  listgen2 "$PickFrom" "CopyArray"
+  dialog --backtitle "$Backtitle" --title " - Partitions - " --no-shadow --ok-button "Select" --cancel-button "None" --menu "Select a partition for swap from the ones that remain, or you can allocate a swap file. Warning: Btrfs does not support swap files." 14 60 $Counter "${Options[@]}" 2> output.file
+  RetVal=$?
+  if [ $RetVal -ne 0 ]; then         # If <Cancel> selected
     Result="Done"                    # Prepare reporting variable before exiting
     SwapPartition=""
     break
@@ -291,7 +286,7 @@ then
     SwapPartition="/dev/$Result"     # All other options are a partition in form 'sd*n'
     IsSwap=`sudo blkid ${SwapPartition} | grep 'swap' | awk '{print $1}'` # Check if already a swap
     if [ -n "$IsSwap" ]; then                                     # If it is, offer yes/no ...
-      dialog --backtitle "$Backtitle" --title " Swap Partition " --yesno "$Result is already formatted as a swap partition, Do you wish to reformat it?" 10 40
+      dialog --backtitle "$Backtitle" --title " Swap Partition " --yesno "$Result is already formatted as a swap partition, Do you wish to reformat it?" 8 40
       RetVal=$?
       case $RetVal in                # ... and use $? (exit status) to set variable
       0) MakeSwap="Y"                # used during installation
@@ -352,8 +347,8 @@ MorePartitions() { # For any unallocated partitions. Uses PartitionList and Part
   while [ $Elements -gt 0 ]
   do
     Remaining=""
-    local Message="The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose 'Done' to finish partitioning."
-    listgen2 "$PartitionList" "${_Partitions}" "${_Done}" "PartitionArray"
+    listgen2 "$PartitionList" "PartitionArray"
+    dialog --backtitle "$Backtitle" --title " - Partitions - " --no-shadow --ok-button "Select" --cancel-button "Done" --menu "The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose 'Done' to finish partitioning." 18 60 $Counter "${Options[@]}" 2> output.file
     Response=$?
     if [ $Response -gt 0 ]; then # ie: <Done>
       Elements=0

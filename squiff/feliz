@@ -15,6 +15,8 @@ source partitioning
 source desktop
 source listgen
 
+Backtitle="The Feliz install scripts for Arch Linux"
+
 StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
 
@@ -53,7 +55,6 @@ PickLuxuries
 if [ $Scope != "Basic" ]; then
   UserName
   # Use dmidecode to check for Virtualbox installation
-  # pacman -Sy --noconfirm dmidecode >/dev/null &>> feliz.log # Comment this line for compiling
   IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
   if [ ${IsInVbox} = "VirtualBox" ]; then
     ConfirmVbox
@@ -79,22 +80,22 @@ PrintOne "Preparing local services" ""
 arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
 
 # Generate fstab
-genfstab -U -p /mnt > /mnt/etc/fstab &>> feliz.log
+genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log # Auto-replaced in search of lost /home
 if [ ${SwapFile} ]; then
-  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null &>> feliz.log
-  chmod 600 /mnt/swapfile >/dev/null &>> feliz.log
-  mkswap /mnt/swapfile >/dev/null &>> feliz.log
-  swapon /mnt/swapfile >/dev/null &>> feliz.log
-  echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab &>> feliz.log
+  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> feliz.log
+  chmod 600 /mnt/swapfile >/dev/null &>> feliz.log # Auto-replaced in search of lost /home
+  mkswap /mnt/swapfile >/dev/null &>> feliz.log # Auto-replaced in search of lost /home
+  swapon /mnt/swapfile >/dev/null &>> feliz.log # Auto-replaced in search of lost /home
+  echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
 fi
-echo ${HostName} > /mnt/etc/hostname &>> feliz.log
+echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
 sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
 sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
 # Set up locale, etc
 echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
 arch_chroot "locale-gen"
 echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
-export "LANG=${CountryLocale}" 2>> feliz.log # eg: LANG=en_US.UTF-8
+export "LANG=${CountryLocale}" &>> feliz.log # eg: LANG=en_US.UTF-8
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 # Networking
@@ -124,7 +125,7 @@ else
 fi
 
 # Set keyboard to selected language at next startup
-echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf &>> feliz.log
+echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ]; then
@@ -136,7 +137,7 @@ if [ $Scope != "Basic" ]; then
   # Install desktop environments, window managers and display managers
   InstallLuxuries # common/shared
   #
-  UserAdd
+  UserAdd # common/shared
 fi
 
 EndTime=$(date +%s)

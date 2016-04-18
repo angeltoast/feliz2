@@ -10,8 +10,8 @@
 # Function    Line     Function           Line
 # ----------------     -----------------------
 # getkeymap     20     Display Managers    262
-# setlocale     35     FinalCheck          272
-# settimezone   52     ManualSettings      330
+# setlocale     35     FinalCheck          285
+# settimezone   46     ManualSettings      330
 # UserName      75     ChangeRootPartition 356
 # Hostname      85     ChangeSwapPartition 364
 # PickLuxuries  93     ChangePartitions    372
@@ -23,22 +23,23 @@ getkeymap() {
   for k in ${ListKbs[@]}; do
     keyboards="$keyboards $k"
   done
-  local Message="Scroll through this list, or type a letter, to find your keyboard."
-  listgen1 "$keyboards" "Keyboards" "nocancel"
+  listgen1 "$keyboards"
+  dialog --backtitle "$Backtitle" --title " - Keyboards - " --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list, or type a letter, to find your keyboard.\n" 20 50 12 "${Options[@]}" 2> output.file
   Countrykbd=$(cat output.file)
   loadkeys ${Countrykbd} 2>> feliz.log
 }
 
 setlocale() {
-  LocaleList=(`cat /etc/locale.gen | grep UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | sed 's/#//g'`)
+  Counter=0 # Added 2016-04-13 debugging "unary operator" error
+  LocaleList=(`grep 'UTF-8' /etc/locale.gen | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | sed 's/#//g'`)
   for item in ${LocaleList[@]}; do
     Counter=$((Counter+1))
     Options[${Counter}]="$item"
     Counter=$((Counter+1))
     Options[${Counter}]="UTF-8"
   done
-  dialog --backtitle "$Backtitle" --title " - Locales - " --nocancel \
-      --menu "\nScroll through this list, or type a letter, to find your locale. This will be used to set fonts and language and to find the best mirrors for downloading your system\n" 18 55 $Counter "${Options[@]}" 2> output.file
+  Counter=$((Counter/2))
+  dialog --backtitle "$Backtitle" --title " - Locales - " --no-shadow --nocancel --menu "\nScroll through this list, or type a letter, to find your locale. This will be used to set fonts and language and to find the best mirrors for downloading your system\n" 20 55 $Counter "${Options[@]}" 2> output.file
   CountryLocale="$(cat output.file).UTF-8"
   CountryCode=(`cat output.file | cut -c4-5`)
 }
@@ -49,22 +50,21 @@ SetTimeZone() {
   for z in ${Zones[@]}; do
     passzones="$passzones $z"
   done
-  local Message="To set the system clock, please first choose the World Zone of your location."
-  listgen1 "${passzones}" "World_Zones" "nocancel"
+  listgen1 "$passzones"
+  dialog --backtitle "$Backtitle" --title " - World_Zones - " --no-shadow --ok-button "Select" --nocancel --menu "To set the system clock, please first choose the World Zone of your location.\n" 20 50 11 "${Options[@]}" 2> output.file
   ZONE=$(cat output.file)
   SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
   passzones=""
   for z in ${SubZones[@]}; do
     passzones="$passzones $z"
   done
-  local Message="Now select your nearest city from this list."
-  listgen1 "$passzones" "${ZONE}" "nocancel"
+  listgen1 "$passzones"
+  dialog --backtitle "$Backtitle" --title " - ${ZONE} - " --no-shadow --ok-button "Select" --nocancel --menu "Now select your nearest city from this list.\n" 20 50 13 "${Options[@]}" 2> output.file
   SUBZONE=$(cat output.file)
 }
 
 UserName() {
-  dialog --backtitle "$Backtitle" --title " - User Name - " --nocancel\
-      --inputbox "Enter a name for the primary user of the new system.\nIf you don't create a username here, a default user called 'archie' will be set up\n" 18 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " - User Name - " --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system.\nIf you don't create a username here, a default user called 'archie' will be set up\n" 12 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
   case $Entered in
@@ -76,9 +76,7 @@ UserName() {
 
 SetHostname() {
   Entered=""
-  dialog --backtitle "$Backtitle" --title " - Hostname - " --nocancel\
-      --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.
-      If you do not enter one, the default hostname of 'arch-linux' will be used\n" 18 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " - Hostname - " --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\n" 12 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
   case $Entered in
@@ -91,7 +89,7 @@ SetHostname() {
 PickLuxuries() { # User selects any combination from a store of extras
   _Categories_List="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
   case "${LuxuriesList}" in
-  "") local Message="Now you have the option to add extras, such as a web browser, etc.\n If you want only a base Arch installation, exit without choosing any extras"
+  "") local Message="Now you have the option to add extras, such as a web browser, etc.\nIf you want only a base Arch installation, you can exit without choosing any extras"
   ;;
   *) local Message="You can add more items, or select items to delete."
   esac
@@ -114,21 +112,18 @@ PickLuxuries() { # User selects any combination from a store of extras
       ItemCounter=$((ItemCounter+1))
     done
     # Use $ItemCounter and ${Options[@]} array in menu dialog
-    dialog --backtitle "$_Backtitle" --title " - Categories - " --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 18 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
+    dialog --backtitle "$Backtitle" --title " - Categories - " --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 19 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
     RetVal=$?
     if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
     else
       Selected=`cat feliz.output`
       # Use selected number to get category for script use
-      Category=${Categories[${Selected}]} # English
-      # Get selection description in user language from $Options array
-      # Selected=$((Selected*2))
-      # _Category=${Options[${Selected}]} # User language
+      Category=${Categories[${Selected}]}
     fi
     # Then shop in that category
     ShoppingList
-    local Message="Added so far: ${LuxuriesList}\n You can now choose from any of the other lists, or choose <Done> to finish this part of the setup"
+    Message="Added so far: ${LuxuriesList}\nYou can now choose from any of the other lists, or choose <Done> to finish this part of the setup"
   done
   if [ -n "${LuxuriesList}" ]; then
     Scope="Full"
@@ -150,24 +145,25 @@ ShoppingList() {
     local Message="Added so far: ${LuxuriesList}"
     # Pass category to listgen2 for user to choose one item;
     case $Category in
-      "Accessories") listgen2 "$Accessories" "${Category}" "Done" "LongAccs"
+      "Accessories") listgen2 "$Accessories" "LongAccs"
       ;;
-      "Desktop_Environments") listgen2 "$Desktops" "${Category}" "Done" "LongDesk"
+      "Desktop_Environments") listgen2 "$Desktops" "LongDesk"
       ;;
-      "Graphical") listgen2 "$Graphical" "${Category}" "Done" "LongGraph"
+      "Graphical") listgen2 "$Graphical" "LongGraph"
       ;;
-      "Internet") listgen2 "$Internet" "${Category}" "Done" "LongNet"
+      "Internet") listgen2 "$Internet" "LongNet"
       ;;
-      "Multimedia") listgen2 "$Multimedia" "${Category}" "Done" "LongMulti"
+      "Multimedia") listgen2 "$Multimedia" "LongMulti"
       ;;
-      "Office") listgen2 "$Office" "${Category}" "Done" "LongOffice"
+      "Office") listgen2 "$Office" "LongOffice"
       ;;
-      "Programming") listgen2 "$Programming" "${Category}" "Done" "LongProg"
+      "Programming") listgen2 "$Programming" "LongProg"
       ;;
-      "Window_Managers") listgen2 "$WindowManagers" "${Category}" "Done" "LongWMs"
+      "Window_Managers") listgen2 "$WindowManagers" "LongWMs"
       ;;
       *) break
     esac
+    dialog --backtitle "$Backtitle" --title " - ${Category} - " --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n" 15 60 $Counter "${Options[@]}" 2> output.file
     RetVal=$?
     if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
@@ -195,7 +191,7 @@ ShoppingList() {
       fi
     done
     # Carry out any specific tests and add the item to the list
-  case $Picked in
+    case $Picked in
     "Cinnamon") DesktopEnvironment="Cinnamon"
         ChooseDM
       ;;
@@ -261,10 +257,11 @@ done
 ChooseDM() { # Choose a display manager unless already fixed by certain DEs
   if [ -z $DisplayManager ]; then
     Greeter=""
-    local Message="You can choose one of the following display managers.\nNot all display managers work well with all desktop environments. If in doubt, choose LightDM.\n If you do not install a display manager, you will have to launch your desktop environment manually."
-    listgen1 "GDM LightDM LXDM sddm SLIM XDM" "ChooseDM/Greeter}" "Done"
+    listgen1 "GDM LightDM LXDM sddm SLIM XDM"
+    dialog --backtitle "$Backtitle" --title " - ChooseDM/Greeter} - " --no-shadow --ok-button "Select" --cancel-label "Done" --menu "Choose one of the following display managers. Note that not all display managers work well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will have to launch your desktop environment manually.\n" 16 60 6 "${Options[@]}" 2> output.file
+    RetVal=$?
     Response=$(cat output.file)
-    if [ $? -eq 0 ]; then
+    if [ $RetVal -eq 0 ]; then
       Reply=$Response
       case $Reply in
         "GDM") DisplayManager="gdm        "
@@ -290,9 +287,8 @@ FinalCheck() {
 Repeat=1
 while [ $Repeat -gt 0 ]
 do
-  local Message="These are the settings you have entered. Please check them ...\n Press <Continue> to install with these settings, or choose an item if you wish to change it"
+  local Message=
   declare -a Settings
-  Options="Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras"
   Settings[1]="$RootPartition $RootType                                         "
   if [ $SwapPartition ] || [ $SwapFile ]; then
     Settings[2]="$SwapPartition $SwapFile"
@@ -339,50 +335,43 @@ do
   fi
   Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
   Settings[12]="${LuxuriesList}"
-  listgen2 "$Options" "Final_Check" "Continue" "Settings"
+  listgen2 "Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras" "Settings"
+  dialog --backtitle "$Backtitle" --title " - Final_Check - " --no-shadow --ok-button "Change" --cancel-button "Continue" --menu "These are the settings you have entered. Please check them. Press <Continue> to install with these settings, or choose an item if you wish to change it\n" 21 65 12 "${Options[@]}" 2> output.file
   RetVal=$?
   Response=$(cat output.file)
-  if [ $RetVal -eq 0 ]; then
-    Count=1
-    for i in ${Options[@]} # Convert selection into item number in list
-    do
-      if [ $i = $Response ]; then
-        break
-      fi
-      Count=$((Count+1))
-    done
-    case $Count in
-      1) ChangeRootPartition
+  if [ $RetVal -eq 0 ]; then # An item has been selected for change
+    case $Response in
+      "Root") ChangeRootPartition
           AllocateRoot
       ;;
-      2) ChangeSwapPartition
+      "Swap") ChangeSwapPartition
           AllocateSwap
       ;;
-      3) ChangePartitions
+      "Additional") ChangePartitions
           MorePartitions
       ;;
-      4) SetKernel
+      "Kernel") SetKernel
       ;;
-      5) SetGrubDevice
-    ;;
-      6) getkeymap
+      "Grub") SetGrubDevice
       ;;
-      7) setlocale
+      "Keyboard") getkeymap
       ;;
-      8) SetTimeZone
+      "Locale") setlocale
       ;;
-      9) ConfirmVbox
+      "Timezone") SetTimeZone
       ;;
-      10) DisplayManager=""
+      "Virtualbox") ConfirmVbox
+      ;;
+      "Display_Manager") DisplayManager=""
       ChooseDM
       ;;
-      11) ManualSettings
+      "Identity") ManualSettings
       ;;
-      12) PickLuxuries
+      "Extras") PickLuxuries
       ;;
-      *) Repeat=0
+      *) continue # Any error, restart the while loop
     esac
-  else
+  else # Continue, Cancel or Esc
     Repeat=0
   fi
 done
@@ -393,11 +382,11 @@ ManualSettings() {
   declare local Settings
   while [ $Retry = "Y" ]
   do
-    local Message=" Select data to change.\n or <Cancel> to finish"
+    local Message="Select data to change.\n or <Cancel> to finish"
     Settings[1]="(currently $HostName)"
     Settings[2]="(currently $UserName)"
-    Options="Hostname Username"
-    listgen2 "$Options" " Data Review " "" "Settings"
+    listgen2 "Hostname Username" "Settings"
+    dialog --backtitle "$Backtitle" --title " - Final_Check - " --no-shadow --ok-button "Select" --menu "Select data to change.\n or <Cancel> to finish\n" 18 60 6 "${Options[@]}" 2> output.file
     RetVal=$?
     Response=$(cat output.file)
     Count=1
@@ -411,17 +400,17 @@ ManualSettings() {
     if [ $RetVal -eq 0 ]; then
       case $Response in
         1) dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
-         --inputbox "\n${_Enter_new} ${_Hostname} (${_currently} $HostName)\n" 18 50 2> output.file
+         --inputbox "\nEnter new hostname (currently: $HostName)\n" 18 50 2> output.file
          Response=$(cat output.file)
          if [ $Response ]; then
-          HostName=$Response
+          HostName=${Response,,}
          fi
         ;;
         2) dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
       --inputbox "\nEnter new name for user (currently $UserName)\n" 18 50 2> output.file
          Response=$(cat output.file)
         if [ $Response ]; then
-          UserName=${Response}
+          UserName=${Response,,}
         fi
         ;;
         *) Retry="N"
