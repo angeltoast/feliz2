@@ -82,7 +82,7 @@ Categories[6]="Office"                                             #
 Categories[7]="Programming"                                        #
 Categories[8]="Window_Managers"                                    #
 # Accessories
-Accessories="brasero conky gnome-calculator gedit gparted nautilus gnome-terminal yaourt"
+Accessories="brasero conky gnome-calculator gedit gparted nautilus gnome-terminal"
 LongAccs[1]="Disc burning application from Gnome"
 LongAccs[2]="Desktop time and system information"
 LongAccs[3]="Calculator for your taskbar"
@@ -90,7 +90,6 @@ LongAccs[4]="The text editor from Gnome"
 LongAccs[5]="Tool to make/delete/resize partitions"
 LongAccs[6]="The file-manager from Gnome"
 LongAccs[7]="The Gnome terminal emulator"
-LongAccs[8]="Easy to use AUR package installer"
 # Desktops
 Desktops="Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Slick DE from the Mint team      "
@@ -388,7 +387,7 @@ RunAutoPart() {
     SwapPartition=""
   fi
   ShowPart1="Swap: `lsblk -l | grep "${UseDisk}1" | awk '{print $4}'`" >/dev/null
-  ShowPart2=`lsblk -l | grep "${UseDisk}2" | awk '{print $4}'` >/dev/null
+  ShowPart2="Root: `lsblk -l | grep "${UseDisk}2" | awk '{print $4}'`" >/dev/null
   ShowPart3=""
   AutoPart=1 # Set flag to 'on' for mounting
 }
@@ -546,7 +545,7 @@ InstallLuxuries() {
         pacstrap /mnt lxqt oxygen-icons &>> feliz.log
       ;;
       "Mate") InstallDM
-          DisplayProgress "Installing 'Mate' desktop Environment" 60
+          DisplayProgress "Installing 'Mate' desktop Environment" 80
         pacstrap /mnt mate mate-extra &>> feliz.log
       ;;
       "Openbox") InstallDM
@@ -560,20 +559,19 @@ InstallLuxuries() {
       *) continue # Ignore others on this pass
       esac
     done
-  # ... then install the others
+    # Now installs Yaourt by default
+    TPecho "Installing extra items ..." "Modifying pacman.conf and installing Yaourt"
+    cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
+    cp pacman.conf /etc 2>> feliz.log # For installer
+    pacman-key --init &>> feliz.log
+    pacman-key --populate archlinux &>> feliz.log
+    pacman -Sy &>> feliz.log # Update
+    pacstrap /mnt yaourt &>> feliz.log
+    # ... then install the other extras
     for i in ${LuxuriesList}
     do
       case $i in
       "Cinnamon" | "Deepin" | "Enlightenment" | "Feliz" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
-      ;;
-      "yaourt") # Copy modified pacman.conf to new system and install Yaourt
-        TPecho "Installing extra items ..." "Modifying pacman.conf and installing Yaourt"
-        cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
-        cp pacman.conf /etc 2>> feliz.log # For installer
-        pacman-key --init &>> feliz.log
-        pacman-key --populate archlinux &>> feliz.log
-        pacman -Sy &>> feliz.log # Update
-        pacstrap /mnt yaourt &>> feliz.log
       ;;
       "cairo-dock") TPecho "Installing extra items ..." " ... cairo-dock & cairo-dock-plug-ins"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins &>> feliz.log

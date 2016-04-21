@@ -154,7 +154,7 @@ do
         ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
         PrintHome="Home partition: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
       fi
-      dialog --backtitle "$Backtitle" --title " - Partitioning- " --no-shadow --msgbox "Partitioning of ${GrubDevice} successful\n\n$ShowPart1 ${SwapPartition}${SwapFile}\n $ShowPart2  ${RootPartition} ${RootType}\n$PrintHome\n\nYou will have the opportunity to review these later." 15 40
+      dialog --backtitle "$Backtitle" --title " - Partitioning- " --no-shadow --msgbox "Partitioning of ${GrubDevice} successful\n\n $ShowPart1 ${SwapPartition}${SwapFile}\n $ShowPart2  ${RootPartition} ${RootType}\n$PrintHome\n\nYou will have the opportunity to review these later." 15 40
       break
       ;;
     *) UseDisk=""

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 19 April 2016
+# 21 April 2016
 
-# /cliff/partitioning - Command-line interface
-# Partitioning functions (user settings)
+# /cliff/partitioning
+# CLI partitioning functions (user settings)
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
@@ -173,7 +173,8 @@ do
   print_heading
   PrintOne "This will erase any data on ${UseDisk}"
   Message="Are you sure you wish to continue?: "
-  listgen1 "Yes No" "Autopartition" "nodone"
+  echo
+  listgen1 "Yes No" "" "nodone"
   case $Response in
     "1" | "Y" | "y") RunAutoPart
       print_heading
@@ -357,6 +358,7 @@ then
             print_heading
             PrintOne "$i is already formatted as a swap partition,"
             PrintOne "Do you wish to reformat it?"
+            echo
             listgen1 "Yes No" "" "nodone"
             case $Response in
               "1" | "Y" | "y") MakeSwap="Y"

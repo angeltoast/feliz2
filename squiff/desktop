@@ -226,7 +226,7 @@ ShoppingList() {
           0) GoodiesGnome="gnome-extra"
            ;;
           *) GoodiesGnome=""
-        esac 
+        esac
       ;;
     "JWM") DesktopEnvironment="JWM"
         ChooseDM
@@ -348,6 +348,7 @@ do
   RetVal=$?
   Response=$(cat output.file)
   if [ $RetVal -eq 0 ]; then # An item has been selected for change
+    ConfirmReview
     case $Response in
       "Root") ChangeRootPartition
           AllocateRoot

@@ -1,31 +1,31 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 19 April 2016
+# 21 April 2016
 
-# /cliff/desktop - Command-line interface
-# Functions relevant to users, locations, settings, extra applications and review
+# /cliff/desktop
+# CLI functions relevant to users, settings, extra applications and review
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
 # Please read the introduction in the README file
 
-# ---------------     -----------------------
-# Function   Line     Function           Line
-# ---------------     -----------------------
-# Keymap        20      Display Managers    428
-# Locale        59      FinalCheck          549
-# Timezone     122      ManualSettings      640
-# Subzone      161      ChangeRootPartition 666
-# Username     235      ChangeSwapPartition 674
-# Hostname     251      ChangePartitions    682
-# PickLuxuries 216      AddExtras           694
+# -----------------   -----------------------
+# Function     Line   Function           Line
+# -----------------   -----------------------
+# getkeymap      25
+# setocale       63    KeepOrDelete       255
+# SetTimeZone   117    ShoppingList       283
+# SetSubZone    148    ChooseDM           441
+# Username      188    AddDEextras        483
+# Hostname      204    FinalCheck         513
+# PickLuxuries  220    ManualSettings     604
 
 getkeymap() {
   print_heading
   echo
-  PrintOne "Now let's try to find your keyboard"
+  PrintOne "Let's try to find your keyboard"
   Repeat=1
   while [ $Repeat -eq 1 ]
   do
@@ -61,57 +61,59 @@ getkeymap() {
 }
 
 setlocale() {
-SearchPrompt=" (for example: GB or en): "
-print_heading
-PrintOne "Next we will try to find your locale. This will"
-PrintOne "be used to set fonts and language, and to find"
-PrintOne "the best mirrors for downloading your system"
-InvalidEntry=1
-while [ $InvalidEntry -eq 1 ]
-do
-  echo
-  PrintOne "Please enter a two-letter code for your country or language."
-  echo
-  TPread "$SearchPrompt"
+  SearchPrompt=" (for example: GB or en): "
   print_heading
-  if [ -z ${Response} ]
-  then
-    invalid_option
-  else
+  PrintOne "Next we will try to find your locale. This will"
+  PrintOne "be used to set fonts and language, and to find"
+  PrintOne "the best mirrors for downloading your system"
+  InvalidEntry=1
+  while [ $InvalidEntry -eq 1 ]
+  do
     echo
-    searchterm="${Response,,}"
-    LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-    if [ ${#LocaleList[@]} -eq 0 ]
+    PrintOne "Please enter a two-letter code for your country or language."
+    echo
+    TPread "$SearchPrompt"
+    print_heading
+    if [ -z ${Response} ]
     then
-      SEARCHTERM="${Response^^}"
-      LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-    fi
-    local Counter=0
-    localelist=""
-    for l in ${LocaleList[@]}
-    do
-      localelist="${localelist} $l"
-      Counter=$((Counter+1))
-    done
-    if [ $Counter -eq 0 ]; then
       invalid_option
-      continue
+      print_heading
+    else
+      echo
+      searchterm="${Response,,}"
+      LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+      if [ ${#LocaleList[@]} -eq 0 ]
+      then
+        SEARCHTERM="${Response^^}"
+        LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+      fi
+      local Counter=0
+      localelist=""
+      for l in ${LocaleList[@]}
+      do
+        localelist="${localelist} $l"
+        Counter=$((Counter+1))
+      done
+      if [ $Counter -eq 0 ]; then
+        invalid_option
+        print_heading
+        continue
+      fi
+      PrintOne "Choose your locale from this list, or 'Try_Again': "
+      echo
+      listgen1 "${localelist}" "" "Try_again}"
+      case $Result in
+        "Try_again") continue
+        ;;
+        *) CountryLocale="${Result}.UTF-8"
+        CountryCode=(`echo ${Result} | cut -c4-6`)
+        break
+      esac
     fi
-    PrintOne "Choose your locale from this list, or 'Try_Again': "
-    echo
-    listgen1 "${localelist}" "" "Try_again}"
-    case $Result in
-      "Try_again") continue
-      ;;
-      *) CountryLocale="${Result}.UTF-8"
-      CountryCode=(`echo ${Result} | cut -c4-6`)
-      break
-    esac
-  fi
+    print_heading
+  done
   print_heading
-done
-print_heading
-read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
+  read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
 }
 
 SetTimeZone() {
@@ -189,7 +191,7 @@ UserName() {
   print_heading
   PrintOne "Enter a name for the primary user of the new system."
   PrintOne "If you don't create a username here, a default user"
-  PrintOne "calle 'archie' will be set up"
+  PrintOne "called 'archie' will be set up"
   echo
   TPread "User Name: "
   Entered=${Response,,}
@@ -507,97 +509,99 @@ AddDEextras() {
     *) echo
   esac
   PrintOne "Include the extras pack?"
+  echo
   listgen1 "Yes No" "" "nodone"
 }
 
 FinalCheck() {
-Repeat=1
-while [ $Repeat -gt 0 ]
-do
-  print_heading
-  PrintOne "These are the settings you have entered. Please check them ..."
-  echo
-  PrintOne "1)  Root partition ... $RootPartition : $RootType" 50
-  if [ $SwapPartition ] || [ $SwapFile ]; then
-    PrintMany "2)  Swap partition ... $SwapPartition $SwapFile"
-  else
-    PrintMany "2)  No provision has been made for swap"
-  fi
-  if [ ${#AddPartList[@]} ]; then
-    Counter=0
-    PrintMany "3)  Extra partitions ..."
-    for i in ${AddPartList[@]}
-    do
-      PrintMany "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
-      Counter=$((Counter+1))
-    done
-  else
-    PrintMany "3)  No additional partitions have been allocated"
-  fi
-  case $Kernel in
-    1) PrintMany "4)  The LTS kernel will be installed"
-    ;;
-    *) PrintMany "4)  The latest kernel will be installed"
-  esac
-  if [ $GrubDevice ]; then
-  PrintMany "5)  Grub will be installed to $GrubDevice" 50
-  else
-    PrintMany "5)  No provision has been made for Grub"
-  fi
-  PrintMany "6)  Keyboard is $Countrykbd"
-  PrintMany "7)  Locale will be set to $CountryLocale"
-  PrintMany "8)  Zone/subZone will be $ZONE/$SUBZONE"
-  case ${IsInVbox} in
-    "VirtualBox") PrintMany "9)  Virtualbox guest utilities will be installed"
-    ;;
-    *) PrintMany "9)  Virtualbox guest utilities will not be installed"
-  esac
-  if [ -z $DisplayManager ]; then
-    PrintMany "10)  No Display Manager selected"
-  else
-    PrintMany "10)  Display Manager = $DisplayManager"
-  fi
-  PrintMany "11)  Root and user settings ..."
-  PrintMany "     Hostname = '$HostName'"
-  PrintMany "     User = '$UserName'"
-  PrintMany "12) The following extras have been selected ..."
-  PrintOne "${LuxuriesList}"
-  echo
-  PrintOne "Press [Enter] to install with these settings, or"
-  TPread "enter an item number if you wish to change it: "
-  Change=$Response
-  case $Change in
-    1) ChangeRootPartition
+  Repeat=1
+  while [ $Repeat -gt 0 ]
+  do
+    print_heading
+    PrintOne "These are the settings you have entered. Please check them ..."
+    echo
+    PrintOne "1)  Root partition ... $RootPartition : $RootType" 50
+    if [ $SwapPartition ] || [ $SwapFile ]; then
+      PrintMany "2)  Swap partition ... $SwapPartition $SwapFile"
+    else
+      PrintMany "2)  No provision has been made for swap"
+    fi
+    if [ ${#AddPartList[@]} ]; then
+      Counter=0
+      PrintMany "3)  Extra partitions ..."
+      for i in ${AddPartList[@]}
+      do
+        PrintMany "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+        Counter=$((Counter+1))
+      done
+    else
+      PrintMany "3)  No additional partitions have been allocated"
+    fi
+    case $Kernel in
+      1) PrintMany "4)  The LTS kernel will be installed"
+      ;;
+      *) PrintMany "4)  The latest kernel will be installed"
+    esac
+    if [ $GrubDevice ]; then
+    PrintMany "5)  Grub will be installed to $GrubDevice" 50
+    else
+      PrintMany "5)  No provision has been made for Grub"
+    fi
+    PrintMany "6)  Keyboard is $Countrykbd"
+    PrintMany "7)  Locale will be set to $CountryLocale"
+    PrintMany "8)  Zone/subZone will be $ZONE/$SUBZONE"
+    case ${IsInVbox} in
+      "VirtualBox") PrintMany "9)  Virtualbox guest utilities will be installed"
+      ;;
+      *) PrintMany "9)  Virtualbox guest utilities will not be installed"
+    esac
+    if [ -z $DisplayManager ]; then
+      PrintMany "10)  No Display Manager selected"
+    else
+      PrintMany "10)  Display Manager = $DisplayManager"
+    fi
+    PrintMany "11)  Root and user settings ..."
+    PrintMany "     Hostname = '$HostName'"
+    PrintMany "     User = '$UserName'"
+    PrintMany "12) The following extras have been selected ..."
+    PrintOne "${LuxuriesList}"
+    echo
+    PrintOne "Press [Enter] to install with these settings, or"
+    Response=20
+    TPread "enter an item number if you wish to change it: "
+    Change=$Response
+    case $Change in
+      1) ChangeRootPartition
         AllocateRoot
-    ;;
-    2) ChangeSwapPartition
+      ;;
+      2) ChangeSwapPartition
         AllocateSwap
-    ;;
-    3) ChangePartitions
+      ;;
+      3) ChangePartitions
         MorePartitions
-    ;;
-    4) SetKernel
-    ;;
-    5) SetGrubDevice
-    ;;
-    6) getkeymap
-    ;;
-    7) setlocale
-    ;;
-    8) SetTimeZone
-    ;;
-    9) ConfirmVbox
-    ;;
-    10) DisplayManager=""
-      ChooseDM
-    ;;
-    11) ManualSettings
-    ;;
-    12) PickLuxuries
-    ;;
-    *) Repeat=0
-  esac
-done
+      ;;
+      4) SetKernel
+      ;;
+      5) SetGrubDevice
+      ;;
+      6) getkeymap
+      ;;
+      7) setlocale
+      ;;
+      8) SetTimeZone
+      ;;
+      9) ConfirmVbox
+      ;;
+      10) DisplayManager=""
+        ChooseDM
+      ;;
+      11) ManualSettings
+      ;;
+      12) PickLuxuries
+      ;;
+      *) Repeat=0
+    esac
+  done
 }
 
 ManualSettings() {

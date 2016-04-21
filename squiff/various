@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 19 April 2016
+# 21 April 2016
 
 # Semi-graphical interface
 # /squiff/various
@@ -15,14 +15,14 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           25
-# PrintOne              30       SetGrubDevice        101
-# TPecho                29       arch_chroot          155
-# DisplayProgress       33       MountPartitions      150
-# ProgressArray         52       InstallKernel        175
-# SetKernel             78       AddCodecs            201
-# ConfirmVbox           90       Passwords            207
-# MakePartitionList    126       Finish               235
+# arch_chroot           27       ConfirmReview        112
+# PrintOne              31       SetGrubDevice        120
+# TPecho                35       arch_chroot          155
+# DisplayProgress       39       MountPartitions      134
+# ProgressArray         58       InstallKernel        192
+# Bugger                83       AddCodecs            218
+# SetKernel             87       Passwords            233
+# ConfirmVbox           99       Finish               261
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
@@ -80,6 +80,10 @@ ProgressArray() { # For installing multiple programs with pacstrap and displayin
   )
 }
 
+Bugger() {
+  dialog --backtitle "This shouldn't be happening" --title " - Information - " --no-shadow --infobox "\n      This is a bug\n\n           =Ộ= \n\n  It is probably harmless" 9 30
+}
+
 SetKernel() { # Note: Kernel commands linux & linux-lts include base/commonutils
   listgen1 "LTS Latest"
   dialog --backtitle "$Backtitle" --title " - Choose your kernel - " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> output.file
@@ -103,6 +107,14 @@ ConfirmVbox() {
       *) IsInVbox=""
         Retry="N"
     esac
+}
+
+ConfirmReview() {
+  dialog --backtitle "$Backtitle" --title " - Review - " --no-shadow --yesno "You have chosen to edit your choices for\n  $Response\n\nAre you sure?\n" 8 50
+    RetVal=$?
+    if [ $RetVal -ne 0 ]; then
+      FinalCheck
+    fi
 }
 
 SetGrubDevice() {
