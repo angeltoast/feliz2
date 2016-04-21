@@ -1,33 +1,44 @@
 #!/bin/bash
 
-# Various functions - Dialog version
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
+
+# Semi-graphical interface
+# /squiff/various
+# Various functions for input/output, processing and installing
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
 # Please read the introduction in the README file
 
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# PrintOne              44       SetGrubDevice        101
-# DisplayProgress       47       arch_chroot          155
-# ProgressArray         64       MountPartitions      150
-# SetKernel             83       InstallKernel        169
-# ConfirmVbox           95       SetRootPassword      266
-# MakePartitionList    126       SetUserPassword      285
+# arch_chroot           25
+# PrintOne              30       SetGrubDevice        101
+# TPecho                29       arch_chroot          155
+# DisplayProgress       33       MountPartitions      150
+# ProgressArray         52       InstallKernel        175
+# SetKernel             78       AddCodecs            201
+# ConfirmVbox           90       Passwords            207
+# MakePartitionList    126       Finish               235
+
+arch_chroot() {  # From Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
+}
 
 PrintOne() {  # Arguments: "Component" "Patient"
-  dialog --backtitle "$Backtitle" --title " - Information - " --no-shadow --infobox "$1\n$2\n" 5 50 ; sleep 1 &
+  dialog --backtitle "$Backtitle" --title " - Information - " --no-shadow --infobox "\n$1\n$2" 6 50 ; sleep 1 &
 }
 
 TPecho() { # For compatibility with Cliff
     PrintOne "$1" "$2"
 }
 
-DisplayProgress() { # Revised code for displaying progress for longer processes
-  Estimate=$2 # Numeric value passed as multiple of 10
-  local Message="$1" # Text passed to appear above progress bar
+DisplayProgress() {  # Displays timed progress bar for longer processes
+  Estimate=$2           # Numeric argument = multiple of 10
+  local Message="$1"        # Text passed to appear above progress bar
   local Sleep=$(( $Estimate / 10 )) # Set sleep period to one tenth of total time
   local Percent=0
   (
@@ -44,14 +55,13 @@ DisplayProgress() { # Revised code for displaying progress for longer processes
   dialog --backtitle "$Backtitle" --title " - Progress - " --no-shadow --gauge "" 9 60 0 &
 }
 
-ProgressArray() {
-# For installing multiple programs with pacstrap and displaying gauge
-  local Title=" $1 "
+ProgressArray() { # For installing multiple programs with pacstrap and displaying gauge
+  local Title="$1"
   # Receives PassArray comprising all the programs
   # 1) Count items in the array
   n=${#PassArray[*]};
   # 2) Redirect dialog commands input using substitution
-  dialog --title "$Title" --no-shadow --gauge "" 8 60 < <(
+  dialog --backtitle "$Backtitle" --title " - $Title - " --no-shadow --gauge "" 8 60 < <(
   # 3) set counter - it will increase on each parse
    i=0
   # 4) read each item from the array
@@ -70,16 +80,15 @@ ProgressArray() {
   )
 }
 
-SetKernel() {
-  local Message="The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS."
+SetKernel() { # Note: Kernel commands linux & linux-lts include base/commonutils
   listgen1 "LTS Latest"
   dialog --backtitle "$Backtitle" --title " - Choose your kernel - " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> output.file
   case $(cat output.file) in
-    "LTS") Kernel=1 # Set the Kernel variable (1 = LTS; 2 = Latest)
-    ;;
-    "Latest") Kernel=2 # Set the Kernel variable (1 = LTS; 2 = Latest)
-    ;;
-    *) echo "${Debug}" >> feliz.log
+   "LTS") Kernel=1 # Set the Kernel variable (1 = LTS; 2 = Latest)
+   ;;
+   "Latest") Kernel=2 # Set the Kernel variable (1 = LTS; 2 = Latest)
+   ;;
+   *) echo "${Debug}" >> feliz.log
   esac
 }
 
@@ -169,7 +178,7 @@ MountPartitions() {
 }
 
 InstallKernel() { # Kernel and some other core systems
-  DisplayProgress "Installing bash" 40
+  DisplayProgress "Installing shell" 40
   pacstrap /mnt base-devel bash &>> feliz.log
   # Create array of all the programs to pass to installing function
   PassArray=() # Ensure array is empty
@@ -192,6 +201,21 @@ InstallKernel() { # Kernel and some other core systems
   fi
  # PrintOne "Installing opensource video drivers" ""
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
+}
+
+AddCodecs() {
+  PassArray=() # Ensure the array is empty
+  PassArray=( a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware iw wireless_tools wpa_actiond dialog xorg-server-utils xorg-xinit xorg-twm xf86-input-synaptics gvfs gamin )
+  ProgressArray "Adding Codecs, etc" # Display gauge while installing with pacstrap
+}
+
+McInitCPIO() { # Squiff version must be &>>
+  DisplayProgress "Running mkinitcpio" 10
+  if [ $Kernel = "1" ]; then
+    arch_chroot "mkinitcpio -p linux-lts"
+  else
+    arch_chroot "mkinitcpio -p linux"
+  fi
 }
 
 SetRootPassword() {
@@ -247,4 +271,8 @@ SetUserPassword() {
     fi
   done
   rm output.file
+}
+
+DisplayFinished() {
+  dialog --backtitle "$Backtitle" --no-shadow --msgbox "\nCongratulations, installation is complete, and it is time to restart the computer into your new system.\nHave fun with Arch Linux." 10 40
 }

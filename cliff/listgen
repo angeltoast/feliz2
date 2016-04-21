@@ -1,8 +1,26 @@
 #!/bin/bash
 
-# listgen - menu functions used throughout Feliz
-# Command-line version
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
+
+# /cliff/listgen - Command-line interface
+# Menu functions - listgen1 and listgen2
+
 # Developed by Elizabeth Mills
+
+# Please read the introduction in the README file
+
+# Both functions return the selected item as text using global variable $Result
+# and errorcode as $Response (to remain consistent with the cli version as far as possible)
+# Window width and height are adjusted according to content
+
+# listgen1 receives three parameters:
+# 1) Primary file (string of single-word references)
+# 2) Optional one-word --title
+# 3) Optional hiding of <Cancel> ("nocancel")
+
+# listgen2 has extended descriptions using the name of the complex array
+# Passed as 4th parameter:
 
 PrintOne() { # Aligned text according to screen size
   width=`tput cols`
@@ -24,7 +42,6 @@ listgen1() { # Simple listing alternative to the bash 'select' function
 local Complete=0
 while [ $Complete -eq 0 ]
 do
-  PrintOne "$Backtitle"
   local Done=$3
   if [ $2 ]; then
     PrintOne $2
@@ -90,7 +107,6 @@ do
   name=$4[@]
   LongDescription=("${!name}")
   local Counter=0
-  PrintOne "$Backtitle"
   echo
   if [ -n $2 ]; then
     PrintOne $2

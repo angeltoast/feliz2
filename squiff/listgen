@@ -1,21 +1,16 @@
 #!/bin/bash
 
-# listgen - Dialog version of menu functions used throughout Feliz
-# Adapted by Elizabeth Mills from the cli version to use Dialog
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
 
-# Both functions return the selected item as text using global variable $Result
-# and errorcode as $Response (to remain consistent with the cli version as far as possible)
-# Window width and height are adjusted according to content
+# /squiff/listgen - Semi-graphical Dialog interface
+# Menuing functions - listgen1 and listgen2
 
-# listgen1 receives three parameters:
-# 1) Primary file (string of single-word references)
-# 2) Optional one-word --title
-# 3) Optional hiding of <Cancel> ("nocancel")
+# Developed by Elizabeth Mills
 
-# listgen2 has extended descriptions using the name of the complex array
-# Passed as 4th parameter:
+# Please read the introduction in the README file
 
-# Global variable $Passed may be used as --backtitle
+# Both functions prepare the array Options[@] for display in a Dialog menu
 
 declare -a Options  # For caller
 

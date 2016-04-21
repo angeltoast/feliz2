@@ -1,10 +1,15 @@
 #!/bin/bash
 
-# desktop - Dialog version. Functions relevant to users, locations,
-# desktop settings and data review called by the main feliz script
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
+
+# /squiff/desktop - Semi-graphical Dialog interface
+# Functions relevant to users, locations, settings and review
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# Please read the introduction in the README file
 
 # ----------------     -----------------------
 # Function    Line     Function           Line
@@ -39,7 +44,7 @@ setlocale() {
     Options[${Counter}]="UTF-8"
   done
   Counter=$((Counter/2))
-  dialog --backtitle "$Backtitle" --title " - Locales - " --no-shadow --nocancel --menu "\nScroll through this list, or type a letter, to find your locale. This will be used to set fonts and language and to find the best mirrors for downloading your system\n" 20 55 $Counter "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " - Locales - " --no-shadow --nocancel --menu "Scroll through this list, or type a letter, to find your locale. This will be used to set fonts and language and to find the best mirrors for downloading your system\n" 20 55 $Counter "${Options[@]}" 2> output.file
   CountryLocale="$(cat output.file).UTF-8"
   CountryCode=(`cat output.file | cut -c4-5`)
 }
@@ -196,8 +201,7 @@ ShoppingList() {
         ChooseDM
       ;;
     "Deepin") DesktopEnvironment="Deepin"
-        dialog --backtitle "$Backtitle" --title " Deepin desktop environment " \
-    --yesno "The deepin-extras pack includes the Deepin game center, media players, terminal & screenshot tools. Include the extras pack?\n" 10 40
+        dialog --backtitle "$Backtitle" --title " - Deepin Extras - " --no-shadow --yesno "The deepin-extras pack includes the Deepin game center, media players, terminal & screenshot tools.\nInclude the extras pack?\n" 10 40
         case $? in
           0) DDEextras="deepin-extra"
            ;;
@@ -205,8 +209,7 @@ ShoppingList() {
         esac
       ;;
     "Enlightenment") DesktopEnvironment="Enlightenment"
-        dialog --backtitle "$Backtitle" --title " - Enlightenment - " \
-    --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability. Include them?" 10 40
+        dialog --backtitle "$Backtitle" --title " - Enlightenment - " --no-shadow --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability.\nInclude them?\n" 10 40
         case $? in
           0) EnExtras="connman terminology"
            ;;
@@ -218,7 +221,12 @@ ShoppingList() {
         ChooseDM
       ;;
     "Gnome") DesktopEnvironment="Gnome"
-        GoodiesGnome=""
+        dialog --backtitle "$Backtitle" --title " - Gnome Goodies - " --no-shadow --yesno "The gnome-extras pack includes games, text editor and some utilities.\nInclude the extras pack?\n" 10 40
+        case $? in
+          0) GoodiesGnome="gnome-extra"
+           ;;
+          *) GoodiesGnome=""
+        esac 
       ;;
     "JWM") DesktopEnvironment="JWM"
         ChooseDM

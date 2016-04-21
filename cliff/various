@@ -1,16 +1,21 @@
 #!/bin/bash
 
-# Various functions - cli version
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
+
+# /cliff/various - Command-line interface
+# Various functions for input/output, processing and installing
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
-# the excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
 
 # Please read the introduction in the README file
 
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# Various input/output  22       arch_chroot          242
+# arch_chroot           27
+# Various input/output  31       arch_chroot          242
 # Internet connection   87       SetGrubDevice        246
 # Various input/output  22       SetGrubDevice        246
 # Internet connection   87       MountPartitions      154
@@ -19,11 +24,15 @@
 # ConfirmVbox          206       SetRootPassword      293
 # MakePartitionList    229       SetUserPassword      335
 
+arch_chroot() {  # From Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
+}
+
 print_heading() {
   clear
   T_COLS=`tput cols`
   tput cup 1 $((($T_COLS/2)-20))
-  printf "~ Feliz : Arch Installation Script ~\n"
+  printf "~ $Backtitle ~\n"
   printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
@@ -215,26 +224,47 @@ MountPartitions() {
 }
 
 InstallKernel() {
-  TPecho "Installing bash"
-  pacstrap /mnt base-devel bash &>> feliz.log
+  TPecho "Installing shell"
+  pacstrap /mnt base-devel bash 2>> feliz.log
   TPecho "Installing cli tools"
   pacstrap /mnt btrfs-progs cryptsetup dhcpcd gksu inetutils iproute2 iputils jfsutils licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pciutils pcmciautils procps-ng psmisc reflector reiserfsprogs s-nail screenfetch systemd-sysvcompat unrar unzip usbutils vi vim wget xfsprogs xarchiver xorg-xedit xterm 2>> feliz.log
   arch_chroot "systemctl enable sshd.service" >/dev/null
   case $Kernel in
     1) TPecho "Installing LTS kernel"
-        pacstrap /mnt linux-lts
+        pacstrap /mnt linux-lts 2>> feliz.log
       ;;
     *) TPecho "Installing Latest kernel"
-        pacstrap /mnt linux
+        pacstrap /mnt linux 2>> feliz.log
   esac
   if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
     TPecho "Installing virtualbox guest modules"
-    pacstrap /mnt virtualbox-guest-utils
+    pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
     echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
     cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
   fi
   TPecho "Installing  opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> feliz.log # Install opensource video drivers
+}
+
+AddCodecs() {
+  TPecho "Adding codecs"
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
+  TPecho "Installing Wireless Tools"
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
+  pacstrap /mnt iw wireless_tools wpa_actiond dialog wifi-menu 2>> feliz.log
+  TPecho "Installing X, Graphics, etc"
+  pacstrap /mnt xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
+  pacstrap /mnt xf86-input-synaptics 2>> feliz.log
+  pacstrap /mnt gvfs gamin 2>> feliz.log
+}
+
+McInitCPIO() { # Cliff version can be 2>>
+  DisplayProgress "Running mkinitcpio" 10
+  if [ $Kernel = "1" ]; then
+    arch-chroot /mnt /bin/bash -c mkinitcpio -p linux-lts 2>> feliz.log
+  else
+    arch-chroot /mnt /bin/bash -c mkinitcpio -p linux 2>> feliz.log
+  fi
 }
 
 SetRootPassword() {
@@ -301,3 +331,11 @@ SetUserPassword() {
     fi
   done
 }
+
+DisplayFinished() {
+  print_heading
+  read_timed "Congratulations, installation is complete."
+  read_timed "It is time to restart the computer into"
+  read_timed "your new system. Have fun with Arch Linux."
+}
+

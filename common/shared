@@ -1,10 +1,14 @@
 #!/bin/bash
 
-# shared - Part of the Feliz Arch Linux Installation Script
-# Version: 2016-04-07
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
 
-# Developed by Elizabeth Mills, incorporating some code adapted from the
-# excellent Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# /common/shared - Variables and functions used by both sqiff and cliff
+
+# Developed by Elizabeth Mills, incorporating some code adapted from
+# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# Please read the introduction in the README file
 
 #
 # Partition variables and arrays
@@ -151,16 +155,11 @@ LongWMs[8]="Desktop panel"
 # -------------------------
 # Functions           Line
 # -------------------------
-# arch_chroot          164
-# ReflectorMirrorList  168
-# LocalMirrorList      178
-# Partitioning         193
+# ReflectorMirrorList  164
+# LocalMirrorList      174
+# Partitioning         189
 # Review Stage         282
 # Install Stage        326
-
-arch_chroot() {  # From Lution AIS
-  arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
-}
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   TPecho "Generating mirrorlist"
@@ -481,7 +480,7 @@ InstallLuxuries() {
     do
       case $i in
       "Cinnamon") InstallDM
-        DisplayProgress "Installing Cinnamon desktop Environment" 50
+          DisplayProgress "Installing Cinnamon desktop Environment" 50
         pacstrap /mnt cinnamon &>> feliz.log
       ;;
       "Deepin") if [ -z ${DisplayManager} ]; then     # If there is no defined display manager
@@ -502,25 +501,24 @@ InstallLuxuries() {
         sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc 2>> feliz.log
       ;;
       "Enlightenment") InstallDM
-        DisplayProgress "Installing 'Enlightenment' desktop Environment" 20
+          DisplayProgress "Installing 'Enlightenment' desktop Environment" 20
         pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log
       ;;
       "Fluxbox") InstallDM
-        DisplayProgress "Installing 'Fluxbox' window manager" 20
+          DisplayProgress "Installing 'Fluxbox' window manager" 20
         pacstrap /mnt fluxbox &>> feliz.log
       ;;
       "Gnome") if [ -z ${DisplayManager} ]; then    # If there is no defined display manager
-             DisplayProgress "Installing 'Gnome' desktop Environment" 30
-           pacstrap /mnt gnome &>> feliz.log
+              DisplayProgress "Installing 'Gnome' desktop Environment" 50
+            pacstrap /mnt gnome ${GoodiesGnome} &>> feliz.log
           arch_chroot "systemctl -f enable gdm.service"
         else
           InstallDM
-          DisplayProgress "Installing 'Gnome' desktop Environment" 30
-          pacstrap /mnt gnome &>> feliz.log
+          DisplayProgress "Installing 'Gnome' desktop Environment" 50
+          pacstrap /mnt gnome ${GoodiesGnome} &>> feliz.log
         fi
       ;;
-      "KDE") 
-        if [ -z ${DisplayManager} ]; then    # If there is no defined display manager
+      "KDE") if [ -z ${DisplayManager} ]; then    # If there is no defined display manager
              DisplayProgress "Installing KDE Plasma meta package" 40
             pacstrap /mnt plasma-meta &>> feliz.log
           arch_chroot "systemctl -f enable sddm.service"
@@ -532,9 +530,9 @@ InstallLuxuries() {
         DisplayProgress "Installing KDE applications package" 30
         pacstrap /mnt kde-applications &>> feliz.log
       ;;
-      "LXDE") if [ -z ${DisplayManager} ]; then    # If there is no defined display manager
-             pacstrap /mnt lxde &>> feliz.log
-            DisplayProgress "Installing 'LXDE' desktop Environment" 20
+      "LXDE") if [ -z ${DisplayManager} ]; then   # If there is no defined display manager
+              DisplayProgress "Installing 'LXDE' desktop Environment" 10
+            pacstrap /mnt lxde &>> feliz.log
            arch_chroot "systemctl -f enable lxdm.service"
           echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
         else
@@ -544,19 +542,19 @@ InstallLuxuries() {
         fi
       ;;
       "LXQt") InstallDM
-        DisplayProgress "Installing 'LXQt' desktop Environment" 30
+          DisplayProgress "Installing 'LXQt' desktop Environment" 30
         pacstrap /mnt lxqt oxygen-icons &>> feliz.log
       ;;
       "Mate") InstallDM
-        DisplayProgress "Installing 'Mate' desktop Environment" 60
+          DisplayProgress "Installing 'Mate' desktop Environment" 60
         pacstrap /mnt mate mate-extra &>> feliz.log
       ;;
       "Openbox") InstallDM
-        DisplayProgress "Installing 'Openbox' window manager" 20
+          DisplayProgress "Installing 'Openbox' window manager" 20
         pacstrap /mnt openbox &>> feliz.log
       ;;
       "Xfce") InstallDM
-        DisplayProgress "Installing 'Xfce' desktop Environment" 30
+          DisplayProgress "Installing 'Xfce' desktop Environment" 30
         pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
       ;;
       *) continue # Ignore others on this pass
@@ -594,10 +592,9 @@ UserAdd() {
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
-    TPecho "Adding user ${UserName} ... "
+    TPecho "Adding user '${UserName}' and setting up groups"
     arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
     # Set up basic configuration files and permissions for user
-    TPecho "Setting up user configuration"
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
     sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log

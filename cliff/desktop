@@ -1,10 +1,15 @@
 #!/bin/bash
 
-# felizdesktop - Functions relevant to users, locations, desktop
-# settings and data review called by the main feliz script
+# The Feliz installation scripts for Arch Linux
+# 19 April 2016
+
+# /cliff/desktop - Command-line interface
+# Functions relevant to users, locations, settings, extra applications and review
 
 # Developed by Elizabeth Mills, incorporating some code adapted from
 # the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+
+# Please read the introduction in the README file
 
 # ---------------     -----------------------
 # Function   Line     Function           Line
@@ -275,157 +280,162 @@ done
 LuxuriesList="$Temp"
 }
 
-ShoppingList() {
-# Called by PickLuxuries after a category has been chosen.
-local Complete=0
-Passed="Choose your first item"
-while [ $Complete -eq 0 ]
-do
-  print_heading
-  PrintOne "Added so far: ${LuxuriesList}"
-  echo
-  # $Category passed here is number of item in _Categories_List
-  Headline=${Categories[$Category]}
-  # Pass category to listgen2 for user to choose one item;
-  local Counter=1
-  case $Category in
-    1) for i in ${Accessories}
-        do
-          LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Accessories" "${Headline}" "" "LongAccs1"
-    ;;
-    2)  for i in ${Desktops}
-        do
-          LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Desktops" "${Headline}" "" "LongDesk1"
-    ;;
-    3) for i in ${Graphical}
-        do
-          LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Graphical" "${Headline}" "" "LongGraph1"
-    ;;
-    4) for i in ${Internet}
-        do
-          LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Internet" "${Headline}" "" "LongNet1"
-    ;;
-    5) for i in ${Multimedia}
-        do
-          LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Multimedia" "${Headline}" "" "LongMulti1"
-    ;;
-    6) for i in ${Office}
-        do
-          LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Office" "${Headline}" "" "LongOffice1"
-    ;;
-    7) for i in ${Programming}
-        do
-          LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Programming" "${Headline}" "" "LongProg1"
-    ;;
-    8) for i in ${WindowManagers}
-        do
-          LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$WindowManagers" "${Headline}" "" "LongWMs1"
-    ;;
-    *) break
-  esac
-  Passed="Choose your next item" # Loop until user selects "Done"
-  if [ $Result = "Done" ]; then
-    break
-  fi
-  AddToList="Y"
-  # First check that chosen item is not already on the list
-  for lux in $LuxuriesList
+ShoppingList() { # Called by PickLuxuries after a category has been chosen.
+  local Complete=0
+  Passed="Choose your first item"
+  while [ $Complete -eq 0 ]
   do
-    if [ ${lux} = ${Result} ]; then
-      KeepOrDelete "$Result" # New function
-      Result=""
+    print_heading
+    PrintOne "Added so far: ${LuxuriesList}"
+    echo
+     # $Category passed here is number of item in _Categories_List
+    Headline=${Categories[$Category]}
+    # Pass category to listgen2 for user to choose one item;
+    local Counter=1
+    case $Category in
+       1) for i in ${Accessories}
+          do
+           LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
+           (( Counter+=1 ))
+          done
+         listgen2 "$Accessories" "${Headline}" "" "LongAccs1"
+       ;;
+       2) for i in ${Desktops}
+          do
+           LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
+           (( Counter+=1 ))
+          done
+         listgen2 "$Desktops" "${Headline}" "" "LongDesk1"
+       ;;
+       3) for i in ${Graphical}
+          do
+            LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
+           (( Counter+=1 ))
+          done
+           listgen2 "$Graphical" "${Headline}" "" "LongGraph1"
+       ;;
+       4) for i in ${Internet}
+          do
+           LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
+            (( Counter+=1 ))
+         done
+         listgen2 "$Internet" "${Headline}" "" "LongNet1"
+       ;;
+       5) for i in ${Multimedia}
+          do
+            LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
+            (( Counter+=1 ))
+          done
+          listgen2 "$Multimedia" "${Headline}" "" "LongMulti1"
+       ;;
+       6) for i in ${Office}
+          do
+            LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
+            (( Counter+=1 ))
+          done
+          listgen2 "$Office" "${Headline}" "" "LongOffice1"
+       ;;
+       7) for i in ${Programming}
+          do
+            LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
+            (( Counter+=1 ))
+          done
+          listgen2 "$Programming" "${Headline}" "" "LongProg1"
+       ;;
+       8) for i in ${WindowManagers}
+          do
+            LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
+            (( Counter+=1 ))
+          done
+          listgen2 "$WindowManagers" "${Headline}" "" "LongWMs1"
+      ;;
+      *) break
+    esac
+    Passed="Choose your next item" # Loop until user selects "Done"
+    if [ $Result = "Done" ]; then
+      break
+    fi
+    AddToList="Y"
+    # First check that chosen item is not already on the list
+    for lux in $LuxuriesList
+    do
+      if [ ${lux} = ${Result} ]; then
+        KeepOrDelete "$Result" # New function
+        Result=""
+        continue
+      fi
+    done
+    # Then carry out any specific tests and add the item to the list
+    SaveResult=$Result # (Because other subroutines return $Result)
+    if [ ${SaveResult} = "libreoffice" ]; then
+      LuxuriesList="${LuxuriesList} libreoffice-fresh"
       continue
     fi
-  done
-  # Then carry out any specific tests and add the item to the list
-  SaveResult=$Result # (Because other subroutines return $Result)
-  if [ ${SaveResult} = "libreoffice" ]; then
-    LuxuriesList="${LuxuriesList} libreoffice-fresh"
-    continue
-  fi
-  case $SaveResult in
-    "Cinnamon") DesktopEnvironment=$SaveResult
-        ChooseDM
-      ;;
-    "Deepin") DesktopEnvironment="Deepin"
-           AddDEextras "deepin-extra"
-        case $Response in
-          1) DDEextras="deepin-extra"
+    case $SaveResult in
+      "Cinnamon") DesktopEnvironment=$SaveResult
+          ChooseDM
+       ;;
+      "Deepin") DesktopEnvironment="Deepin"
+          case $Response in
+            1) DDEextras="deepin-extra"
+            ;;
+            *) DDEextras=""
+          esac
+       ;;
+      "Enlightenment") DesktopEnvironment=$SaveResult
+         case $Response in
+            1) EnExtras="connman terminology"
+            ;;
+            *) EnExtras=""
+         esac
+         ChooseDM
+       ;;
+      "Fluxbox") DesktopEnvironment=$SaveResult
+          ChooseDM
+        ;;
+      "Gnome") DesktopEnvironment=$SaveResult
+          case $Response in
+           1) GoodiesGnome="xfce4-goodies"
            ;;
-          *) DDEextras=""
-        esac
-      ;;
-    "Enlightenment") DesktopEnvironment=$SaveResult
-        ChooseDM
-      ;;
-    "Fluxbox") DesktopEnvironment=$SaveResult
-        ChooseDM
-      ;;
-    "Gnome") DesktopEnvironment=$SaveResult
-        GoodiesGnome=""
-      ;;
-    "JWM") DesktopEnvironment=$SaveResult
-        ChooseDM
-      ;;
-    "KDE") DesktopEnvironment=$SaveResult
-      ;;
-    "LXDE") DesktopEnvironment=$SaveResult
-      ;;
-    "LXQt") DesktopEnvironment=$SaveResult
-        ChooseDM
-      ;;
-    "Mate") DesktopEnvironment=$SaveResult
-        ChooseDM
-      ;;
-    "Openbox") DesktopEnvironment=$SaveResult
-        AddDEextras "tint2"
+           *) GoodiesGnome=""
+          esac
+        ;;
+      "JWM") DesktopEnvironment=$SaveResult
+          ChooseDM
+        ;;
+      "KDE") DesktopEnvironment=$SaveResult
+        ;;
+     "LXDE") DesktopEnvironment=$SaveResult
+       ;;
+      "LXQt") DesktopEnvironment=$SaveResult
+          ChooseDM
+        ;;
+      "Mate") DesktopEnvironment=$SaveResult
+          ChooseDM
+       ;;
+     "Openbox") DesktopEnvironment=$SaveResult
         case $Response in
           1) GoodiesOpenbox="tint2"
           ;;
-         *) GoodiesOpenbox=""
-        esac
-        ChooseDM
-      ;;
-    "Xfce") DesktopEnvironment=$SaveResult
-         AddDEextras "xfce4-goodies"
-         case $Response in
-            1) GoodiesXfce="xfce4-goodies"
-           ;;
-           *) GoodiesXfce=""
+          *) GoodiesOpenbox=""
          esac
          ChooseDM
-      ;;
+       ;;
+      "Xfce") DesktopEnvironment=$SaveResult
+         case $Response in
+            1) GoodiesXfce="xfce4-goodies"
+            ;;
+            *) GoodiesXfce=""
+         esac
+         ChooseDM
+       ;;
       "") continue
-      ;;
-     *) echo
+       ;;
+      *) echo
     esac
     LuxuriesList="${LuxuriesList} ${SaveResult}"
-done
-Passed=""
+  done
+  Passed=""
 }
 
 ChooseDM() { # Choose a display manager unless already fixed by certain DEs
@@ -471,12 +481,19 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
 }
 
 AddDEextras() {
-  local Extras="$1"
   print_heading
   echo
   case $DesktopEnvironment in
     "Deepin") PrintOne "The deepin-extras pack includes the Deepin game center, media"
       PrintOne "players, terminal and screenshot tools."
+      echo
+      ;;
+    "Enlightenment") PrintOne "It is suggested that the Connman network utility, and"
+        PrintOne "Terminology terminal emulator are installed for usability."
+      echo
+      ;;
+    "Gnome") PrintOne "The gnome-extras pack includes games, a text"
+      PrintOne "editor and some utilities."
       echo
       ;;
     "Openbox") PrintOne "Tint2 is a system panel/taskbar that can be configured"
