@@ -573,31 +573,43 @@ FinalCheck() {
     case $Change in
       1) ChangeRootPartition
         AllocateRoot
+        Repeat=1
       ;;
       2) ChangeSwapPartition
         AllocateSwap
+        Repeat=1
       ;;
       3) ChangePartitions
         MorePartitions
+        Repeat=1
       ;;
       4) SetKernel
+        Repeat=1
       ;;
       5) SetGrubDevice
+        Repeat=1
       ;;
       6) getkeymap
+        Repeat=1
       ;;
       7) setlocale
+        Repeat=1
       ;;
       8) SetTimeZone
+        Repeat=1
       ;;
       9) ConfirmVbox
+        Repeat=1
       ;;
       10) DisplayManager=""
         ChooseDM
+        Repeat=1
       ;;
       11) ManualSettings
+        Repeat=1
       ;;
       12) PickLuxuries
+        Repeat=1
       ;;
       *) Repeat=0
     esac
