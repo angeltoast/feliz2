@@ -238,6 +238,9 @@ MountPartitions() {
 
 InstallKernel() {
   TPecho "Installing shell"
+  
+  LANG=C # Temporary addition to overcome bug in pacstrap 2016-06-06
+  
   pacstrap /mnt base-devel bash 2>> feliz.log
   TPecho "Installing cli tools"
   pacstrap /mnt btrfs-progs cryptsetup dhcpcd gksu inetutils iproute2 iputils jfsutils licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pciutils pcmciautils procps-ng psmisc reflector reiserfsprogs s-nail screenfetch systemd-sysvcompat unrar unzip usbutils vi vim wget xfsprogs xarchiver xorg-xedit xterm 2>> feliz.log

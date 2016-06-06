@@ -191,6 +191,9 @@ MountPartitions() {
 
 InstallKernel() { # Kernel and some other core systems
   DisplayProgress "Installing shell" 40
+  
+  LANG=C # Temporary addition to overcome bug in pacstrap 2016-06-06
+  
   pacstrap /mnt base-devel bash &>> feliz.log
   # Create array of all the programs to pass to installing function
   PassArray=() # Ensure array is empty
