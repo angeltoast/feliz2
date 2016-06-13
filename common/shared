@@ -578,9 +578,9 @@ InstallLuxuries() { # Install desktops and other extras
           DisplayProgress "Installing Deepin desktop Environment" 20
           pacstrap /mnt deepin ${DDEextras} &>> feliz.log
           # Copy pro-forma xinitrc file ...
-          cp /mnt/etc/X11/xinit/xinitrc /mnt/home/${UserName}/.xinitrc
+        #  cp /mnt/etc/X11/xinit/xinitrc /mnt/home/${UserName}/.xinitrc
           # Then add line at end to ensure DDE is used ...
-          sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc 2>> feliz.log
+        #  sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc 2>> feliz.log
         ;;
       "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop Environment" 20
           pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log

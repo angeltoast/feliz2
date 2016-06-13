@@ -28,7 +28,7 @@ getkeymap() {
     keyboards="$keyboards $k"
   done
   listgen1 "$keyboards"
-  dialog --backtitle "$Backtitle" --title " Keyboards " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list to find your keyboard.\n" 20 50 12 "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Keyboards " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list to find your keyboard.\nPress F1 for help." 20 50 12 "${Options[@]}" 2> output.file
   Countrykbd=$(cat output.file)
   loadkeys ${Countrykbd} 2>> feliz.log
 }
@@ -55,7 +55,7 @@ SetTimeZone() {
     passzones="$passzones $z"
   done
   listgen1 "$passzones"
-  dialog --backtitle "$Backtitle" --title " - World_Zones - " --hfile "helpUTC" --no-shadow --ok-button "Select" --nocancel --menu "To set the system clock, please first choose the World Zone of your location.\n(UTC? press F1)" 20 60 11 "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " World_Zones " --hfile "helpUTC" --no-shadow --ok-button "Select" --nocancel --menu "To set the system clock, please first choose the World Zone of your location.\n(Press F1 for help about UTC)" 20 60 11 "${Options[@]}" 2> output.file
   ZONE=$(cat output.file)
   if [ $ZONE != "UTC" ]; then
     SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
@@ -64,13 +64,13 @@ SetTimeZone() {
       passzones="$passzones $z"
     done
     listgen1 "$passzones"
-    dialog --backtitle "$Backtitle" --title " - ${ZONE} - " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Now select your nearest city from this list.\nPress F1 for help" 20 50 13 "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " ${ZONE} " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Now select your nearest city from this list.\nPress F1 for help" 20 50 13 "${Options[@]}" 2> output.file
     SUBZONE=$(cat output.file)
   fi
 }
 
 UserName() {
-  dialog --backtitle "$Backtitle" --title " - User Name - " --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system (one word only, lower case).\nIf you don't create a username here, a default user called 'archie' will be set up\n" 12 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " User Name " --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system (one word only, lower case).\nIf you don't create a username here, a default user called 'archie' will be set up\n" 12 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
   case $Entered in
@@ -82,7 +82,7 @@ UserName() {
 
 SetHostname() {
   Entered=""
-  dialog --backtitle "$Backtitle" --title " - Hostname - " --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\n" 12 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " Hostname " --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\n" 12 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
   case $Entered in
@@ -118,7 +118,7 @@ PickLuxuries() { # User selects any combination from a store of extras
       ItemCounter=$((ItemCounter+1))
     done
     # Use $ItemCounter and ${Options[@]} array in menu dialog
-    dialog --backtitle "$Backtitle" --title " - Categories - " --hfile "helpMENUS" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 19 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
+    dialog --backtitle "$Backtitle" --title " Categories " --hfile "helpMENUS" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 19 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
     RetVal=$?
     if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
@@ -169,7 +169,7 @@ ShoppingList() {
       ;;
       *) break
     esac
-    dialog --backtitle "$Backtitle" --title " - ${Category} - " --hfile "helpMENUS" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n" 15 60 $Counter "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " ${Category} " --hfile "helpMENUS" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n" 15 60 $Counter "${Options[@]}" 2> output.file
     RetVal=$?
     if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
@@ -202,7 +202,7 @@ ShoppingList() {
         ChooseDM
       ;;
     "Deepin") DesktopEnvironment="Deepin"
-        dialog --backtitle "$Backtitle" --title " - Deepin Extras - " --no-shadow --yesno "The deepin-extras pack includes the Deepin game center, media players, terminal & screenshot tools.\nInclude the extras pack?\n" 10 40
+        dialog --backtitle "$Backtitle" --title " Deepin Extras " --no-shadow --yesno "The deepin-extras pack includes the Deepin game center, media players, terminal & screenshot tools.\nInclude the extras pack?\n" 10 40
         case $? in
           0) DDEextras="deepin-extra"
            ;;
@@ -214,7 +214,7 @@ ShoppingList() {
         fi
       ;;
     "Enlightenment") DesktopEnvironment="Enlightenment"
-        dialog --backtitle "$Backtitle" --title " - Enlightenment - " --no-shadow --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability.\nInclude them?\n" 10 40
+        dialog --backtitle "$Backtitle" --title " Enlightenment " --no-shadow --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability.\nInclude them?\n" 10 40
         case $? in
           0) EnExtras="connman terminology"
            ;;
@@ -226,7 +226,7 @@ ShoppingList() {
         ChooseDM
       ;;
     "Gnome") DesktopEnvironment="Gnome"
-        dialog --backtitle "$Backtitle" --title " - Gnome Goodies - " --no-shadow --yesno "The gnome-extras pack includes games, text editor and some utilities.\nInclude the extras pack?\n" 10 40
+        dialog --backtitle "$Backtitle" --title " Gnome Goodies " --no-shadow --yesno "The gnome-extras pack includes games, text editor and some utilities.\nInclude the extras pack?\n" 10 40
         case $? in
           0) GoodiesGnome="gnome-extra"
            ;;
@@ -255,7 +255,7 @@ ShoppingList() {
         ChooseDM
       ;;
     "Xfce") DesktopEnvironment="Xfce"
-        dialog --backtitle "$Backtitle" --title " - Desktop Environment - " \
+        dialog --backtitle "$Backtitle" --title " Desktop Environment " \
     --yesno "\nThe xfce4-goodies pack includes includes the Whisker menu, extra\nplugins and a number of utilities such as the mousepad editor\nInclude the Goodies pack?\n" 10 40
         case $? in
           0) GoodiesXfce="xfce4-goodies"

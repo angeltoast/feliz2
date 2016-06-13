@@ -1,0 +1,18 @@
+GNU GRUB (short for GNU GRand Unified Bootloader) is a
+boot loader package from the GNU Project. GRUB is the
+reference implementation of the Free Software Foundation's
+Multiboot Specification, which provides a user the choice
+to boot one of multiple operating systems installed on a
+computer or select a specific kernel configuration
+available on a particular operating system's partitions.
+
+The original GRUB version 1 (also known as "GRUB Legacy")
+is no longer under development and is being phased out.
+The GNU GRUB developers have switched their focus to GRUB 2,
+a complete rewrite with goals including making GNU GRUB
+cleaner, more robust, more portable and more powerful.
+
+GRUB is normally installed on the MBR (Master BootRecord)
+of the computer on which it is to be run, but can be
+installed elsewhere, even on a removable device such as
+a USB flash-memory stick.

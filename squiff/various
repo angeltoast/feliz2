@@ -120,7 +120,7 @@ SetGrubDevice() {
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
   GrubDevice=""
   listgen1 "${DevicesList}"
-  dialog --backtitle "$Backtitle" --title " Devices " --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Devices " --hfile "helpGRUB" --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed. Press F1 for help.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> output.file
   RetVal=$?
   if [ $RetVal -gt 0 ]; then # <Cancel> selected
    GrubDevice=""

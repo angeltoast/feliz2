@@ -118,7 +118,7 @@ AutoPartition() {
       while [ -z $UseDisk ]
       do
         local Message="There are $Counter devices available\n $ExistingPartitions\nWhich do you wish to use for installation?\n(Remember, this is auto-partition, and any data on the chosen device will be lost)"
-        dialog --backtitle "$Backtitle" --title " - auto-partition - " --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
+        dialog --backtitle "$Backtitle" --title " Auto-partition " --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
         UseDisk=$(cat output.file)
         #  Check entry against list
         for i in $DiskDetails
@@ -163,7 +163,7 @@ FileSystem() {
   ;;
   *) local Cancel="--cancel-label $1"
   esac
-  dialog --backtitle "$Backtitle" --title " - Partitioning - " --no-shadow ${Cancel} --menu "\n$Message\n" 16 50 4 \
+  dialog --backtitle "$Backtitle" --title " Partitioning " --hfile "helpFILESYSTEM" --no-shadow ${Cancel} --menu "\n$Message\nPress F1 for help." 16 50 4 \
         "ext2" "-" \
         "ext3" "-" \
         "ext4" "-" \
@@ -179,7 +179,7 @@ EditLabel() { # Called by AllocateRoot, AllocateSwap and MorePartitions
   # Allows user to keep, edit or remove an existing label
   Label="${Labelled[$1]}"
   if [ -n ${Label} ]; then
-    dialog --backtitle "$Backtitle" --title " - Edit Partition Label - " --no-shadow --menu "The partition you have chosen is labelled '${Label}'" 18 50 3 \
+    dialog --backtitle "$Backtitle" --title " Edit Partition Label " --no-shadow --menu "The partition you have chosen is labelled '${Label}'" 18 50 3 \
           "1" "Keep existing label" \
           "2" "Delete label" \
           "3" "Enter a new label" 2> output.file
@@ -189,7 +189,7 @@ EditLabel() { # Called by AllocateRoot, AllocateSwap and MorePartitions
       ;;
       2) LabellingArray[$PartitionID]="" # Empty label
       ;;
-      *) dialog --backtitle "$Backtitle" --title " - Edit Partition Label - " --no-shadow --inputbox "$PartitionID \nEnter a new label ..." 10 50 2> output.file
+      *) dialog --backtitle "$Backtitle" --title " Edit Partition Label " --no-shadow --inputbox "$PartitionID \nEnter a new label ..." 10 50 2> output.file
         Response=$(cat output.file)
         LabellingArray[$PartitionID]=$Response # Save new label
     esac
@@ -203,7 +203,7 @@ AllocateRoot() {
   Partition=""
   PartitionType=""
   listgen2 "$PartitionList" "PartitionArray"
-  dialog --backtitle "$Backtitle" --title " - Partitions - " --no-shadow --ok-button "Select" --nocancel --menu "Please now select a partition to use for /root\n" 14 60 $Counter "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Partitions " --hfile "helpROOT" --no-shadow --ok-button "Select" --nocancel --menu "Please now select a partition to use for /root\nPress F1 for help." 14 60 $Counter "${Options[@]}" 2> output.file
   Reply=$(cat output.file)
   PassPart="$Reply"
   SetLabel "$Reply"
@@ -222,7 +222,7 @@ AllocateRoot() {
         local Message="$Message\nYou can choose to leave it as it is, but should be aware that not reformatting the root partition can have unexpected consequences."
         FileSystem "None"
       else
-        local Message="Please now select the file system for ${Partition} ... It is not recommended to mix the btrfs file-system with others.\n"
+        local Message="Please now select the file system for ${Partition} ... It is not recommended to mix the btrfs file-system with others.\nPress F1 for help."
         FileSystem "None"
       fi
       if [ -z ${PartitionType} ] && [ ${CurrentType} ]; then
@@ -266,7 +266,7 @@ AllocateSwap() {
   CopyArray[${Counter}]="Swapfile"   # Add 'Swapfile' to array of available partitions
   PickFrom="$PartitionList Swapfile" # and make copy of PartitionList with 'Swapfile' added
   listgen2 "$PickFrom" "CopyArray"
-  dialog --backtitle "$Backtitle" --title " - Partitions - " --no-shadow --ok-button "Select" --cancel-button "None" --menu "Select a partition for swap from the ones that remain, or you can allocate a swap file. Warning: Btrfs does not support swap files." 14 60 $Counter "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Partitions " --hfile "helpSWAP" --no-shadow --ok-button "Select" --cancel-button "None" --menu "Select a partition for swap from the ones that remain, or you can allocate a swap file. Warning: Btrfs does not support swap files. Press F1 for help." 14 60 $Counter "${Options[@]}" 2> output.file
   RetVal=$?
   if [ $RetVal -ne 0 ]; then         # If <Cancel> selected
     Result="Done"                    # Prepare reporting variable before exiting
