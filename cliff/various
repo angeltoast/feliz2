@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 21 April 2016
+# 12 June 2016
 
 # /cliff/various
 # Various CLI functions for input/output, processing and installing
@@ -16,13 +16,13 @@
 # -------------------------      -------------------------
 # arch_chroot           27       Bugger               136
 # print_heading         31       SetGrubDevice        148
-# invalid_option        39       MountPartitions      176
-# TPread                44       InstallKernel        238
-# DisplayProgress       59       AddCodecs            261
-# TPecho                63       McInitCPIO           273
-# read_timed            81       SetRootPassword      282
-# SetKernel             99       SetUserPassword      320
-# ConfirmVbox          112       DisplayFinished      347
+# invalid_option        39       
+# TPread                44       InstallKernel        176
+# DisplayProgress       59       AddCodecs            209
+# TPecho                63       McInitCPIO           222
+# read_timed            81       SetRootPassword      231
+# SetKernel             99       SetUserPassword      269
+# ConfirmVbox          112       DisplayFinished      296
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
@@ -174,113 +174,58 @@ SetGrubDevice() {
   done
 }
 
-MountPartitions() {
-  case $RootType in
-    "") TPecho "Not formatting root partition"
-    ;;
-    *) TPecho "Formatting root partition"
-      umount ${RootPartition} /mnt >/dev/null &>> feliz.log
-    # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30`
-    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${RootPartition}
-    elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} &>> feliz.log
-    else
-      Partition=`echo $RootPartition | cut -c 6-`
-      Label="${LabellingArray[${Partition}]}"
-      if [ -n "${Label}" ]; then
-        Label="-L ${Label}"
-      fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
-    fi
-  esac
-  TPecho "Mounting root partition"
-  mount ${RootPartition} /mnt &>> feliz.log # eg: mount /dev/sda1 /mnt
-  if [ ${SwapPartition} ]; then
-    swapoff -a 2>> feliz.log
-    if [ $MakeSwap = "Y" ]; then
-      TPecho "Making swap partition"
-      Partition=`echo $SwapPartition | cut -c 6-`
-      Label="${LabellingArray[${Partition}]}"
-      if [ -n "${Label}" ]; then
-        Label="-L ${Label}"
-      fi
-      mkswap ${Label} ${SwapPartition} # eg: mkswap -L Arch-Swap /dev/sda2
-    fi
-    TPecho "Activating /swap"
-    swapon ${SwapPartition} 2>> feliz.log # eg: swapon /dev/sda2
-  fi
-  local Counter=0
-  for id in ${AddPartList}
-  do
-    TPecho "Mounting ${id} as ${AddPartMount[$Counter]}"
-    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null &>> feliz.log
-    mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log  # eg: mkdir -p /mnt/home
-    # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
-    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${id}
-    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${id} &>> feliz.log
-    elif [ ${AddPartType[$Counter]} != "" ]; then
-      Partition=`echo ${id} | cut -c 6-`
-      Label="${LabellingArray[${Partition}]}"
-      if [ -n "${Label}" ]; then
-        Label="-L ${Label}"
-      fi
-      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
-    fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
-    Counter=$((Counter+1))
-  done
-}
+InstallKernel() { # Kernel and some other core systems
+  LANG=C # Temporary addition to overcome bug in Arch man pages
 
-InstallKernel() {
-  TPecho "Installing shell"
-  
-  LANG=C # Temporary addition to overcome bug in pacstrap 2016-06-06
-  
-  pacstrap /mnt base-devel bash 2>> feliz.log
-  TPecho "Installing cli tools"
-  pacstrap /mnt btrfs-progs cryptsetup dhcpcd gksu inetutils iproute2 iputils jfsutils licenses logrotate lvm2 man-db man-pages mdadm nano netctl ntp openssh pciutils pcmciautils procps-ng psmisc reflector reiserfsprogs s-nail screenfetch systemd-sysvcompat unrar unzip usbutils vi vim wget xfsprogs xarchiver xorg-xedit xterm 2>> feliz.log
-  arch_chroot "systemctl enable sshd.service" >/dev/null
-  case $Kernel in
-    1) TPecho "Installing LTS kernel"
-        pacstrap /mnt linux-lts 2>> feliz.log
+  case $Kernel in  # Selected kernel
+    1) TPecho "Installing LTS kernel - this may take some time"
+      pacstrap /mnt linux-lts 2>> feliz.log
+      
+      TPecho "Installing core systems"
+      pacstrap /mnt cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo 2>> feliz.log
+      
+      TPecho "Installing cli tools"
+      pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
       ;;
-    *) TPecho "Installing Latest kernel"
-        pacstrap /mnt linux 2>> feliz.log
+    *) TPecho "Installing Latest kernel - this may take some time"
+      pacstrap /mnt linux 2>> feliz.log
+      TPecho "Installing core systems"
+      pacstrap /mnt cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo 2>> feliz.log
+      
+      TPecho "Installing cli tools"
+      pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
   esac
-  if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
-    TPecho "Installing virtualbox guest modules"
-    pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
-    cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
-  fi
-  TPecho "Installing  opensource video drivers"
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau 2>> feliz.log # Install opensource video drivers
+
+  # Enable sshd
+  arch_chroot "systemctl enable sshd.service" >/dev/null
+  
+  # And finally the man pages
+  TPecho "Installing man-pages - this may take some time - please be patient"
+  pacstrap /mnt man-db man-pages 2>> feliz.log
 }
 
 AddCodecs() {
   TPecho "Adding codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
+  
   TPecho "Installing Wireless Tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
-  pacstrap /mnt iw wireless_tools wpa_actiond dialog wifi-menu 2>> feliz.log
+  pacstrap /mnt iw wireless_tools wpa_actiond wifi-menu 2>> feliz.log
+  
   TPecho "Installing X, Graphics, etc"
-  pacstrap /mnt xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
-  pacstrap /mnt xf86-input-synaptics 2>> feliz.log
-  pacstrap /mnt gvfs gamin 2>> feliz.log
+  pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
+  
+  TPecho "Installing  opensource video drivers"
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log # Install opensource video drivers
 }
 
-McInitCPIO() { # Cliff version can be 2>>
+McInitCPIO() {
   DisplayProgress "Running mkinitcpio" 10
-  if [ $Kernel = "1" ]; then
-    arch-chroot /mnt /bin/bash -c mkinitcpio -p linux-lts 2>> feliz.log
-  else
-    arch-chroot /mnt /bin/bash -c mkinitcpio -p linux 2>> feliz.log
-  fi
+  case $Kernel in
+    1) arch-chroot /mnt /bin/bash -c mkinitcpio -p linux-lts 2>> feliz.log
+    ;;
+    *) arch-chroot /mnt /bin/bash -c mkinitcpio -p linux 2>> feliz.log
+  esac
 }
 
 SetRootPassword() {
@@ -349,9 +294,10 @@ SetUserPassword() {
 }
 
 DisplayFinished() {
+  
   print_heading
   read_timed "Congratulations, installation is complete."
-  read_timed "It is time to restart the computer into"
-  read_timed "your new system. Have fun with Arch Linux."
+  read_timed "It is time for Feliz to shut down the computer."
+  read_timed "Remember to remove the installation media before restarting."
+  read_timed "Have fun!"
 }
-

@@ -1,0 +1,30 @@
+Partitioning a hard drive divides the available space
+into sections that can be accessed independently.
+
+An entire hard drive may be allocated to a single
+partition, or may be divided across multiple
+partitions. This may be required for dual- or multi-
+booting, for example, or for maintaining a swap
+partition. In other cases, partitioning is used as a
+means of logically separating data, such as creating
+separate partitions for audio and video files. 
+  
+There are 3 types of partitions:
+    Primary
+    Extended
+     Logical
+
+Primary partitions can be bootable and are limited to
+four partitions per disk or RAID volume. If a
+partitioning scheme requires more than four partitions,
+an extended partition containing logical partitions can
+be used. Extended partitions can be thought of as
+containers for logical partitions. A hard disk can
+contain no more than one extended partition. The extended
+partition is also counted as a primary partition so if
+the disk has an extended partition, only three additional
+primary partitions are possible (i.e. three primary
+partitions and one extended partition). The number of
+logical partitions residing in an extended partition is
+unlimited. A system that dual boots with Windows will
+require that Windows reside in a primary partition. 

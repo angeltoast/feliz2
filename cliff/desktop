@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 21 April 2016
+# 12 June 2016
 
 # /cliff/desktop
 # CLI functions relevant to users, settings, extra applications and review
@@ -221,7 +221,7 @@ SetHostname() {
 }
 
 PickLuxuries() { # User selects any combination from a store of extras
-  _Categories_List="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+  CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
   local Complete=0
   print_heading
   case "$LuxuriesList" in
@@ -234,7 +234,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   echo
   while [ $Complete -eq 0 ]
   do
-    listgen1 "${_Categories_List}" "Categories" "Done"
+    listgen1 "${CategoriesList}" "Categories" "Done"
     Category=$Response
     if [ $Result = "Done" ]; then
       break
@@ -290,7 +290,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     print_heading
     PrintOne "Added so far: ${LuxuriesList}"
     echo
-     # $Category passed here is number of item in _Categories_List
+     # $Category passed here is number of item in CategoriesList
     Headline=${Categories[$Category]}
     # Pass category to listgen2 for user to choose one item;
     local Counter=1
@@ -383,6 +383,10 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
             ;;
             *) DDEextras=""
           esac
+     	  ChooseDM
+        if [ $DisplayManager="lightdm" ]; then
+          Greeter="deepin-session-ui"
+        fi
        ;;
       "Enlightenment") DesktopEnvironment=$SaveResult
          case $Response in
@@ -401,13 +405,16 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
            ;;
            *) GoodiesGnome=""
           esac
+          DisplayManager="reserved"
         ;;
       "JWM") DesktopEnvironment=$SaveResult
           ChooseDM
         ;;
       "KDE") DesktopEnvironment=$SaveResult
+          DisplayManager="reserved"
         ;;
      "LXDE") DesktopEnvironment=$SaveResult
+          ChooseDM
        ;;
       "LXQt") DesktopEnvironment=$SaveResult
           ChooseDM
@@ -441,7 +448,8 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
 }
 
 ChooseDM() { # Choose a display manager unless already fixed by certain DEs
-  if [ -z $DisplayManager ]; then
+  case $DisplayManager in
+    "") # Only offered if no other display manager has been set
     Counter=0
     Greeter=""
     DMList="GDM LightDM LXDM sddm SLIM XDM"
@@ -479,7 +487,24 @@ ChooseDM() { # Choose a display manager unless already fixed by certain DEs
         break
       fi
     done
-  fi
+  "reserved") # Indicating that either KDE or Gnome DE is set and will install own DM
+    Greeter=""
+    ;;
+  *) # Warn that DM already set, and offer option to change it
+    print_heading
+    PrintOne "Display manager is already set as: $DisplayManager."
+    PrintOne "Only one display manager can be active"
+    echo
+    PrintOne "Do you wish to change it?: "
+    echo
+    listgen1 "Yes No" "" "nodone"
+    echo
+    if [ $Response -eq 1 ]; then    # User wishes to change DM
+      DisplayManager=""        # Clear DM variable
+      Greeter=""               # and greeter
+      ChooseDM                 # Call this function again
+    fi
+  esac
 }
 
 AddDEextras() {
@@ -514,8 +539,7 @@ AddDEextras() {
 }
 
 FinalCheck() {
-  Repeat=1
-  while [ $Repeat -gt 0 ]
+  while :
   do
     print_heading
     PrintOne "These are the settings you have entered. Please check them ..."
@@ -573,45 +597,45 @@ FinalCheck() {
     case $Change in
       1) ChangeRootPartition
         AllocateRoot
-        Repeat=1
+        continue
       ;;
       2) ChangeSwapPartition
         AllocateSwap
-        Repeat=1
+        continue
       ;;
       3) ChangePartitions
         MorePartitions
-        Repeat=1
+        continue
       ;;
       4) SetKernel
-        Repeat=1
+        continue
       ;;
       5) SetGrubDevice
-        Repeat=1
+        continue
       ;;
       6) getkeymap
-        Repeat=1
+        continue
       ;;
       7) setlocale
-        Repeat=1
+        continue
       ;;
       8) SetTimeZone
-        Repeat=1
+        continue
       ;;
       9) ConfirmVbox
-        Repeat=1
+        continue
       ;;
       10) DisplayManager=""
         ChooseDM
-        Repeat=1
+        continue
       ;;
       11) ManualSettings
-        Repeat=1
+        continue
       ;;
       12) PickLuxuries
-        Repeat=1
+        continue
       ;;
-      *) Repeat=0
+      *) break
     esac
   done
 }

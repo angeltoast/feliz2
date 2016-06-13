@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 21 April 2016
+# 12 June 2016
 
 # /cliff/partitioning
 # CLI partitioning functions (user settings)
@@ -14,13 +14,11 @@
 # -----------------------      ------------------------
 # Functions         Line       Functions           Line
 # -----------------------      ------------------------
-# CheckParts          24       BuildPartitionLists 298
-# Partitioning        94       UpdateArray         322
-# Parted             124       AllocateRoot        304
-# AutoPartition      128       CheckPartition      340
-# AutoWarning        171       AllocateSwap        305
-# select_filesystem  188       SetSwapFile         504
-# SetLabel           259       MorePartitions      588
+# CheckParts          24       AllocateRoot       304
+# Partitioning        94       CheckPartition      299
+# AutoPartition      128       AllocateSwap        309
+# AutoWarning        171       SetSwapFile         504
+# select_filesystem  204       MorePartitions      588
 # EditLabel          276       MakePartition       612
 # -----------------------      ------------------------
 
@@ -42,7 +40,7 @@ CheckParts() {
       echo
       PrintOne "There are no partitions on the device, and at least one"
       PrintOne "partition is needed for the root directory."
-      PrintOne " If you are uncertain about partitioning, you should read the Arch Wiki."
+      PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki."
       echo
       PrintOne "You can use 'cfdisk' to create a partition table, or "
       PrintOne "feliz can create partitions for you, if you wish."
@@ -109,7 +107,7 @@ Partitioning() {
     case $Proceed in
       1) cfdisk 2>> feliz.log
         tput setf 0 # Change foreground colour to black temporarily to hide error message
-        partprobe &>> feliz.log #Inform kernel of changes to partitions
+        partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0 # Reset colour
         ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
       ;;
@@ -125,82 +123,81 @@ Partitioning() {
 }
 
 AutoPartition() {
-# Called from option 2) within Partitioning()
-AutoPart=0
-until [ ${AutoPart} -gt 0 ]
-do
-  DiskDetails=`lsblk -l | grep 'disk' | awk '{print $1}'`
-  UseDisk=$DiskDetails # If more than one, UseDisk will be first
-  # Count lines. If more than one disk, ask user which to use
-  local Counter=0
-  CountDisks=0
-  for i in $DiskDetails
+  # Called from option 2) within Partitioning()
+  AutoPart=0
+  until [ ${AutoPart} -gt 0 ]
   do
-    Counter=$((Counter+1))
-    Drives[$Counter]=$i
-  done
-  if [ $Counter -gt 1 ]
-  then
-    UseDisk="" # Reset for user choice
-    while [ -z $UseDisk ]
+    DiskDetails=`lsblk -l | grep 'disk' | awk '{print $1}'`
+    UseDisk=$DiskDetails # If more than one, UseDisk will be first
+    # Count lines. If more than one disk, ask user which to use
+    local Counter=0
+    CountDisks=0
+    for i in $DiskDetails
     do
-      print_heading
-      PrintOne "There are $Counter devices available"
-      PrintOne "Which do you wish to use for installation?"
-      PrintOne "(Remember, this is auto-partition, and any data"
-      PrintOne "on the chosen device will be lost)"
-      echo
-      Counter=0
-      for i in $DiskDetails
-      do
-        Counter=$((Counter+1))
-        PrintOne "$Counter) $i"
-      done
-      echo
-      TPread "Enter the number of your selection: "
-      UseDisk="${Drives[$Response]}"
-      AutoWarning
+      Counter=$((Counter+1))
+      Drives[$Counter]=$i
     done
-  else
-    AutoWarning
-  fi
-done
+    if [ $Counter -gt 1 ]
+    then
+      UseDisk="" # Reset for user choice
+      while [ -z $UseDisk ]
+      do
+        print_heading
+        PrintOne "There are $Counter devices available"
+        PrintOne "Which do you wish to use for installation?"
+        PrintOne "(Remember, this is auto-partition, and any data"
+        PrintOne "on the chosen device will be lost)"
+        echo
+        Counter=0
+        for i in $DiskDetails
+        do
+          Counter=$((Counter+1))
+          PrintOne "$Counter) $i"
+        done
+        echo
+        TPread "Enter the number of your selection: "
+        UseDisk="${Drives[$Response]}"
+        AutoWarning
+      done
+    else
+      AutoWarning
+    fi
+  done
 }
 
 AutoWarning() {
-while :
-do
-  print_heading
-  PrintOne "This will erase any data on ${UseDisk}"
-  Message="Are you sure you wish to continue?: "
-  echo
-  listgen1 "Yes No" "" "nodone"
-  case $Response in
-    "1" | "Y" | "y") RunAutoPart
-      print_heading
-      PrintOne "Partitioning of ${GrubDevice} successful"
-      PrintOne "-------------------------------------"
-      PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart1"
-      PrintMany "Root: ${RootPartition} ${RootType} $ShowPart2"
-      if [ ${Home} = "Y" ]; then
-        ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
-        PrintMany "Home: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
-      fi
-      echo
-      PrintOne "You will have the opportunity to review these later."
-      echo
-      PrintOne "Press any key to continue"
-      read -n1
-      break
-      ;;
-    "2" | "N" | "n") UseDisk=""
-      break 2
-      ;;
-    *) invalid_option
-  esac
-done
+  while :
+  do
+    print_heading
+    PrintOne "This will erase any data on ${UseDisk}"
+    Message="Are you sure you wish to continue?: "
+    echo
+    listgen1 "Yes No" "" "nodone"
+    case $Response in
+      "1" | "Y" | "y") RunAutoPart
+        print_heading
+        PrintOne "Partitioning of ${GrubDevice} successful"
+        PrintOne "-------------------------------------"
+        PrintMany "Swap: ${SwapPartition}${SwapFile} $ShowPart1"
+        PrintMany "Root: ${RootPartition} ${RootType} $ShowPart2"
+        if [ ${Home} = "Y" ]; then
+          ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
+          PrintMany "Home: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
+        fi
+        echo
+        PrintOne "You will have the opportunity to review these later."
+        echo
+        PrintOne "Press any key to continue"
+        read -n1
+        break
+        ;;
+      "2" | "N" | "n") UseDisk=""
+        break 2
+        ;;
+      *) invalid_option
+    esac
+  done
 }
-
 
 select_filesystem() { # $1 = list passed as string by caller
   local Counter=0
@@ -220,27 +217,27 @@ select_filesystem() { # $1 = list passed as string by caller
 }
 
 EditLabel() {
-Label="${Labelled[$1]}"
-if [ -n ${Label} ]; then
-  # Inform the user and accept input
-  print_heading
-  echo
-  PrintOne "The partition you have chosen is labelled '${Label}'"
-  echo
-  PrintOne "If you wish to keep that label, enter 1            "
-  PrintMany "If you wish to delete the label, enter 2"
-  PrintMany "If you wish to enter a new label, type it at the prompt"
-  echo
-  TPread "Enter 1, 2 or a new label: "
-  # Save to the -A array
-  case $Response in
-    1) LabellingArray[$PartitionID]=$Label
-    ;;
-    2) LabellingArray[$PartitionID]=""
-    ;;
-    *) LabellingArray[$PartitionID]=$Response
-  esac
-fi
+  Label="${Labelled[$1]}"
+  if [ -n ${Label} ]; then
+    # Inform the user and accept input
+    print_heading
+    echo
+    PrintOne "The partition you have chosen is labelled '${Label}'"
+    echo
+    PrintOne "If you wish to keep that label, enter 1            "
+    PrintMany "If you wish to delete the label, enter 2"
+    PrintMany "If you wish to enter a new label, type it at the prompt"
+    echo
+    TPread "Enter 1, 2 or a new label: "
+    # Save to the -A array
+    case $Response in
+      1) LabellingArray[$PartitionID]=$Label
+      ;;
+      2) LabellingArray[$PartitionID]=""
+      ;;
+      *) LabellingArray[$PartitionID]=$Response
+    esac
+  fi
 }
 
 AllocateRoot() {
@@ -298,20 +295,17 @@ AllocateRoot() {
 }
 
 CheckPartition() {
-# Finds if there is an existing file system on the selected partition
-print_heading
-CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
-if [ ${CurrentType} ]; then
-  PrintOne "The selected partition ${Partition} is currently formatted to ${CurrentType}"
-  PrintOne "Reformatting it will remove all data currently on it."
-fi
+  # Finds if there is an existing file system on the selected partition
+  print_heading
+  CurrentType=`file -sL ${Partition} | grep "ext" | cut -c26-30`
+  if [ ${CurrentType} ]; then
+    PrintOne "The selected partition ${Partition} is currently formatted to ${CurrentType}"
+    PrintOne "Reformatting it will remove all data currently on it."
+  fi
 }
 
 AllocateSwap() {
-# Checks if remaining partitions and allows selection for swap
-print_heading
-if [ -n "${PartitionList}" ]
-then
+  print_heading
   PrintOne "Select a partition for swap from the ones that"
   PrintOne "remain, or you can allocate a swap file."
   PrintOne "Warning: Btrfs does not support swap files."
@@ -391,31 +385,45 @@ then
   fi
   echo
   PartitionList=$Remaining  # Replace original PartitionList with remaining options
-fi
+}
+
+NoPartitions() { # There are no unallocated partitions
+  PrintOne "There are no partitions available for swap,"
+  PrintOne "but you can allocate a swap file, if you wish."
+  Message="Create a swap file?: "
+  echo
+  listgen1 "Yes No" "" "nodone"
+  case $Response in
+    "1" | "Y" | "y") SetSwapFile
+      SwapPartition=""
+     ;;
+    *) SwapPartition=""
+      SwapFile=""
+  esac
 }
 
 SetSwapFile() {
-LoopRepeat="Y"
-while [ ${LoopRepeat} = "Y" ]
-do
-  PrintOne "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
-  TPread "Size of swap file [eg: 512M or 2G]: "
-  RESPONSE="${Response^^}"
-  # Check that entry includes 'M or G'
-  CheckInput=(`echo $RESPONSE | grep "G\|M"`)
-  echo
-  if [ -z ${CheckInput} ]; then
-    PrintOne "You must include M or G"
-    SwapFile=""
-  else
-    SwapFile=$RESPONSE
-    LoopRepeat="N"
-  fi
-  if [ ${LoopRepeat} = "N" ]
-  then
-    break
-  fi
-done
+  LoopRepeat="Y"
+  while [ ${LoopRepeat} = "Y" ]
+  do
+    PrintOne "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
+    TPread "Size of swap file [eg: 512M or 2G]: "
+    RESPONSE="${Response^^}"
+    # Check that entry includes 'M or G'
+    CheckInput=(`echo $RESPONSE | grep "G\|M"`)
+    echo
+    if [ -z ${CheckInput} ]; then
+      PrintOne "You must include M or G"
+      SwapFile=""
+    else
+      SwapFile=$RESPONSE
+      LoopRepeat="N"
+    fi
+    if [ ${LoopRepeat} = "N" ]
+    then
+      break
+    fi
+  done
 }
 
 MorePartitions() {

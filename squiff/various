@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 21 April 2016
+# 12 June 2016
 
 # Semi-graphical interface
 # /squiff/various
@@ -16,30 +16,28 @@
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
 # arch_chroot           27       ConfirmReview        112
-# PrintOne              31       SetGrubDevice        120
+#                                SetGrubDevice        120
 # TPecho                35       arch_chroot          155
-# DisplayProgress       39       MountPartitions      134
-# ProgressArray         58       InstallKernel        192
-# Bugger                83       AddCodecs            218
-# SetKernel             87       Passwords            233
-# ConfirmVbox           99       Finish               261
+# DisplayProgress       39       InstallKernel        134
+# ProgressArray         58       AddCodecs            158
+# Bugger                83       McInitCPIO           173
+# SetKernel             87       Passwords            195
+# ConfirmVbox           99       Finish               250
+# -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
 }
 
-PrintOne() {  # Arguments: "Component" "Patient"
-  dialog --backtitle "$Backtitle" --title " - Information - " --no-shadow --infobox "\n$1\n$2" 6 50 ; sleep 1 &
+TPecho() { # Infobox
+  dialog --backtitle "$Backtitle" --title " Information " --no-shadow --infobox "\n$1\n$2" 6 50 ; sleep 1 &
 }
 
-TPecho() { # For compatibility with Cliff
-    PrintOne "$1" "$2"
-}
-
-DisplayProgress() {  # Displays timed progress bar for longer processes
-  Estimate=$2           # Numeric argument = multiple of 10
-  local Message="$1"        # Text passed to appear above progress bar
-  local Sleep=$(( $Estimate / 10 )) # Set sleep period to one tenth of total time
+DisplayProgress() {                 # Displays timed progress bar for longer processes
+  Estimate=$2                       # Numeric argument = multiple of 20
+  local Message="$1"                # Text passed to appear above progress bar
+  local Sleep=$(( $Estimate / 20 )) # Set sleep period to 5% of total time
+  local Increment=$(( $Sleep * 100 / $Estimate )) # $Sleep as percentage of $Estimate
   local Percent=0
   (
   until [ $Percent -gt 100 ]
@@ -48,11 +46,11 @@ DisplayProgress() {  # Displays timed progress bar for longer processes
     echo $Percent
     echo "$Message\nProcessing may continue after gauge shows 100%\nPlease be patient ..."
     echo "XXX"
-    Percent=`expr $Percent + 10`
+    Percent=`expr $Percent + $Increment`
     sleep $Sleep
   done
   ) |
-  dialog --backtitle "$Backtitle" --title " - Progress - " --no-shadow --gauge "" 9 60 0 &
+  dialog --backtitle "$Backtitle" --title " Progress " --no-shadow --gauge "" 9 60 0 &
 }
 
 ProgressArray() { # For installing multiple programs with pacstrap and displaying gauge
@@ -61,7 +59,7 @@ ProgressArray() { # For installing multiple programs with pacstrap and displayin
   # 1) Count items in the array
   n=${#PassArray[*]};
   # 2) Redirect dialog commands input using substitution
-  dialog --backtitle "$Backtitle" --title " - $Title - " --no-shadow --gauge "" 8 60 < <(
+  dialog --backtitle "$Backtitle" --title " $Title " --no-shadow --gauge "" 8 60 < <(
   # 3) set counter - it will increase on each parse
    i=0
   # 4) read each item from the array
@@ -81,40 +79,40 @@ ProgressArray() { # For installing multiple programs with pacstrap and displayin
 }
 
 Bugger() {
-  dialog --backtitle "This shouldn't be happening" --title " - Information - " --no-shadow --infobox "\n      This is a bug\n\n           =Ộ= \n\n  It is probably harmless" 9 30
+  dialog --backtitle "This shouldn't be happening" --title " Information " --no-shadow --infobox "\n      This is a bug\n\n           =Ộ= \n\n  It is probably harmless" 9 30
 }
 
 SetKernel() { # Note: Kernel commands linux & linux-lts include base/commonutils
   listgen1 "LTS Latest"
-  dialog --backtitle "$Backtitle" --title " - Choose your kernel - " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Choose your kernel " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> output.file
   case $(cat output.file) in
-   "LTS") Kernel=1 # Set the Kernel variable (1 = LTS; 2 = Latest)
+   "LTS") Kernel=1
    ;;
-   "Latest") Kernel=2 # Set the Kernel variable (1 = LTS; 2 = Latest)
+   "Latest") Kernel=2
    ;;
-   *) echo "${Debug}" >> feliz.log
+   *) Bugger
   esac
 }
 
 ConfirmVbox() {
   local Message="It appears that feliz is running in Virtualbox. If you wish, feliz can install Virtualbox guest utilities and make appropriate settings for you.\n\nInstall Virtualbox guest utilities?"
-    dialog --backtitle "$Backtitle" --title " - Virtualbox guest modules - " --no-shadow --yesno "$Message\n" 10 50
-    RetVal=$?
-    case $RetVal in
-      0) IsInVbox="VirtualBox"
-        Retry="N"
-      ;;
-      *) IsInVbox=""
-        Retry="N"
-    esac
+  dialog --backtitle "$Backtitle" --title " Virtualbox guest modules " --no-shadow --yesno "$Message\n" 10 50
+  RetVal=$?
+  case $RetVal in
+    0) IsInVbox="VirtualBox"
+      Retry="N"
+    ;;
+    *) IsInVbox=""
+      Retry="N"
+  esac
 }
 
 ConfirmReview() {
-  dialog --backtitle "$Backtitle" --title " - Review - " --no-shadow --yesno "You have chosen to edit your choices for\n  $Response\n\nAre you sure?\n" 8 50
-    RetVal=$?
-    if [ $RetVal -ne 0 ]; then
-      FinalCheck
-    fi
+  dialog --backtitle "$Backtitle" --title " Review " --no-shadow --yesno "You have chosen to edit your choices for\n  $Response\n\nAre you sure?\n" 8 50
+  RetVal=$?
+  if [ $RetVal -ne 0 ]; then
+    FinalCheck
+  fi
 }
 
 SetGrubDevice() {
@@ -122,7 +120,7 @@ SetGrubDevice() {
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
   GrubDevice=""
   listgen1 "${DevicesList}"
-  dialog --backtitle "$Backtitle" --title " - Devices - " --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Devices " --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> output.file
   RetVal=$?
   if [ $RetVal -gt 0 ]; then # <Cancel> selected
    GrubDevice=""
@@ -131,106 +129,63 @@ SetGrubDevice() {
   fi
 }
 
-MountPartitions() {
-  case $RootType in
-  "") echo "Not formatting root partition" >> feliz.log
-  ;;
-  *) PrintOne "Preparing and mounting partitions" ""
-    umount ${RootPartition} /mnt >/dev/null &>> feliz.log
-    # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` &>> feliz.log
-    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${RootPartition} &>> feliz.log
-    elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} &>> feliz.log
-    else
-      Partition=`echo $RootPartition | cut -c 6-` 2>> feliz.log
-      Label="${LabellingArray[${Partition}]}"
-      if [ -n "${Label}" ]; then
-        Label="-L ${Label}"
-      fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
-    fi
-  esac
-  mount ${RootPartition} /mnt &>> feliz.log # eg: mount /dev/sda1 /mnt
-  if [ ${SwapPartition} ]; then
-    swapoff -a &>> feliz.log
-    if [ $MakeSwap = "Y" ]; then
-      Partition=`echo $SwapPartition | cut -c 6-`
-      Label="${LabellingArray[${Partition}]}"
-      if [ -n "${Label}" ]; then
-        Label="-L ${Label}"
-      fi
-      mkswap ${Label} ${SwapPartition} &>> feliz.log # eg: mkswap -L Arch-Swap /dev/sda2
-    fi
-    swapon ${SwapPartition} &>> feliz.log # eg: swapon /dev/sda2
-  fi
-  local Counter=0
-  for id in ${AddPartList}
-  do
-    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null &>> feliz.log
-    mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log  # eg: mkdir -p /mnt/home
-    # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
-    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${id} &>> feliz.log
-    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${id} &>> feliz.log
-    elif [ ${AddPartType[$Counter]} != "" ]; then
-      Partition=`echo ${id} | cut -c 6-`
-      Label="${LabellingArray[${Partition}]}"
-      if [ -n "${Label}" ]; then
-        Label="-L ${Label}"
-      fi
-      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
-    fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
-    Counter=$((Counter+1))
-  done
-}
-
 InstallKernel() { # Kernel and some other core systems
-  DisplayProgress "Installing shell" 40
+
+  LANG=C # Temporary addition to overcome bug in Arch man pages
   
-  LANG=C # Temporary addition to overcome bug in pacstrap 2016-06-06
-  
-  pacstrap /mnt base-devel bash &>> feliz.log
-  # Create array of all the programs to pass to installing function
-  PassArray=() # Ensure array is empty
-  PassArray=( btrfs-progs cryptsetup dhcpcd gksu inetutils iproute2 iputils jfsutils licenses logrotate lvm2 man-db man-pages mdadm netctl ntp pciutils pcmciautils procps-ng psmisc s-nail systemd-sysvcompat usbutils wget xfsprogs zip nano openssh reiserfsprogs screenfetch unrar unzip vi vim xarchiver xorg-xedit xterm )
-  ProgressArray " Installing cli tools " # Install each one using pacstrap
+  case $Kernel in # Selected kernel
+    1) DisplayProgress "Installing LTS kernel" 60
+      pacstrap /mnt linux-lts &>> feliz.log
+      
+      PassArray=() # Prepare the array for additional components for lts
+      PassArray=( cryptsetupdhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo )
+      ProgressArray "Installing core packages" # Install each one using pacstrap
+      
+      PassArray=()  # Prepare array for additional cli programs
+      PassArray=( btrfs-progs gamin gksu ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm )
+      ProgressArray "Installing cli tools" # Install each one using pacstrap
+    ;;
+    *) DisplayProgress "Installing Latest kernel" 60
+      pacstrap /mnt linux &>> feliz.log
+      
+      PassArray=() # Prepare the array for additional components
+      PassArray=( cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo )
+      ProgressArray "Installing core packages" # Install each one using pacstrap
+      
+      PassArray=()  # Prepare array for additional cli programs
+      PassArray=( btrfs-progs gamin gksu ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm )
+      ProgressArray "Installing cli tools" # Install each one using pacstrap
+  esac
+
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
+      
+  # And finally the man pages
+  DisplayProgress "Installing man-db & man-pages - this may take some time" 120
+  pacstrap /mnt man-db man-pages &>> feliz.log
+  
+}
 
+AddCodecs() { # Various codecs and graphical environment
+  
+  PassArray=() # Prepare for codecs
+  PassArray=( a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab flashplugin b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware iw wireless_tools wpa_actiond )
+  ProgressArray "Adding Codecs, etc" # Install each one using pacstrap
+  
+  PassArray=() # Prepare for graphics
+  PassArray=( xf86-video-vesa xf86-video-nouveau xf86-input-synaptics xorg-server xorg-server-utils xorg-xinit xorg-twm )
+  ProgressArray "Open-source video drivers & graphical environment" # Install each one using pacstrap
+
+}
+
+McInitCPIO() { 
   case $Kernel in
-  1) DisplayProgress "Installing LTS kernel" 50
-    pacstrap /mnt linux-lts &>> feliz.log
-  ;;
-  *) DisplayProgress "Installing Latest kernel" 50
-    pacstrap /mnt linux &>> feliz.log
-  esac
-  if [ -n ${IsInVbox} ] && [ $Scope != "Basic" ]; then # Installing in Virtualbox
-    pacstrap /mnt virtualbox-guest-utils &>> feliz.log
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
-    cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
-  fi
- # PrintOne "Installing opensource video drivers" ""
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau &>> feliz.log # Install opensource video drivers
-}
-
-AddCodecs() {
-  PassArray=() # Ensure the array is empty
-  PassArray=( a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss libdvdread libdvdnav dvd+rw-tools dvdauthor dvgrab flashplugin b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware iw wireless_tools wpa_actiond dialog xorg-server-utils xorg-xinit xorg-twm xf86-input-synaptics gvfs gamin )
-  ProgressArray "Adding Codecs, etc" # Display gauge while installing with pacstrap
-}
-
-McInitCPIO() { # Squiff version must be &>>
-  DisplayProgress "Running mkinitcpio" 10
-  if [ $Kernel = "1" ]; then
+    1) TPecho "Running mkinitcpio for lts kernel"
     arch_chroot "mkinitcpio -p linux-lts"
-  else
+    ;;
+    *) TPecho "Running mkinitcpio for latest kernel"
     arch_chroot "mkinitcpio -p linux"
-  fi
+  esac
 }
 
 SetRootPassword() {
@@ -289,5 +244,5 @@ SetUserPassword() {
 }
 
 DisplayFinished() {
-  dialog --backtitle "$Backtitle" --no-shadow --msgbox "\nCongratulations, installation is complete, and it is time to restart the computer into your new system.\nHave fun with Arch Linux." 10 40
+  dialog --backtitle "$Backtitle" --no-shadow --msgbox "\nCongratulations, installation is complete, and it is time for Feliz to shut down the computer. Remember to remove the installation media before restarting.\nHave fun!" 11 50
 }
