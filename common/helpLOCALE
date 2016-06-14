@@ -15,9 +15,5 @@ using the arrow keys, or type the first character to
 find your choice. When your choice is highlighted,
 select <Ok> and press [Enter]
 
-If <Cancel> or other extra buttons are displayed, you
-can use [Tab] to highlight each in turn. Select the
-highlighted button by pressing [Enter].
-
 Pressing [Esc] will exit, but may result in errors
 later if no item is selected.

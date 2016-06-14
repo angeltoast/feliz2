@@ -141,14 +141,14 @@ AutoPartition() {
 AutoWarning() {
   while :
   do
-    dialog --backtitle "$Backtitle" --title " - auto-partition - " --no-shadow --yesno "\nThis will erase any data on '${UseDisk}'\nAre you sure you wish to continue?\n" 10 40
+    dialog --backtitle "$Backtitle" --title " Auto-partition " --no-shadow --yesno "\nThis will erase any data on '${UseDisk}'\nAre you sure you wish to continue?\n" 10 40
     case $? in
       0) RunAutoPart
         if [ ${Home} = "Y" ]; then
           ShowPart3=`lsblk -l | grep "${UseDisk}3" | awk '{print $4}'` >/dev/null
           PrintHome="Home partition: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
         fi
-        dialog --backtitle "$Backtitle" --title " - Partitioning- " --no-shadow --msgbox "Partitioning of ${GrubDevice} successful\n\n $ShowPart1 ${SwapPartition}${SwapFile}\n $ShowPart2  ${RootPartition} ${RootType}\n$PrintHome\n\nYou will have the opportunity to review these later." 15 40
+        dialog --backtitle "$Backtitle" --title " Partitioning " --no-shadow --msgbox "Partitioning of ${GrubDevice} successful\n\n $ShowPart1 ${SwapPartition}${SwapFile}\n $ShowPart2  ${RootPartition} ${RootType}\n$PrintHome\n\nYou will have the opportunity to review these later." 15 40
         break
         ;;
       *) UseDisk=""
@@ -308,7 +308,7 @@ AllocateSwap() {
 }
 
 NoPartitions() { # There are no unallocated partitions
-    dialog --backtitle "$Backtitle" --title " Swap " --yesno "There are no partitions available for swap.\nDo you wish to create a swap file?" 8 40
+    dialog --backtitle "$Backtitle" --title " Swap " --hfile "helpSWAP" --yesno "There are no partitions available for swap.\nDo you wish to create a swap file?" 8 40
     RetVal=$?
     case $RetVal in
       0) SetSwapFile
@@ -324,7 +324,7 @@ SetSwapFile() {
   local Message="Allocate the size of your swap file (M = Megabytes, G = Gigabytes) [eg: 512M or 2G]"
   while [ ${LoopRepeat} = "Y" ]
   do
-    dialog --backtitle "$Backtitle" --title " - Swapfile - " --no-shadow --inputbox "\n$Message\n" 10 50 2> output.file
+    dialog --backtitle "$Backtitle" --title " Swapfile " --hfile "helpSWAP" --no-shadow --inputbox "\n$Message\n" 10 50 2> output.file
     Response=$(cat output.file)
     RESPONSE="${Response^^}"
     # Check that entry includes 'M or G'
@@ -355,7 +355,7 @@ MorePartitions() { # For any unallocated partitions. Uses PartitionList and Part
   do
     Remaining=""
     listgen2 "$PartitionList" "PartitionArray"
-    dialog --backtitle "$Backtitle" --title " - Partitions - " --no-shadow --ok-button "Select" --cancel-button "Done" --menu "The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose 'Done' to finish partitioning." 18 60 $Counter "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " Partitions " --hfile "helpOTHER" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose 'Done' to finish partitioning.\n Press F1 for help." 18 60 $Counter "${Options[@]}" 2> output.file
     Response=$?
     if [ $Response -gt 0 ]; then # ie: <Done>
       Elements=0
@@ -411,7 +411,7 @@ MakePartition() { # Called by MorePartitions
   local Message="Enter a mountpoint for ${Partition} (eg: /home)"
   while [ ${LoopRepeat} = "Y" ]
   do
-    dialog --backtitle "$Backtitle" --title " - Partitioning - " --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
+    dialog --backtitle "$Backtitle" --title " Partitioning " --hfile "helpOTHER" --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
     Response=$(cat output.file)
     # Check that entry includes '/'
     CheckInput=(`echo $Response | cut -c1`)

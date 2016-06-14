@@ -1,7 +1,13 @@
-You may need a swap partition if your computer is low on RAM.
-The system will then use the swap partition for temporary
-storage. The general guide is to allocate a swap of the same
-size as your RAM, up to a maximum of 8GB - if you have more
-than 8GB of RAM, you are unlikely to benefit from a swap
-partition. If you need swap, but are limited in available
-disk space, consider a swap file of up to (say) 2GB
+If your computer is low on RAM, it is possible for it to use
+part of your hard disk as temporary storage. You can
+allocate a fixed part of your hard disk for this purpose.
+This combination of RAM and swap files is known as virtual
+memory. The general guide is to allocate a swap space of the
+same size as your RAM, up to a maximum of 8GB - if you have
+more than 8GB of RAM, you are unlikely to benefit much from
+a swap partition.
+
+If you need swap, but are limited in available disk space,
+consider nominating a swap file of up to (say) 2GB. Your
+system will then create temporary a swap files as required
+on any available space on your hard disk.

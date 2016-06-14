@@ -14,7 +14,7 @@
 
 declare -a Options  # For caller
 
-listgen1() {
+listgen1() { # $1 = String array of items
   Counter=0
   Options=() # Empty the array
   # Prepare $1 for dialog menu

@@ -33,13 +33,11 @@ AutoPart=0                # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
 #
-# Grub, kernel & EFI variables
+# Grub & kernelvariables
 #
 GrubDevice=""             # eg: /dev/sda
 Kernel="1"                # Default 1 = LTS
-IsInVbox="N"               # Result of test to see if installation is in Virtualbox
-DualBoot="N"              # Ready for dual-booting option
-EFIPartition=""           # Will hold EFI partition mountpoint in format "/dev/sda1"
+IsInVbox="N"              # Result of test to see if installation is in Virtualbox
 OSprober="Y"
 #
 # Location variables
@@ -548,7 +546,7 @@ InstallDM() { # Display manager
   done
   
   # Then install selected display manager
-  TPecho "Installing ${DisplayManager} display manager" ""
+  DisplayProgress "Installing ${DisplayManager} display manager" 40
   pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
   arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
   DisplayManager="" # Don't allow any other DMs
@@ -571,16 +569,11 @@ InstallLuxuries() { # Install desktops and other extras
       "Cinnamon") DisplayProgress "Installing Cinnamon desktop Environment" 60
           pacstrap /mnt cinnamon &>> feliz.log
         ;;
-      "Deepin") if [ ${DisplayManager} = "lightdm" ]; then   # If display manager is lightdm
-                  # Change the greeter line in lightdm.conf
-                  sed -i '/#greeter-session=/ c\greeter-session=lightdm-deepin-greeter' /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
-                fi
-          DisplayProgress "Installing Deepin desktop Environment" 20
+      "Deepin") DisplayProgress "Installing Deepin desktop Environment" 100
           pacstrap /mnt deepin ${DDEextras} &>> feliz.log
-          # Copy pro-forma xinitrc file ...
-        #  cp /mnt/etc/X11/xinit/xinitrc /mnt/home/${UserName}/.xinitrc
-          # Then add line at end to ensure DDE is used ...
-        #  sed -i '$ a\exec startdde' /mnt/home/${UserName}/.xinitrc 2>> feliz.log
+          arch_chroot "systemctl -f enable lightdm.service"
+          # Change the greeter line in lightdm.conf
+          sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
         ;;
       "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop Environment" 20
           pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log
@@ -598,7 +591,7 @@ InstallLuxuries() { # Install desktops and other extras
           DisplayProgress "Installing KDE applications package" 200
           pacstrap /mnt kde-applications &>> feliz.log
         ;;
-      "LXDE") TPecho "Installing 'LXDE' desktop Environment"
+      "LXDE") DisplayProgress "Installing 'LXDE' desktop Environment" 10
           pacstrap /mnt lxde &>> feliz.log
           arch_chroot "systemctl -f enable lxdm.service"
           echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log

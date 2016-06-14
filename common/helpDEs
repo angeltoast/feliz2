@@ -1,0 +1,38 @@
+These are the most trusted desktop environments from the
+Arch Linux repositories. You can add as many as desired, but
+be aware that they do not all play nicely together. Gnome
+and KDE, for instance, both install their own display
+manager, and only one display manager can be active for any
+installation.
+
+If you are undecided, check out the websites:
+
+Cinnamon - aesthetically pleasing - developed by the Linux Mint team.
+      https://linuxmint.com/
+
+Deepin Desktop Environment is the DE created for the Deepin distro
+      https://www.deepin.org/
+
+GNOME is composed entirely of free and open-source software.
+      https://www.gnome.org/
+
+KDE Plasma5 - graphical DE and range of applications.
+      https://www.kde.org/
+
+LXDE - full-featured DE with low resource requirements.
+      http://lxde.org/
+
+LXQt - the Qt port of LXDE, the Lightweight Desktop Environment.
+      http://lxqt.org/
+
+MATE - the DE by the Linux Mint team - a continuation of GNOME 2.
+      http://mate-desktop.org/
+
+Xfce - a lightweight DE that is fast and low on system resources.
+      http://www.xfce.org/
+
+As you add each DE, you may be prompted to choose a display
+manager (where one is optional) or to ask if you want
+additional packages available for that particular DE.
+
+Select <Done> when you have finished shopping.

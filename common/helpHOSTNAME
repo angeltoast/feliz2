@@ -1,0 +1,12 @@
+A hostname is a unique name created to identify a machine
+on a network. You can use almost anything - it could be
+your domain name, for instance - but you shouldn’t use
+the same hostname on two different computers on a network,
+as this can cause problems, and there are some reserved
+words which must not be used, including: root, www, admin
+
+Host names can only contain alpha characters ( a to z ),
+numbers ( 0 to 9 ) plus hyphen ( - ) and/or period ( . )
+No spaces. Letters are case insensitive. A hostname must
+begin and end with a letter or number, not a hyphen or
+period, and must be between 2 and 63 characters.

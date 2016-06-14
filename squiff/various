@@ -34,7 +34,7 @@ TPecho() { # Infobox
 }
 
 DisplayProgress() {                 # Displays timed progress bar for longer processes
-  Estimate=$2                       # Numeric argument = multiple of 20
+  Estimate=$2                       # Numeric argument = seconds in multiples of 20
   local Message="$1"                # Text passed to appear above progress bar
   local Sleep=$(( $Estimate / 20 )) # Set sleep period to 5% of total time
   local Increment=$(( $Sleep * 100 / $Estimate )) # $Sleep as percentage of $Estimate
@@ -136,32 +136,24 @@ InstallKernel() { # Kernel and some other core systems
   case $Kernel in # Selected kernel
     1) DisplayProgress "Installing LTS kernel" 60
       pacstrap /mnt linux-lts &>> feliz.log
-      
-      PassArray=() # Prepare the array for additional components for lts
-      PassArray=( cryptsetupdhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo )
-      ProgressArray "Installing core packages" # Install each one using pacstrap
-      
-      PassArray=()  # Prepare array for additional cli programs
-      PassArray=( btrfs-progs gamin gksu ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm )
-      ProgressArray "Installing cli tools" # Install each one using pacstrap
     ;;
-    *) DisplayProgress "Installing Latest kernel" 60
+    *) DisplayProgress "Installing Latest kernel" 80
       pacstrap /mnt linux &>> feliz.log
-      
-      PassArray=() # Prepare the array for additional components
-      PassArray=( cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo )
-      ProgressArray "Installing core packages" # Install each one using pacstrap
-      
-      PassArray=()  # Prepare array for additional cli programs
-      PassArray=( btrfs-progs gamin gksu ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm )
-      ProgressArray "Installing cli tools" # Install each one using pacstrap
   esac
+
+  PassArray=() # Prepare the array for additional components for lts
+  PassArray=( cryptsetup dhcpcd dialog diffutils file gcc-libs gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo )
+  ProgressArray "Installing core packages" # Install each one using pacstrap
+      
+  PassArray=()  # Prepare array for additional cli programs
+  PassArray=( btrfs-progs gamin gksu ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm )
+  ProgressArray "Installing cli tools" # Install each one using pacstrap
 
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
       
   # And finally the man pages
-  DisplayProgress "Installing man-db & man-pages - this may take some time" 120
+  DisplayProgress "Installing man-db & man-pages - this may take some time" 180
   pacstrap /mnt man-db man-pages &>> feliz.log
   
 }

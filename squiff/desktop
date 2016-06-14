@@ -21,6 +21,9 @@
 # Hostname       85     ManualSettings    330
 # -----------------     ---------------------
 
+helpHELPFILE=""
+helpMESSAGE=""
+
 getkeymap() {
   ListKbs=`cat keymaps.list`
   keyboards=""
@@ -28,7 +31,7 @@ getkeymap() {
     keyboards="$keyboards $k"
   done
   listgen1 "$keyboards"
-  dialog --backtitle "$Backtitle" --title " Keyboards " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list to find your keyboard.\nPress F1 for help." 20 50 12 "${Options[@]}" 2> output.file
+  dialog --backtitle "$Backtitle" --title " Keyboards " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list to find your keyboard. Press F1 for help." 20 50 12 "${Options[@]}" 2> output.file
   Countrykbd=$(cat output.file)
   loadkeys ${Countrykbd} 2>> feliz.log
 }
@@ -70,7 +73,7 @@ SetTimeZone() {
 }
 
 UserName() {
-  dialog --backtitle "$Backtitle" --title " User Name " --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system (one word only, lower case).\nIf you don't create a username here, a default user called 'archie' will be set up\n" 12 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " User Name " --hfile "helpUSERNAME" --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system (one word only, lower case).\nIf you don't create a username here, a default user called 'archie' will be set up\nPress F1 for help." 12 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
   case $Entered in
@@ -82,7 +85,7 @@ UserName() {
 
 SetHostname() {
   Entered=""
-  dialog --backtitle "$Backtitle" --title " Hostname " --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\n" 12 50 2> output.file
+  dialog --backtitle "$Backtitle" --title " Hostname " --hfile "helpHOSTNAME" --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\nPress F1 for help." 12 50 2> output.file
   Response=$(cat output.file)
   Entered=${Response,,}
   case $Entered in
@@ -118,7 +121,7 @@ PickLuxuries() { # User selects any combination from a store of extras
       ItemCounter=$((ItemCounter+1))
     done
     # Use $ItemCounter and ${Options[@]} array in menu dialog
-    dialog --backtitle "$Backtitle" --title " Categories " --hfile "helpMENUS" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 19 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
+    dialog --backtitle "$Backtitle" --title " Categories " --hfile "helpCATEGORIES" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\nPress F1 for help." 19 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
     RetVal=$?
     if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
@@ -145,7 +148,9 @@ ShoppingList() {
     "") local Title="Choose your first category"
     ;;
     *) local Title="Choose your next category"
-    esac
+  esac
+  helpHELPFILE="helpSHOPPING"
+  helpMESSAGE="Press F1 for help"
   while [ $Complete -eq 0 ]
   do
     local Message="Added so far: ${LuxuriesList}"
@@ -154,6 +159,7 @@ ShoppingList() {
       "Accessories") listgen2 "$Accessories" "LongAccs"
       ;;
       "Desktop_Environments") listgen2 "$Desktops" "LongDesk"
+      helpHELPFILE="helpDEs"
       ;;
       "Graphical") listgen2 "$Graphical" "LongGraph"
       ;;
@@ -169,7 +175,7 @@ ShoppingList() {
       ;;
       *) break
     esac
-    dialog --backtitle "$Backtitle" --title " ${Category} " --hfile "helpMENUS" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n" 15 60 $Counter "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " ${Category} " --hfile "${helpHELPFILE}" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n$helpMESSAGE" 15 60 $Counter "${Options[@]}" 2> output.file
     RetVal=$?
     if [ $RetVal -gt 0 ]; then # <Cancel> selected
       break
@@ -181,7 +187,7 @@ ShoppingList() {
     do
       if [ ${lux} = ${Picked} ]; then
         Temp=""
-        dialog --yes-label "Keep" --no-label "Delete" --backtitle "$Backtitle" --title " - Information - " --no-shadow --yesno "\n  '$Picked' is already in your shopping list\n Do you wish to keep it or delete it?" 10 60
+        dialog --yes-label "Keep" --no-label "Delete" --backtitle "$Backtitle" --title " Information " --no-shadow --yesno "\n  '$Picked' is already in your shopping list\n Do you wish to keep it or delete it?" 10 60
         case $? in
           0) continue 2 # Keep $LuxuriesList as it is and return to top of enclosing loop
           ;;
@@ -208,10 +214,6 @@ ShoppingList() {
            ;;
           *) DDEextras=""
         esac
-        ChooseDM
-        if [ $DisplayManager="lightdm" ]; then
-          Greeter="deepin-session-ui"
-        fi
       ;;
     "Enlightenment") DesktopEnvironment="Enlightenment"
         dialog --backtitle "$Backtitle" --title " Enlightenment " --no-shadow --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability.\nInclude them?\n" 10 40
@@ -275,7 +277,7 @@ ChooseDM() { # Choose a display manager
     "") # Only offered if no other display manager has been set
     Greeter=""
     listgen1 "LightDM LXDM SLIM XDM"
-    dialog --backtitle "$Backtitle" --title " ChooseDM/Greeter} " --no-shadow --ok-button "Select" --cancel-label "Done" --menu "Choose one of the following display managers. Note that not all display managers work well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will have to launch your desktop environment manually.\n" 16 57 6 "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " ChooseDM/Greeter} " --hfile "helpDM" --no-shadow --ok-button "Select" --cancel-label "Done" --menu "Choose one of the following display managers. Note that not all display managers work well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will have to launch your desktop environment manually.\nPress F1 for help." 16 57 6 "${Options[@]}" 2> output.file
     RetVal=$?
     Response=$(cat output.file)
     if [ $RetVal -eq 0 ]; then
@@ -360,7 +362,7 @@ FinalCheck() {
     Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
     Settings[12]="${LuxuriesList}"
     listgen2 "Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras" "Settings"
-    dialog --backtitle "$Backtitle" --title " - Final_Check - " --no-shadow --ok-button "Change" --cancel-button "Continue" --menu "These are the settings you have entered. Please check them. Press <Continue> to install with these settings, or choose an item if you wish to change it\n" 21 65 12 "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " Final_Check " --no-shadow --ok-button "Change" --cancel-button "Continue" --menu "These are the settings you have entered. Please check them. Press <Continue> to install with these settings, or choose an item if you wish to change it\n" 21 65 12 "${Options[@]}" 2> output.file
     RetVal=$?
     Response=$(cat output.file)
     if [ $RetVal -eq 0 ]; then # An item has been selected for change
@@ -423,7 +425,7 @@ ManualSettings() {
     Settings[1]="(currently $HostName)"
     Settings[2]="(currently $UserName)"
     listgen2 "Hostname Username" "Settings"
-    dialog --backtitle "$Backtitle" --title " - Final_Check - " --hfile "helpMENUS" --no-shadow --ok-button "Select" --menu "Select data to change.\n or <Cancel> to finish\n" 18 60 6 "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " Final_Check " --hfile "helpMENUS" --no-shadow --ok-button "Select" --menu "Select data to change.\n or <Cancel> to finish\n" 18 60 6 "${Options[@]}" 2> output.file
     RetVal=$?
     Response=$(cat output.file)
     Count=1
@@ -436,14 +438,14 @@ ManualSettings() {
     done
     if [ $RetVal -eq 0 ]; then
       case $Response in
-        1) dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
+        1) dialog --backtitle "$Backtitle" --title " Final_Check " --nocancel \
          --inputbox "\nEnter new hostname (currently: $HostName)\n" 18 50 2> output.file
          Response=$(cat output.file)
          if [ $Response ]; then
           HostName=${Response,,}
          fi
         ;;
-        2) dialog --backtitle "$Backtitle" --title " Data Review " --nocancel \
+        2) dialog --backtitle "$Backtitle" --title " Final_Check " --nocancel \
       --inputbox "\nEnter new name for user (currently $UserName)\n" 18 50 2> output.file
          Response=$(cat output.file)
         if [ $Response ]; then

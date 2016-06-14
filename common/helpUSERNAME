@@ -1,0 +1,16 @@
+Every linux system has a root user, who has God-like
+administrative powers over the system. However, even on
+a single-user system, it is not wise to do everything
+as root. For this reason, you will normally want to set
+up at least one user, and this person will be given a
+unique user name by which they will be recognised.
+
+Often, usernames are variations on the user's name, such
+as jsmith for John Smith. User account names can be
+anything from the user's name, initials, or birthplace
+to something more creative. You can use almost anything,
+but there are some reserved words which must not be used,
+including: root, www, admin, 
+
+User names must be a single word containing only lower-case
+letters and the numbers 0 to 9, with no spaces.
