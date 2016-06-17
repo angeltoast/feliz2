@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 12 June 2016
+# 17 June 2016
 
 # /cliff/desktop
 # CLI functions relevant to users, settings, extra applications and review
 
-# Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# Developed by Elizabeth Mills
 
 # Please read the introduction in the README file
 

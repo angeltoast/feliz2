@@ -1,12 +1,11 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 12 June 2016
+# 17 June 2016
 
 # /common/shared - Variables and functions used by both sqiff and cliff
 
-# Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# Developed by Elizabeth Mills
 
 # Please read the introduction in the README file
 
@@ -68,7 +67,12 @@ Scope=""                  # Installation scope ... 'Full' or 'Basic'
 Response=""
 Result=""
 #
-# ---- Extra Applications ----
+# Miscellaneous
+#
+helpMESSAGE=""            # Used by help system
+declare -a Options        # For listgen functions
+#
+# ---- Arrays for extra Applications ----
 #
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
 Categories[1]="Accessories"
@@ -546,23 +550,23 @@ InstallDM() { # Display manager
   done
   
   # Then install selected display manager
-  DisplayProgress "Installing ${DisplayManager} display manager" 40
+  DisplayProgress "Installing ${DisplayManager} display manager" 20
   pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
   arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
-  DisplayManager="" # Don't allow any other DMs
+
 }
 
 InstallLuxuries() { # Install desktops and other extras
-  
+  # Display manager - runs only once
   case ${DisplayManager} in       # Check $DisplayManager
     "") DisplayManager=""         # No display manager set - do nothing
     ;;
     "reserved") DisplayManager="" # A DE installs its own DM - do nothing
     ;;
-    *) InstallDM                  # Install it
+    *) InstallDM                  # Clear any pre-existing DM and install this one
   esac
-  
-  if [ -n "${LuxuriesList}" ]; then   # Parse through LuxuriesList checking for DEs
+  # First parse through LuxuriesList - checking for DEs
+  if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
       case $i in
@@ -621,7 +625,7 @@ InstallLuxuries() { # Install desktops and other extras
     pacman -Sy &>> feliz.log              # Update
     pacstrap /mnt yaourt &>> feliz.log    # Then install Yaourt
     
-    # ... then install the other extras
+    # Second parse through LuxuriesList - any extras
     for i in ${LuxuriesList}
     do
       case $i in

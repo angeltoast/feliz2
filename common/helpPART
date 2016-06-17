@@ -1,40 +1,19 @@
-Partitioning a hard drive divides the available space into
-sections that can be accessed independently.
+Partitioning a hard drive divides the available space into sections that can be accessed independently.
 
-An entire hard drive may be allocated to a single partition,
-or may be divided across multiple partitions. This may be
-required for dual- or multi- booting, for example, or for
-maintaining a swap partition. You may need a swap partition
-if your computer is low on RAM - the system will then use
-the swap partition for temporary storage. In other cases,
-partitioning is used as a means of logically separating data,
-such as creating separate partitions for audio and video files. 
+An entire hard drive may be allocated to a single partition, or may be divided across multiple partitions. This may be required for dual- or multi- booting, for example, or for maintaining a swap partition. You may need a swap partition if your computer is low on RAM - the system will then use the swap partition for temporary storage. In other cases, partitioning is used as a means of logically separating data, such as creating separate partitions for audio and video files. 
 
-Even if you create no other partitions, you must create at
-least one, for root (/). The root partition may be between
-8G and 20G, depending on the available disk space.
+Even if you create no other partitions, you must create at least one, for root (/). The root partition may be between 8G and 20G, depending on the available disk space.
 
-It is not essential to have more than one partition - you can
-run your entire system perfectly well from a single partition,
-as long as it is big enough to hold all the programs you use.
+It is not essential to have more than one partition - you can run your entire system perfectly well from a single partition, as long as it is big enough to hold all the programs you use.
 
 There are 3 types of partitions:
     Primary
     Extended
      Logical
 
-Primary partitions can be bootable and are limited to
-four partitions per disk or RAID volume.
+Primary partitions can be bootable and are limited to four partitions per disk or RAID volume.
 
-If a partitioning scheme requires more than four partitions,
-an extended partition containing logical partitions can be
-used. Extended partitions can be thought of as containers for
-logical partitions. A hard disk can contain no more than one
-extended partition. The extended partition is also counted as
-a primary partition so if the disk has an extended partition,
-only three additional primary partitions are possible ...
+If a partitioning scheme requires more than four partitions, an extended partition containing logical partitions can be used. Extended partitions can be thought of as containers for logical partitions. A hard disk can contain no more than one extended partition. The extended partition is also counted as a primary partition so if the disk has an extended partition, only three additional primary partitions are possible ...
  i.e. three primary partitions and one extended partition.
  
-The number of logical partitions residing in an extended
-partition is unlimited. A system that dual boots with Windows
-will require that Windows reside in a primary partition.
+The number of logical partitions residing in an extended partition is unlimited. A system that dual boots with Windows will require that Windows reside in a primary partition.

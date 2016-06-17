@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 12 June 2016
+# 17 June 2016
 
 # /cliff/various
 # Various CLI functions for input/output, processing and installing
 
-# Developed by Elizabeth Mills, incorporating some code adapted from
-# the Evo/Lution script by Carl Duff and AUI scripts by HelmuthDU.
+# Developed by Elizabeth Mills
 
 # Please read the introduction in the README file
 
@@ -171,6 +170,155 @@ SetGrubDevice() {
       fi
       break
     fi
+  done
+}
+
+#
+# Menu functions - listgen1 and listgen2
+# Both functions return the selected item as text using global variable $Result
+# and errorcode as $Response
+# Both functions use PrintOne and PrintMany for display
+# Window width and height are adjusted according to content
+#
+PrintOne() { # Aligned text according to screen size
+  width=`tput cols`
+  EMPTY=" "
+  lov=${#1}
+  if [ ${lov} -lt ${width} ]; then
+    stpt=$(( ($width - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  fi
+  echo "$EMPTY $1"
+}
+
+PrintMany() { # Subsequent item(s) in an aligned list
+  echo "$EMPTY $1"
+}
+
+listgen1() { # Simple listing alternative to the bash 'select' function
+  # listgen1 receives three parameters:
+  # 1) Primary file (string of single-word references)
+  # 2) Optional one-word --title
+  # 3) Optional hiding of <Cancel> ("nocancel")
+  
+  local Complete=0
+  while [ $Complete -eq 0 ]
+  do
+    local Done=$3
+    if [ $2 ]; then
+      PrintOne $2
+      Underscore=`echo $2 | sed 's/./-/g'`
+      PrintOne $Underscore
+    fi
+    local Counter=0
+    MenuList=$1
+    for i in $MenuList
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq 1 ]; then
+        PrintOne "$Counter) $i"
+      else
+        PrintMany "$Counter) $i"
+      fi
+      ConvertToArray[$Counter]=$i
+    done
+    case $Done in
+      "") Counter=$((Counter+1))
+          Done="Done"
+          PrintMany "$Counter) Done"
+      ;;
+      "nodone") Done=""
+      ;;
+      *) Counter=$((Counter+1))
+          PrintMany "$Counter) ${Done}"
+    esac
+    echo
+    TPread "Please enter the number of your selection: "
+    case $Response in
+      ''|*[!0-9]*) invalid_option
+      ;;
+      *) if [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
+          invalid_option
+        elif [ ${Response} -eq ${Counter} ] && [ -z $Done ]; then
+          Result=${ConvertToArray[${Response}]}
+          Complete=1
+        elif [ ${Response} -eq ${Counter} ]; then
+          Result="$Done"
+          Complete=1
+        else
+          Result=${ConvertToArray[${Response}]}
+          Complete=1
+        fi
+    esac
+    clear
+  done
+}
+
+listgen2() { # Advanced menuing function with extended descriptions
+  # listgen2 has extended descriptions using the name of the complex array
+  # Passed as 4th parameter:
+  # Parameters:
+  # 1) Primary file (string of single-word references)
+  # 2) An optional one-word menu heading (which will be underlined on display)
+  # 3) Optional alternative word to 'Done'
+  # 4) Secondary file (the name of the array containing long descriptions)
+  local Complete=0
+  while [ $Complete -eq 0 ]
+  do
+    local Done=$3
+    Result=""
+    PrimaryFile="$1"
+    name=$4[@]
+    LongDescription=("${!name}")
+    local Counter=0
+    echo
+    if [ -n $2 ]; then
+      PrintOne $2
+      Underscore=`echo $2 | sed 's/./-/g'`
+      PrintOne $Underscore
+    fi
+    Counter=0
+    for i in "${LongDescription[@]}"; do
+      Counter=$((Counter+1))
+      if [ $Counter -eq 1 ]; then
+        PrintOne "${Counter}) $i"
+      else
+        PrintMany "${Counter}) $i"
+      fi
+    done
+    case $Done in
+      "") Counter=$((Counter+1))
+          Done="Done"
+          PrintMany "$Counter) Done"
+      ;;
+      "nodone") Done=""
+      ;;
+      *) Counter=$((Counter+1))
+          PrintMany "$Counter) ${Done}"
+    esac
+    echo
+    TPread "Please enter the number of your selection: "
+  
+     case $Response in
+      ''|*[!0-9]*) invalid_option
+      ;;
+      *) if [ ${Response} -gt ${Counter} ]; then
+        invalid_option
+        elif [ ${Response} -eq ${Counter} ]; then
+          Result="$Done"
+          Complete=1
+        else
+          local Match=0
+          for i in $PrimaryFile; do
+            Match=$((Match+1))
+            if [ $Match -eq $Response ]; then
+              Result="$i"
+            fi
+          done
+          Complete=1
+        fi
+    esac
+    clear
   done
 }
 

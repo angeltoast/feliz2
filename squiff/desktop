@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 12 June 2016
+# 17 June 2016
 
 # /squiff/desktop - Semi-graphical Dialog interface
 # Functions relevant to users, locations, settings and review
@@ -14,15 +14,17 @@
 # -----------------     ---------------------
 # Function     Line     Function         Line
 # -----------------     ---------------------
-# getkeymap      20     PickLuxuries       93
-# setlocale      35     ShoppingList      142
-# settimezone    46     Display Managers  262
-# UserName       75     FinalCheck        285
-# Hostname       85     ManualSettings    330
+# DisplayHelp    25
+# getkeymap      29     PickLuxuries      166
+# setlocale      52     ShoppingList      220
+# settimezone    78     ChooseDM          363
+# UserName      121     FinalCheck        410
+# Hostname      143     ManualSettings    516
 # -----------------     ---------------------
 
-helpHELPFILE=""
-helpMESSAGE=""
+DisplayHelp() {
+  dialog --backtitle "$Backtitle" --title " Help " --no-shadow --nocancel --msgbox "$HelpMessage" 18 60
+}
 
 getkeymap() {
   ListKbs=`cat keymaps.list`
@@ -31,8 +33,19 @@ getkeymap() {
     keyboards="$keyboards $k"
   done
   listgen1 "$keyboards"
-  dialog --backtitle "$Backtitle" --title " Keyboards " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list to find your keyboard. Press F1 for help." 20 50 12 "${Options[@]}" 2> output.file
-  Countrykbd=$(cat output.file)
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Keyboards " --help-button --no-shadow --ok-button "Select" --nocancel --menu "Scroll through this list to find your keyboard." 20 50 12 "${Options[@]}" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    2) HelpMessage=`cat helpMENUS`
+      DisplayHelp
+      continue
+    ;;
+    *) break
+    esac
+  done
+  Countrykbd=$(cat feliz.output)
   loadkeys ${Countrykbd} 2>> feliz.log
 }
 
@@ -46,9 +59,20 @@ setlocale() {
     Options[${Counter}]="UTF-8"
   done
   Counter=$((Counter/2))
-  dialog --backtitle "$Backtitle" --title " - Locales - " --hfile "helpLOCALE" --no-shadow --nocancel --menu "Scroll through this list to find your locale.\nPress F1 for help." 20 55 $Counter "${Options[@]}" 2> output.file
-  CountryLocale="$(cat output.file).UTF-8"
-  CountryCode=(`cat output.file | cut -c4-5`)
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " - Locales - " --help-button --no-shadow --nocancel --menu "Scroll through this list to find your locale.\n" 20 55 $Counter "${Options[@]}" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    2) HelpMessage=`cat helpLOCALE`
+      DisplayHelp
+      continue
+    ;;
+    *) break
+    esac
+  done
+  CountryLocale="$(cat feliz.output).UTF-8"
+  CountryCode=(`cat feliz.output | cut -c4-5`)
 }
 
 SetTimeZone() {
@@ -58,8 +82,19 @@ SetTimeZone() {
     passzones="$passzones $z"
   done
   listgen1 "$passzones"
-  dialog --backtitle "$Backtitle" --title " World_Zones " --hfile "helpUTC" --no-shadow --ok-button "Select" --nocancel --menu "To set the system clock, please first choose the World Zone of your location.\n(Press F1 for help about UTC)" 20 60 11 "${Options[@]}" 2> output.file
-  ZONE=$(cat output.file)
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " World_Zones " --help-button --no-shadow --ok-button "Select" --nocancel --menu "To set the system clock, please first choose the World Zone of your location.\n" 20 60 11 "${Options[@]}" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    2) HelpMessage=`cat helpUTC`
+      DisplayHelp
+      continue
+    ;;
+    *) break
+    esac
+  done
+  ZONE=$(cat feliz.output)
   if [ $ZONE != "UTC" ]; then
     SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
     passzones=""
@@ -67,14 +102,36 @@ SetTimeZone() {
       passzones="$passzones $z"
     done
     listgen1 "$passzones"
-    dialog --backtitle "$Backtitle" --title " ${ZONE} " --hfile "helpMENUS" --no-shadow --ok-button "Select" --nocancel --menu "Now select your nearest city from this list.\nPress F1 for help" 20 50 13 "${Options[@]}" 2> output.file
-    SUBZONE=$(cat output.file)
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " ${ZONE} " --help-button --no-shadow --ok-button "Select" --nocancel --menu "Now select your nearest city from this list.\n" 20 50 13 "${Options[@]}" 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      2) HelpMessage=`cat helpMENUS`
+        DisplayHelp
+        continue
+      ;;
+      *) break
+      esac
+    done
+    SUBZONE=$(cat feliz.output)
   fi
 }
 
 UserName() {
-  dialog --backtitle "$Backtitle" --title " User Name " --hfile "helpUSERNAME" --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system (one word only, lower case).\nIf you don't create a username here, a default user called 'archie' will be set up\nPress F1 for help." 12 50 2> output.file
-  Response=$(cat output.file)
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " User Name " --help-button --no-shadow --nocancel --inputbox "Enter a name for the primary user of the new system (one word only, lower case).\nIf you don't create a username here, a default user called 'archie' will be set up\n" 12 50 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    2) HelpMessage=`cat helpUSERNAME`
+      DisplayHelp
+      continue
+    ;;
+    *) break
+    esac
+  done
+  Response=$(cat feliz.output)
   Entered=${Response,,}
   case $Entered in
     "") UserName="archie"
@@ -85,8 +142,19 @@ UserName() {
 
 SetHostname() {
   Entered=""
-  dialog --backtitle "$Backtitle" --title " Hostname " --hfile "helpHOSTNAME" --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\nPress F1 for help." 12 50 2> output.file
-  Response=$(cat output.file)
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Hostname " --help-button --no-shadow --nocancel --inputbox "A hostname is needed. This will be a unique name to identify your device on a network.\nIf you do not enter one, the default hostname of 'arch-linux' will be used\n" 12 50 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    2) HelpMessage=`cat helpHOSTNAME`
+      DisplayHelp
+      continue
+    ;;
+    *) break
+    esac
+  done  
+  Response=$(cat feliz.output)
   Entered=${Response,,}
   case $Entered in
     "") HostName="arch-linux"
@@ -106,13 +174,13 @@ PickLuxuries() { # User selects any combination from a store of extras
   until [ $Category = "Done" ]
   do
   # First select a category. CategoriesList is a string variable in same order as the Categories array
-    HowMany=`echo ${CategoriesList} | wc -w` # Count words
-    echo ${CategoriesList} | sed "s/ /\\n/g" > feliz.output # Copy categories to file
+    HowMany=`echo ${CategoriesList} | wc -w`                 # Count words
+    echo ${CategoriesList} | sed "s/ /\\n/g" > feliz.output  # Copy categories to file
     Counter=1
     ItemCounter=1
     Width=50
     Options=()
-    until [ $ItemCounter -gt $HowMany ] # Prepare numbered list from file
+    until [ $ItemCounter -gt $HowMany ]                      # Prepare numbered list from file
     do
       Options[$((Counter))]=${ItemCounter}
       Counter=$((Counter+1))
@@ -121,15 +189,23 @@ PickLuxuries() { # User selects any combination from a store of extras
       ItemCounter=$((ItemCounter+1))
     done
     # Use $ItemCounter and ${Options[@]} array in menu dialog
-    dialog --backtitle "$Backtitle" --title " Categories " --hfile "helpCATEGORIES" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\nPress F1 for help." 19 50 $ItemCounter "${Options[@]}" 2> feliz.output # Output is line number of selection
-    RetVal=$?
-    if [ $RetVal -gt 0 ]; then # <Cancel> selected
-      break
-    else
-      Selected=`cat feliz.output`
-      # Use selected number to get category for script use
-      Category=${Categories[${Selected}]}
-    fi
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " Categories " --help-button --no-shadow --ok-button "Select" --cancel-button "Done" --menu "$Message\n" 19 50 $ItemCounter "${Options[@]}" 2> feliz.output     # Output is line number of selection
+      RetVal=$?
+      case $RetVal in
+      0) Selected=`cat feliz.output`
+        # Use selected number to get category for script use
+        Category=${Categories[${Selected}]}
+        break
+      ;;
+      2) HelpMessage=`cat helpCATEGORIES`
+        DisplayHelp
+        continue
+      ;;
+      *) break 2
+      esac
+    done 
     # Then shop in that category
     ShoppingList
     Message="Added so far: ${LuxuriesList}\nYou can now choose from any of the other lists, or choose <Done> to finish this part of the setup"
@@ -145,21 +221,19 @@ ShoppingList() {
   # Called by PickLuxuries after a category has been chosen.
   local Complete=0
   case "$LuxuriesList" in
-    "") local Title="Choose your first category"
+    "") Title="Choose your first category"
     ;;
-    *) local Title="Choose your next category"
+    *) Title="Choose your next category"
   esac
-  helpHELPFILE="helpSHOPPING"
-  helpMESSAGE="Press F1 for help"
+  HelpMessage=`cat helpSHOPPING`
   while [ $Complete -eq 0 ]
   do
-    local Message="Added so far: ${LuxuriesList}"
     # Pass category to listgen2 for user to choose one item;
     case $Category in
       "Accessories") listgen2 "$Accessories" "LongAccs"
       ;;
-      "Desktop_Environments") listgen2 "$Desktops" "LongDesk"
-      helpHELPFILE="helpDEs"
+      "Desktop_Environments") HelpMessage=`cat helpDEs`
+        listgen2 "$Desktops" "LongDesk"
       ;;
       "Graphical") listgen2 "$Graphical" "LongGraph"
       ;;
@@ -175,32 +249,39 @@ ShoppingList() {
       ;;
       *) break
     esac
-    dialog --backtitle "$Backtitle" --title " ${Category} " --hfile "${helpHELPFILE}" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n$helpMESSAGE" 15 60 $Counter "${Options[@]}" 2> output.file
-    RetVal=$?
-    if [ $RetVal -gt 0 ]; then # <Cancel> selected
-      break
-    else
-      Picked=$(cat output.file)
-    fi
-    # Check that chosen item is not already on the list
-    for lux in $LuxuriesList
+    while :
     do
-      if [ ${lux} = ${Picked} ]; then
-        Temp=""
-        dialog --yes-label "Keep" --no-label "Delete" --backtitle "$Backtitle" --title " Information " --no-shadow --yesno "\n  '$Picked' is already in your shopping list\n Do you wish to keep it or delete it?" 10 60
-        case $? in
-          0) continue 2 # Keep $LuxuriesList as it is and return to top of enclosing loop
-          ;;
-          *) for lux in $LuxuriesList
-            do
-              if [ ${lux} != ${Picked} ]; then
-                Temp="$Temp $lux"
-              fi
-            done
-            LuxuriesList="$Temp"
-            continue 2 # Revise $LuxuriesList and return to top of enclosing loop
-        esac
-      fi
+      dialog --backtitle "$Backtitle" --title " ${Category} " --help-button --no-shadow --ok-button "Select" --cancel-button "Done" --menu "Added so far: ${LuxuriesList}\n" 15 60 $Counter "${Options[@]}" 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      0) Picked=$(cat feliz.output)    # Item selected
+        for lux in $LuxuriesList      # Check that chosen item is not already on the list
+        do
+          if [ ${lux} = ${Picked} ]; then
+            Temp=""
+            dialog --yes-label "Keep" --no-label "Delete" --backtitle "$Backtitle" --title " Information " --no-shadow --yesno "\n  '$Picked' is already in your shopping list\n Do you wish to keep it or delete it?" 10 60
+            case $? in
+              0) continue 3           # Keep $LuxuriesList as it is and return to top of enclosing loop
+              ;;
+              *) for lux in $LuxuriesList
+                do
+                  if [ ${lux} != ${Picked} ]; then
+                    Temp="$Temp $lux"
+                  fi
+                done
+                LuxuriesList="$Temp"  # Revise $LuxuriesList 
+                continue 3            # and return to top of enclosing loop
+            esac
+          fi
+        done
+        break                         # Probably unnecessary, as preceding code exits this block
+      ;;
+      2) DisplayHelp                  # Help button selected - HelpMessage set by 'case $Category in' above
+        continue
+      ;;
+      *) Picked=""                    # <Done> or Escape or other exit
+        break 2
+      esac
     done
     # Carry out any specific tests and add the item to the list
     case $Picked in
@@ -214,6 +295,7 @@ ShoppingList() {
            ;;
           *) DDEextras=""
         esac
+        DisplayManager="reserved"
       ;;
     "Enlightenment") DesktopEnvironment="Enlightenment"
         dialog --backtitle "$Backtitle" --title " Enlightenment " --no-shadow --yesno "It is suggested that the Connman network utility and Terminology terminal emulator are installed for usability.\nInclude them?\n" 10 40
@@ -234,21 +316,21 @@ ShoppingList() {
            ;;
           *) GoodiesGnome=""
         esac
-      DisplayManager="reserved"
+        DisplayManager="reserved"
       ;;
     "JWM") DesktopEnvironment="JWM"
         ChooseDM
       ;;
     "KDE") DesktopEnvironment="KDE"
-      DisplayManager="reserved"
+        DisplayManager="reserved"
       ;;
     "libreoffice") Picked="libreoffice-fresh"
       ;;
     "LXDE") DesktopEnvironment="LXDE"
-        ChooseDM
+        DisplayManager="reserved"
       ;;
     "LXQt") DesktopEnvironment="LXQt"
-        ChooseDM
+        DisplayManager="sddm"
       ;;
     "Mate") DesktopEnvironment="Mate"
         ChooseDM
@@ -269,36 +351,46 @@ ShoppingList() {
      *) echo "${Picked} added in desktop at $LINENO" >> feliz.log
     esac
     LuxuriesList="${LuxuriesList} ${Picked}"
-done
+  done
 }
 
 ChooseDM() { # Choose a display manager
   case $DisplayManager in
-    "") # Only offered if no other display manager has been set
+  "") # Only offered if no other display manager has been set
     Greeter=""
     listgen1 "LightDM LXDM SLIM XDM"
-    dialog --backtitle "$Backtitle" --title " ChooseDM/Greeter} " --hfile "helpDM" --no-shadow --ok-button "Select" --cancel-label "Done" --menu "Choose one of the following display managers. Note that not all display managers work well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will have to launch your desktop environment manually.\nPress F1 for help." 16 57 6 "${Options[@]}" 2> output.file
-    RetVal=$?
-    Response=$(cat output.file)
-    if [ $RetVal -eq 0 ]; then
-      Reply=$Response
-      case $Reply in
-        "LightDM") DisplayManager="lightdm"
-            Greeter="lightdm-gtk-greeter"
-         ;;
-        "LXDM") DisplayManager="lxdm"
-         ;;
-        "SLIM") DisplayManager="slim"
-         ;;
-        "XDM") DisplayManager="xdm"
-         ;;
-        *) DisplayManager=""
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " ChooseDM/Greeter} " --help-button --no-shadow --ok-button "Select" --cancel-label "Done" --menu "Choose one of the following display managers. Note that not all display managers work well with all desktop environments. If in doubt, choose LightDM.\nIf you do not install a display manager, you will have to launch your desktop environment manually.\n" 16 57 6 "${Options[@]}" 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      0) Response=$(cat feliz.output)
+          Reply=$Response
+          case $Reply in
+          "LightDM") DisplayManager="lightdm"
+              Greeter="lightdm-gtk-greeter"
+          ;;
+          "LXDM") DisplayManager="lxdm"
+          ;;
+          "SLIM") DisplayManager="slim"
+          ;;
+          "XDM") DisplayManager="xdm"
+          ;;
+          *) DisplayManager=""
+          esac
+          break
+      ;;
+      2) HelpMessage=`cat helpDM`
+        DisplayHelp
+        continue
+      ;;
+      *) break
       esac
-    fi
-    ;;
+    done
+  ;;
   "reserved") # Indicating that either KDE or Gnome DE is set and will install own DM
     Greeter=""
-    ;;
+  ;;
   *) # Warn that DM already set, and offer option to change it
     dialog --backtitle "$Backtitle" --title " Display Manager " --no-shadow --yesno "Display manager is already set as: $DisplayManager. Only one display manager can be active.\nDo you wish to change it?" 8 50
     RetVal=$?
@@ -362,9 +454,9 @@ FinalCheck() {
     Settings[11]="Hostname = '$HostName' :  User = '$UserName'"
     Settings[12]="${LuxuriesList}"
     listgen2 "Root Swap Additional Kernel Grub Keyboard Locale Timezone Virtualbox Display_Manager Identity Extras" "Settings"
-    dialog --backtitle "$Backtitle" --title " Final_Check " --no-shadow --ok-button "Change" --cancel-button "Continue" --menu "These are the settings you have entered. Please check them. Press <Continue> to install with these settings, or choose an item if you wish to change it\n" 21 65 12 "${Options[@]}" 2> output.file
+    dialog --backtitle "$Backtitle" --title " Final_Check " --no-shadow --ok-button "Change" --cancel-button "Continue" --menu "These are the settings you have entered. Please check them. Press <Continue> to install with these settings, or choose an item if you wish to change it\n" 21 65 12 "${Options[@]}" 2> feliz.output
     RetVal=$?
-    Response=$(cat output.file)
+    Response=$(cat feliz.output)
     if [ $RetVal -eq 0 ]; then # An item has been selected for change
       ConfirmReview            # User confirmation to make change
       case $Response in
@@ -425,9 +517,19 @@ ManualSettings() {
     Settings[1]="(currently $HostName)"
     Settings[2]="(currently $UserName)"
     listgen2 "Hostname Username" "Settings"
-    dialog --backtitle "$Backtitle" --title " Final_Check " --hfile "helpMENUS" --no-shadow --ok-button "Select" --menu "Select data to change.\n or <Cancel> to finish\n" 18 60 6 "${Options[@]}" 2> output.file
-    RetVal=$?
-    Response=$(cat output.file)
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " Final_Check " --help-button --no-shadow --ok-button "Select" --menu "Select data to change.\n or <Cancel> to finish\n" 18 60 6 "${Options[@]}" 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      2) HelpMessage=`cat helpMENUS`
+        DisplayHelp
+        continue
+      ;;
+      *) break
+      esac
+    done
+    Response=$(cat feliz.output)
     Count=1
     for i in ${Options[@]} # Convert selection into item number in list
     do
@@ -439,15 +541,15 @@ ManualSettings() {
     if [ $RetVal -eq 0 ]; then
       case $Response in
         1) dialog --backtitle "$Backtitle" --title " Final_Check " --nocancel \
-         --inputbox "\nEnter new hostname (currently: $HostName)\n" 18 50 2> output.file
-         Response=$(cat output.file)
+         --inputbox "\nEnter new hostname (currently: $HostName)\n" 18 50 2> feliz.output
+         Response=$(cat feliz.output)
          if [ $Response ]; then
           HostName=${Response,,}
          fi
         ;;
         2) dialog --backtitle "$Backtitle" --title " Final_Check " --nocancel \
-      --inputbox "\nEnter new name for user (currently $UserName)\n" 18 50 2> output.file
-         Response=$(cat output.file)
+      --inputbox "\nEnter new name for user (currently $UserName)\n" 18 50 2> feliz.output
+         Response=$(cat feliz.output)
         if [ $Response ]; then
           UserName=${Response,,}
         fi

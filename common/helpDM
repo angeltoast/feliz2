@@ -1,14 +1,10 @@
-A display manager, or login manager, is typically a graphical
-user interface that is displayed at the end of the boot process. 
+A display manager, or login manager, is typically a graphical user interface that is displayed at the end of the boot process. 
 
-A display manager presents the user with a login screen, into 
-which a user enters a combination of username and password to
+A display manager presents the user with a login screen, into which a user enters a combination of username and password to
 gain access to the desktop.
 
 Only one display manager can be active for any installation.
 
-Gnome and KDE both install their own display manager, but
-most other DEs allow you to choose. If in doubt, LightDM is
-widely used.
+Gnome and KDE both install their own display manager, but most other DEs allow you to choose. If in doubt, LightDM is widely used.
 
 Select <Done> when you have finished shopping.

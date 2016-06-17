@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 12 June 2016
+# 17 June 2016
 
 # /squiff/partitioning - Semi-graphical Dialog interface
 # Partitioning functions (user settings)
@@ -26,7 +26,7 @@
 CheckParts() { # Check available partitions on the system
   ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'` 2>> feliz.log # Test for existing partitions
   local Partitions=0
-  for i in $ShowPartitions                                   # Ensure that there is at least one
+  for i in $ShowPartitions         # Ensure that there is at least one
   do
     (( Partitions+=1 ))
     break
@@ -62,7 +62,7 @@ CheckParts() { # Check available partitions on the system
       ExistingPartitions="$ExistingPartitions \n ${PartitionArray[$Partitions]}"
       (( Partitions+=1 ))
     done
-    local Message="Here is a list of available partitions on all connected devices:\n$ExistingPartitions\n\nIf you choose to do nothing now, Feliz will help you to allocate the existing partitions."
+    Message="Here is a list of available partitions on all connected devices:\n$ExistingPartitions\n\nIf you choose to do nothing now, Feliz will help you to allocate the existing partitions."
     Partitioning          # Offer user partitioning options
     MakePartitionList     # /common/shared/ Regenerate the array of partitions
   fi
@@ -70,24 +70,38 @@ CheckParts() { # Check available partitions on the system
 
 Partitioning() {
   Proceed=""
-  AutoPart=0 # Set flag to 'off' by default
+  AutoPart=0              # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    dialog --backtitle "$Backtitle" --title " Partitioning " --hfile "helpPART" --no-shadow --cancel-label "Do nothing" --menu "$Message Press F1 for help." 20 55 2 \
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " Partitioning " --help-button --no-shadow --cancel-label "Do nothing" --menu "$Message" 20 55 2 \
         "Manual" "Open cfdisk so I can partition manually" \
-        "Auto" "Allow feliz to partition the whole device" 2> output.file
-    Proceed=$(cat output.file)
-    case $Proceed in
-      "Manual") cfdisk 2>> feliz.log
-        tput setf 0 # Change foreground colour to black temporarily to hide error message
-        partprobe 2>> feliz.log #Inform kernel of changes to partitions
-        tput sgr0 # Reset colour
-        ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+        "Auto" "Allow feliz to partition the whole device" 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      0) Proceed=$(cat feliz.output)   # Item selected
+          case $Proceed in
+          "Manual") cfdisk 2>> feliz.log
+              tput setf 0             # Change foreground colour to black temporarily to hide error message
+              partprobe 2>> feliz.log #Inform kernel of changes to partitions
+              tput sgr0               # Reset colour
+              ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+          ;;
+          "Auto") AutoPartition
+          ;;
+          *) Proceed="3"
+          esac
+          break
       ;;
-      "Auto") AutoPartition
+      2) HelpMessage=`cat helpPART`   # Help button pressed
+          DisplayHelp
+          continue
       ;;
-      *) Proceed="3"
-     esac
+      *) Proceed="4" 
+        break                        # <Do nothing>, Escape or any other option
+      esac
+    done
   done
 }
 
@@ -118,8 +132,8 @@ AutoPartition() {
       while [ -z $UseDisk ]
       do
         local Message="There are $Counter devices available\n $ExistingPartitions\nWhich do you wish to use for installation?\n(Remember, this is auto-partition, and any data on the chosen device will be lost)"
-        dialog --backtitle "$Backtitle" --title " Auto-partition " --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
-        UseDisk=$(cat output.file)
+        dialog --backtitle "$Backtitle" --title " Auto-partition " --no-shadow --inputbox "\n$Message\n" 18 50 2> feliz.output
+        UseDisk=$(cat feliz.output)
         #  Check entry against list
         for i in $DiskDetails
         do
@@ -163,16 +177,26 @@ FileSystem() {
   ;;
   *) local Cancel="--cancel-label $1"
   esac
-  dialog --backtitle "$Backtitle" --title " Partitioning " --hfile "helpFILESYSTEM" --no-shadow ${Cancel} --menu "\n$Message\nPress F1 for help." 16 50 4 \
-        "ext2" "-" \
-        "ext3" "-" \
-        "ext4" "-" \
-        "btrfs" "-" 2> output.file
-  if [ $? -gt 0 ]; then # If <Cancel> option selected
-    PartitionType=""
-  else
-    PartitionType=$(cat output.file)
-  fi
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Partitioning " --help-button --no-shadow ${Cancel} --menu "\n$Message\n" 16 50 4 \
+          "ext2" "-" \
+          "ext3" "-" \
+          "ext4" "-" \
+          "btrfs" "-" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    0) PartitionType=$(cat feliz.output) # Item selected
+      break
+    ;;
+    2) HelpMessage=`cat helpFILESYSTEM`     # Help button pressed
+      DisplayHelp
+      continue
+    ;;
+    *) PartitionType=""                 # <Cancel> or any other option selected
+      break
+    esac
+  done     
 }
 
 EditLabel() { # Called by AllocateRoot, AllocateSwap and MorePartitions
@@ -182,15 +206,15 @@ EditLabel() { # Called by AllocateRoot, AllocateSwap and MorePartitions
     dialog --backtitle "$Backtitle" --title " Edit Partition Label " --no-shadow --menu "The partition you have chosen is labelled '${Label}'" 18 50 3 \
           "1" "Keep existing label" \
           "2" "Delete label" \
-          "3" "Enter a new label" 2> output.file
-    Response=$(cat output.file)
+          "3" "Enter a new label" 2> feliz.output
+    Response=$(cat feliz.output)
     case $Response in
       1) LabellingArray[$PartitionID]=$Label # Keep saved label
       ;;
       2) LabellingArray[$PartitionID]="" # Empty label
       ;;
-      *) dialog --backtitle "$Backtitle" --title " Edit Partition Label " --no-shadow --inputbox "$PartitionID \nEnter a new label ..." 10 50 2> output.file
-        Response=$(cat output.file)
+      *) dialog --backtitle "$Backtitle" --title " Edit Partition Label " --no-shadow --inputbox "$PartitionID \nEnter a new label ..." 10 50 2> feliz.output
+        Response=$(cat feliz.output)
         LabellingArray[$PartitionID]=$Response # Save new label
     esac
   fi
@@ -203,8 +227,19 @@ AllocateRoot() {
   Partition=""
   PartitionType=""
   listgen2 "$PartitionList" "PartitionArray"
-  dialog --backtitle "$Backtitle" --title " Partitions " --hfile "helpROOT" --no-shadow --ok-button "Select" --nocancel --menu "Please now select a partition to use for /root\nPress F1 for help." 14 60 $Counter "${Options[@]}" 2> output.file
-  Reply=$(cat output.file)
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Partitions " --help-button --no-shadow --ok-button "Select" --nocancel --menu "Please now select a partition to use for /root\n" 14 60 $Counter "${Options[@]}" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    2) HelpMessage=`cat helpROOT`
+      DisplayHelp
+      continue
+    ;;
+    *) break
+    esac
+  done
+  Reply=$(cat feliz.output)
   PassPart="$Reply"
   SetLabel "$Reply"
   UpdateArray # Remove the selected partition from $PartitionArray[]
@@ -222,7 +257,7 @@ AllocateRoot() {
         local Message="$Message\nYou can choose to leave it as it is, but should be aware that not reformatting the root partition can have unexpected consequences."
         FileSystem "None"
       else
-        local Message="Please now select the file system for ${Partition} ... It is not recommended to mix the btrfs file-system with others.\nPress F1 for help."
+        local Message="Please now select the file system for ${Partition} ... It is not recommended to mix the btrfs file-system with others.\n"
         FileSystem "None"
       fi
       if [ -z ${PartitionType} ] && [ ${CurrentType} ]; then
@@ -266,14 +301,23 @@ AllocateSwap() {
   CopyArray[${Counter}]="Swapfile"   # Add 'Swapfile' to array of available partitions
   PickFrom="$PartitionList Swapfile" # and make copy of PartitionList with 'Swapfile' added
   listgen2 "$PickFrom" "CopyArray"
-  dialog --backtitle "$Backtitle" --title " Partitions " --hfile "helpSWAP" --no-shadow --ok-button "Select" --cancel-button "None" --menu "Select a partition for swap from the ones that remain, or you can allocate a swap file. Warning: Btrfs does not support swap files. Press F1 for help." 14 60 $Counter "${Options[@]}" 2> output.file
-  RetVal=$?
-  if [ $RetVal -ne 0 ]; then         # If <Cancel> selected
-    Result="Done"                    # Prepare reporting variable before exiting
-    SwapPartition=""                 # And set SwapPartition to empty
-    break
-  fi
-  Result=$(cat output.file)          # Save selected partition ID
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Partitions " --help-button --no-shadow --ok-button "Select" --cancel-button "None" --menu "Select a partition for swap from the ones that remain, or you can allocate a swap file. Warning: Btrfs does not support swap files." 14 60 $Counter "${Options[@]}" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    0) break                       # Item selected
+    ;;
+    2) HelpMessage=`cat helpSWAP`      # Help button pressed
+      DisplayHelp
+      continue
+    ;;
+    *) Result="Done"               # <Cancel> or other exit - prepare reporting variable before exiting
+      SwapPartition=""             # And set SwapPartition to empty
+      break
+    esac
+  done
+  Result=$(cat feliz.output)          # Save selected partition ID
   if [ $Result = "Swapfile" ]; then  # User selects swapfile option
     SetSwapFile                      # Function call to set swapfile size
     SwapPartition=""                 # And set SwapPartition to empty
@@ -308,15 +352,24 @@ AllocateSwap() {
 }
 
 NoPartitions() { # There are no unallocated partitions
-    dialog --backtitle "$Backtitle" --title " Swap " --hfile "helpSWAP" --yesno "There are no partitions available for swap.\nDo you wish to create a swap file?" 8 40
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Swap " --help-button --yesno "There are no partitions available for swap.\nDo you wish to create a swap file?" 8 40
     RetVal=$?
     case $RetVal in
-      0) SetSwapFile
-        SwapPartition=""
-        ;;
-      *) SwapPartition=""
-        SwapFile=""
+    0) SetSwapFile
+      SwapPartition=""
+      break
+    ;;
+    2) HelpMessage=`cat helpSWAP`
+      DisplayHelp
+      continue
+    ;;
+    *) SwapPartition=""
+      SwapFile=""
+      break
     esac
+  done
 }
 
 SetSwapFile() {
@@ -324,8 +377,19 @@ SetSwapFile() {
   local Message="Allocate the size of your swap file (M = Megabytes, G = Gigabytes) [eg: 512M or 2G]"
   while [ ${LoopRepeat} = "Y" ]
   do
-    dialog --backtitle "$Backtitle" --title " Swapfile " --hfile "helpSWAP" --no-shadow --inputbox "\n$Message\n" 10 50 2> output.file
-    Response=$(cat output.file)
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " Swapfile " --help-button --no-shadow --inputbox "\n$Message\n" 10 50 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      2) HelpMessage=`cat helpSWAP`
+        DisplayHelp
+        continue
+      ;;
+      *) break
+      esac
+    done
+    Response=$(cat feliz.output)
     RESPONSE="${Response^^}"
     # Check that entry includes 'M or G'
     CheckInput=(`echo $RESPONSE | grep "G\|M"`)
@@ -355,13 +419,24 @@ MorePartitions() { # For any unallocated partitions. Uses PartitionList and Part
   do
     Remaining=""
     listgen2 "$PartitionList" "PartitionArray"
-    dialog --backtitle "$Backtitle" --title " Partitions " --hfile "helpOTHER" --no-shadow --ok-button "Select" --cancel-button "Done" --menu "The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose 'Done' to finish partitioning.\n Press F1 for help." 18 60 $Counter "${Options[@]}" 2> output.file
-    Response=$?
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " Partitions " --help-button --no-shadow --ok-button "Select" --cancel-button "Done" --menu "The following partitions remain unallocated.\nIf you wish to use one, select it from the list, or choose 'Done' to finish partitioning.\n" 18 60 $Counter "${Options[@]}" 2> feliz.output
+      RetVal=$?
+      Response=$RetVal
+      case $RetVal in
+      2) HelpMessage=`cat helpOTHER`
+        DisplayHelp
+        continue
+      ;;
+      *) break
+      esac
+    done
     if [ $Response -gt 0 ]; then # ie: <Done>
       Elements=0
       break
     else
-      Result=`cat output.file`
+      Result=`cat feliz.output`
       PassPart=$Result
       SetLabel "$Result"
       UpdateArray # Remove the selected partition from $PartitionArray[]
@@ -411,8 +486,19 @@ MakePartition() { # Called by MorePartitions
   local Message="Enter a mountpoint for ${Partition} (eg: /home)"
   while [ ${LoopRepeat} = "Y" ]
   do
-    dialog --backtitle "$Backtitle" --title " Partitioning " --hfile "helpOTHER" --no-shadow --inputbox "\n$Message\n" 18 50 2> output.file
-    Response=$(cat output.file)
+    while :
+    do
+      dialog --backtitle "$Backtitle" --title " Partitioning " --help-button --no-shadow --inputbox "\n$Message\n" 18 50 2> feliz.output
+      RetVal=$?
+      case $RetVal in
+      2) HelpMessage=`cat helpOTHER`
+        DisplayHelp
+        continue
+      ;;
+      *) break
+      esac
+    done
+    Response=$(cat feliz.output)
     # Check that entry includes '/'
     CheckInput=(`echo $Response | cut -c1`)
     case ${CheckInput} in

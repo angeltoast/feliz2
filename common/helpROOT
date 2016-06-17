@@ -1,12 +1,3 @@
-root (/)
+The root partition will contain Linux and everything that you install with Linux. Even if you create no other partitions, you must create a partition for root.
 
-The root partition will contain Linux and everything that you install
-with Linux. Even if you create no other partitions, you must create a
-partition for root.
-
-The size of your root partition will vary depending on what you plan
-to install. In general, you should be fine with a root partition of
-about 8GB to 10GB for Arch Linux, but if you have enough disk space, it is
-not a bad idea to allow more - up to 20G should be plenty. If you have
-a small hard drive, you can use as little as 6G, but you will be
-restricted in how much you can install later.
+The size of your root partition will vary depending on what you plan to install. In general, you should be fine with a root partition of about 8GB to 10GB for Arch Linux, but if you have enough disk space, it is not a bad idea to allow more - up to 20G should be plenty. If you have a small hard drive, you can use as little as 6G, but you will be restricted in how much you can install later.

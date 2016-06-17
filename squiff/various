@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 12 June 2016
+# 17 June 2016
 
 # Semi-graphical interface
 # /squiff/various
@@ -15,19 +15,59 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           27       ConfirmReview        112
-#                                SetGrubDevice        120
-# TPecho                35       arch_chroot          155
-# DisplayProgress       39       InstallKernel        134
-# ProgressArray         58       AddCodecs            158
-# Bugger                83       McInitCPIO           173
-# SetKernel             87       Passwords            195
-# ConfirmVbox           99       Finish               250
+# arch_chroot           27       ConfirmReview        150
+# listgen1 & 2          35       SetGrubDevice        158
+# TPecho                72       arch_chroot          193
+# DisplayProgress       76       InstallKernel        197
+# ProgressArray         96       AddCodecs            200
+# Bugger               120       McInitCPIO           210
+# SetKernel            125       Passwords            220
+# ConfirmVbox          037       Finish               250
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" &>> feliz.log
 }
+
+#
+# Menuing functions - listgen1 and listgen2
+# Both functions prepare the array Options[@] for display in a Dialog menu
+#
+listgen1() { # $1 = String array of items
+  Counter=0
+  Options=() # Empty the array
+  # Prepare $1 for dialog menu
+  for item in $1 # Prepare string array of list items passed as $1
+  do
+    Counter=$((Counter+1))
+    Options[${Counter}]="$item"
+    Counter=$((Counter+1))
+    Options[${Counter}]="-"
+  done
+}
+
+listgen2() {
+  Options=() # Empty the array
+  Counter=0
+  for item in $1; do
+    Items[${Counter}]=$item
+    Counter=$((Counter+1))
+  done
+  Counter=0
+  local ItemCounter=0
+  # Import the complex array
+  name=$2[@]
+  LongName=("${!name}")
+  # Combine for dialog menu
+  for item in "${LongName[@]}"
+  do
+    Options[$((Counter))]="${Items[${ItemCounter}]}"
+    Options[$((Counter+1))]="$item"
+    Counter=$((Counter+2))
+    ItemCounter=$((ItemCounter+1))
+  done
+}
+
 
 TPecho() { # Infobox
   dialog --backtitle "$Backtitle" --title " Information " --no-shadow --infobox "\n$1\n$2" 6 50 ; sleep 1 &
@@ -84,8 +124,8 @@ Bugger() {
 
 SetKernel() { # Note: Kernel commands linux & linux-lts include base/commonutils
   listgen1 "LTS Latest"
-  dialog --backtitle "$Backtitle" --title " Choose your kernel " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> output.file
-  case $(cat output.file) in
+  dialog --backtitle "$Backtitle" --title " Choose your kernel " --no-shadow --ok-button "Select" --nocancel --menu "The Long-Term-Support kernel (LTS) offers stabilty, while the Latest kernel has all the new features. If in doubt, choose LTS.\n" 12 60 6 "${Options[@]}" 2> feliz.output
+  case $(cat feliz.output) in
    "LTS") Kernel=1
    ;;
    "Latest") Kernel=2
@@ -120,13 +160,22 @@ SetGrubDevice() {
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
   GrubDevice=""
   listgen1 "${DevicesList}"
-  dialog --backtitle "$Backtitle" --title " Devices " --hfile "helpGRUB" --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed. Press F1 for help.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> output.file
-  RetVal=$?
-  if [ $RetVal -gt 0 ]; then # <Cancel> selected
-   GrubDevice=""
-  else
-   GrubDevice=$(cat output.file)
-  fi
+  while :
+  do
+    dialog --backtitle "$Backtitle" --title " Devices " --help-button --no-shadow --ok-button "Select" --menu "Select the device where Grub is to be installed.\nNote that if you do not select a device, Grub will not be installed, and you will have to make alternative arrangements for booting your new system.\n" 14 60 6 "${Options[@]}" 2> feliz.output
+    RetVal=$?
+    case $RetVal in
+    0) GrubDevice=$(cat feliz.output)
+      break
+    ;;
+    2) HelpMessage=`cat helpGRUB`
+      DisplayHelp
+      continue
+    ;;
+    *) GrubDevice=""
+      break
+    esac
+  done
 }
 
 InstallKernel() { # Kernel and some other core systems
@@ -134,10 +183,10 @@ InstallKernel() { # Kernel and some other core systems
   LANG=C # Temporary addition to overcome bug in Arch man pages
   
   case $Kernel in # Selected kernel
-    1) DisplayProgress "Installing LTS kernel" 60
+    1) DisplayProgress "Installing LTS kernel" 40
       pacstrap /mnt linux-lts &>> feliz.log
     ;;
-    *) DisplayProgress "Installing Latest kernel" 80
+    *) DisplayProgress "Installing Latest kernel" 60
       pacstrap /mnt linux &>> feliz.log
   esac
 
@@ -153,7 +202,7 @@ InstallKernel() { # Kernel and some other core systems
   arch_chroot "systemctl enable sshd.service" >/dev/null
       
   # And finally the man pages
-  DisplayProgress "Installing man-db & man-pages - this may take some time" 180
+  DisplayProgress "Installing man-db & man-pages - this may take some time" 140
   pacstrap /mnt man-db man-pages &>> feliz.log
   
 }
@@ -187,11 +236,11 @@ SetRootPassword() {
   while [ $Repeat = "Y" ]
   do
     dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel \
-     --insecure --passwordbox "$ExtraMessage\nEnter a password for root" 10 40 2> output.file
-    Pass1=`cat output.file`
+     --insecure --passwordbox "$ExtraMessage\nEnter a password for root" 10 40 2> feliz.output
+    Pass1=`cat feliz.output`
     dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel \
-      --insecure --passwordbox "Re-enter password for root" 8 40 2> output.file
-    Pass2=`cat output.file`
+      --insecure --passwordbox "Re-enter password for root" 8 40 2> feliz.output
+    Pass2=`cat feliz.output`
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       ExtraMessage="Passwords cannot be blank. Try again ..."
       continue
@@ -205,7 +254,7 @@ SetRootPassword() {
       ExtraMessage="Passwords don't match. Try again"
     fi
   done
-  rm output.file
+  rm feliz.output
 }
 
 SetUserPassword() {
@@ -214,11 +263,11 @@ SetUserPassword() {
   while [ $Repeat = "Y" ]
   do
     dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel\
-      --insecure --passwordbox "$ExtraMessage\nEnter a password for $UserName" 10 40 2> output.file
-    Pass1=`cat output.file`
+      --insecure --passwordbox "$ExtraMessage\nEnter a password for $UserName" 10 40 2> feliz.output
+    Pass1=`cat feliz.output`
     dialog --backtitle "$Backtitle" --title " - Passwords - " --nocancel \
-      --insecure --passwordbox "Re-enter password for ${UserName}" 8 40 2> output.file
-    Pass2=`cat output.file`
+      --insecure --passwordbox "Re-enter password for ${UserName}" 8 40 2> feliz.output
+    Pass2=`cat feliz.output`
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       ExtraMessage="Passwords cannot be blank. Try again"
       continue
@@ -232,7 +281,7 @@ SetUserPassword() {
       ExtraMessage="Passwords don't match. Try again"
     fi
   done
-  rm output.file
+  rm feliz.output
 }
 
 DisplayFinished() {
