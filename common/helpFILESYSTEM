@@ -1,7 +1,0 @@
-Although the Ext2 filesystem is still available for legacy purposes, it differs from the others in that it is not a 'journaling' system. Modern Linux filesystems are journaling file systems. These are more reliable when it comes to data storage. A journaling file system first writes data to another part of the hard drive and notes the necessary changes to a log, then in the background it goes through each entry to the journal and begins to complete the task, and when the task is complete, it checks it off on the list. Thus the file system is always in a consistent state and can be recovered in the event of a crash.
-
-Note: 'Ext' refers to 'extended' - meaning that the system has more capabilities than earlier filesystems
-
-The oldest journaling filesystem in Linux is Ext3.
-
-Unless you have a special requirement or preference, you may as well choose Ext4

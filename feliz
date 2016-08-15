@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# The Feliz installation scripts for Arch Linux
-# 17 June 2016
+# The 2 installation scripts for Arch Linux
+# 14 August 2016
+# Complete restructure for cli-only version
 
-# /common/feliz - Main module
+# Main module
 
 # Developed by Elizabeth Mills
 # With thanks to Carl Duff
@@ -21,6 +22,7 @@ source shared
 source various
 source partitioning
 source desktop
+source listgen
 
 Backtitle="The Feliz install scripts for Arch Linux"
 
@@ -92,37 +94,37 @@ genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
 
 if [ ${SwapFile} ]; then
   fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> feliz.log
-  chmod 600 /mnt/swapfile >/dev/null &>> feliz.log 
-  mkswap /mnt/swapfile >/dev/null &>> feliz.log
-  swapon /mnt/swapfile >/dev/null &>> feliz.log
+  chmod 600 /mnt/swapfile >/dev/null 2>> feliz.log 
+  mkswap /mnt/swapfile >/dev/null 2>> feliz.log
+  swapon /mnt/swapfile >/dev/null 2>> feliz.log
   echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
 fi
 
 echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
-sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
-sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts &>> feliz.log
+sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
+sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Set up locale, etc
 echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
 arch_chroot "locale-gen"
 echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
-export "LANG=${CountryLocale}" &>> feliz.log                      # eg: LANG=en_US.UTF-8
+export "LANG=${CountryLocale}" 2>> feliz.log                      # eg: LANG=en_US.UTF-8
 arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
 arch_chroot "hwclock --systohc --utc"
 
 # Networking
 if [ $Scope != "Basic" ]; then
   arch_chroot "systemctl enable dhcpcd.service"
-  pacstrap /mnt networkmanager network-manager-applet rp-pppoe &>> feliz.log
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
 fi
 
 # Grub
 if [ ${GrubDevice} ]; then
   TPecho "Installing Grub2 to $GrubDevice" ""
-  pacstrap /mnt grub &>> feliz.log
+  pacstrap /mnt grub 2>> feliz.log
   if [ $OSprober = "Y" ]; then
-    pacstrap /mnt os-prober &>> feliz.log
+    pacstrap /mnt os-prober 2>> feliz.log
   fi
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -142,7 +144,7 @@ if [ $Scope != "Basic" ]; then
       
   # Virtualbox code if selected
   if [ ${IsInVbox} = "VirtualBox" ]; then
-    pacstrap /mnt virtualbox-guest-utils &>> feliz.log
+    pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
     echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
     cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
   fi

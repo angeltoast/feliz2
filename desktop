@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 17 June 2016
+# 13 August 2016
 
 # /cliff/desktop
 # CLI functions relevant to users, settings, extra applications and review
@@ -21,7 +21,8 @@
 # Hostname      204    FinalCheck         513
 # PickLuxuries  220    ManualSettings     604
 
-getkeymap() {
+getkeymap()
+{
   print_heading
   echo
   PrintOne "Let's try to find your keyboard"
@@ -59,7 +60,8 @@ getkeymap() {
   read_timed "The keyboard is now set to: '$Countrykbd'" 1
 }
 
-setlocale() {
+setlocale()
+{
   SearchPrompt=" (for example: GB or en): "
   print_heading
   PrintOne "Next we will try to find your locale. This will"
@@ -115,78 +117,81 @@ setlocale() {
   read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
 }
 
-SetTimeZone() {
-Complete=0
-while [ $Complete -eq 0 ]
-do
-  print_heading
-  PrintOne "To set the system clock, please first"
-  PrintOne "choose the World Zone of your location."
-  Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
-  echo
-  zones=""
-  for x in ${Zones[@]}
+SetTimeZone()
+{
+  Complete=0
+  while [ $Complete -eq 0 ]
   do
-    zones="$zones $x"
-  done
-  listgen1 "${zones}" "World_Zones" "nodone"
-  ZONE=$Result
-  echo
-  case $Result in
-    "UTC") SUBZONE=""
-        print_heading
-        read_timed "Zone set to: '$ZONE'" 1
-        Complete=1
-    ;;
-    *) SetSubZone
     print_heading
-    read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
-  esac
-done
-echo
-}
-
-SetSubZone() {
-SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
-while [ $Complete -eq 0 ]
-do
-  print_heading
-  PrintOne "World Zone = $ZONE"
-  echo
-  PrintOne "Please enter the first letter"
-  TPread "of your nearest major city: "
-  echo
-  if [ -z ${Response} ]
-  then
-    invalid_option
-    continue
-  else
-    Zone2="${Response^^}"
-  fi
-  subzones=""
-  local Counter=0
-  for x in ${SubZones[@]}
-  do
-    if [ `echo $x | cut -c1` = $Zone2 ]; then
-      subzones="$subzones $x"
-      Counter=$((Counter+1))
-    fi
+    PrintOne "To set the system clock, please first"
+    PrintOne "choose the World Zone of your location."
+    Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
+    echo
+    zones=""
+    for x in ${Zones[@]}
+    do
+      zones="$zones $x"
+    done
+    listgen1 "${zones}" "World_Zones" "nodone"
+    ZONE=$Result
+    echo
+    case $Result in
+      "UTC") SUBZONE=""
+          print_heading
+          read_timed "Zone set to: '$ZONE'" 1
+          Complete=1
+      ;;
+      *) SetSubZone
+      print_heading
+      read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
+    esac
   done
-  if [ ${Counter} -eq 0 ]; then
-    invalid_option
-    continue
-  fi
-  listgen1 "$subzones" "" "Try_again"
-  case $Result in
-    "Try_again") break
-    ;;
-    *) SUBZONE=$Result
-  esac
-  Complete=1
-done
+  echo
 }
 
-UserName() {
+SetSubZone()
+{
+  SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
+  while [ $Complete -eq 0 ]
+  do
+    print_heading
+    PrintOne "World Zone = $ZONE"
+    echo
+    PrintOne "Please enter the first letter"
+    TPread "of your nearest major city: "
+    echo
+    if [ -z ${Response} ]
+    then
+      invalid_option
+      continue
+    else
+      Zone2="${Response^^}"
+    fi
+    subzones=""
+    local Counter=0
+    for x in ${SubZones[@]}
+    do
+      if [ `echo $x | cut -c1` = $Zone2 ]; then
+        subzones="$subzones $x"
+        Counter=$((Counter+1))
+      fi
+    done
+    if [ ${Counter} -eq 0 ]; then
+      invalid_option
+      continue
+    fi
+    listgen1 "$subzones" "" "Try_again"
+    case $Result in
+      "Try_again") break
+      ;;
+      *) SUBZONE=$Result
+    esac
+    Complete=1
+  done
+}
+
+UserName()
+{
   print_heading
   PrintOne "Enter a name for the primary user of the new system."
   PrintOne "If you don't create a username here, a default user"
@@ -202,7 +207,8 @@ UserName() {
   PrintOne "User '${UserName}' will be created."
 }
 
-SetHostname() {
+SetHostname()
+{
   Entered="arch-linux"
   print_heading
   PrintOne "A hostname is needed. This will be a unique name to identify"
@@ -219,7 +225,8 @@ SetHostname() {
   PrintOne "Hostname = $HostName"
 }
 
-PickLuxuries() { # User selects any combination from a store of extras
+PickLuxuries()
+{ # User selects any combination from a store of extras
   CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
   local Complete=0
   print_heading
@@ -254,34 +261,36 @@ PickLuxuries() { # User selects any combination from a store of extras
   fi
 }
 
-KeepOrDelete() {
-Bagged="$1"
-Validated="N"
-until [ $Validated = "Y" ]
-do
-  print_heading
-  Message="$Bagged is already in your shopping list.\n"
-  listgen1 "Keep Delete" "$Bagged" "nodone"
-  case $Response in
-    1) Validated="Y"
-      Temp="$LuxuriesList"
-    ;;
-    2) Validated="Y"
-      Temp=""
-      for lux in $LuxuriesList
-      do
-        if [ ${lux} != ${Bagged} ]; then
-          Temp="$Temp $lux"
-        fi
-      done
-    ;;
-    *) invalid_option
-  esac
-done
-LuxuriesList="$Temp"
+KeepOrDelete()
+{
+  Bagged="$1"
+  Validated="N"
+  until [ $Validated = "Y" ]
+  do
+    print_heading
+    Message="$Bagged is already in your shopping list.\n"
+    listgen1 "Keep Delete" "$Bagged" "nodone"
+    case $Response in
+      1) Validated="Y"
+        Temp="$LuxuriesList"
+      ;;
+      2) Validated="Y"
+        Temp=""
+        for lux in $LuxuriesList
+        do
+          if [ ${lux} != ${Bagged} ]; then
+            Temp="$Temp $lux"
+          fi
+        done
+      ;;
+      *) invalid_option
+    esac
+  done
+  LuxuriesList="$Temp"
 }
 
-ShoppingList() { # Called by PickLuxuries after a category has been chosen.
+ShoppingList()
+{ # Called by PickLuxuries after a category has been chosen.
   local Complete=0
   Passed="Choose your first item"
   while [ $Complete -eq 0 ]
@@ -374,63 +383,39 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     fi
     case $SaveResult in
       "Cinnamon") DesktopEnvironment=$SaveResult
-          ChooseDM
+        ChooseDM
        ;;
-      "Deepin") DesktopEnvironment="Deepin"
-          case $Response in
-            1) DDEextras="deepin-extra"
-            ;;
-            *) DDEextras=""
-          esac
+      "Deepin") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
       "Enlightenment") DesktopEnvironment=$SaveResult
-         case $Response in
-            1) EnExtras="connman terminology"
-            ;;
-            *) EnExtras=""
-         esac
-         ChooseDM
+        ChooseDM
        ;;
       "Fluxbox") DesktopEnvironment=$SaveResult
-          ChooseDM
+        ChooseDM
         ;;
       "Gnome") DesktopEnvironment=$SaveResult
-          case $Response in
-           1) GoodiesGnome="xfce4-goodies"
-           ;;
-           *) GoodiesGnome=""
-          esac
-          DisplayManager="reserved"
+		 ChooseDM
         ;;
       "JWM") DesktopEnvironment=$SaveResult
-          ChooseDM
+         ChooseDM
         ;;
       "KDE") DesktopEnvironment=$SaveResult
-          DisplayManager="reserved"
+         ChooseDM
         ;;
      "LXDE") DesktopEnvironment=$SaveResult
-          ChooseDM
+		 ChooseDM
        ;;
       "LXQt") DesktopEnvironment=$SaveResult
-          ChooseDM
+         ChooseDM
         ;;
       "Mate") DesktopEnvironment=$SaveResult
-          ChooseDM
+         ChooseDM
        ;;
      "Openbox") DesktopEnvironment=$SaveResult
-        case $Response in
-          1) GoodiesOpenbox="tint2"
-          ;;
-          *) GoodiesOpenbox=""
-         esac
          ChooseDM
        ;;
       "Xfce") DesktopEnvironment=$SaveResult
-         case $Response in
-            1) GoodiesXfce="xfce4-goodies"
-            ;;
-            *) GoodiesXfce=""
-         esac
          ChooseDM
        ;;
       "") continue
@@ -442,98 +427,67 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
   Passed=""
 }
 
-ChooseDM() { # Choose a display manager unless already fixed by certain DEs
+ChooseDM()
+{ # Choose a display manager
   case $DisplayManager in
-    "") # Only offered if no other display manager has been set
-    Counter=0
-    Greeter=""
-    DMList="GDM LightDM LXDM sddm SLIM XDM"
-    print_heading
-    PrintOne "You can choose one of the following display managers."
-    PrintOne "Not all display managers work well with all desktop environments."
-    PrintOne "If in doubt, choose LightDM."
-    PrintOne "If you do not install a display manager, you will have"
-    PrintOne "to launch your desktop environment manually."
-    echo
-    listgen1 "${DMList}" "Display_Manager/Greeter" "None"
-    Reply=$Response
-    for item in ${DMList}
-    do
-      Counter=$((Counter+1))
-      if [ $Counter -eq $Reply ]
-      then
-        SelectedDM=$item
-        case $SelectedDM in
-          "GDM") DisplayManager="gdm"
-            ;;
-          "LightDM") DisplayManager="lightdm"
-                Greeter="lightdm-gtk-greeter"
-            ;;
-          "LXDM") DisplayManager="lxdm"
-            ;;
-          "sddm") DisplayManager="sddm"
-            ;;
-          "SLIM") DisplayManager="slim"
-            ;;
-          "XDM") DisplayManager="xdm"
-            ;;
-          *) DisplayManager=""
-        esac
-        break
-      fi
-    done
-  "reserved") # Indicating that either KDE or Gnome DE is set and will install own DM
-    Greeter=""
+  "") # Only offered if no other display manager has been set
+      Counter=0
+      Greeter=""
+      DMList="GDM LightDM LXDM sddm SLIM XDM"
+      print_heading
+      PrintOne "You can choose one of the following display managers."
+      PrintOne "Not all display managers work well with all desktop environments."
+      PrintOne "If in doubt, choose LightDM."
+      PrintOne "If you do not install a display manager, you will have"
+      PrintOne "to launch your desktop environment manually."
+      echo
+      listgen1 "${DMList}" "Display_Manager/Greeter" "None"
+      Reply=$Response
+      for item in ${DMList}
+      do
+        Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]
+        then
+          SelectedDM=$item
+          case $SelectedDM in
+            "GDM") DisplayManager="gdm"
+              ;;
+            "LightDM") DisplayManager="lightdm"
+                  Greeter="lightdm-gtk-greeter"
+              ;;
+            "LXDM") DisplayManager="lxdm"
+              ;;
+            "sddm") DisplayManager="sddm"
+              ;;
+            "SLIM") DisplayManager="slim"
+              ;;
+            "XDM") DisplayManager="xdm"
+              ;;
+            *) DisplayManager=""
+          esac
+          break
+        fi
+      done
     ;;
   *) # Warn that DM already set, and offer option to change it
-    print_heading
-    PrintOne "Display manager is already set as: $DisplayManager."
-    PrintOne "Only one display manager can be active"
-    echo
-    PrintOne "Do you wish to change it?: "
-    echo
-    listgen1 "Yes No" "" "nodone"
-    echo
-    if [ $Response -eq 1 ]; then    # User wishes to change DM
-      DisplayManager=""        # Clear DM variable
-      Greeter=""               # and greeter
-      ChooseDM                 # Call this function again
-    fi
+      print_heading
+      PrintOne "Display manager is already set as: $DisplayManager."
+      PrintOne "Only one display manager can be active"
+      echo
+      PrintOne "Do you wish to change it?: "
+      echo
+      listgen1 "Yes No" "" "nodone"
+      echo
+      if [ $Response -eq 1 ]; then    # User wishes to change DM
+        DisplayManager=""        # Clear DM variable
+        Greeter=""               # and greeter
+        ChooseDM                 # Call this function again
+      fi
   esac
 }
 
-AddDEextras() {
-  print_heading
-  echo
-  case $DesktopEnvironment in
-    "Deepin") PrintOne "The deepin-extras pack includes the Deepin game center, media"
-      PrintOne "players, terminal and screenshot tools."
-      echo
-      ;;
-    "Enlightenment") PrintOne "It is suggested that the Connman network utility, and"
-        PrintOne "Terminology terminal emulator are installed for usability."
-      echo
-      ;;
-    "Gnome") PrintOne "The gnome-extras pack includes games, a text"
-      PrintOne "editor and some utilities."
-      echo
-      ;;
-    "Openbox") PrintOne "Tint2 is a system panel/taskbar that can be configured"
-      PrintOne "to include a system tray, task list, battery monitor, clock, etc."
-      echo
-      ;;
-    "Xfce") PrintOne "The xfce4-goodies pack includes includes the Whisker menu, extra"
-      PrintOne "plugins and a number of utilities such as the mousepad editor"
-      echo
-      ;;
-    *) echo
-  esac
-  PrintOne "Include the extras pack?"
-  echo
-  listgen1 "Yes No" "" "nodone"
-}
-
-FinalCheck() {
+FinalCheck()
+{
   while :
   do
     print_heading
@@ -635,7 +589,8 @@ FinalCheck() {
   done
 }
 
-ManualSettings() {
+ManualSettings()
+{
   Retry="Y"
   Response=3
   while [ $Retry = "Y" ]

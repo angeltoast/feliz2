@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# 17 June 2016
+# 13 August 2016
 
 # /common/shared - Variables and functions used by both sqiff and cliff
 
@@ -168,31 +168,31 @@ LongWMs[8]="Desktop panel"
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   TPecho "Generating mirrorlist"
-  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist &>> feliz.log
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> feliz.log
   if [ $? -gt 0 ]; then
     LocalMirrorList
   else
-    chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
+    chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
   fi
 }
 
 LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   # mirrorlist of only the mirrors defined in the CountryCode variable.
   URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
-  MirrorTemp=$(mktemp --suffix=-mirrorlist) &>> feliz.log
+  MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
   # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-  curl -so ${MirrorTemp} ${URL} &>> feliz.log
+  curl -so ${MirrorTemp} ${URL} 2>> feliz.log
   # Use sed to filter entries
-  sed -i 's/^#Server/Server/g' ${MirrorTemp} &>> feliz.log
+  sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> feliz.log
   # Make a safe copy of existing mirrorlist
-  mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig &>> feliz.log
+  mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> feliz.log
   # Replace existing mirrorlist with new local mirrorlist
-  mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist &>> feliz.log
-  chmod +r /etc/pacman.d/mirrorlist &>> feliz.log
+  mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> feliz.log
+  chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
 }
 
 Parted() {
-  parted --script /dev/${UseDisk} "$1" &>> feliz.log
+  parted --script /dev/${UseDisk} "$1" 2>> feliz.log
 }
 
 MakePartitionList() {
@@ -208,8 +208,7 @@ MakePartitionList() {
   BuildPartitionLists # Then rebuild
 }
 
-BuildPartitionLists() { # First called by CheckParts to generate details of partitions
-  # for display, then by feliz to prepare partition arrays for selection for root, swap and others
+BuildPartitionLists() { # First called by CheckParts to generate details of partitions for display, then by feliz to prepare partition arrays for selection for root, swap and others
   
   # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
     # First an array of all partitions up to sd*99
@@ -227,7 +226,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of part
       do
         if [ $x -eq $Counter ]; then
           FileSystem[$i]=$l # ... get the matching type
-        break
+          break
         fi
         x=$((x+1))
       done
@@ -249,7 +248,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of part
     do
       if [ $x -eq $Counter ]; then
         Labelled[$i]=$l # ... get the matching label
-      break
+        break
       fi
       x=$((x+1))
     done
@@ -478,139 +477,119 @@ MountPartitions() {
   "") echo "Not formatting root partition" >> feliz.log
   ;;
   *) TPecho "Preparing and mounting partitions" ""
-    umount ${RootPartition} /mnt >/dev/null &>> feliz.log
+    umount ${RootPartition} /mnt >/dev/null 2>> feliz.log
     # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` &>> feliz.log
+    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` 2>> feliz.log
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${RootPartition} &>> feliz.log
+      btrfs-convert ${RootPartition} 2>> feliz.log
     elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} &>> feliz.log
+      mkfs.btrfs -f ${RootPartition} 2>> feliz.log
     else
       Partition=`echo $RootPartition | cut -c 6-` 2>> feliz.log
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
+      mke2fs ${Label} -t ${RootType} ${RootPartition} 2>> feliz.log
     fi
   esac
-  mount ${RootPartition} /mnt &>> feliz.log # eg: mount /dev/sda1 /mnt
+  mount ${RootPartition} /mnt 2>> feliz.log # eg: mount /dev/sda1 /mnt
   if [ ${SwapPartition} ]; then
-    swapoff -a &>> feliz.log
+    swapoff -a 2>> feliz.log
     if [ $MakeSwap = "Y" ]; then
       Partition=`echo $SwapPartition | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mkswap ${Label} ${SwapPartition} &>> feliz.log # eg: mkswap -L Arch-Swap /dev/sda2
+      mkswap ${Label} ${SwapPartition} 2>> feliz.log # eg: mkswap -L Arch-Swap /dev/sda2
     fi
-    swapon ${SwapPartition} &>> feliz.log # eg: swapon /dev/sda2
+    swapon ${SwapPartition} 2>> feliz.log # eg: swapon /dev/sda2
   fi
   local Counter=0
   for id in ${AddPartList}
   do
-    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null &>> feliz.log
-    mkdir -p /mnt${AddPartMount[$Counter]} &>> feliz.log  # eg: mkdir -p /mnt/home
+    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null 2>> feliz.log
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${id} &>> feliz.log
+      btrfs-convert ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
-      mkfs.btrfs -f ${id} &>> feliz.log
+      mkfs.btrfs -f ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=`echo ${id} | cut -c 6-`
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} 2>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
+    mount ${id} /mnt${AddPartMount[$Counter]} 2>> feliz.log # eg: mount /dev/sda3 /mnt/home
     Counter=$((Counter+1))
   done
 }
 
-InstallDM() { # Display manager
-  # First test target for existing display manager and disable if necessary
-  DMLine=`arch-chroot /mnt systemctl list-unit-files | grep '(*dm|slim)\.service'` # Create list of existing DMs
-  local Counter=1
-  ExDM=`echo $DMLine  | cut -f ${Counter} -d ' '`         # First of pair is DM
-  while [ $ExDM ]
-  do
-    if [ -z ${ExDM} ]; then                               # Quit if no further entries
-      break
-    fi
-    Counter=$((Counter+1))                                # Move counter to next item in list
-    ExDMStatus=`echo $DMLine  | cut -f ${Counter} -d ' '` # Second of pair is status
-    if [ $ExDMStatus = "enabled" ]; then
-      arch_chroot "systemctl disable ${ExDM}" >/dev/null
-    fi
-    Counter=$((Counter+1))                                # Move counter to next item in list
-  done
-  
+InstallDM()
+{ # Display manager
+  # Disable any existing display manager
+  arch_chroot "systemctl disable display-manager.service" >/dev/null
   # Then install selected display manager
   DisplayProgress "Installing ${DisplayManager} display manager" 20
-  pacstrap /mnt ${DisplayManager} ${Greeter} &>> feliz.log
+  pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
   arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
-
 }
 
-InstallLuxuries() { # Install desktops and other extras
+InstallLuxuries()
+{ # Install desktops and other extras
   # Display manager - runs only once
-  case ${DisplayManager} in       # Check $DisplayManager
-    "") DisplayManager=""         # No display manager set - do nothing
-    ;;
-    "reserved") DisplayManager="" # A DE installs its own DM - do nothing
-    ;;
-    *) InstallDM                  # Clear any pre-existing DM and install this one
-  esac
+  InstallDM                  # Clear any pre-existing DM and install this one
   # First parse through LuxuriesList - checking for DEs
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
       case $i in
-      "Cinnamon") DisplayProgress "Installing Cinnamon desktop Environment" 60
-          pacstrap /mnt cinnamon &>> feliz.log
+      "Cinnamon") DisplayProgress "Installing Cinnamon desktop Environment"
+          pacstrap /mnt cinnamon 2>> feliz.log
         ;;
-      "Deepin") DisplayProgress "Installing Deepin desktop Environment" 100
-          pacstrap /mnt deepin ${DDEextras} &>> feliz.log
-          arch_chroot "systemctl -f enable lightdm.service"
+      "Deepin") DisplayProgress "Installing Deepin desktop Environment"
+          pacstrap /mnt deepin-account-faces deepin-api deepin-artwork-themes deepin-calendar deepin-control-center deepin-daemon deepin-desktop deepin-desktop-base deepin-desktop-schemas deepin-dock deepin-file-manager deepin-grub2-themes deepin-gtk-theme deepin-launcher deepin-menu deepin-notifications deepin-session-ui deepin-social-sharing deepin-sound-theme deepin-wallpapers deepin-wm-switcher python2-deepin-ui python2-deepin-utils startdde deepin-game deepin-movie deepin-music deepin-screenshot deepin-terminal 2>> feliz.log
           # Change the greeter line in lightdm.conf
-          sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
+          if [ -d /mnt/etc/lightdm ]; then
+            sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
+          fi
         ;;
-      "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop Environment" 20
-          pacstrap /mnt enlightenment ${EnExtras} &>> feliz.log
+      "Enlightenment") DisplayProgress "Installing 'Enlightenment' desktop Environment"
+          pacstrap /mnt enlightenment connman terminology 2>> feliz.log
         ;;
-      "Fluxbox") DisplayProgress "Installing 'Fluxbox' window manager" 20
-          pacstrap /mnt fluxbox &>> feliz.log
+      "Fluxbox") DisplayProgress "Installing 'Fluxbox' window manager"
+          pacstrap /mnt fluxbox 2>> feliz.log
         ;;
-      "Gnome") DisplayProgress "Installing 'Gnome' desktop Environment" 40
-          pacstrap /mnt gnome ${GoodiesGnome} &>> feliz.log
-          arch_chroot "systemctl -f enable gdm.service"
+      "Gnome") DisplayProgress "Installing 'Gnome' desktop Environment"
+          pacstrap /mnt adwaita-icon-theme baobab brasero sheese dconf-editor empathy eog epiphany evince agnome-backgrounds gedit gnome-calculator gnome-calendar gnome-characters gnome-clocks gnome-contacts gnome-control-center gnome-desktop gnome-dictionary gnome-disk-utility gnome-font-viewer gnome-keyring gnome-screenshot gnome-session gnome-settings-daemon gnome-shell gnome-shell-extensions gnome-sound-recorder gnome-system-log gnome-system-monitor gnome-terminal gnome-themes-standard gnome-tweak-tool gnome-user-docs gnome-user-share grilo-plugins gucharmap gvfs gvfs-afc gvfs-goa gvfs-google gvfs-gphoto2 gvfs-mtp gvfs-nfs gvfs-smb mousetweaks mutter nautilus nautilus-sendto orca sushi totem tracker vino xdg-user-dirs-gtk yelp 2>> feliz.log
         ;;
-      "KDE") DisplayProgress "Installing KDE Plasma meta package" 80
-          pacstrap /mnt plasma-meta &>> feliz.log
-          arch_chroot "systemctl -f enable sddm.service"
-          DisplayProgress "Installing KDE applications package" 200
-          pacstrap /mnt kde-applications &>> feliz.log
+      "KDE") DisplayProgress "Installing KDE Plasma meta package"
+          pacstrap /mnt bluedevil breeze breeze-gtk drkonqi kactivitymanagerd kde-cli-tools kde-gtk-config kdecoration kdeplasma-addons kgamma5 khotkeys kinfocenter kmenuedit kscreen kscreenlocker ksshaskpass ksysguard kuiserver kwallet-pam kwayland-integration kwin kwrited libkscreen libksysguard milou oxygen plasma-desktop plasma-integration plasma-mediacenter plasma-nm plasma-pa plasma-sdk plasma-workspace plasma-workspace-wallpapers polkit-kde-agent powerdevil sddm-kcm systemsettings user-manager 2>> feliz.log
+          DisplayProgress "Installing KDE applications package"
+          pacstrap /mnt kde-applications 2>> feliz.log
         ;;
-      "LXDE") DisplayProgress "Installing 'LXDE' desktop Environment" 10
-          pacstrap /mnt lxde &>> feliz.log
-          arch_chroot "systemctl -f enable lxdm.service"
-          echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
+      "LXDE") DisplayProgress "Installing 'LXDE' desktop Environment"
+          pacstrap /mnt gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxinput lxlauncher lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm 2>> feliz.log
+          if [ -d /mnt/etc/lxdm ]; then
+            echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
+          fi
         ;;
-      "LXQt") DisplayProgress "Installing 'LXQt' desktop Environment" 20
-        pacstrap /mnt lxqt oxygen-icons &>> feliz.log
+      "LXQt") DisplayProgress "Installing 'LXQt' desktop Environment"
+        pacstrap /mnt conman lxqt-about lxqt-common lxqt-config lxqt-globalkeys lxqt-notificationd lxqt-openssh-askpass lxqt-panel lxqt-policykit lxqt-powermanagement lxqt-qtplugin lxqt-runner lxqt-session lxqt-sudo openbox oxygen-icons pcmanfm-qt 2>> feliz.log
         ;;
-      "Mate") DisplayProgress "Installing 'Mate' desktop Environment" 60
-        pacstrap /mnt mate mate-extra &>> feliz.log
+      "Mate") DisplayProgress "Installing 'Mate' desktop Environment"
+        pacstrap /mnt caja marco mate-backgrounds mate-control-center mate-desktop mate-icon-theme mate-menus mate-notification-daemon mate-panel mate-polkit mate-session-manager mate-settings-daemon mate-themes mate-user-guide atril caja-gksu caja-image-converter caja-open-terminal caja-sendto caja-share caja-wallpaper engrampa eom galculator-gtk2 mate-applets mate-icon-theme-faenza mate-media mate-netbook mate-power-manager mate-screensaver mate-sensors-applet mate-system-monitor mate-terminal mate-user-share mate-utils mozo pluma 2>> feliz.log
         ;;
-      "Openbox") DisplayProgress "Installing 'Openbox' window manager" 20
-        pacstrap /mnt openbox &>> feliz.log
+      "Openbox") DisplayProgress "Installing 'Openbox' window manager"
+        pacstrap /mnt openbox tint2 2>> feliz.log
         ;;
-      "Xfce") DisplayProgress "Installing 'Xfce' desktop Environment" 20
-        pacstrap /mnt xfce4 ${GoodiesXfce} &>> feliz.log
+      "Xfce") DisplayProgress "Installing 'Xfce' desktop Environment"
+        pacstrap /mnt exo garcon gtk-xfce-engine thunar thunar-volman tumbler xfce4-appfinder xfce4-mixer xfce4-panel xfce4-power-manager xfce4-session xfce4-settings xfce4-terminal xfconf xfdesktop xfwm4 xfwm4-themes mousepad orage ristretto thunar-archive-plugin thunar-media-tags-plugin xfburn xfce4-artwork xfce4-battery-plugin xfce4-clipman-plugin xfce4-cpufreq-plugin xfce4-cpugraph-plugin xfce4-datetime-plugin xfce4-dict xfce4-diskperf-plugin xfce4-fsguard-plugin xfce4-genmon-plugin xfce4-mailwatch-plugin xfce4-mount-plugin xfce4-mpc-plugin xfce4-netload-plugin xfce4-notes-plugin xfce4-notifyd xfce4-screenshooter xfce4-sensors-plugin xfce4-smartbookmark-plugin xfce4-systemload-plugin xfce4-taskmanager xfce4-time-out-plugin xfce4-timer-plugin xfce4-verve-plugin xfce4-wavelan-plugin xfce4-weather-plugin xfce4-whiskermenu-plugin xfce4-xkb-plugin 2>> feliz.log
         ;;
       *) continue # Ignore all others on this pass
       esac
@@ -620,10 +599,10 @@ InstallLuxuries() { # Install desktops and other extras
     TPecho "Modifying pacman.conf and installing Yaourt"
     cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
     cp pacman.conf /etc 2>> feliz.log     # For installer
-    pacman-key --init &>> feliz.log
-    pacman-key --populate archlinux &>> feliz.log
-    pacman -Sy &>> feliz.log              # Update
-    pacstrap /mnt yaourt &>> feliz.log    # Then install Yaourt
+    pacman-key --init 2>> feliz.log
+    pacman-key --populate archlinux 2>> feliz.log
+    pacman -Sy 2>> feliz.log              # Update
+    pacstrap /mnt yaourt 2>> feliz.log    # Then install Yaourt
     
     # Second parse through LuxuriesList - any extras
     for i in ${LuxuriesList}
@@ -632,16 +611,23 @@ InstallLuxuries() { # Install desktops and other extras
       "Cinnamon" | "Deepin" | "Enlightenment" | "Feliz" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
         ;;
       "cairo-dock") TPecho "Installing cairo-dock & cairo-dock-plug-ins"
-        pacstrap /mnt cairo-dock cairo-dock-plug-ins &>> feliz.log
+        pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
         ;;
       "conky") TPecho "Installing Conky"
-        pacstrap /mnt conky &>> feliz.log
+        pacstrap /mnt conky 2>> feliz.log
         ;;
       *) TPecho "Installing $i"
-        pacstrap /mnt $i &>> feliz.log
+        pacstrap /mnt $i 2>> feliz.log
       esac
     done
   fi
+  
+  # And finally the man pages
+  TPecho "Installing man-pages"
+  pacstrap /mnt man-pages 2>> feliz.log
+  TPecho "Installing man-db - this takes some time - please be patient"
+  pacstrap /mnt man-db 2>> feliz.log
+  
 }
 
 UserAdd() {
