@@ -383,40 +383,28 @@ ShoppingList()
     fi
     case $SaveResult in
       "Cinnamon") DesktopEnvironment=$SaveResult
-        ChooseDM
        ;;
       "Deepin") DesktopEnvironment=$SaveResult
-        ChooseDM
        ;;
       "Enlightenment") DesktopEnvironment=$SaveResult
-        ChooseDM
        ;;
       "Fluxbox") DesktopEnvironment=$SaveResult
-        ChooseDM
         ;;
       "Gnome") DesktopEnvironment=$SaveResult
-		 ChooseDM
         ;;
       "JWM") DesktopEnvironment=$SaveResult
-         ChooseDM
         ;;
       "KDE") DesktopEnvironment=$SaveResult
-         ChooseDM
         ;;
      "LXDE") DesktopEnvironment=$SaveResult
-		 ChooseDM
        ;;
       "LXQt") DesktopEnvironment=$SaveResult
-         ChooseDM
         ;;
       "Mate") DesktopEnvironment=$SaveResult
-         ChooseDM
        ;;
      "Openbox") DesktopEnvironment=$SaveResult
-         ChooseDM
        ;;
       "Xfce") DesktopEnvironment=$SaveResult
-         ChooseDM
        ;;
       "") continue
        ;;
@@ -424,6 +412,7 @@ ShoppingList()
     esac
     LuxuriesList="${LuxuriesList} ${SaveResult}"
   done
+  ChooseDM
   Passed=""
 }
 

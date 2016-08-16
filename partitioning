@@ -169,7 +169,7 @@ AutoWarning() {
   do
     print_heading
     PrintOne "This will erase any data on ${UseDisk}"
-    Message="Are you sure you wish to continue?: "
+    PrintOne "Are you sure you wish to continue?: "
     echo
     listgen1 "Yes No" "" "nodone"
     case $Response in
