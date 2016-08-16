@@ -383,28 +383,40 @@ ShoppingList()
     fi
     case $SaveResult in
       "Cinnamon") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
       "Deepin") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
       "Enlightenment") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
       "Fluxbox") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
       "Gnome") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
       "JWM") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
       "KDE") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
      "LXDE") DesktopEnvironment=$SaveResult
+       ChooseDM
        ;;
       "LXQt") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
       "Mate") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
      "Openbox") DesktopEnvironment=$SaveResult
+       ChooseDM
        ;;
       "Xfce") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
       "") continue
        ;;
@@ -412,7 +424,7 @@ ShoppingList()
     esac
     LuxuriesList="${LuxuriesList} ${SaveResult}"
   done
-  ChooseDM
+
   Passed=""
 }
 
@@ -424,8 +436,7 @@ ChooseDM()
       Greeter=""
       DMList="GDM LightDM LXDM sddm SLIM XDM"
       print_heading
-      PrintOne "You can choose one of the following display managers."
-      PrintOne "Not all display managers work well with all desktop environments."
+      PrintOne "A display manager provides a graphical login screen."
       PrintOne "If in doubt, choose LightDM."
       PrintOne "If you do not install a display manager, you will have"
       PrintOne "to launch your desktop environment manually."
@@ -468,9 +479,9 @@ ChooseDM()
       listgen1 "Yes No" "" "nodone"
       echo
       if [ $Response -eq 1 ]; then    # User wishes to change DM
-        DisplayManager=""        # Clear DM variable
-        Greeter=""               # and greeter
-        ChooseDM                 # Call this function again
+        DisplayManager=""             # Clear DM variable
+        Greeter=""                    # and greeter
+        ChooseDM                      # Call this function again
       fi
   esac
 }
