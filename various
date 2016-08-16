@@ -173,31 +173,34 @@ SetGrubDevice() {
   done
 }
 
-InstallKernel() { # Kernel and some other core systems
-  LANG=C # Temporary addition to overcome bug in Arch man pages
+InstallKernel() {   # Kernel and some other core systems
+  
+  LANG=C            # Temporary addition to overcome bug in Arch man pages
 
-  case $Kernel in  # Selected kernel
+  case $Kernel in   # Selected kernel
+
     1) TPecho "Installing LTS kernel"
       pacstrap /mnt linux-lts 2>> feliz.log
-      
-      TPecho "Installing core systems"
-      pacstrap /mnt cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo 2>> feliz.log
-      
-      TPecho "Installing cli tools"
-      pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
       ;;
+
     *) TPecho "Installing Latest kernel - this may take some time"
       pacstrap /mnt linux 2>> feliz.log
-      TPecho "Installing core systems"
-      pacstrap /mnt cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo 2>> feliz.log
       
-      TPecho "Installing cli tools"
-      pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
   esac
+  
+  # Man pages
+  TPecho "Installing man-pages"
+  pacstrap /mnt man-pages 2>> feliz.log     # Note: man-db installed last, after DE
+
+  TPecho "Installing core systems"
+  pacstrap /mnt cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo 2>> feliz.log
+
+  TPecho "Installing cli tools"
+  pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
 
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
-
+  
 }
 
 AddCodecs() {
@@ -212,7 +215,8 @@ AddCodecs() {
   pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
   
   TPecho "Installing  opensource video drivers"
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log # Install opensource video drivers
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log
+  
 }
 
 McInitCPIO() {
@@ -293,7 +297,7 @@ DisplayFinished() {
   
   print_heading
   read_timed "Congratulations, installation is complete."
-  read_timed "It is time for Feliz to shut down the computer."
-  read_timed "Remember to remove the installation media before restarting."
+  read_timed "Feliz will now shut down the computer."
+  read_timed "Remove the installation media before restarting."
   read_timed "Have fun!"
 }
