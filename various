@@ -187,10 +187,6 @@ InstallKernel() {   # Kernel and some other core systems
       pacstrap /mnt linux 2>> feliz.log
       
   esac
-  
-  # Man pages
-  TPecho "Installing man-pages"
-  pacstrap /mnt man-pages 2>> feliz.log     # Note: man-db installed last, after DE
 
   TPecho "Installing core systems"
   pacstrap /mnt cryptsetup dhcpcd dialog diffutils file gettext inetutils iproute2 iputils jfsutils licenses logrotate lvm2 mdadm nano netctl pacman pciutils pcmciautils procps-ng psmisc reiserfsprogs s-nail sed systemd-sysvcompat tar usbutils vi which xfsprogs autoconf automake binutils bison fakeroot flex gcc groff libtool make patch pkg-config sudo 2>> feliz.log
@@ -200,6 +196,10 @@ InstallKernel() {   # Kernel and some other core systems
 
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
+  
+  TPecho "Testing copy of man-db"
+  cp /usr/lib/man-db /mnt/usr/lib/
+  sleep 10
   
 }
 

@@ -477,7 +477,7 @@ MountPartitions() {
   "") echo "Not formatting root partition" >> feliz.log
   ;;
   *) TPecho "Preparing and mounting partitions" ""
-    umount ${RootPartition} /mnt >/dev/null 2>> feliz.log
+    umount ${RootPartition} /mnt >/dev/null 2>> feliz.log # eg: umount /dev/sda1 /mnt
     # Check if replacing existing ext3/4 partition with btrfs
     CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` 2>> feliz.log
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
@@ -490,7 +490,7 @@ MountPartitions() {
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} 2>> feliz.log
+      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
     fi
   esac
   mount ${RootPartition} /mnt &>> feliz.log         # eg: mount /dev/sda1 /mnt !! Suppressed output !!
@@ -523,9 +523,9 @@ MountPartitions() {
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} 2>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home !! Suppressed output !!
+    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
     Counter=$((Counter+1))
   done
 }
@@ -629,8 +629,12 @@ InstallLuxuries()
       esac
     done
   fi
+  
+  # Man pages
+  TPecho "Installing man-pages"
+  pacstrap /mnt man-pages 2>> feliz.log
 
-  # And, finally, the damned man-db
+  # And the damned man-db
   TPecho "Installing man-db - this takes some time ..."
   sleep 2
   TPecho "... a very long time - please be patient"
