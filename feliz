@@ -147,14 +147,20 @@ McInitCPIO
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
-if [ $Scope != "Basic" ]; then
-  AddCodecs # Various bits
-      
-  # Virtualbox code if selected
-  if [ ${IsInVbox} = "VirtualBox" ]; then
-    pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
-    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
-    cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
+  if [ $Scope != "Basic" ]; then
+    AddCodecs # Various bits
+    
+    if [ ${IsInVbox} = "VirtualBox" ]; then # Alternative Virtualbox code 
+      pacstrap /mnt virtualbox-guest-utils virtualbox-guest-dkms linux-headers mesa-libgl 2>> feliz.log # All Virtualbox guest utils ?
+      echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log                        # To overcome piix4 Virtualbox error
+    fi
+    arch-chroot /mnt systemctl enable vboxservice   
+    
+    # Virtualbox code if selected
+    # if [ ${IsInVbox} = "VirtualBox" ]; then
+    #  pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
+    #  echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
+    #  cp virtualbox.conf /mnt/etc/modules-load.d/ 2>> feliz.log
   fi
 
   InstallLuxuries # common/shared Install DEs, WMs and DMs
