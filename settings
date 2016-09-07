@@ -23,16 +23,19 @@
 # In this module:
 # Functions relevant to users, settings, extra applications and review
 
-# -----------------   -----------------------
-# Function     Line   Function           Line
-# -----------------   -----------------------
-# getkeymap      25
-# setocale       63    KeepOrDelete       255
-# SetTimeZone   117    ShoppingList       283
-# SetSubZone    148    ChooseDM           441
-# Username      188    AddDEextras        483
-# Hostname      204    FinalCheck         513
-# PickLuxuries  220    ManualSettings     604
+# --------------------   ------------------------
+# Function        Line   Function            Line
+# --------------------   ------------------------
+# getkeymap         25    ShoppingList        283
+# setocale          63    ChooseDM            441
+# SetTimeZone      117    AddDEextras         483
+# SetSubZone       148    FinalCheck          513
+# Username         188    ManualSettings      604
+# Hostname         204    ChangeRootPartition 634
+# PickLuxuries     220    ChangeSwapPartition 642
+# KeepOrDelete     255    ChangePartitions    650
+#                         AddExtras           663
+# --------------------    -----------------------
 
 getkeymap()
 {
@@ -627,4 +630,43 @@ ManualSettings()
          break
     esac
   done
+}
+
+ChangeRootPartition() {
+# Start array with SwapPartition
+  Ignorelist[0]=${SwapPartition}
+  local Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangeSwapPartition() {
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangePartitions() {
+  # Copy RootPartition and SwapPartition into temporary array
+  Ignorelist[0]=${RootPartition}
+  local Counter=1
+  if [ ${SwapPartition} ]; then
+    Ignorelist[1]=${SwapPartition}
+    Counter=2
+  fi
+  Ignores=${#Ignorelist[@]} # Save a count for later
+  MakePartitionList
+}
+
+AddExtras() {
+  # Called by ChangeSwapPartition and ChangeRootPartition with
+  # Ignorelist started and Counter set to next record number
+  # Add each field (extra partition) from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  Ignores=${#Ignorelist[@]} # Save a count for later
 }

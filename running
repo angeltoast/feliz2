@@ -24,26 +24,21 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           27       Bugger               136
-# print_heading         31       SetGrubDevice        148
-# invalid_option        39       
-# TPread                44       InstallKernel        176
-# DisplayProgress       59       AddCodecs            209
-# TPecho                63       McInitCPIO           222
-# read_timed            81       SetRootPassword      231
-# SetKernel             99       SetUserPassword      269
-# ConfirmVbox          112       DisplayFinished      296
-
-# ReflectorMirrorList  164    ChangeRootPartition  427
-# LocalMirrorList      174    ChangeSwapPartition  435
-# Parted               189    ChangePartitions     443
-# MakePartitionList    194    AddExtras            455
-# BuildPartitionLists  208    MountPartitions      468
-# UpdateArray          299    InstallDM            532
-# RunAutoPart          325    InstallLuxuries      567
-# SetLabel             401    UserAdd              655
-# -------------------------   -------------------------
-
+# arch_chroot           48       ReflectorMirrorList  249
+# print_heading         52       LocalMirrorList      260
+# invalid_option        60       ChangeRootPartition  517
+# TPread                65       ChangeSwapPartition  525
+# DisplayProgress       80       ChangePartitions     526
+# TPecho                84       AddExtras            546
+# read_timed           102       MountPartitions      561
+# SetKernel            120       InstallDM            619
+# ConfirmVbox          133       InstallLuxuries      629
+# Bugger               158       UserAdd              726
+# SetGrubDevice        170       SetRootPassword      741
+# InstallKernel        198       SetUserPassword      779
+# AddCodecs            224       DisplayFinished      806
+# McInitCPIO           240       
+# -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
@@ -156,15 +151,15 @@ ConfirmVbox() {
 }
 
 Bugger() {
-    print_heading
-    PrintOne "This is a bug"
-    echo
-    PrintOne " =Ộ= "
-    echo
-    PrintOne "It's probably harmless"
-    echo
-    PrintOne "Press any key to continue"
-    read
+	print_heading
+	PrintOne "This is a bug"
+	echo
+	PrintOne " =Ộ= "
+	echo
+	PrintOne "It's probably harmless"
+	echo
+	PrintOne "Press any key to continue"
+	read
 }
 
 SetGrubDevice() {
@@ -200,14 +195,11 @@ InstallKernel() {   # Kernel and some other core systems
   LANG=C            # Temporary addition to overcome bug in Arch man pages
 
   case $Kernel in   # Selected kernel
-
     1) TPecho "Installing LTS kernel"
       pacstrap /mnt linux-lts 2>> feliz.log
       ;;
-
     *) TPecho "Installing Latest kernel"
       pacstrap /mnt linux 2>> feliz.log
-      
   esac
 
   TPecho "Installing core systems"
@@ -269,283 +261,6 @@ LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   # Replace existing mirrorlist with new local mirrorlist
   mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> feliz.log
   chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
-}
-
-Parted() {
-  parted --script /dev/${UseDisk} "$1" 2>> feliz.log
-}
-
-MakePartitionList() {
-  # Call BuildPartitionLists function to generate an array of partitions
-  # This is not a first call, so first empty the existing array
-  local x=0
-  local HowMany="${#PartitionArray[@]}"
-  until [ ${x} -eq ${HowMany} ]
-  do
-    unset PartitionArray[$x]
-    x=$((x+1))
-  done
-  BuildPartitionLists # Then rebuild
-}
-
-BuildPartitionLists() { # First called by CheckParts to generate details of partitions for display, then by feliz to prepare partition arrays for selection for root, swap and others
-  
-  # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
-    # First an array of all partitions up to sd*99
-    #                           |includes word | select 1st field | cut /dev/ | remove colon
-    ListTypeIDs=`blkid /dev/sd* | grep ' TYPE' | awk '{print $1}' | cut -c 6- | sed s/://g`
-    # Then a matching array of types
-    #                         |includes word |  select last field   | remove TYPE | remove quotes
-    ListTypes=`blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -c 6- | sed s/\"//g`
-    # Add records from those two indexed arrays into the associative array
-    local Counter=0
-    for i in ${ListTypeIDs}
-    do
-      x=0
-      for l in ${ListTypes}
-      do
-        if [ $x -eq $Counter ]; then
-          FileSystem[$i]=$l # ... get the matching type
-          break
-        fi
-        x=$((x+1))
-      done
-      Counter=$((Counter+1))
-    done
-  
-  # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
-  ListLabelledIDs=`sudo blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g`
-  # If at least one labelled partition found, get a matching list of labels (remove quotes)
-  if [ -n "$ListLabelledIDs" ]; then
-    ListLabelledLabels=`sudo blkid /dev/sd* | grep LABEL | awk '{print $2}' | cut -c 7- | sed s/\"//g`
-  fi
-  # Add records from those two indexed arrays into associative array
-  Counter=0
-  for i in ${ListLabelledIDs}
-  do
-    x=0
-    for l in ${ListLabelledLabels}
-    do
-      if [ $x -eq $Counter ]; then
-        Labelled[$i]=$l # ... get the matching label
-        break
-      fi
-      x=$((x+1))
-    done
-    Counter=$((Counter+1))
-  done
-  local HowManyLabelled="${#Labelled[@]}"
-  
-  # 3) Find any partitions flagged as bootable
-  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
-  declare -a Flagged
-  Counter=0
-  for i in $ListAll
-  do
-    Flagged[${Counter}]="$i"
-    Counter=$((Counter+1))
-  done
-  local HowManyFlagged="${#Flagged[@]}"
-  # 4) Prepare list of short identifiers (sda1 sda2 ...)
-  PartitionList=""
-  ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
-  # 5) Run through short identifiers, checking the three arrays for a match
-  Counter=0 # For count of partitions
-  Label=""
-  for part in ${ShowPartitions}
-  do
-  # First test Flagged
-    local x=0
-    until [ ${x} -eq ${HowManyFlagged} ]
-    do
-      if [ $part = "${Flagged[$x]}" ]; then
-        Bootable="(Bootable)"
-        break
-      else
-        Bootable=""
-      fi
-      x=$((x+1))
-    done
-    # Next test Labelled
-    ThisPart=${Labelled[${part}]} # Find the record in Labelled that matches the current iteration
-    if [ -n "${ThisPart}" ]; then
-      Label="${ThisPart}"
-    fi
-    # Finally get the filesystem type
-    ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
-    LongID=`lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}'`
-    PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
-    Label=""
-    # Save the short ID for later functions
-    PartitionList="${PartitionList} ${part}"
-    (( Counter+=1 ))
-  done
-  PARTITIONS=${Counter}
-}
-
-UpdateArray() { # Remove the selected partition from $PartitionArray[]
-  # Called by AllocateRoot, AllocateSwap and MorePartitions
-  local Counter=0
-  declare -a NewArray  # Empty NewArray
-  # Build NewArray excluding the partition selected in the calling function
-  for p in "${PartitionArray[@]}"
-  do
-    First=`echo $p | cut -c 1-5`
-    if [ $First ]; then
-      if [ ${PassPart} != ${First} ]; then
-        NewArray[${Counter}]="$p"
-        (( Counter+=1 ))
-      fi
-    fi
-  done
-  # Then copy NewArray into PartitionArray
-  Counter=0
-  for p in "${NewArray[@]}"
-  do
-    PartitionArray[${Counter}]=${NewArray[$Counter]}
-    Counter=$((Counter+1))
-  done
-  unset PartitionArray[$Counter] # Delete the last element
-}
-
-RunAutoPart() {
-  GrubDevice="/dev/${UseDisk}"
-  Home="N"
-  # Get disk size
-  DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
-  # Create partitions and set variables for mounting
-  Parted "mklabel msdos"
-  if [ $DiskSize -ge 40 ]; then
-    # Device is large enough for a separate /home partition and larger
-    # /root (20 GiB) and /swap (8 GiB)
-    Parted "mkpart primary linux-swap 1MiB 8GiB"
-    SwapPartition="${GrubDevice}1"
-    MakeSwap="Y"
-    # Root partition 15GiB
-    Parted "mkpart primary ext4 8GiB 23GiB"
-    Parted "set 2 boot on"
-    RootPartition="${GrubDevice}2"
-    RootType="ext4"
-    # Home partition = remainder (size from 19GiB to maximum available)
-    Parted "mkpart primary ext4 23GiB 100%"
-    AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
-    AddPartMount[0]="/home"
-    AddPartType[0]="ext4"
-    Home="Y"
-  elif [ $DiskSize -ge 30 ]; then
-    # Device is just large enough for a separate /home partition
-    # Swap 4GiB
-    Parted "mkpart primary linux-swap 1MiB 4GiB"
-    SwapPartition="${GrubDevice}1"
-    MakeSwap="Y"
-    # Root partition 15GiB
-    Parted "mkpart primary ext4 4GiB 16GiB"
-    Parted "set 2 boot on"
-    RootPartition="${GrubDevice}2"
-    RootType="ext4"
-    # Home partition = remainder (size from 19GiB to maximum available)
-    Parted "mkpart primary ext4 16GiB 100%"
-    AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
-    AddPartMount[0]="/home"
-    AddPartType[0]="ext4"
-    Home="Y"
-  elif [ $DiskSize -ge 18 ]; then
-    # Swap 4Gib and one main partition up to 20GiB
-    Parted "mkpart primary linux-swap 1MiB 4GiB"
-    SwapPartition="${GrubDevice}1"
-    MakeSwap="Y"
-    Parted "mkpart primary ext4 4GiB 100%"
-    Parted "set 2 boot on"
-    RootPartition="${GrubDevice}2"
-    RootType="ext4"
-  elif [ $DiskSize -gt 10 ]; then
-    # Swap 2Gib and one main partition up to 16GiB
-    Parted "mkpart primary linux-swap 1MiB 2GiB"
-    SwapPartition="${GrubDevice}1"
-    Parted "mkpart primary ext4 2GiB 100%"
-    Parted "set 2 boot on"
-    RootPartition="${GrubDevice}2"
-    RootType="ext4"
-    SwapFile="2G"
-    SwapPartition=""
-  else # If disk < 10 Gb
-    # Swap file and one main partition up to 10GiB
-    Parted "mkpart primary ext4 1MiB 100%"
-    Parted "set 1 boot on"
-    RootPartition="${GrubDevice}1"
-    RootType="ext4"
-    SwapFile="2G"
-    SwapPartition=""
-  fi
-  ShowPart1="Swap: `lsblk -l | grep "${UseDisk}1" | awk '{print $4}'`" >/dev/null
-  ShowPart2="Root: `lsblk -l | grep "${UseDisk}2" | awk '{print $4}'`" >/dev/null
-  ShowPart3=""
-  AutoPart=1 # Set flag to 'on' for mounting
-}
-
-SetLabel() { # Called from the root, swap and extra partitions routines
-# ... each passing a single argument containing the partition ID
-# Build an associative array of partitions (LabellingArray[]) as
-# declared in felizrunning with other arrays
-PartitionID=$1
-local HowMany="${#PartitionArray[@]}"
-local x=0
-until [ ${x} -eq ${HowMany} ]
-do
-  CompareID=`echo ${PartitionArray[${x}]} | awk '{print $1}'`
-  if [ -z ${CompareID} ]; then
-    x=$((x+1))
-    continue
-  fi
-  if [ ${CompareID} = ${PartitionID} ]; then # If the partition is in the array, it has a label
-  #  Label=`echo ${PartitionArray[${x}]} | awk '{print $4}'` # Save the label
-  Label=`echo ${PartitionArray[${x}]}`
-  fi
-  x=$((x+1))
-done
-}
-
-#
-# Review stage ---------------------------------------------------------
-#
-
-ChangeRootPartition() {
-# Start array with SwapPartition
-  Ignorelist[0]=${SwapPartition}
-  local Counter=1
-  AddExtras
-  MakePartitionList
-}
-
-ChangeSwapPartition() {
-# Start array with RootPartition
-  Ignorelist[0]=${RootPartition}
-  Counter=1
-  AddExtras
-  MakePartitionList
-}
-
-ChangePartitions() {
-  # Copy RootPartition and SwapPartition into temporary array
-  Ignorelist[0]=${RootPartition}
-  local Counter=1
-  if [ ${SwapPartition} ]; then
-    Ignorelist[1]=${SwapPartition}
-    Counter=2
-  fi
-  Ignores=${#Ignorelist[@]} # Save a count for later
-  MakePartitionList
-}
-
-AddExtras() {
-  # Called by ChangeSwapPartition and ChangeRootPartition with
-  # Ignorelist started and Counter set to next record number
-  # Add each field (extra partition) from AddPartList into the array:
-  for a in ${AddPartList[@]}; do
-    Ignorelist[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-  Ignores=${#Ignorelist[@]} # Save a count for later
 }
 
 #
@@ -731,10 +446,6 @@ UserAdd() {
     TPecho "User already exists"
   fi
 }
-
-
-
-
 
 SetRootPassword() {
   print_heading
