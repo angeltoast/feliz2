@@ -73,11 +73,14 @@ PickLuxuries
 if [ $Scope != "Basic" ]; then
   UserName
   # Use dmidecode to check for Virtualbox installation
-  IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
-  if [ ${IsInVbox} = "VirtualBox" ]; then
+  # IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
+  # if [ ${IsInVbox} = "VirtualBox" ]; then
+  
+  # Alternative to dmidecode method
+  if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
     ConfirmVbox
   else
-    IsInVbox="N"
+    IsInVbox=""
   fi
 fi
 
@@ -147,18 +150,15 @@ McInitCPIO
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
-  if [ $Scope != "Basic" ]; then
-    AddCodecs # Various bits
-    
-    if [ ${IsInVbox} = "VirtualBox" ]; then              # Alternative Virtualbox code 
-      pacstrap /mnt virtualbox-guest-utils linux-headers 2>> feliz.log # All Virtualbox guest utils ?
-      echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log                        # To overcome piix4 Virtualbox error
-    fi
-    arch-chroot /mnt systemctl enable vboxservice   
-    
-  InstallLuxuries # common/shared Install DEs, WMs and DMs
-
-  UserAdd # common/shared
+if [ $Scope != "Basic" ]; then
+  AddCodecs # Various bits
+  # If in Virtualbox
+  if [ ${IsInVbox} = "VirtualBox" ]; then
+    pacstrap /mnt virtualbox-guest-utils linux-headers 2>> feliz.log            # Virtualbox guest utils
+  fi
+  arch-chroot /mnt systemctl enable vboxservice   
+  InstallLuxuries # Install DEs, WMs and DMs
+  UserAdd
 fi
 
 EndTime=$(date +%s)
@@ -173,6 +173,7 @@ fi
 
 cp feliz.log /mnt/etc # Copy installation log for reference
 
-DisplayFinished
-
-shutdown -h now
+print_heading
+PrintOne "Congratulations, installation is complete."
+read_timed "Rebooting the computer ..."
+reboot

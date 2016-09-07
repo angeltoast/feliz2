@@ -24,20 +24,17 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           48       ReflectorMirrorList  249
-# print_heading         52       LocalMirrorList      260
-# invalid_option        60       ChangeRootPartition  517
-# TPread                65       ChangeSwapPartition  525
-# DisplayProgress       80       ChangePartitions     526
-# TPecho                84       AddExtras            546
-# read_timed           102       MountPartitions      561
-# SetKernel            120       InstallDM            619
-# ConfirmVbox          133       InstallLuxuries      629
-# Bugger               158       UserAdd              726
-# SetGrubDevice        170       SetRootPassword      741
-# InstallKernel        198       SetUserPassword      779
-# AddCodecs            224       DisplayFinished      806
-# McInitCPIO           240       
+# arch_chroot           42       AddCodecs            211
+# print_heading         46       McInitCPIO           226
+# invalid_option        54       ReflectorMirrorList  235
+# TPread                59       LocalMirrorList      245
+# TPecho                74       MountPartitions      262
+# read_timed            92       InstallDM            320
+# SetKernel            110       InstallLuxuries      330
+# ConfirmVbox          123       UserAdd              427
+# Bugger               148       SetRootPassword      442
+# SetGrubDevice        160       SetUserPassword      480
+# InstallKernel        188
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
@@ -70,10 +67,6 @@ TPread() { # Aligned prompt for user-entry
   fi
   EMPTY="$(printf '%*s' $stpt)"
   read -p "$EMPTY $1" Response
-}
-
-DisplayProgress() { # For compatibility with Squiff
-  TPecho "$1" "$2"
 }
 
 TPecho() { # For displaying status while running on auto
@@ -226,11 +219,10 @@ AddCodecs() {
   
   TPecho "Installing  opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log
-  
 }
 
 McInitCPIO() {
-  DisplayProgress "Running mkinitcpio" 10
+  TPecho "Running mkinitcpio" 10
   case $Kernel in
     1) arch-chroot /mnt /bin/bash -c mkinitcpio -p linux-lts 2>> feliz.log
     ;;
@@ -330,7 +322,7 @@ InstallDM()
   # Disable any existing display manager
   arch_chroot "systemctl disable display-manager.service" >/dev/null
   # Then install selected display manager
-  DisplayProgress "Installing ${DisplayManager} display manager" 20
+  TPecho "Installing ${DisplayManager} display manager" 20
   pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
   arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
 }
@@ -344,54 +336,54 @@ InstallLuxuries()
     for i in ${LuxuriesList}
     do
       case $i in
-      "Cinnamon") DisplayProgress "Installing the Cinnamon desktop Environment"
+      "Cinnamon") TPecho "Installing the Cinnamon desktop Environment"
           pacstrap /mnt cinnamon 2>> feliz.log
         ;;
-      "Deepin") DisplayProgress "Installing the Deepin desktop Environment"
+      "Deepin") TPecho "Installing the Deepin desktop Environment"
           pacstrap /mnt deepin 2>> feliz.log
-          DisplayProgress "Installing the Deepin extras package"
+          TPecho "Installing the Deepin extras package"
           pacstrap /mnt deepin-extra 2>> feliz.log
           # Change the greeter line in lightdm.conf
           if [ -d /mnt/etc/lightdm ]; then
             sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
           fi
         ;;
-      "Enlightenment") DisplayProgress "Installing the Enlightenment desktop Environment"
+      "Enlightenment") TPecho "Installing the Enlightenment desktop Environment"
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log
         ;;
-      "Fluxbox") DisplayProgress "Installing the Fluxbox window manager"
+      "Fluxbox") TPecho "Installing the Fluxbox window manager"
           pacstrap /mnt fluxbox 2>> feliz.log
         ;;
-      "Gnome") DisplayProgress "Installing the Gnome desktop Environment"
+      "Gnome") TPecho "Installing the Gnome desktop Environment"
           pacstrap /mnt gnome 2>> feliz.log
-          DisplayProgress "Installing the Gnome extras package"
+          TPecho "Installing the Gnome extras package"
           pacstrap /mnt gnome-extra 2>> feliz.log
         ;;
-      "KDE") DisplayProgress "Installing the KDE Plasma meta package"
+      "KDE") TPecho "Installing the KDE Plasma meta package"
           pacstrap /mnt plasma-meta 2>> feliz.log
-          DisplayProgress "Installing the KDE applications package"
+          TPecho "Installing the KDE applications package"
           pacstrap /mnt kde-applications 2>> feliz.log
         ;;
-      "LXDE") DisplayProgress "Installing the LXDE desktop Environment"
+      "LXDE") TPecho "Installing the LXDE desktop Environment"
           pacstrap /mnt lxde 2>> feliz.log
           if [ -d /mnt/etc/lxdm ]; then
             echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
           fi
         ;;
-      "LXQt") DisplayProgress "Installing the LXQt desktop Environment"
+      "LXQt") TPecho "Installing the LXQt desktop Environment"
         pacstrap /mnt lxqt oxygen-icons connman lxappearance xscreensaver 2>> feliz.log
         ;;
-      "Mate") DisplayProgress "Installing the Mate desktop Environment"
+      "Mate") TPecho "Installing the Mate desktop Environment"
         pacstrap /mnt mate 2>> feliz.log
-        DisplayProgress "Installing the Mate extras package"
+        TPecho "Installing the Mate extras package"
         pacstrap /mnt mate-extra 2>> feliz.log
         ;;
-      "Openbox") DisplayProgress "Installing the Openbox window manager"
+      "Openbox") TPecho "Installing the Openbox window manager"
         pacstrap /mnt openbox 2>> feliz.log
         ;;
-      "Xfce") DisplayProgress "Installing the Xfce desktop Environment"
+      "Xfce") TPecho "Installing the Xfce desktop Environment"
         pacstrap /mnt xfce4 2>> feliz.log
-        DisplayProgress "Installing the Xfce goodies package"
+        TPecho "Installing the Xfce goodies package"
         pacstrap /mnt xfce4-goodies 2>> feliz.log
         ;;
       *) continue # Ignore all others on this pass
@@ -510,13 +502,4 @@ SetUserPassword() {
       continue
     fi
   done
-}
-
-DisplayFinished() {
-  
-  print_heading
-  read_timed "Congratulations, installation is complete."
-  read_timed "Feliz will now shut down the computer."
-  read_timed "Remove the installation media before restarting."
-  read_timed "Have fun!"
 }
