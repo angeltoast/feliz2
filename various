@@ -1,15 +1,26 @@
 #!/bin/bash
 
-# The Feliz installation scripts for Arch Linux
-# 17 June 2016
-
-# /cliff/various
-# Various CLI functions for input/output, processing and installing
-
+# The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
+# Revision date: 7th September 2016
 
 # Please read the introduction in the README file
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# A copy of the GNU General Public License is available from the Feliz2
+# page at http://sourceforge.net/projects/feliz2/files
+# or https://github.com/angeltoast/feliz2, or write to:
+# The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# In this module:
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
@@ -22,6 +33,17 @@
 # read_timed            81       SetRootPassword      231
 # SetKernel             99       SetUserPassword      269
 # ConfirmVbox          112       DisplayFinished      296
+
+# ReflectorMirrorList  164    ChangeRootPartition  427
+# LocalMirrorList      174    ChangeSwapPartition  435
+# Parted               189    ChangePartitions     443
+# MakePartitionList    194    AddExtras            455
+# BuildPartitionLists  208    MountPartitions      468
+# UpdateArray          299    InstallDM            532
+# RunAutoPart          325    InstallLuxuries      567
+# SetLabel             401    UserAdd              655
+# -------------------------   -------------------------
+
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
@@ -183,7 +205,7 @@ InstallKernel() {   # Kernel and some other core systems
       pacstrap /mnt linux-lts 2>> feliz.log
       ;;
 
-    *) TPecho "Installing Latest kernel - this may take some time"
+    *) TPecho "Installing Latest kernel"
       pacstrap /mnt linux 2>> feliz.log
       
   esac
@@ -196,10 +218,6 @@ InstallKernel() {   # Kernel and some other core systems
 
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
-  
-  TPecho "Testing copy of man-db"
-  cp /usr/lib/man-db /mnt/usr/lib/
-  sleep 10
   
 }
 
@@ -227,6 +245,496 @@ McInitCPIO() {
     *) arch-chroot /mnt /bin/bash -c mkinitcpio -p linux 2>> feliz.log
   esac
 }
+
+ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
+  TPecho "Generating mirrorlist"
+  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> feliz.log
+  if [ $? -gt 0 ]; then
+    LocalMirrorList
+  else
+    chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
+  fi
+}
+
+LocalMirrorList() { # In case Reflector fails, generate and save a shortened
+  # mirrorlist of only the mirrors defined in the CountryCode variable.
+  URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+  MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
+  # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+  curl -so ${MirrorTemp} ${URL} 2>> feliz.log
+  # Use sed to filter entries
+  sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> feliz.log
+  # Make a safe copy of existing mirrorlist
+  mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> feliz.log
+  # Replace existing mirrorlist with new local mirrorlist
+  mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> feliz.log
+  chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
+}
+
+Parted() {
+  parted --script /dev/${UseDisk} "$1" 2>> feliz.log
+}
+
+MakePartitionList() {
+  # Call BuildPartitionLists function to generate an array of partitions
+  # This is not a first call, so first empty the existing array
+  local x=0
+  local HowMany="${#PartitionArray[@]}"
+  until [ ${x} -eq ${HowMany} ]
+  do
+    unset PartitionArray[$x]
+    x=$((x+1))
+  done
+  BuildPartitionLists # Then rebuild
+}
+
+BuildPartitionLists() { # First called by CheckParts to generate details of partitions for display, then by feliz to prepare partition arrays for selection for root, swap and others
+  
+  # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
+    # First an array of all partitions up to sd*99
+    #                           |includes word | select 1st field | cut /dev/ | remove colon
+    ListTypeIDs=`blkid /dev/sd* | grep ' TYPE' | awk '{print $1}' | cut -c 6- | sed s/://g`
+    # Then a matching array of types
+    #                         |includes word |  select last field   | remove TYPE | remove quotes
+    ListTypes=`blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -c 6- | sed s/\"//g`
+    # Add records from those two indexed arrays into the associative array
+    local Counter=0
+    for i in ${ListTypeIDs}
+    do
+      x=0
+      for l in ${ListTypes}
+      do
+        if [ $x -eq $Counter ]; then
+          FileSystem[$i]=$l # ... get the matching type
+          break
+        fi
+        x=$((x+1))
+      done
+      Counter=$((Counter+1))
+    done
+  
+  # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
+  ListLabelledIDs=`sudo blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g`
+  # If at least one labelled partition found, get a matching list of labels (remove quotes)
+  if [ -n "$ListLabelledIDs" ]; then
+    ListLabelledLabels=`sudo blkid /dev/sd* | grep LABEL | awk '{print $2}' | cut -c 7- | sed s/\"//g`
+  fi
+  # Add records from those two indexed arrays into associative array
+  Counter=0
+  for i in ${ListLabelledIDs}
+  do
+    x=0
+    for l in ${ListLabelledLabels}
+    do
+      if [ $x -eq $Counter ]; then
+        Labelled[$i]=$l # ... get the matching label
+        break
+      fi
+      x=$((x+1))
+    done
+    Counter=$((Counter+1))
+  done
+  local HowManyLabelled="${#Labelled[@]}"
+  
+  # 3) Find any partitions flagged as bootable
+  ListAll=`sudo sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-`
+  declare -a Flagged
+  Counter=0
+  for i in $ListAll
+  do
+    Flagged[${Counter}]="$i"
+    Counter=$((Counter+1))
+  done
+  local HowManyFlagged="${#Flagged[@]}"
+  # 4) Prepare list of short identifiers (sda1 sda2 ...)
+  PartitionList=""
+  ShowPartitions=`lsblk -l | grep 'part' | awk '{print $1}'`
+  # 5) Run through short identifiers, checking the three arrays for a match
+  Counter=0 # For count of partitions
+  Label=""
+  for part in ${ShowPartitions}
+  do
+  # First test Flagged
+    local x=0
+    until [ ${x} -eq ${HowManyFlagged} ]
+    do
+      if [ $part = "${Flagged[$x]}" ]; then
+        Bootable="(Bootable)"
+        break
+      else
+        Bootable=""
+      fi
+      x=$((x+1))
+    done
+    # Next test Labelled
+    ThisPart=${Labelled[${part}]} # Find the record in Labelled that matches the current iteration
+    if [ -n "${ThisPart}" ]; then
+      Label="${ThisPart}"
+    fi
+    # Finally get the filesystem type
+    ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
+    LongID=`lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}'`
+    PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
+    Label=""
+    # Save the short ID for later functions
+    PartitionList="${PartitionList} ${part}"
+    (( Counter+=1 ))
+  done
+  PARTITIONS=${Counter}
+}
+
+UpdateArray() { # Remove the selected partition from $PartitionArray[]
+  # Called by AllocateRoot, AllocateSwap and MorePartitions
+  local Counter=0
+  declare -a NewArray  # Empty NewArray
+  # Build NewArray excluding the partition selected in the calling function
+  for p in "${PartitionArray[@]}"
+  do
+    First=`echo $p | cut -c 1-5`
+    if [ $First ]; then
+      if [ ${PassPart} != ${First} ]; then
+        NewArray[${Counter}]="$p"
+        (( Counter+=1 ))
+      fi
+    fi
+  done
+  # Then copy NewArray into PartitionArray
+  Counter=0
+  for p in "${NewArray[@]}"
+  do
+    PartitionArray[${Counter}]=${NewArray[$Counter]}
+    Counter=$((Counter+1))
+  done
+  unset PartitionArray[$Counter] # Delete the last element
+}
+
+RunAutoPart() {
+  GrubDevice="/dev/${UseDisk}"
+  Home="N"
+  # Get disk size
+  DiskSize=`lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g`
+  # Create partitions and set variables for mounting
+  Parted "mklabel msdos"
+  if [ $DiskSize -ge 40 ]; then
+    # Device is large enough for a separate /home partition and larger
+    # /root (20 GiB) and /swap (8 GiB)
+    Parted "mkpart primary linux-swap 1MiB 8GiB"
+    SwapPartition="${GrubDevice}1"
+    MakeSwap="Y"
+    # Root partition 15GiB
+    Parted "mkpart primary ext4 8GiB 23GiB"
+    Parted "set 2 boot on"
+    RootPartition="${GrubDevice}2"
+    RootType="ext4"
+    # Home partition = remainder (size from 19GiB to maximum available)
+    Parted "mkpart primary ext4 23GiB 100%"
+    AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
+    AddPartMount[0]="/home"
+    AddPartType[0]="ext4"
+    Home="Y"
+  elif [ $DiskSize -ge 30 ]; then
+    # Device is just large enough for a separate /home partition
+    # Swap 4GiB
+    Parted "mkpart primary linux-swap 1MiB 4GiB"
+    SwapPartition="${GrubDevice}1"
+    MakeSwap="Y"
+    # Root partition 15GiB
+    Parted "mkpart primary ext4 4GiB 16GiB"
+    Parted "set 2 boot on"
+    RootPartition="${GrubDevice}2"
+    RootType="ext4"
+    # Home partition = remainder (size from 19GiB to maximum available)
+    Parted "mkpart primary ext4 16GiB 100%"
+    AddPartList[0]="${GrubDevice}3" # Add to the array of additional partitions
+    AddPartMount[0]="/home"
+    AddPartType[0]="ext4"
+    Home="Y"
+  elif [ $DiskSize -ge 18 ]; then
+    # Swap 4Gib and one main partition up to 20GiB
+    Parted "mkpart primary linux-swap 1MiB 4GiB"
+    SwapPartition="${GrubDevice}1"
+    MakeSwap="Y"
+    Parted "mkpart primary ext4 4GiB 100%"
+    Parted "set 2 boot on"
+    RootPartition="${GrubDevice}2"
+    RootType="ext4"
+  elif [ $DiskSize -gt 10 ]; then
+    # Swap 2Gib and one main partition up to 16GiB
+    Parted "mkpart primary linux-swap 1MiB 2GiB"
+    SwapPartition="${GrubDevice}1"
+    Parted "mkpart primary ext4 2GiB 100%"
+    Parted "set 2 boot on"
+    RootPartition="${GrubDevice}2"
+    RootType="ext4"
+    SwapFile="2G"
+    SwapPartition=""
+  else # If disk < 10 Gb
+    # Swap file and one main partition up to 10GiB
+    Parted "mkpart primary ext4 1MiB 100%"
+    Parted "set 1 boot on"
+    RootPartition="${GrubDevice}1"
+    RootType="ext4"
+    SwapFile="2G"
+    SwapPartition=""
+  fi
+  ShowPart1="Swap: `lsblk -l | grep "${UseDisk}1" | awk '{print $4}'`" >/dev/null
+  ShowPart2="Root: `lsblk -l | grep "${UseDisk}2" | awk '{print $4}'`" >/dev/null
+  ShowPart3=""
+  AutoPart=1 # Set flag to 'on' for mounting
+}
+
+SetLabel() { # Called from the root, swap and extra partitions routines
+# ... each passing a single argument containing the partition ID
+# Build an associative array of partitions (LabellingArray[]) as
+# declared in felizrunning with other arrays
+PartitionID=$1
+local HowMany="${#PartitionArray[@]}"
+local x=0
+until [ ${x} -eq ${HowMany} ]
+do
+  CompareID=`echo ${PartitionArray[${x}]} | awk '{print $1}'`
+  if [ -z ${CompareID} ]; then
+    x=$((x+1))
+    continue
+  fi
+  if [ ${CompareID} = ${PartitionID} ]; then # If the partition is in the array, it has a label
+  #  Label=`echo ${PartitionArray[${x}]} | awk '{print $4}'` # Save the label
+  Label=`echo ${PartitionArray[${x}]}`
+  fi
+  x=$((x+1))
+done
+}
+
+#
+# Review stage ---------------------------------------------------------
+#
+
+ChangeRootPartition() {
+# Start array with SwapPartition
+  Ignorelist[0]=${SwapPartition}
+  local Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangeSwapPartition() {
+# Start array with RootPartition
+  Ignorelist[0]=${RootPartition}
+  Counter=1
+  AddExtras
+  MakePartitionList
+}
+
+ChangePartitions() {
+  # Copy RootPartition and SwapPartition into temporary array
+  Ignorelist[0]=${RootPartition}
+  local Counter=1
+  if [ ${SwapPartition} ]; then
+    Ignorelist[1]=${SwapPartition}
+    Counter=2
+  fi
+  Ignores=${#Ignorelist[@]} # Save a count for later
+  MakePartitionList
+}
+
+AddExtras() {
+  # Called by ChangeSwapPartition and ChangeRootPartition with
+  # Ignorelist started and Counter set to next record number
+  # Add each field (extra partition) from AddPartList into the array:
+  for a in ${AddPartList[@]}; do
+    Ignorelist[$Counter]=$a
+    Counter=$((Counter+1))
+  done
+  Ignores=${#Ignorelist[@]} # Save a count for later
+}
+
+#
+# Install stage --------------------------------------------------------
+#
+
+MountPartitions() {
+  case $RootType in
+  "") echo "Not formatting root partition" >> feliz.log
+  ;;
+  *) TPecho "Preparing and mounting partitions" ""
+    umount ${RootPartition} /mnt >/dev/null 2>> feliz.log # eg: umount /dev/sda1 /mnt
+    # Check if replacing existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` 2>> feliz.log
+    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${RootPartition} 2>> feliz.log
+    elif [ $RootType = "btrfs" ]; then
+      mkfs.btrfs -f ${RootPartition} 2>> feliz.log
+    else
+      Partition=`echo $RootPartition | cut -c 6-` 2>> feliz.log
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
+    fi
+  esac
+  mount ${RootPartition} /mnt &>> feliz.log         # eg: mount /dev/sda1 /mnt !! Suppressed output !!
+  if [ ${SwapPartition} ]; then
+    swapoff -a 2>> feliz.log
+    if [ $MakeSwap = "Y" ]; then
+      Partition=`echo $SwapPartition | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mkswap ${Label} ${SwapPartition} 2>> feliz.log # eg: mkswap -L Arch-Swap /dev/sda2
+    fi
+    swapon ${SwapPartition} 2>> feliz.log            # eg: swapon /dev/sda2
+  fi
+  local Counter=0
+  for id in ${AddPartList}
+  do
+    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null 2>> feliz.log
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
+    # Check if replacing existing ext3/4 partition with btrfs
+    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+      btrfs-convert ${id} 2>> feliz.log
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
+      mkfs.btrfs -f ${id} 2>> feliz.log
+    elif [ ${AddPartType[$Counter]} != "" ]; then
+      Partition=`echo ${id} | cut -c 6-`
+      Label="${LabellingArray[${Partition}]}"
+      if [ -n "${Label}" ]; then
+        Label="-L ${Label}"
+      fi
+      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+    fi
+    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
+    Counter=$((Counter+1))
+  done
+}
+
+InstallDM()
+{ # Display manager
+  # Disable any existing display manager
+  arch_chroot "systemctl disable display-manager.service" >/dev/null
+  # Then install selected display manager
+  DisplayProgress "Installing ${DisplayManager} display manager" 20
+  pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
+  arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
+}
+
+InstallLuxuries()
+{ # Install desktops and other extras
+  # Display manager - runs only once
+  InstallDM                  # Clear any pre-existing DM and install this one
+  # First parse through LuxuriesList - checking for DEs
+  if [ -n "${LuxuriesList}" ]; then
+    for i in ${LuxuriesList}
+    do
+      case $i in
+      "Cinnamon") DisplayProgress "Installing the Cinnamon desktop Environment"
+          pacstrap /mnt cinnamon 2>> feliz.log
+        ;;
+      "Deepin") DisplayProgress "Installing the Deepin desktop Environment"
+          pacstrap /mnt deepin 2>> feliz.log
+          DisplayProgress "Installing the Deepin extras package"
+          pacstrap /mnt deepin-extra 2>> feliz.log
+          # Change the greeter line in lightdm.conf
+          if [ -d /mnt/etc/lightdm ]; then
+            sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
+          fi
+        ;;
+      "Enlightenment") DisplayProgress "Installing the Enlightenment desktop Environment"
+          pacstrap /mnt enlightenment connman terminology 2>> feliz.log
+        ;;
+      "Fluxbox") DisplayProgress "Installing the Fluxbox window manager"
+          pacstrap /mnt fluxbox 2>> feliz.log
+        ;;
+      "Gnome") DisplayProgress "Installing the Gnome desktop Environment"
+          pacstrap /mnt gnome 2>> feliz.log
+          DisplayProgress "Installing the Gnome extras package"
+          pacstrap /mnt gnome-extra 2>> feliz.log
+        ;;
+      "KDE") DisplayProgress "Installing the KDE Plasma meta package"
+          pacstrap /mnt plasma-meta 2>> feliz.log
+          DisplayProgress "Installing the KDE applications package"
+          pacstrap /mnt kde-applications 2>> feliz.log
+        ;;
+      "LXDE") DisplayProgress "Installing the LXDE desktop Environment"
+          pacstrap /mnt lxde 2>> feliz.log
+          if [ -d /mnt/etc/lxdm ]; then
+            echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
+          fi
+        ;;
+      "LXQt") DisplayProgress "Installing the LXQt desktop Environment"
+        pacstrap /mnt lxqt oxygen-icons connman lxappearance xscreensaver 2>> feliz.log
+        ;;
+      "Mate") DisplayProgress "Installing the Mate desktop Environment"
+        pacstrap /mnt mate 2>> feliz.log
+        DisplayProgress "Installing the Mate extras package"
+        pacstrap /mnt mate-extra 2>> feliz.log
+        ;;
+      "Openbox") DisplayProgress "Installing the Openbox window manager"
+        pacstrap /mnt openbox 2>> feliz.log
+        ;;
+      "Xfce") DisplayProgress "Installing the Xfce desktop Environment"
+        pacstrap /mnt xfce4 2>> feliz.log
+        DisplayProgress "Installing the Xfce goodies package"
+        pacstrap /mnt xfce4-goodies 2>> feliz.log
+        ;;
+      *) continue # Ignore all others on this pass
+      esac
+    done
+    
+    # Install Yaourt
+    TPecho "Modifying pacman.conf and installing Yaourt"
+    cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
+    cp pacman.conf /etc 2>> feliz.log     # For installer
+    pacman-key --init 2>> feliz.log
+    pacman-key --populate archlinux 2>> feliz.log
+    pacman -Sy 2>> feliz.log              # Update
+    pacstrap /mnt yaourt 2>> feliz.log    # Then install Yaourt
+    
+    # Second parse through LuxuriesList - any extras
+    for i in ${LuxuriesList}
+    do
+      case $i in
+      "Cinnamon" | "Deepin" | "Enlightenment" | "Feliz" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs this pass
+        ;;
+      "cairo-dock") TPecho "Installing cairo-dock & cairo-dock-plug-ins"
+        pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
+        ;;
+      "conky") TPecho "Installing Conky"
+        pacstrap /mnt conky 2>> feliz.log
+        ;;
+      *) TPecho "Installing $i"
+        pacstrap /mnt $i 2>> feliz.log
+      esac
+    done
+  fi
+
+  # Man pages
+  TPecho "Installing man-pages"
+  pacstrap /mnt man-pages 2>> feliz.log
+  pacstrap /mnt man-db 2>> feliz.log
+
+}
+
+UserAdd() {
+  CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
+  # If not already exist, create user
+  if [ -z ${CheckUsers} ]; then
+    TPecho "Adding user '${UserName}' and setting up groups"
+    arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
+    # Set up basic configuration files and permissions for user
+    arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}"
+    sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
+  else
+    TPecho "User already exists"
+  fi
+}
+
+
+
+
 
 SetRootPassword() {
   print_heading

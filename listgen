@@ -1,26 +1,29 @@
 #!/bin/bash
 
-# The Feliz installation scripts for Arch Linux
-# 12 June 2016
-
-# /cliff/listgen - Command-line interface
 # Menu functions - listgen1 and listgen2
-
 # Developed by Elizabeth Mills
+# Revision date: 7th September 2016
 
-# Please read the introduction in the README file
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
 
-# Both functions return the selected item as text using global variable $Result
-# and errorcode as $Response (to remain consistent with the cli version as far as possible)
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# A copy of the GNU General Public License is available from the Feliz2
+# page at http://sourceforge.net/projects/feliz2/files
+# or https://github.com/angeltoast/feliz2, or write to:
+# The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# See listgen.manual for further guidance
+
+# Both functions return the name of the selected item using global variable $Result
+# and item number as global variable $Response
 # Window width and height are adjusted according to content
-
-# listgen1 receives three parameters:
-# 1) Primary file (string of single-word references)
-# 2) Optional one-word --title
-# 3) Optional hiding of <Cancel> ("nocancel")
-
-# listgen2 has extended descriptions using the name of the complex array
-# Passed as 4th parameter:
 
 PrintOne() { # Aligned text according to screen size
   width=`tput cols`
@@ -38,7 +41,11 @@ PrintMany() { # Subsequent item(s) in an aligned list
 }
 
 listgen1() { # Simple listing alternative to the bash 'select' function
-# Read Menuing.manual for full details
+# Arguments:
+# 1) Primary file (string of single-word references)
+# 2) Optional one-word --title
+# 3) Optional hiding of <Cancel> ("nocancel")
+# Read listgen.manual for full details
 local Complete=0
 while [ $Complete -eq 0 ]
 do
@@ -93,11 +100,12 @@ done
 }
 
 listgen2() { # Advanced menuing function with extended descriptions
-# Parameters:
+# Arguments:
 # 1) Primary file (string of single-word references)
 # 2) An optional one-word menu heading (which will be underlined on display)
 # 3) Optional alternative word to 'Done'
 # 4) Secondary file (the name of the array containing long descriptions)
+# Read listgen.manual for full details
 local Complete=0
 while [ $Complete -eq 0 ]
 do

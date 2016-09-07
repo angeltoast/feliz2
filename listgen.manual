@@ -5,7 +5,8 @@ These menus are designed to be application-independent.
 listgen1
 --------
 listgen1 is an alternative to the bash 'select' function for use in shell scripts to
-generate a numbered menu. Unlike 'select' it centres the menu on the screen, using the PrintOne and PrintMany functions.
+generate a numbered menu. Unlike 'select' it centres the menu on the screen, using the
+PrintOne and PrintMany functions.
 
 It takes the form: listgen1 "argument1" "argument2" "argument3"
 
@@ -13,11 +14,13 @@ It receives up to three string arguments:
  1) A simple string array variable of the items to be listed;
  2) An optional one-word menu heading (--title) which will be underlined in the cli version; 
  3) An optional alternative final item to be displayed instead of 'Done' (eg: 'Retry').
-    If set to 'nodone' (or 'nocancel' in the case of the Dialog version) the menu will display without a 'Done'/'<Cancel>' option (useful to ensure that one of the options is chosen).
+    If set to 'nodone' (or 'nocancel' in the case of the Dialog version) the menu will display
+    without a 'Done'/'<Cancel>' option (useful to ensure that one of the options is chosen).
 
 If the 3rd argument is required, there must be a 2nd argument, even if it is an empty string.
 
-In addition to the arguments specifically passed, both listgen1 and listgen2 make use of two global variables (if set) ...
+In addition to the arguments specifically passed, both listgen1 and listgen2 make use of two
+global variables (if set) ...
  1) $Passed ... this will be used as a page heading (--pagetitle);
  2) (Dialog only) $Message ... Instructions above a menubox, or information in a msgbox.
 
@@ -55,9 +58,11 @@ listgen2
 listgen2 is specifically designed for displaying longer descriptions in a menu.
 When an item is selected, InfoMenu finds that item in a reference variable array
 of short (one-word) names, and saves it as the global variable $Result which may
-then be used by the calling function if desired. Although complex to set up, it adds greater functionality and user-friendliness for menus.
+then be used by the calling function if desired. Although complex to set up, it
+adds greater functionality and user-friendliness for menus.
 
-The reference array must be specifically declared using the -A option, and the elements filled, before it can be used:
+The reference array must be specifically declared using the -A option, and the
+elements filled, before it can be used.
 
 It takes the form: listgen2 "$PrimaryFile" "Heading" "Finished" "ReferenceArray"
 
