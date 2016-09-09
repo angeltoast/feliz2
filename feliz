@@ -151,15 +151,19 @@ echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ]; then
+
   AddCodecs # Various bits
-  # If in Virtualbox
-  if [ ${IsInVbox} = "VirtualBox" ]; then
+  
+  if [ ${IsInVbox} = "VirtualBox" ]; then                                       # If in Virtualbox
     pacstrap /mnt virtualbox-guest-utils linux-headers 2>> feliz.log            # Virtualbox guest utils
+    arch-chroot /mnt systemctl enable vboxservice   
     echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
   fi
-  arch-chroot /mnt systemctl enable vboxservice   
+
   InstallLuxuries # Install DEs, WMs and DMs
+  
   UserAdd
+  
 fi
 
 EndTime=$(date +%s)
