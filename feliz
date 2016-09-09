@@ -155,6 +155,7 @@ if [ $Scope != "Basic" ]; then
   # If in Virtualbox
   if [ ${IsInVbox} = "VirtualBox" ]; then
     pacstrap /mnt virtualbox-guest-utils linux-headers 2>> feliz.log            # Virtualbox guest utils
+    echo blacklist i2c_piix4 > /mnt/etc/modprobe.d/modprobe.conf 2>> feliz.log  # To overcome piix4 Virtualbox error
   fi
   arch-chroot /mnt systemctl enable vboxservice   
   InstallLuxuries # Install DEs, WMs and DMs
