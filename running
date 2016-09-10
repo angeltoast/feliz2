@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 7th September 2016
+# Revision date: 10th September 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -43,9 +43,9 @@ arch_chroot() {  # From Lution AIS
 
 print_heading() {
   clear
-  T_COLS=`tput cols`
-  tput cup 1 $((($T_COLS/2)-20))
-  printf "~ $Backtitle ~\n"
+  T_COLS=$(tput cols)
+  tput cup 1 $(((T_COLS/2)-20))
+  printf "~ %s ~\n" "$Backtitle"
   printf "%$(tput cols)s\n"|tr ' ' '-'
 }
 
@@ -56,14 +56,14 @@ invalid_option() { # (from AUI scripts)
 
 TPread() { # Aligned prompt for user-entry
   # $1 = prompt ... Returns result through $Response
-  T_COLS=`tput cols`
+  T_COLS=$(tput cols)
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
+    stpt=$(((T_COLS - lov) / 2 ))
   elif [ ${lov} -gt ${T_COLS} ]; then
     stpt=0
   else
-    stpt=$(( ($T_COLS - 10) / 2 ))
+    stpt=$(((T_COLS - 10) / 2 ))
   fi
   EMPTY="$(printf '%*s' $stpt)"
   read -p "$EMPTY $1" Response
@@ -72,14 +72,14 @@ TPread() { # Aligned prompt for user-entry
 TPecho() { # For displaying status while running on auto
   echo
   CurrentTime=$(date +%s)
-  Difference=$(( $CurrentTime-$StartTime ))
-  DIFFMIN=$(( $Difference/60 ))
-  DIFFSEC=$(( $Difference % 60 ))
-  T_COLS=`tput cols`
+  Difference=$((CurrentTime - StartTime ))
+  DIFFMIN=$((Difference / 60 ))
+  DIFFSEC=$((Difference % 60 ))
+  T_COLS=$(tput cols)
   EMPTY="     "
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 3 ))
+    stpt=$(((T_COLS - lov) / 3 ))
     EMPTY="$(printf '%*s' $stpt)"
   fi
   tput bold
@@ -88,7 +88,7 @@ TPecho() { # For displaying status while running on auto
 }
 
 read_timed() { # $1 = text to display; $2 = duration
-  T_COLS=`tput cols`
+  T_COLS=$(tput cols)
   lov=${#1}
   if [ $2 ]; then
     tim=$2
@@ -96,7 +96,7 @@ read_timed() { # $1 = text to display; $2 = duration
     tim=2
   fi
   if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
+    stpt=$(((T_COLS - lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
   else
     EMPTY=""
@@ -173,10 +173,10 @@ SetGrubDevice() {
     Item=$i
     Counter=$((Counter+1))
     if [ $Counter -eq $Reply ]; then
-      if [ $Item = "$Done" ]; then
+      if [ "$Item" = "$Done" ]; then
         GrubDevice=""
       else
-        GrubDevice=$Item
+        GrubDevice="$Item"
       fi
       break
     fi
@@ -245,13 +245,13 @@ LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
   MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
   # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
-  curl -so ${MirrorTemp} ${URL} 2>> feliz.log
+  curl -so "${MirrorTemp}" "${URL}" 2>> feliz.log
   # Use sed to filter entries
-  sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> feliz.log
+  sed -i 's/^#Server/Server/g' "${MirrorTemp}" 2>> feliz.log
   # Make a safe copy of existing mirrorlist
   mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> feliz.log
   # Replace existing mirrorlist with new local mirrorlist
-  mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> feliz.log
+  mv -f "${MirrorTemp}" /etc/pacman.d/mirrorlist 2>> feliz.log
   chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
 }
 
@@ -264,27 +264,27 @@ MountPartitions() {
   "") echo "Not formatting root partition" >> feliz.log
   ;;
   *) TPecho "Preparing and mounting partitions" ""
-    umount ${RootPartition} /mnt >/dev/null 2>> feliz.log # eg: umount /dev/sda1 /mnt
+    umount "${RootPartition}" /mnt >/dev/null 2>> feliz.log # eg: umount /dev/sda1 /mnt
     # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` 2>> feliz.log
-    if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${RootPartition} 2>> feliz.log
-    elif [ $RootType = "btrfs" ]; then
-      mkfs.btrfs -f ${RootPartition} 2>> feliz.log
+    CurrentType=$(file -sL "${RootPartition}" | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
+    if [ ${CurrentType} ] && [ "$RootType" = "btrfs" ] && [ "${CurrentType}" != "btrfs" ]; then
+      btrfs-convert "${RootPartition}" 2>> feliz.log
+    elif [ "$RootType" = "btrfs" ]; then
+      mkfs.btrfs -f "${RootPartition}" 2>> feliz.log
     else
-      Partition=`echo $RootPartition | cut -c 6-` 2>> feliz.log
+      Partition=$(echo "$RootPartition" | cut -c 6-) 2>> feliz.log
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
       fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
+      mke2fs "${Label}" -t "${RootType}" "${RootPartition}" &>> feliz.log
     fi
   esac
-  mount ${RootPartition} /mnt &>> feliz.log         # eg: mount /dev/sda1 /mnt !! Suppressed output !!
+  mount "${RootPartition}" /mnt &>> feliz.log        # eg: mount /dev/sda1 /mnt !! Suppressed output !!
   if [ ${SwapPartition} ]; then
     swapoff -a 2>> feliz.log
-    if [ $MakeSwap = "Y" ]; then
-      Partition=`echo $SwapPartition | cut -c 6-`
+    if [ "$MakeSwap" = "Y" ]; then
+      Partition=${SwapPartition: -4}                 # Last 4 characters
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -299,13 +299,13 @@ MountPartitions() {
     umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null 2>> feliz.log
     mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30)
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} != "" ]; then
-      Partition=`echo ${id} | cut -c 6-`
+      Partition=${id: -4}                            # Last 4 characters of ${id}
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -425,7 +425,7 @@ InstallLuxuries()
 }
 
 UserAdd() {
-  CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
+  CheckUsers=$(cat /mnt/etc/passwd | grep ${UserName})
   # If not already exist, create user
   if [ -z ${CheckUsers} ]; then
     TPecho "Adding user '${UserName}' and setting up groups"

@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With thanks to Carl Duff
-# Revision date: 7th September 2016
+# Revision date: 10th September 2016
 
 # Please read the introduction in the README file
 
@@ -73,7 +73,7 @@ PickLuxuries
 if [ $Scope != "Basic" ]; then
   UserName
   # Use dmidecode to check for Virtualbox installation
-  # IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
+  # IsInVbox=$(dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
   # if [ ${IsInVbox} = "VirtualBox" ]; then
   
   # Alternative to dmidecode method
