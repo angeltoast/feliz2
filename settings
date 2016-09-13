@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 10th September 2016
+# Revision date: 7th September 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -53,7 +53,7 @@ getkeymap()
     TPread "(eg: 'atari' or 'us'): "
     local Term="${Response,,}"
     echo
-    ListKbs=$(grep "${Term}" keymaps.list | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g')
+    ListKbs=`cat keymaps.list | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
     case ${ListKbs} in
       "") print_heading
         echo
@@ -69,7 +69,7 @@ getkeymap()
       ;;
     *) Repeat=0
       Countrykbd="${Result}"
-      loadkeys "${Countrykbd}" 2>> feliz.log
+      loadkeys ${Countrykbd} 2>> feliz.log
     esac
   done
   print_heading
@@ -91,16 +91,18 @@ setlocale()
     echo
     TPread "$SearchPrompt"
     print_heading
-    if [ -z ${Response} ]; then
+    if [ -z ${Response} ]
+    then
       invalid_option
       print_heading
     else
       echo
       searchterm="${Response,,}"
-      LocaleList=$(grep "${searchterm}"....UTF-8 /etc/locale.gen | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g');
-      if [ ${#LocaleList[@]} -eq 0 ]; then
+      LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
+      if [ ${#LocaleList[@]} -eq 0 ]
+      then
         SEARCHTERM="${Response^^}"
-        LocaleList=$(grep "${SEARCHTERM}".UTF-8 /etc/locale.gen | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g');
+        LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
       fi
       local Counter=0
       localelist=""
@@ -121,14 +123,14 @@ setlocale()
         "Try_again") continue
         ;;
         *) CountryLocale="${Result}.UTF-8"
-        CountryCode="${Result:3:2}"                     # Note the use of character counting in variable $Result
+        CountryCode=(`echo ${Result} | cut -c4-6`)
         break
       esac
     fi
     print_heading
   done
   print_heading
-  read_timed "Locale is set to: ${CountryLocale:0:4}" 1 # Note the use of character counting in variable $CountryLocale
+  read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
 }
 
 SetTimeZone()
@@ -139,7 +141,7 @@ SetTimeZone()
     print_heading
     PrintOne "To set the system clock, please first"
     PrintOne "choose the World Zone of your location."
-    Zones=$(timedatectl list-timezones | sed 's/\/.*$//' | uniq)
+    Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
     echo
     zones=""
     for x in ${Zones[@]}
@@ -165,7 +167,7 @@ SetTimeZone()
 
 SetSubZone()
 {
-  SubZones=$(timedatectl list-timezones | grep "${ZONE}" | sed 's/^.*\///')
+  SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
   while [ $Complete -eq 0 ]
   do
     print_heading
@@ -174,7 +176,8 @@ SetSubZone()
     PrintOne "Please enter the first letter"
     TPread "of your nearest major city: "
     echo
-    if [ -z ${Response} ]; then
+    if [ -z ${Response} ]
+    then
       invalid_option
       continue
     else
@@ -184,7 +187,7 @@ SetSubZone()
     local Counter=0
     for x in ${SubZones[@]}
     do
-      if [ "${x:0:1}" = "$Zone2" ]; then    # Note this code for getting any character or characters in a string
+      if [ `echo $x | cut -c1` = $Zone2 ]; then
         subzones="$subzones $x"
         Counter=$((Counter+1))
       fi
@@ -255,7 +258,7 @@ PickLuxuries()
   do
     listgen1 "${CategoriesList}" "Categories" "Done"
     Category=$Response
-    if [ "$Result" = "Done" ]; then
+    if [ $Result = "Done" ]; then
       break
     else
       ShoppingList
@@ -291,7 +294,7 @@ KeepOrDelete()
         Temp=""
         for lux in $LuxuriesList
         do
-          if [ "${lux}" != "${Bagged}" ]; then
+          if [ ${lux} != ${Bagged} ]; then
             Temp="$Temp $lux"
           fi
         done
@@ -375,50 +378,61 @@ ShoppingList()
       *) break
     esac
     Passed="Choose your next item" # Loop until user selects "Done"
-    if [ "$Result" = "Done" ]; then
+    if [ $Result = "Done" ]; then
       break
     fi
     AddToList="Y"
     # First check that chosen item is not already on the list
     for lux in $LuxuriesList
     do
-      if [ "${lux}" = "${Result}" ]; then
-        KeepOrDelete "$Result"
+      if [ ${lux} = ${Result} ]; then
+        KeepOrDelete "$Result" # New function
         Result=""
         continue
       fi
     done
     # Then carry out any specific tests and add the item to the list
-    SaveResult="$Result" # (Because other subroutines return $Result)
-    if [ "${SaveResult}" = "libreoffice" ]; then
+    SaveResult=$Result # (Because other subroutines return $Result)
+    if [ ${SaveResult} = "libreoffice" ]; then
       LuxuriesList="${LuxuriesList} libreoffice-fresh"
       continue
     fi
-    DesktopEnvironment="$SaveResult"
     case $SaveResult in
-      "Cinnamon") ChooseDM
+      "Cinnamon") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
-      "Deepin") ChooseDM
+      "Deepin") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
-      "Enlightenment") ChooseDM
+      "Enlightenment") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
-      "Fluxbox") ChooseDM
+      "Fluxbox") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
-      "Gnome") ChooseDM
+      "Gnome") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
-      "JWM") ChooseDM
+      "JWM") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
-      "KDE") ChooseDM
+      "KDE") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
-     "LXDE") ChooseDM
+     "LXDE") DesktopEnvironment=$SaveResult
+       ChooseDM
        ;;
-      "LXQt") ChooseDM
+      "LXQt") DesktopEnvironment=$SaveResult
+        ChooseDM
         ;;
-      "Mate") ChooseDM
+      "Mate") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
-     "Openbox") ChooseDM
+     "Openbox") DesktopEnvironment=$SaveResult
+       ChooseDM
        ;;
-      "Xfce") ChooseDM
+      "Xfce") DesktopEnvironment=$SaveResult
+        ChooseDM
        ;;
       "") continue
        ;;

@@ -2,7 +2,7 @@
 
 # Menu functions - listgen1 and listgen2
 # Developed by Elizabeth Mills
-# Revision date: 10th September 2016
+# Revision date: 7th September 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,11 +26,11 @@
 # Window width and height are adjusted according to content
 
 PrintOne() { # Aligned text according to screen size
-  width=$(tput cols)
+  width=`tput cols`
   EMPTY=" "
   lov=${#1}
   if [ ${lov} -lt ${width} ]; then
-    stpt=$(((width - lov) / 2 ))
+    stpt=$(( ($width - $lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
   fi
   echo "$EMPTY $1"
@@ -51,9 +51,9 @@ while [ $Complete -eq 0 ]
 do
   local Done=$3
   if [ $2 ]; then
-    PrintOne "$2"
-    Underscore=$(echo "$2" | sed 's/./-/g')   # Uses sed to replace every character with a dash
-    PrintOne "$Underscore"
+    PrintOne $2
+    Underscore=`echo $2 | sed 's/./-/g'`
+    PrintOne $Underscore
   fi
   local Counter=0
   MenuList=$1
@@ -117,9 +117,9 @@ do
   local Counter=0
   echo
   if [ -n $2 ]; then
-    PrintOne "$2"
-    Underscore=$(echo "$2" | sed 's/./-/g')   # Uses sed to replace every character with a dash
-    PrintOne "$Underscore"
+    PrintOne $2
+    Underscore=`echo $2 | sed 's/./-/g'`
+    PrintOne $Underscore
   fi
   Counter=0
   for i in "${LongDescription[@]}"; do

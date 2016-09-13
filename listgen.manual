@@ -4,7 +4,7 @@ These menus are designed to be application-independent.
 
 listgen1
 --------
-listgen1 is an alternative to the bash 'select' function for use in shell scripts, to
+listgen1 is an alternative to the bash 'select' function for use in shell scripts to
 generate a numbered menu. Unlike 'select' it centres the menu on the screen, using the
 PrintOne and PrintMany functions.
 
@@ -56,7 +56,7 @@ listgen1 uses 2 built-in functions:
 listgen2
 --------
 listgen2 is specifically designed for displaying longer descriptions in a menu.
-When an item is selected, listgen2 finds that item in a reference variable array
+When an item is selected, InfoMenu finds that item in a reference variable array
 of short (one-word) names, and saves it as the global variable $Result which may
 then be used by the calling function if desired. Although complex to set up, it
 adds greater functionality and user-friendliness for menus.
@@ -66,7 +66,7 @@ elements filled, before it can be used.
 
 It takes the form: listgen2 "$PrimaryFile" "Heading" "Finished" "ReferenceArray"
 
-Example: (from Feliz)
+Example: (from achoodesktop - luxuries)
 Desktop="conky cairo-dock docky gparted yaourt"
 LongDesk[1]="Conky - Desktop time and system information           "
 LongDesk[2]="Cairo Dock - Highly customizable dock and launcher application"
@@ -86,4 +86,4 @@ Example: listgen2 "$Graphical" "Graphical" "nodone" "LongGraph"
 ... or ...
 Example: listgen2 "$Office" "" "" "LongOffice"
 
-listgen2 accesses the same global variables as listgen1 and uses the same built-in functions.
+listgen2 accesses the same global variables as listgen1 and uses the same two built-in functions
