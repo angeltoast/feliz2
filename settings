@@ -123,14 +123,17 @@ setlocale()
         "Try_again") continue
         ;;
         *) CountryLocale="${Result}.UTF-8"
-        CountryCode=(`echo ${Result} | cut -c4-6`)
+      #  CountryCode=(`echo ${Result} | cut -c4-6`)
+        CountryCode=${Result:3:2}                     # 2 characters from position 3 in $Result
+        break
         break
       esac
     fi
     print_heading
   done
   print_heading
-  read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
+  # read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
+  read_timed "Locale is set to: ${CountryLocale:0:5}" 1 # 5 characters from position 0 in $CountryLocale
 }
 
 SetTimeZone()
@@ -187,7 +190,8 @@ SetSubZone()
     local Counter=0
     for x in ${SubZones[@]}
     do
-      if [ `echo $x | cut -c1` = $Zone2 ]; then
+    #  if [ `echo $x | cut -c1` = $Zone2 ]; then
+      if [ ${x:0:1} = ${Zone2} ]; then    # 1 character at position 0 in string $x
         subzones="$subzones $x"
         Counter=$((Counter+1))
       fi
@@ -393,52 +397,42 @@ ShoppingList()
     done
     # Then carry out any specific tests and add the item to the list
     SaveResult=$Result # (Because other subroutines return $Result)
-    if [ ${SaveResult} = "libreoffice" ]; then
-      LuxuriesList="${LuxuriesList} libreoffice-fresh"
-      continue
-    fi
     case $SaveResult in
-      "Cinnamon") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Budgie") ChooseDM
        ;;
-      "Deepin") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Cinnamon") ChooseDM
        ;;
-      "Enlightenment") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Deepin") ChooseDM
        ;;
-      "Fluxbox") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Enlightenment") ChooseDM
+       ;;
+      "Fluxbox") ChooseDM
         ;;
-      "Gnome") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Gnome") ChooseDM
         ;;
-      "JWM") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "JWM") ChooseDM
         ;;
-      "KDE") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "KDE") ChooseDM
         ;;
-     "LXDE") DesktopEnvironment=$SaveResult
-       ChooseDM
+     "LXDE") ChooseDM
        ;;
-      "LXQt") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "LXQt") ChooseDM
         ;;
-      "Mate") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Mate") ChooseDM
        ;;
-     "Openbox") DesktopEnvironment=$SaveResult
-       ChooseDM
+     "Openbox") ChooseDM
        ;;
-      "Xfce") DesktopEnvironment=$SaveResult
-        ChooseDM
+      "Xfce") ChooseDM
        ;;
       "") continue
        ;;
       *) echo
     esac
-    LuxuriesList="${LuxuriesList} ${SaveResult}"
+    if [ ${SaveResult} = "libreoffice" ]; then
+      LuxuriesList="${LuxuriesList} libreoffice-fresh"
+    else
+      LuxuriesList="${LuxuriesList} ${SaveResult}"
+    fi
   done
 
   Passed=""

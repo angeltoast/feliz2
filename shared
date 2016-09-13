@@ -59,7 +59,6 @@ ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
 
 # Desktop environment, display manager and greeter variables
-DesktopEnvironment="None" # eg: xfce4
 GoodiesXfce=""
 GoodiesGnome=""
 GoodiesOpenbox=""
@@ -99,15 +98,16 @@ LongAccs[5]="Tool to make/delete/resize partitions"
 LongAccs[6]="The file-manager from Gnome"
 LongAccs[7]="The Gnome terminal emulator"
 # Desktops
-Desktops="Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
-LongDesk[1]="Slick DE from the Mint team      "
-LongDesk[2]="The Deepin Desktop Environment"
-LongDesk[3]="Full-featured, modern DE"
-LongDesk[4]="Plasma 5 and accessories pack"
-LongDesk[5]="Traditional, lightweight DE"
-LongDesk[6]="Lightweight and modern Qt DE"
-LongDesk[7]="Traditional DE from the Mint team"
-LongDesk[8]="Lightweight, highly configurable DE"
+Desktops="Budgie Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
+LongDesk[1]="Modern desktop focusing on simplicity & elegance"
+LongDesk[2]="Slick DE from the Mint team      "
+LongDesk[3]="The Deepin Desktop Environment"
+LongDesk[4]="Full-featured, modern DE"
+LongDesk[5]="Plasma 5 and accessories pack"
+LongDesk[6]="Traditional, lightweight DE"
+LongDesk[7]="Lightweight and modern Qt DE"
+LongDesk[8]="Traditional DE from the Mint team"
+LongDesk[9]="Lightweight, highly configurable DE"
 # Graphical
 Graphical="evince gimp imagemagick gthumb simple-scan xsane"
 LongGraph[1]="Reader for PDF & other document formats"

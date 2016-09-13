@@ -190,6 +190,7 @@ InstallKernel() {   # Kernel and some other core systems
   case $Kernel in   # Selected kernel
     1) TPecho "Installing LTS kernel"
       pacstrap /mnt linux-lts 2>> feliz.log
+      pacstrap /mnt linux-lts-headers 2>> feliz.log
       ;;
     *) TPecho "Installing Latest kernel"
       pacstrap /mnt linux 2>> feliz.log
@@ -266,13 +267,13 @@ MountPartitions() {
   *) TPecho "Preparing and mounting partitions" ""
     umount ${RootPartition} /mnt >/dev/null 2>> feliz.log # eg: umount /dev/sda1 /mnt
     # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30` 2>> feliz.log
+    CurrentType=$(file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${RootPartition} 2>> feliz.log
     elif [ $RootType = "btrfs" ]; then
       mkfs.btrfs -f ${RootPartition} 2>> feliz.log
     else
-      Partition=`echo $RootPartition | cut -c 6-` 2>> feliz.log
+      Partition=${RootPartition: -4}                 # Last 4 characters
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -280,11 +281,12 @@ MountPartitions() {
       mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
     fi
   esac
-  mount ${RootPartition} /mnt &>> feliz.log         # eg: mount /dev/sda1 /mnt !! Suppressed output !!
+  mount ${RootPartition} /mnt &>> feliz.log          # eg: mount /dev/sda1 /mnt !! Suppressed output !!
   if [ ${SwapPartition} ]; then
     swapoff -a 2>> feliz.log
     if [ $MakeSwap = "Y" ]; then
-      Partition=`echo $SwapPartition | cut -c 6-`
+    #  Partition=`echo $SwapPartition | cut -c 6-`
+      Partition=${SwapPartition: -4}                 # Last 4 characters
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -299,13 +301,14 @@ MountPartitions() {
     umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null 2>> feliz.log
     mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs
-    CurrentType=`file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30`
+    CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
     if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} != "" ]; then
-      Partition=`echo ${id} | cut -c 6-`
+    #  Partition=`echo ${id} | cut -c 6-`
+      Partition=${id: -4}                            # Last 4 characters of ${id}
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"
@@ -336,6 +339,9 @@ InstallLuxuries()
     for i in ${LuxuriesList}
     do
       case $i in
+      "Budgie") TPecho "Installing the Budgie desktop Environment"
+          pacstrap /mnt budgie-desktop gnome 2>> feliz.log
+        ;;
       "Cinnamon") TPecho "Installing the Cinnamon desktop Environment"
           pacstrap /mnt cinnamon 2>> feliz.log
         ;;
