@@ -3,9 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With thanks to Carl Duff
-# Revision date: 7th September 2016
-
-# Please read the introduction in the README file
+# Revision date: 20th September 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +38,7 @@ echo "${StartTime}" >> feliz.log
 CheckParts                             # Check partition table & offer options
 
 if [ $AutoPart -eq 0 ]; then
+
   BuildPartitionLists                  # Prepare table of available partitions
   AllocateRoot                         # Allow user to select root partition
   
@@ -52,42 +51,41 @@ if [ $AutoPart -eq 0 ]; then
   if [ -n "${PartitionList}" ]; then   # Check contents of PartitionList again
     MorePartitions                     # Allow user to allocate any remaining partitions
   fi
+  
 fi
 
-# Select kernel and device for Grub
-SetKernel
+SetKernel                              # Select kernel and device for Grub
 if [ $AutoPart -eq 0 ]; then
   SetGrubDevice
 fi
 
-# Keyboard layout
-getkeymap
+getkeymap                              # Select keyboard layout
 
 # Localisation
 SetTimeZone
 setlocale
 SetHostname
 
-# Add extras
-PickLuxuries
-if [ $Scope != "Basic" ]; then
-  UserName
-  # Use dmidecode to check for Virtualbox installation
-  # IsInVbox=`dmidecode --type 1 | grep 'Product Name' | cut -c 16-`
-  # if [ ${IsInVbox} = "VirtualBox" ]; then
+PickLuxuries                           # Add extra applications
+
+if [ $Scope != "Basic" ]; then         # If any extra apps have been added
+
+  UserName                             # Enter name of primary user
   
-  # Alternative to dmidecode method
+  # Check if running in Virtualbox, and offer to include guest utilities
   if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
     ConfirmVbox
   else
     IsInVbox=""
   fi
+  
 fi
 
-# Allow user to change any variables
-FinalCheck
+FinalCheck                             # Allow user to change any variables
 
-# No further user intervention from here ..................
+# ...............................................................................
+#                       No further user intervention from here                  .
+# ...............................................................................
 
 MountPartitions
 
@@ -143,30 +141,45 @@ else
   echo "Not installing Grub" >> feliz.log
 fi
 
-# mkinicpio
-McInitCPIO
+McInitCPIO           # mkinitcpio function
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
 if [ $Scope != "Basic" ]; then
+
   AddCodecs # Various bits
-  # If in Virtualbox
-  if [ ${IsInVbox} = "VirtualBox" ]; then
-    pacstrap /mnt virtualbox-guest-utils linux-headers 2>> feliz.log            # Virtualbox guest utils
+  
+  if [ ${IsInVbox} = "VirtualBox" ]; then                   # If in Virtualbox
+    case $Kernel in
+      1) TPecho "Installing dkms & linux-lts-headers for lts kernel" ""
+        pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
+        TPecho "Installing virtualbox-guest-dkms for LTS kernel" ""
+        pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
+      ;;
+      *) TPecho "Installing dkms & linux-headers for latest kernel" ""
+        pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
+        TPecho "Installing virtualbox-guest-modules-arch for latest kernel" ""
+        pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
+    esac
+    pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
   fi
-  arch-chroot /mnt systemctl enable vboxservice   
+  arch-chroot /mnt systemctl enable vboxservice
+  
   InstallLuxuries # Install DEs, WMs and DMs
+  
   UserAdd
+  
 fi
 
 EndTime=$(date +%s)
-Difference=$(( $EndTime-$StartTime ))
-DIFFMIN=$(( $Difference / 60 ))
-DIFFSEC=$(( $Difference % 60 ))
+Difference=$(( EndTime-StartTime ))
+DIFFMIN=$(( Difference / 60 ))
+DIFFSEC=$(( Difference % 60 ))
 
 SetRootPassword
+
 if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
