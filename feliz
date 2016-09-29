@@ -143,14 +143,8 @@ else                                             # No grub device selected
   echo "Not installing Grub" >> feliz.log
 fi
 
-# Debugging - check grub errors
-read -p "Debugging at line $LINENO"
-
 # Generate fstab
 genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
-
-# Debugging - check fstab
-nano /mnt/etc/fstab
 
 # Reconfigure kernel
 McInitCPIO
