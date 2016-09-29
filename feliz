@@ -2,8 +2,8 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# With thanks to Carl Duff
-# Revision date: 20th September 2016
+# With acknowlegements to Carl Duff and Dylan Schacht
+# Revision date: 28th September 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,16 +24,24 @@
 
 # Include source files
 #
-source shared
-source running
-source partitioning
-source settings
-source listgen
+source f-vars     # Most variables and arrays are declared here
+source f-run      # Functions called during installation
+source f-part     # Functions concerned with allocating partitions
+source f-set      # Functions that set variables to be used during installation
+source listgen    # The two listgen functions and their required variables
+source f-UEFI     # Functions exclusive to installation on an EFI system
 
 Backtitle="The Feliz install scripts for Arch Linux"
 
+# ...............................................................................
+#                                   Settings phase                              .
+# ...............................................................................
+
 StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
+
+print_heading
+TestUEFI                               # Check if on UEFI system 
 
 CheckParts                             # Check partition table & offer options
 
@@ -55,8 +63,11 @@ if [ $AutoPart -eq 0 ]; then
 fi
 
 SetKernel                              # Select kernel and device for Grub
-if [ $AutoPart -eq 0 ]; then
-  SetGrubDevice
+
+if [ ${UEFI} -eq 1 ]; then             # If installing in EFI
+  GrubDevice="EFI"
+elif [ ${AutoPart} -eq 0 ]; then       # If not auto-artition
+  SetGrubDevice                        # Call SetGrubDevice
 fi
 
 getkeymap                              # Select keyboard layout
@@ -84,7 +95,7 @@ fi
 FinalCheck                             # Allow user to change any variables
 
 # ...............................................................................
-#                       No further user intervention from here                  .
+#          Installation phase - no further user intervention from here          .
 # ...............................................................................
 
 MountPartitions
@@ -94,20 +105,6 @@ ReflectorMirrorList
 InstallKernel
 
 TPecho "Preparing local services" ""
-
-# Set the default PATH variable
-arch_chroot "PATH=/usr/lib/systemd/system:/etc/systemd/system:/usr/local/sbin:/usr/local/bin:/usr/bin"
-
-# Generate fstab
-genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
-
-if [ ${SwapFile} ]; then
-  fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> feliz.log
-  chmod 600 /mnt/swapfile >/dev/null 2>> feliz.log 
-  mkswap /mnt/swapfile >/dev/null 2>> feliz.log
-  swapon /mnt/swapfile >/dev/null 2>> feliz.log
-  echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
-fi
 
 echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
 sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
@@ -129,19 +126,34 @@ if [ $Scope != "Basic" ]; then
 fi
 
 # Grub
-if [ ${GrubDevice} ]; then
-  TPecho "Installing Grub2 to $GrubDevice" ""
-  pacstrap /mnt grub 2>> feliz.log
-  if [ $OSprober = "Y" ]; then
-    pacstrap /mnt os-prober 2>> feliz.log
+if [ ${GrubDevice} = "EFI" ]; then               # Installing in UEFI environment
+  TPecho "Installing Grub to /boot partition" ""
+  pacstrap /mnt grub efibootmgr
+  arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi --bootloader-id=boot"
+  if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
+    mv /mnt/boot/EFI/boot/grubx64.efi /mnt/boot/EFI/boot/bootx64.efi
   fi
+  arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+elif [ ${GrubDevice} ]; then                  # Installing in BIOS environment
+  TPecho "Installing Grub to $GrubDevice" ""
+  pacstrap /mnt grub 2>> feliz.log
   arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
   arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
-else
+else                                             # No grub device selected
   echo "Not installing Grub" >> feliz.log
 fi
 
-McInitCPIO           # mkinitcpio function
+# Debugging - check grub errors
+read -p "Debugging at line $LINENO"
+
+# Generate fstab
+genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
+
+# Debugging - check fstab
+nano /mnt/etc/fstab
+
+# Reconfigure kernel
+McInitCPIO
 
 # Set keyboard to selected language at next startup
 echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
@@ -157,6 +169,7 @@ if [ $Scope != "Basic" ]; then
         pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
         TPecho "Installing virtualbox-guest-dkms for LTS kernel" ""
         pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
+        
       ;;
       *) TPecho "Installing dkms & linux-headers for latest kernel" ""
         pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
@@ -188,5 +201,5 @@ cp feliz.log /mnt/etc # Copy installation log for reference
 
 print_heading
 PrintOne "Congratulations, installation is complete."
-read_timed "Rebooting the computer ..."
-reboot
+read_timed "Shutting down the computer so you can remove the installation media"
+shutdown -h now

@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 20th September 2016
+# Revision date: 28th September 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -158,3 +158,13 @@ LongWMs[5]="Customizable dock & launcher application"
 LongWMs[6]="For opening applications & managing windows"
 LongWMs[7]="Desktop panel"
 LongWMs[8]="Desktop panel"
+
+# Various functions
+
+print_heading() {
+  clear
+  T_COLS=`tput cols`
+  tput cup 1 $((($T_COLS/2)-20))
+  printf "~ $Backtitle ~\n"
+  printf "%$(tput cols)s\n"|tr ' ' '-'
+}

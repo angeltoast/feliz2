@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 20th September 2016
+# Revision date: 28th September 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -20,25 +20,82 @@
 # or https://github.com/angeltoast/feliz2, or write to:
 # The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# In this module:
-# Functions relevant to users, settings, extra applications and review
-
+# In this module: functions for setting variables used during installation
 # --------------------   ------------------------
 # Function        Line   Function            Line
 # --------------------   ------------------------
-# getkeymap         25    ShoppingList        283
-# setocale          63    ChooseDM            441
-# SetTimeZone      117    AddDEextras         483
-# SetSubZone       148    FinalCheck          513
-# Username         188    ManualSettings      604
-# Hostname         204    ChangeRootPartition 634
-# PickLuxuries     220    ChangeSwapPartition 642
-# KeepOrDelete     255    ChangePartitions    650
-#                         AddExtras           663
+# invalid_option    41    KeepOrDelete        315
+# TPread            46    ShoppingList        343
+# SetKernel         61    ChooseDM            401
+# ConfirmVbox       75    SetGrubDevice       549
+# getkeymap        100    
+# setocale         138    FinalCheck          577
+# SetTimeZone      195    ManualSettings      682
+# SetSubZone       208    ChangeRootPartition 708
+# Username         248    ChangeSwapPartition 716
+# Hostname         264    ChangePartitions    724
+# PickLuxuries     280    AddExtras           736
 # --------------------    -----------------------
 
-getkeymap()
-{
+invalid_option() { # (from AUI scripts)
+  echo
+  read_timed "Invalid entry. Try again ..." 1
+}
+
+TPread() { # Aligned prompt for user-entry
+  # $1 = prompt ... Returns result through $Response
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+  elif [ ${lov} -gt ${T_COLS} ]; then
+    stpt=0
+  else
+    stpt=$(( ($T_COLS - 10) / 2 ))
+  fi
+  EMPTY="$(printf '%*s' $stpt)"
+  read -p "$EMPTY $1" Response
+}
+
+SetKernel() {
+  print_heading
+  echo
+  PrintOne "Choose your kernel"
+  PrintOne "The Long-Term-Support kernel (LTS) offers stabilty,"
+  PrintOne "while the Latest kernel has all the new features."
+  PrintOne "If in doubt, choose LTS."
+  echo
+  local Counter=0
+  listgen1 "LTS Latest" "Kernels" "nodone"
+  Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
+}
+
+ConfirmVbox() {
+  Retry="Y"
+  until [ $Retry = "N" ]
+  do
+    print_heading
+    PrintOne "It appears that feliz is running in Virtualbox."
+    PrintOne "If it is, feliz can install Virtualbox guest"
+    PrintOne "utilities and make appropriate settings for you."
+    echo
+    PrintOne "Install Virtualbox guest utilities?: "
+    echo
+    listgen1 "Yes No" "" "nodone"
+    echo
+    case $Response in
+      1) IsInVbox="VirtualBox"
+        Retry="N"
+      ;;
+      "") invalid_option
+      ;;
+      *) IsInVbox=""
+        Retry="N"
+    esac
+  done
+}
+
+getkeymap() {
   print_heading
   echo
   PrintOne "Let's try to find your keyboard"
@@ -76,8 +133,7 @@ getkeymap()
   read_timed "The keyboard is now set to: '$Countrykbd'" 1
 }
 
-setlocale()
-{
+setlocale() {
   SearchPrompt=" (for example: GB or en): "
   print_heading
   PrintOne "Next we will try to find your locale. This will"
@@ -136,8 +192,7 @@ setlocale()
   read_timed "Locale is set to: ${CountryLocale:0:5}" 1 # 5 characters from position 0 in $CountryLocale
 }
 
-SetTimeZone()
-{
+SetTimeZone() {
   Complete=0
   while [ $Complete -eq 0 ]
   do
@@ -168,21 +223,20 @@ SetTimeZone()
   echo
 }
 
-SetSubZone()
-{
+SetSubZone() {
   SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
   while [ $Complete -eq 0 ]
   do
     print_heading
     PrintOne "World Zone = $ZONE"
     echo
-    PrintOne "Please enter the first letter"
-    TPread "of your nearest major city: "
+    PrintOne "Please enter the first letter of your nearest"
+    PrintOne "major city. To change World Zone, leave empty."
+    TPread "Type a letter, or leave empty: "
     echo
     if [ -z ${Response} ]
     then
-      invalid_option
-      continue
+      SetTimeZone
     else
       Zone2="${Response^^}"
     fi
@@ -190,7 +244,6 @@ SetSubZone()
     local Counter=0
     for x in ${SubZones[@]}
     do
-    #  if [ `echo $x | cut -c1` = $Zone2 ]; then
       if [ ${x:0:1} = ${Zone2} ]; then    # 1 character at position 0 in string $x
         subzones="$subzones $x"
         Counter=$((Counter+1))
@@ -200,6 +253,10 @@ SetSubZone()
       invalid_option
       continue
     fi
+    print_heading
+    PrintOne "Now choose your city from this list"
+    PrintOne "... or try again if it is not there"
+    echo
     listgen1 "$subzones" "" "Try_again"
     case $Result in
       "Try_again") break
@@ -210,8 +267,7 @@ SetSubZone()
   done
 }
 
-UserName()
-{
+UserName() {
   print_heading
   PrintOne "Enter a name for the primary user of the new system."
   PrintOne "If you don't create a username here, a default user"
@@ -227,8 +283,7 @@ UserName()
   PrintOne "User '${UserName}' will be created."
 }
 
-SetHostname()
-{
+SetHostname() {
   Entered="arch-linux"
   print_heading
   PrintOne "A hostname is needed. This will be a unique name to identify"
@@ -245,8 +300,7 @@ SetHostname()
   PrintOne "Hostname = $HostName"
 }
 
-PickLuxuries()
-{ # User selects any combination from a store of extras
+PickLuxuries() { # User selects any combination from a store of extras
   CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
   local Complete=0
   print_heading
@@ -281,8 +335,7 @@ PickLuxuries()
   fi
 }
 
-KeepOrDelete()
-{
+KeepOrDelete() {
   Bagged="$1"
   Validated="N"
   until [ $Validated = "Y" ]
@@ -309,8 +362,7 @@ KeepOrDelete()
   LuxuriesList="$Temp"
 }
 
-ShoppingList()
-{ # Called by PickLuxuries after a category has been chosen.
+ShoppingList() { # Called by PickLuxuries after a category has been chosen.
   local Complete=0
   Passed="Choose your first item"
   while [ $Complete -eq 0 ]
@@ -438,8 +490,7 @@ ShoppingList()
   Passed=""
 }
 
-ChooseDM()
-{ # Choose a display manager
+ChooseDM() { # Choose a display manager
   case $DisplayManager in
   "") # Only offered if no other display manager has been set
       Counter=0
@@ -496,13 +547,43 @@ ChooseDM()
   esac
 }
 
-FinalCheck()
-{
+SetGrubDevice() {
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
+  print_heading
+  GrubDevice=""
+  Counter=0
+  PrintOne "Select the device where Grub is to be installed."
+  PrintOne "Note that if you do not select a device, Grub"
+  PrintOne "will not be installed, and you will have to make"
+  PrintOne "alternative arrangements for booting your new system."
+  echo
+  listgen1 "${DevicesList}" "Devices" "None"
+  Reply=$Response
+  for i in ${DevicesList}
+  do
+    Item=$i
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]; then
+      if [ $Item = "$Done" ]; then
+        GrubDevice=""
+      else
+        GrubDevice=$Item
+      fi
+      break
+    fi
+  done
+}
+
+FinalCheck() {
   while :
   do
     print_heading
     PrintOne "These are the settings you have entered. Please check them ..."
     echo
+    if [ ${UEFI} -eq 1 ]; then
+      PrintOne "   0)  Boot partition ... $EFIPartition             " 50
+    fi
     PrintOne "1)  Root partition ... $RootPartition : $RootType" 50
     if [ $SwapPartition ] || [ $SwapFile ]; then
       PrintMany "2)  Swap partition ... $SwapPartition $SwapFile"
@@ -599,8 +680,7 @@ FinalCheck()
   done
 }
 
-ManualSettings()
-{
+ManualSettings() {
   Retry="Y"
   Response=3
   while [ $Retry = "Y" ]
