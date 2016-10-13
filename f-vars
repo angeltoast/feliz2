@@ -44,6 +44,7 @@ Partition=""              # eg: sda1
 AutoPart=0                # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
+TypeList="ext3 ext4 btrfs" # Partition format types
 
 # Grub & kernel variables
 GrubDevice=""             # eg: /dev/sda
@@ -147,15 +148,14 @@ LongProg[4]="Advanced text editor & IDE"
 LongProg[5]="Open source distributed version control system"
 LongProg[6]="Integrated development environment (IDE)"
 # WindowManagers
-WindowManagers="Enlightenment Fluxbox JWM Openbox cairo-dock docky fbpanel tint2"
+WindowManagers="Enlightenment Fluxbox Openbox cairo-dock docky fbpanel tint2"
 LongWMs[1]="Window manager and toolkit"
 LongWMs[2]="Light, fast and versatile WM"
-LongWMs[3]="(Joe's Window Manager) Featherweight WM"
-LongWMs[4]="Lightweight, powerful & configurable stacking WM"
-LongWMs[5]="Customizable dock & launcher application"
-LongWMs[6]="For opening applications & managing windows"
+LongWMs[3]="Lightweight, powerful & configurable stacking WM"
+LongWMs[4]="Customizable dock & launcher application"
+LongWMs[5]="For opening applications & managing windows"
+LongWMs[6]="Desktop panel"
 LongWMs[7]="Desktop panel"
-LongWMs[8]="Desktop panel"
 
 # Various functions
 

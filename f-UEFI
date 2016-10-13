@@ -5,23 +5,24 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 28th September 2016
+# Revision date: 13th October 2016
 
-# Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or (at
-# your option) any later version.
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 
 # This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
+#      WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+#            General Public License for more details.
 
 # A copy of the GNU General Public License is available from the Feliz2
-# page at http://sourceforge.net/projects/feliz2/files
-# or https://github.com/angeltoast/feliz2, or write to:
-# The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#        page at http://sourceforge.net/projects/feliz2/files
+#        or https://github.com/angeltoast/feliz2, or write to:
+#                 The Free Software Foundation, Inc.
+#                  51 Franklin Street, Fifth Floor
+#                    Boston, MA 02110-1301 USA
 
 # Variables for UEFI Architecture
 UEFI=0            # 1 = UEFI; 0 = BIOS
@@ -30,13 +31,13 @@ UEFI_MOUNT=""    	# UEFI mountpoint
 DualBoot="N"      # For formatting EFI partition
 
 # All UEFI-specific functions are in this module
-# ---- ------------ --------------------------------------------------------- ----
-# Line   Function      Purpose                                     'My notes' Line       
-# ---- ------------ --------------------------------------------------------- ----
-#  25  TestUEFI      Test environment; if UEFI, inform user, and allow exit   13
-#  55  AllocateEFI   Offers list of partitions for user to select EFI /boot   37
-# 118  UEFI_autopart Automatically prepare partitions for available space     
-# ---- ------------ --------------------------------------------------------- ----
+# ---- ------------ ---------------------------------------------------------
+# Line   Function      Purpose                                          
+# ---- ------------ ---------------------------------------------------------
+#  41  TestUEFI      Test environment; set UEFI variable
+#  55  AllocateEFI   Offers list of partitions for user to select EFI /boot
+#  94  UEFI_autopart Automatically prepare partitions for available space     
+# ---- ------------ ---------------------------------------------------------
 
 # 1) Assess environment
 TestUEFI() { # Called at launch of Feliz script, before all other actions
@@ -47,43 +48,59 @@ TestUEFI() { # Called at launch of Feliz script, before all other actions
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars
     fi
     UEFI=1
-    PrintOne "It seems that your computer is operating in UEFI mode."
-    PrintOne "Feliz can work with your UEFI system, if you wish. If you"
-    PrintOne "have already created the necessary partitions, you will be"
-    PrintOne "able to allocate them. See the Arch Wiki for guidance."
-    PrintOne "Alternatively, Feliz can partition the entire drive for UEFI,"
-    PrintOne "but beware that any existing data on the drive will be deleted."
-    PrintOne "If in doubt, stop the installation and check the Arch Wiki."
-    echo
-    PrintOne "Do you wish to continue installation or abort?: "
-      echo
-      listgen1 "Continue Abort" "Options" "nodone"
-      echo
-      if [ $Response -eq 2 ]; then    # User wishes to abort installation
-        shutdown -h now
-      fi
   else
     UEFI=0
  fi
 }
 
+PartitioningEFI() {
+  local Proceed=""
+  AutoPart=0 # Set flag to 'off' by default
+  while [ -z $Proceed ]
+  do
+    PrintOne "1) Manual partitioning (option not yet available)" # "Help me to partition manually"
+    PrintMany "2) Allow feliz to partition the whole device"
+    PrintMany "3) Leave it as it is"
+    echo
+    TPread "Enter the number of your selection : "
+    Proceed=$Response
+    echo
+    case $Proceed in
+      1) clear
+        print_heading
+        echo
+        Proceed=""
+        continue  # Option not yet available
+        
+        tput setf 0 # Change foreground colour to black temporarily to hide error message
+        clear
+        partprobe 2>> feliz.log #Inform kernel of changes to partitions
+        tput sgr0 # Reset colour
+        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+      ;;
+      2) AutoPartition
+      ;;
+      3) echo
+      ;;
+      *) invalid_option
+        Proceed=""
+        print_heading
+    esac
+  done
+}
+
 # 2) Allocation - user allocates existing partitions
 AllocateEFI() { # Called at start of AllocateRoot, before allocating root partition
   # Uses list of available partitions in PartitionList created in ManagePartitions
+  print_heading
 	Remaining=""
 	local Counter=0
   Partition=""
 	PartitionType=""
   echo
 	PrintOne "Here are the partitions that are available."
-	PrintOne "First you should select one to use for EFI (/boot)"
-  
-  print_heading
-  Remaining=""
-  local Counter=0
-  Partition=""
-  PartitionType=""
-  PrintOne "Please now select a partition to use for your EFI /boot partition"
+	PrintOne "First you should select one to use for EFI /boot"
+	PrintOne "This must be of type vfat, and may be about 512MiB"  
   echo
   listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
   Reply=$Response
@@ -99,20 +116,11 @@ AllocateEFI() { # Called at start of AllocateRoot, before allocating root partit
     if [ $Counter -eq $Reply ]; then
 			Partition="/dev/$i"
 			EFIPartition="${Partition}"
-    #  echo
-    #  PrintOne "Are other operating systems (eg: Windows) dual-booting"
-    #  TPread "with this installation? (y/N): "
-    #  case $Response in
-    #    "n" | "N" | "") DualBoot="N"
-    #    ;;
-    #    *) DualBoot="Y"
-    #  esac
 		else
 			Remaining="$Remaining $i"	# Add next available partition
 		fi
 	done
   PartitionList=$Remaining			# Replace original PartitionList with remaining options
-
 }
 
 # 3) Auto-create partitions for UEFI system and set variables for mounting

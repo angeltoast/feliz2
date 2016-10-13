@@ -449,7 +449,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     # Then carry out any specific tests and add the item to the list
     SaveResult=$Result # (Because other subroutines return $Result)
     case $SaveResult in
-      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "JWM" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
+      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
 
        ;;
       "") continue
