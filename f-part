@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 28th September 2016
+# Revision date: 12th October 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,21 +50,29 @@ CheckParts() {
     while [ $PARTITIONS -eq 0 ]
     do
       echo
+      PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki."
+      echo
       PrintOne "There are no partitions on the device, and at least"
       if [ ${UEFI} -eq 1 ]; then         # Installing in UEFI environment
         PrintOne "two partitions are needed - one for the EFI /boot"
-        PrintOne "partition, and one for the root directory."
+        PrintOne "partition, and one for the root directory. It is"
+        PrintOne "not yet possible to create an EFI partition table"
+        PrintOne "from within Feliz. You can exit now to do this, or"
       else
         PrintOne "one partition is needed for the root directory."
+        PrintOne "You can use 'cfdisk' to create a partition table, or "
       fi
-      PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki."
-      echo
-      PrintOne "You can use 'cfdisk' to create a partition table, or "
-      PrintOne "feliz can create partitions for you, if you wish."
+      PrintOne "Feliz can create partitions for you, if you wish."
       PrintOne "If you choose to do nothing now, the script will"
       PrintOne "terminate to allow you to partition in some other way."
       echo
-      Partitioning # Partitioning options
+
+      if [ ${UEFI} -eq 1 ]; then         # Installing in UEFI environment  
+        PartitioningEFI # Partitioning options for EFI 
+      else    
+        Partitioning    # Partitioning options for BIOS
+      fi
+      
       if [ $Response = "3" ]; then
         read_timed "Exiting to allow you to partition the device"
         shutdown -h now
@@ -98,18 +106,27 @@ CheckParts() {
       Counter=$((Counter+1))
     done
     echo
-    PrintOne "'cfdisk' is available for you to edit them, or feliz can"
-    PrintOne "overwrite them with a new partition table if you wish."
-    PrintOne "If you choose to 'Leave it as it is' the script will next"
-    PrintOne "enable you to allocate the existing partitions."
-    echo
-    Partitioning # Partitioning options
+    
+    if [ ${UEFI} -eq 1 ]; then         # Installing in UEFI environment
+      PrintOne "Feliz can overwrite them with a new partition table if you"
+      PrintOne "wish. If you choose to 'Leave it as it is' the script will"
+      PrintOne "next enable you to allocate the existing partitions."
+      echo
+      Partitioning # Partitioning options    
+    else
+      PrintOne "'cfdisk' is available for you to edit them, or feliz can"
+      PrintOne "overwrite them with a new partition table if you wish."
+      PrintOne "If you choose to 'Leave it as it is' the script will next"
+      PrintOne "enable you to allocate the existing partitions."
+      echo
+      Partitioning # Partitioning options
+    fi
     # Call function to regenerate the array of partitions
     MakePartitionList
   fi
 }
 
-BuildPartitionLists() { # First called by CheckParts to generate details of partitions for display, then by feliz to prepare partition arrays for selection for root, swap and others
+BuildPartitionLists() { # First called by CheckParts to generate details of existing partitions for display, then to prepare partition arrays for selection for root, swap and others
   
   # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
     # First an array of all partitions up to sd*99
@@ -219,6 +236,42 @@ Partitioning() {
     case $Proceed in
       1) cfdisk 2>> feliz.log
         tput setf 0 # Change foreground colour to black temporarily to hide error message
+        clear
+        partprobe 2>> feliz.log #Inform kernel of changes to partitions
+        tput sgr0 # Reset colour
+        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+      ;;
+      2) AutoPartition
+      ;;
+      3) echo
+      ;;
+      *) invalid_option
+        Proceed=""
+        print_heading
+    esac
+  done
+}
+
+PartitioningEFI() {
+  local Proceed=""
+  AutoPart=0 # Set flag to 'off' by default
+  while [ -z $Proceed ]
+  do
+    PrintOne "1) Manual partitioning (option not yet available)" # "Help me to partition manually"
+    PrintMany "2) Allow feliz to partition the whole device"
+    PrintMany "3) Leave it as it is"
+    echo
+    TPread "Enter the number of your selection : "
+    Proceed=$Response
+    echo
+    case $Proceed in
+      1) clear
+        print_heading
+        Proceed=""
+        continue  # Option not yet available
+        
+        tput setf 0 # Change foreground colour to black temporarily to hide error message
+        clear
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0 # Reset colour
         ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
@@ -560,7 +613,10 @@ AllocateSwap() {
           IsSwap=$(blkid /dev/sd* | grep 'swap' | awk '{print $1}')
           if [ -n "$IsSwap" ]; then
             print_heading
-            PrintOne "$i is already formatted as a swap partition,"
+            PrintOne "$i is already formatted as a swap partition."
+            PrintOne "Reformatting it will change the UUID, and if this swap"
+            PrintOne "partition is used by another operating system, that"
+            PrintOne "system will no longer be unable to access the partition."
             PrintOne "Do you wish to reformat it?"
             echo
             listgen1 "Yes No" "" "nodone"

@@ -59,9 +59,7 @@ ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
 
 # Desktop environment, display manager and greeter variables
-GoodiesXfce=""
-GoodiesGnome=""
-GoodiesOpenbox=""
+DesktopEnvironment=""     # eg: xfce
 DisplayManager=""         # eg: lightdm
 Greeter=""                # eg: lightdm-gtk-greeter (Not required for some DMs)
 

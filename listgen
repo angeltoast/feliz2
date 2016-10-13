@@ -40,6 +40,11 @@ PrintMany() { # Subsequent item(s) in an aligned list
   echo "$EMPTY $1"
 }
 
+Invalid() { # (from AUI scripts)
+  echo
+  read_timed "Invalid entry. Try again ..." 1
+}
+
 listgen1() { # Simple listing alternative to the bash 'select' function
 # Arguments:
 # 1) Primary file (string of single-word references)
@@ -80,10 +85,12 @@ do
   echo
   TPread "Please enter the number of your selection: "
   case $Response in
-    ''|*[!0-9]*) invalid_option
+    ''|*[!0-9]*) Invalid
+           continue
     ;;
     *) if [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
-        invalid_option
+        Invalid
+        continue
       elif [ ${Response} -eq ${Counter} ] && [ -z $Done ]; then
         Result=${ConvertToArray[${Response}]}
         Complete=1
@@ -142,12 +149,13 @@ do
   esac
   echo
   TPread "Please enter the number of your selection: "
-
-   case $Response in
-    ''|*[!0-9]*) invalid_option
+  case $Response in
+    ''|*[!0-9]*) Invalid
+            continue
     ;;
     *) if [ ${Response} -gt ${Counter} ]; then
-      invalid_option
+        Invalid
+        continue
       elif [ ${Response} -eq ${Counter} ]; then
         Result="$Done"
         Complete=1

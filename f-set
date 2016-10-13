@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 28th September 2016
+# Revision date: 13th October 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -28,8 +28,8 @@
 # TPread            46    ShoppingList        343
 # SetKernel         61    ChooseDM            401
 # ConfirmVbox       75    SetGrubDevice       549
-# getkeymap        100    
-# setocale         138    FinalCheck          577
+# getkeymap        100     --- Review stage ---
+# setlocale        138    FinalCheck          577
 # SetTimeZone      195    ManualSettings      682
 # SetSubZone       208    ChangeRootPartition 708
 # Username         248    ChangeSwapPartition 716
@@ -172,14 +172,14 @@ setlocale() {
         print_heading
         continue
       fi
-      PrintOne "Choose your locale from this list, or 'Try_Again': "
+      PrintOne "Choose your locale from this list, or 'Try_again': "
       echo
-      listgen1 "${localelist}" "" "Try_again}"
+      listgen1 "${localelist}" "" "Try_again"
       case $Result in
-        "Try_again") continue
-        ;;
-        *) CountryLocale="${Result}.UTF-8"
-      #  CountryCode=(`echo ${Result} | cut -c4-6`)
+      "Try_again") print_heading
+          continue
+      ;;
+      *) CountryLocale="${Result}.UTF-8"
         CountryCode=${Result:3:2}                     # 2 characters from position 3 in $Result
         break
         break
@@ -188,7 +188,6 @@ setlocale() {
     print_heading
   done
   print_heading
-  # read_timed "Locale is set to: `echo $CountryLocale | cut -c1-5`" 1
   read_timed "Locale is set to: ${CountryLocale:0:5}" 1 # 5 characters from position 0 in $CountryLocale
 }
 
@@ -450,31 +449,8 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     # Then carry out any specific tests and add the item to the list
     SaveResult=$Result # (Because other subroutines return $Result)
     case $SaveResult in
-      "Budgie") ChooseDM
-       ;;
-      "Cinnamon") ChooseDM
-       ;;
-      "Deepin") ChooseDM
-       ;;
-      "Enlightenment") ChooseDM
-       ;;
-      "Fluxbox") ChooseDM
-        ;;
-      "Gnome") ChooseDM
-        ;;
-      "JWM") ChooseDM
-        ;;
-      "KDE") ChooseDM
-        ;;
-     "LXDE") ChooseDM
-       ;;
-      "LXQt") ChooseDM
-        ;;
-      "Mate") ChooseDM
-       ;;
-     "Openbox") ChooseDM
-       ;;
-      "Xfce") ChooseDM
+      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "JWM" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
+
        ;;
       "") continue
        ;;
@@ -486,8 +462,13 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       LuxuriesList="${LuxuriesList} ${SaveResult}"
     fi
   done
-
-  Passed=""
+  
+  if [ -n $DesktopEnvironment ]; then   # Only call once
+    ChooseDM
+  fi
+  
+  Passed=""     # Clear the information variable
+  
 }
 
 ChooseDM() { # Choose a display manager
@@ -582,20 +563,22 @@ FinalCheck() {
     PrintOne "These are the settings you have entered. Please check them ..."
     echo
     if [ ${UEFI} -eq 1 ]; then
-      PrintOne "   0)  Boot partition ... $EFIPartition             " 50
+      PrintOne "0)  Boot partition ... $EFIPartition             "
+      PrintMany "1)  Root partition ... $RootPartition : $RootType"
+    else
+      PrintOne "1)  Root partition ... $RootPartition : $RootType"
     fi
-    PrintOne "1)  Root partition ... $RootPartition : $RootType" 50
     if [ $SwapPartition ] || [ $SwapFile ]; then
       PrintMany "2)  Swap partition ... $SwapPartition $SwapFile"
     else
       PrintMany "2)  No provision has been made for swap"
     fi
-    if [ ${#AddPartList[@]} ]; then
+    if [ ${#AddPartList[@]} -gt 0 ]; then
       Counter=0
       PrintMany "3)  Extra partitions ..."
       for i in ${AddPartList[@]}
       do
-        PrintMany "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}" 50
+        PrintMany "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}"
         Counter=$((Counter+1))
       done
     else
@@ -607,7 +590,7 @@ FinalCheck() {
       *) PrintMany "4)  The latest kernel will be installed"
     esac
     if [ $GrubDevice ]; then
-    PrintMany "5)  Grub will be installed to $GrubDevice" 50
+    PrintMany "5)  Grub will be installed to $GrubDevice"
     else
       PrintMany "5)  No provision has been made for Grub"
     fi
@@ -735,8 +718,8 @@ ChangePartitions() {
 }
 
 AddExtras() {
-  # Called by ChangeSwapPartition and ChangeRootPartition with
-  # Ignorelist started and Counter set to next record number
+  # Ignorelist started and Counter set to next record number by calling
+  # function ChangeSwapPartition or ChangeRootPartition
   # Add each field (extra partition) from AddPartList into the array:
   for a in ${AddPartList[@]}; do
     Ignorelist[$Counter]=$a

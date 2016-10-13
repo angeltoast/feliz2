@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 28th September 2016
+# Revision date: 13th October 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,9 +65,9 @@ fi
 SetKernel                              # Select kernel and device for Grub
 
 if [ ${UEFI} -eq 1 ]; then             # If installing in EFI
-  GrubDevice="EFI"
+  GrubDevice="EFI"                     # Inform grub routine at line #129
 elif [ ${AutoPart} -eq 0 ]; then       # If not auto-artition
-  SetGrubDevice                        # Call SetGrubDevice
+  SetGrubDevice                        # User chooses grub partition
 fi
 
 getkeymap                              # Select keyboard layout
@@ -111,74 +111,76 @@ sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Set up locale, etc
-echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
-arch_chroot "locale-gen"
-echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
-export "LANG=${CountryLocale}" 2>> feliz.log                      # eg: LANG=en_US.UTF-8
-arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
-arch_chroot "hwclock --systohc --utc"
+  echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
+  arch_chroot "locale-gen"
+  echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
+  export "LANG=${CountryLocale}" 2>> feliz.log                      # eg: LANG=en_US.UTF-8
+  arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
+  arch_chroot "hwclock --systohc --utc"
 
 # Networking
-if [ $Scope != "Basic" ]; then
-  arch_chroot "systemctl enable dhcpcd.service"
-  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
-  arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
-fi
+  if [ $Scope != "Basic" ]; then
+    arch_chroot "systemctl enable dhcpcd.service"
+    pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
+    arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+  fi
 
 # Grub
-if [ ${GrubDevice} = "EFI" ]; then               # Installing in UEFI environment
-  TPecho "Installing Grub to /boot partition" ""
-  pacstrap /mnt grub efibootmgr
-  arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi --bootloader-id=boot"
-  if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
-    mv /mnt/boot/EFI/boot/grubx64.efi /mnt/boot/EFI/boot/bootx64.efi
+  if [ ${GrubDevice} = "EFI" ]; then               # Installing in UEFI environment
+    TPecho "Installing Grub to /boot partition" ""
+    pacstrap /mnt grub efibootmgr
+    arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi --bootloader-id=boot"
+    if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
+      mv /mnt/boot/EFI/boot/grubx64.efi /mnt/boot/EFI/boot/bootx64.efi
+    fi
+    arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+  elif [ ${GrubDevice} ]; then                     # Installing in BIOS environment
+    TPecho "Installing Grub to $GrubDevice" ""
+    pacstrap /mnt grub 2>> feliz.log
+    arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
+    arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+  else                                             # No grub device selected
+    echo "Not installing Grub" >> feliz.log
   fi
-  arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
-elif [ ${GrubDevice} ]; then                  # Installing in BIOS environment
-  TPecho "Installing Grub to $GrubDevice" ""
-  pacstrap /mnt grub 2>> feliz.log
-  arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
-  arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
-else                                             # No grub device selected
-  echo "Not installing Grub" >> feliz.log
-fi
 
 # Generate fstab
-genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
+  genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
+  if [ ${SwapFile} ]; then
+    echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
+  fi
 
 # Reconfigure kernel
-McInitCPIO
+  McInitCPIO
 
 # Set keyboard to selected language at next startup
-echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
+  echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
-if [ $Scope != "Basic" ]; then
-
-  AddCodecs # Various bits
+  if [ $Scope != "Basic" ]; then
   
-  if [ ${IsInVbox} = "VirtualBox" ]; then                   # If in Virtualbox
-    case $Kernel in
+    AddCodecs # Various bits
+    
+    if [ ${IsInVbox} = "VirtualBox" ]; then                  # If in Virtualbox
+      case $Kernel in
       1) TPecho "Installing dkms & linux-lts-headers for lts kernel" ""
-        pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
-        TPecho "Installing virtualbox-guest-dkms for LTS kernel" ""
-        pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
-        
+          pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
+          TPecho "Installing virtualbox-guest-dkms for LTS kernel" ""
+          pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
       ;;
       *) TPecho "Installing dkms & linux-headers for latest kernel" ""
-        pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
-        TPecho "Installing virtualbox-guest-modules-arch for latest kernel" ""
-        pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
-    esac
-    pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
+          pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
+          TPecho "Installing virtualbox-guest-modules-arch for latest kernel" ""
+          pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
+      esac
+      pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
+      arch-chroot /mnt systemctl enable vboxservice
+    fi
+    
+    InstallLuxuries # Install DEs, WMs and DMs
+    
+    UserAdd
+    
   fi
-  arch-chroot /mnt systemctl enable vboxservice
-  
-  InstallLuxuries # Install DEs, WMs and DMs
-  
-  UserAdd
-  
-fi
 
 EndTime=$(date +%s)
 Difference=$(( EndTime-StartTime ))

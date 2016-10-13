@@ -1,20 +1,23 @@
 The Feliz scripts are designed to make installation of Arch Linux accessible to all. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
-Feliz is a progression from the Achoo scripts, and speeds up the installation of Arch Linux, plus a 'shopping list' of extras like desktop environments, web browsers, office software and programming tools. Feliz is always up-to-date, as each time you run Feliz it downloads the latest version of the scripts from Github. Then Feliz helps you to enter such essential data as your location, username, etc, and works with you to set up your partitioning, then the script runs without further intervention to the end.
+Feliz is a progression from the Achoo scripts, and speeds up the installation of Arch Linux, plus a host of extras from the official Arch repos, like desktop environments, web browsers, office software and programming tools. Feliz is always up-to-date, as each time you run Feliz it downloads the latest version of the scripts from Github. Then Feliz helps you to enter such essential data as your location, username, etc, and works with you to set up your partitioning, then the script runs without further intervention to the end.
 
-Feliz.1 has the option of either a command-line style interface or semi-graphical - this version is no longer maintained. Feliz.2 builds on the best of the original Achoo and Feliz command-line style display - Feliz.2 does not have the semi-graphical display option - it is proudly cli. Feliz.2 is fast and easy-to-use, with helpful onscreen advice at every stage. During installation, all output is displayed on the screen, so that the user can see exactly what the installer is doing.
+The latest iso, Feliz.2, builds on the best of the original Achoo and Feliz cli-style presentation. Feliz.2 is fast and easy-to-use, with helpful on-screen advice at every stage. During the installation phase, all output is displayed on the screen, so that the user can see exactly what the installer is doing - just like a manual installation.
 
-The original Feliz scripts are still available and functional, and your existing feliz-stable.iso will still work, but the scripts will not receive further development, apart from bug-fixes or updates where possible.
+Feliz.1 is no longer maintained, but the scripts are still available and functional, and your existing iso should still work, but the scripts will not receive further development.
 
 Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts a live session of Arch Linux, and runs the script. All you have to do is follow the prompts. Installation follows closely the Arch Wiki beginners' guide, and hopefully you will understand something of the process by the time it has finished; you may even like to try a manual installation with the help of the Wiki.
 
-Find our friendly and lively communities on Facebook and Google+.
+Find our friendly and lively communities on Facebook:
+ https://www.facebook.com/groups/915936978471838/
+... and Google+:
+ https://plus.google.com/u/0/communities/115015910961165526577
 
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+Feliz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 A copy of the GNU General Public License is available from the Feliz page at http://sourceforge.net/projects/feliz/files or https://github.com/angeltoast/feliz, or write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 Elizabeth Mills
-April 2016
+September 2016
