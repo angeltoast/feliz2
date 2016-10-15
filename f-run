@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 13th October 2016
+# Revision date: 15th October 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -25,8 +25,9 @@
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
 # arch_chroot           36       ReflectorMirrorList  190
-# TPecho                40       LocalMirrorList      200
-# read_timed            58       InstallDM            215
+# Parted                41
+# TPecho                45       LocalMirrorList      200
+# read_timed            63       InstallDM            215
 # MountPartitions       76       InstallLuxuries      225
 # InstallKernel        157       UserAdd              325
 # AddCodecs            166       SetRootPassword      340
@@ -35,6 +36,10 @@
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
+}
+
+Parted() {
+  parted --script /dev/${UseDisk} "$1" 2>> feliz.log
 }
 
 TPecho() { # For displaying status while running on auto
@@ -100,7 +105,7 @@ MountPartitions() {
   esac
   mount ${RootPartition} /mnt &>> feliz.log             # eg: mount /dev/sda1 /mnt
   
-  # 2) EFI (if rquired)
+  # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if EFI /boot partition required
     mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint

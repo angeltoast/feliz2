@@ -5,7 +5,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 13th October 2016
+# Revision date: 15th October 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ PartitioningEFI() {
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    PrintOne "1) Manual partitioning (option not yet available)" # "Help me to partition manually"
+    PrintOne "1) Guided manual partitioning"
     PrintMany "2) Allow feliz to partition the whole device"
     PrintMany "3) Leave it as it is"
     echo
@@ -66,12 +66,9 @@ PartitioningEFI() {
     Proceed=$Response
     echo
     case $Proceed in
-      1) clear
-        print_heading
+      1) print_heading
         echo
-        Proceed=""
-        continue  # Option not yet available
-        
+        EasyEFI     # New guided manual partitioning functions
         tput setf 0 # Change foreground colour to black temporarily to hide error message
         clear
         partprobe 2>> feliz.log #Inform kernel of changes to partitions

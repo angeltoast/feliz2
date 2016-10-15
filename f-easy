@@ -1,0 +1,496 @@
+#!/bin/bash
+
+# The Feliz2 installation scripts for Arch Linux
+# Developed by Elizabeth Mills
+# Revision date: 15th October 2016
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+
+# This program is distributed in the hope that it will be useful, but
+#      WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#            General Public License for more details.
+
+# A copy of the GNU General Public License is available from the Feliz2
+#        page at http://sourceforge.net/projects/feliz2/files
+#        or https://github.com/angeltoast/feliz2, or write to:
+# The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+# In this module - functions for guided creation of a GPT partition table:
+# -----------------------      ------------------------
+# Functions          Line      Functions           Line
+# -----------------------      ------------------------
+# EasyEFI             37       EasyRoot            205
+# EasyDevice          90       EasySwap            245
+# EasyDiskSize       129       EasyHome            310
+# EasyRecalc         158       ActionEasyPart      353
+# EasyBoot           178       WipeDevice          406
+# -----------------------      ------------------------
+
+EasyEFI() {     # Main function:
+                # Inform user of purpose, call each step, confirm, action
+
+  EasyDevice    # Get details of device to use
+  EasyDiskSize  # Get available space in MiB
+
+  print_heading
+  echo
+  PrintOne "Here you can tell Feliz the size and format of the partitions you wish"
+  PrintOne "to create. When all details have been set, Feliz will wipe the disk and"
+  PrintOne "create an EFI partition table with the partitions you have specified."
+  echo
+  PrintOne "We begin with the /boot partition"
+  echo
+  
+  EasyBoot                # Create /boot partition
+   
+  EasyRecalc "$BootSize"  # Recalculate remaining space
+  
+  EasyRoot                # Create /root partition
+
+  EasyRecalc "$RootSize"  # Recalculate remaining space after adding /root
+
+  if [ ${FreeSpace} -gt 0 ]; then
+    EasySwap
+  else
+    PrintOne "There is no space for a /swap partition, but you can."
+    PrintOne "assign a swap-file. It is advised to allow some swap."
+    echo
+    PrintOne "Do you wish to allocate a swapfile?"
+    echo
+    listgen1 "Yes No" "" "nodone"
+    echo
+    if [ $Response -eq 1 ]; then
+      print_heading
+      echo
+      SetSwapFile # Note: Global variable SwapFile is set by SetSwapFile
+                  # and SwapFile is created during installation by MountPartitions
+    fi
+  fi
+
+  EasyRecalc "$SwapSize"  # Recalculate remaining space after adding /swap
+      
+  if [ ${FreeSpace} -gt 2 ]; then
+    EasyHome
+  fi
+
+  # Perform formatting and partitioning
+  ActionEasyPart
+  
+}
+
+EasyDevice() {  # Get details of device to use
+
+  # Get all connected devices
+  DiskDetails=$(lsblk -l | grep 'disk' | awk '{print $1}')  # eg: sda
+  UseDisk=$DiskDetails                                      # If more than one, $UseDisk will be first
+
+  # Count lines in $DiskDetails. If more than one device, ask user which to use
+  local Counter=0
+  CountDisks=0
+  for i in $DiskDetails
+  do
+    Counter=$((Counter+1))
+    Drives[$Counter]=$i
+  done
+  
+  if [ $Counter -gt 1 ] # ie: There are multiple devices
+  then
+    UseDisk=""          # Reset for user choice
+    while [ -z $UseDisk ]
+    do
+      print_heading
+      PrintOne "There are $Counter devices available"
+      PrintOne "Which do you wish to use for installation?"
+      echo
+      Counter=0
+      for i in $DiskDetails
+      do
+        Counter=$((Counter+1))
+        PrintOne "$Counter) $i"
+      done
+      echo
+      TPread "Enter the number of your selection: "
+      UseDisk="${Drives[$Response]}"
+    done
+  fi
+  GrubDevice="/dev/${UseDisk}"  # Full path of selected device
+}
+
+EasyDiskSize() {  # Establish size of device in MiB
+  # Get disk size
+  # DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}') # eg: 465.8G
+  
+  DiskSize="20G"
+  
+  Unit=${DiskSize: -1}                                          # Save last character (eg: G)
+
+  # Remove last character for calculations
+  Chars=${#DiskSize}  # Count characters in variable
+  Available=${DiskSize:0:Chars-1}
+
+  # Remove any decimal point and any character following
+  Available=${Available%.*}
+
+  if [ $Unit = "G" ]; then
+    FreeSpace=$((Available*1024))
+    Unit="M"
+  elif [ $Unit = "T" ]; then
+    FreeSpace=$((Available*1024*1024))
+    Unit="M"
+  else
+    FreeSpace=$Available
+  fi
+  if [ ${FreeSpace} -lt 8192 ]; then    # If less than 8GiB
+    read -p "Device has only ${FreeSpace}MiB: This is not enough for an installation"
+    exit
+  fi
+
+}
+
+EasyRecalc() { # Calculate remaining disk space
+  
+  # Allow for 100% and strip unit from variable
+  local Passed=$1
+  case ${Passed: -1} in
+    "%") Calculator=$FreeSpace
+    ;;
+    "G") Chars=${#Passed}               # Count characters in variable
+        Passed=${Passed:0:Chars-1}      # Passed variable stripped of unit
+        Calculator=$((Passed*1024))
+    ;;
+    *) Chars=${#Passed}                # Count characters in variable
+        Calculator=${Passed:0:Chars-1}   # Passed variable stripped of unit
+  esac
+  # Recalculate available space
+  FreeSpace=$((FreeSpace-Calculator))
+  
+}
+
+EasyBoot() { # Variables: BootSize
+  LoopRepeat="Y"
+  while [ ${LoopRepeat} = "Y" ]
+  do
+    FreeGigs=$((FreeSpace/1024))
+    PrintOne "You have ${FreeGigs}GiB available on the chosen device."
+    PrintOne "All we need to set here is the size of your EFI /boot partition."  
+    PrintOne "It should be no less than 512MiB and need be no larger than 1GiB"
+    echo
+    TPread "Enter size (M = Megabytes, G = Gigabytes) [eg: 512M or 1G]: "
+    RESPONSE="${Response^^}"
+    # Check that entry includes 'M or G'
+    CheckInput=${RESPONSE: -1}
+    echo
+    if [ ${CheckInput} != "M" ] && [ ${CheckInput} != "G" ]; then
+      print_heading
+      PrintOne "You must include M or G so that the correct size will be set"
+      echo
+      BootSize=""
+      continue
+    else
+      BootSize="${RESPONSE}"
+      break
+    fi
+  done
+}
+
+EasyRoot() { # Variables: RootSize, RootType
+  LoopRepeat="Y"
+  FreeGigs=$((FreeSpace/1024))
+  while [ ${LoopRepeat} = "Y" ]
+  do
+    # Clear display, show /boot and available space
+    print_heading
+    PrintOne "EFI boot partition: ${BootSize}"
+    echo
+    PrintOne "You now have ${FreeGigs}GiB available on the chosen device."
+    echo
+    PrintOne "Next we need at least one more partition, for /root."  
+    PrintOne "You can use all the remaining space on the device, if you"
+    PrintOne "wish, although you may want to leave some room for a swap"
+    PrintOne "partition, and perhaps also a home partition. The root partition"
+    PrintOne "should not be less than 8GiB - ideally more, up to 20GiB"
+    echo
+    PrintOne "Please enter the desired size in Gigabytes"
+    PrintOne "or, to allocate all the remaining space, enter: 100%"
+    echo
+    TPread "Size [eg: 12G or 100%]: "
+    RESPONSE="${Response^^}"
+    # Check that entry includes 'G or %'
+    CheckInput=${RESPONSE: -1}
+    echo
+    if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ]; then
+      PrintOne "You must include G or %"
+      RootSize=""
+      continue
+    else
+      RootSize=$RESPONSE
+      Partition="/root"
+      print_heading
+      select_filesystem
+      RootType=${PartitionType}
+      break
+    fi
+  done
+}
+
+EasySwap() { # Variables: SwapSize
+  # Clear display, show /boot and /root
+  LoopRepeat="Y"
+  FreeGigs=$((FreeSpace/1024))
+  while [ ${LoopRepeat} = "Y" ]
+  do
+    # Clear display, show /boot and available space
+    print_heading
+    PrintOne "EFI boot partition: ${BootSize}"
+    PrintOne "Root partition: ${RootType} : ${RootSize}"
+    echo
+    PrintOne "You now have ${FreeGigs}GiB available on the chosen device."
+    echo
+    if [ ${FreeSpace} -gt 10 ]; then
+      PrintOne "There is space for a /swap partition. Swap can be anything"
+      PrintOne "from 512MiB upwards, but generally it is not necessary to exceed"
+      PrintOne "4GiB. You may want to leave some room for a home partition."
+      echo
+    elif [ ${FreeSpace} -gt 5 ]; then
+      PrintOne "There is space for a /swap partition."
+      PrintOne "Swap can be anything from 1MiB upwards, but generally it"
+      PrintOne "is not necessary to exceed 4GiB. You can assign more, up"
+      PrintOne "to all the remaining space on the device, if you wish, but"
+      PrintOne "you may want to leave room for a small home partition."
+      echo
+    else
+      PrintOne "There is just space for a /swap partition."
+      PrintOne "Swap can be anything from 1MiB upwards, but generally it"
+      PrintOne "is not necessary to exceed 4GiB. You can assign all the"
+      PrintOne "remaining space on the device, if you wish: just enter 100%"
+      echo    
+    fi
+    PrintOne "If you don't want a swap partition, enter 0 or leave blank"
+    echo
+    PrintOne "Please enter the desired swap partition size in Gigabytes"
+    PrintOne "or, to allocate all the remaining space, enter: 100%"
+    echo
+    TPread "Size [eg: 2G or 100% or 0]: "
+    RESPONSE="${Response^^}"
+    echo
+    case ${RESPONSE} in
+      "" | 0) PrintOne "Do you wish to allocate a swapfile?"
+          echo
+        listgen1 "Yes No" "" "nodone"
+        echo
+        if [ $Response -eq 1 ]; then
+          SetSwapFile
+        fi
+        break
+      ;;
+      *) # Check that entry includes 'G or %'
+        CheckInput=${RESPONSE: -1}
+        if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ]; then
+          PrintOne "You must include G or %"
+          RootSize=""
+          continue
+        else
+          SwapSize=$RESPONSE
+          break
+        fi
+    esac
+  done
+  # If no space remains, offer swapfile, else create swap partition
+}
+
+EasyHome() { # Variables: HomeSize, HomeType
+  LoopRepeat="Y"
+  FreeGigs=$((FreeSpace/1024))
+  while [ ${LoopRepeat} = "Y" ]
+  do
+    # Clear display, show /boot and available space
+    print_heading
+    PrintOne "EFI boot partition: ${BootSize}"
+    PrintOne "Root partition: ${RootType} : ${RootSize}"
+    PrintOne "Swap partition: ${SwapSize}"
+    echo
+    PrintOne "You now have ${FreeGigs}GiB available on the chosen device."
+    echo
+    PrintOne "There is space for a /home partition. You can use all"  
+    PrintOne "the remaining space on the device, if you wish."
+    PrintOne "If you don't want a home partition, enter 0 or leave blank"
+    echo
+    PrintOne "Please enter the desired size in Gigabytes"
+    PrintOne "or, to allocate all the remaining space, enter: 100%"
+    echo
+    TPread "Size [eg: 12G or 100% or 0]: "
+    RESPONSE="${Response^^}"
+    echo
+    case ${RESPONSE} in
+      "" | 0) break
+      ;;
+      *) # Check that entry includes 'G or %'
+          CheckInput=${RESPONSE: -1}
+        if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ]; then
+          PrintOne "You must include G or %"
+          HomeSize=""
+          continue
+        else
+          HomeSize=$RESPONSE
+          Partition="/home"
+          print_heading
+          select_filesystem
+          HomeType=${PartitionType}
+          break
+        fi
+    esac
+  done
+}
+
+ActionEasyPart() {  # Final step - Uses the variables set here to create partition table & all partitions
+  
+  while :
+  do                                # Get user approval
+    print_heading
+    PrintOne "EFI boot partition: ${BootSize}"
+    PrintOne "Root partition: ${RootType} : ${RootSize}"
+    PrintOne "Swap partition: ${SwapSize}"
+    PrintOne "Home partition: ${HomeType} : ${HomeSize}"
+    echo
+    PrintOne "That's all the preparation done."
+    PrintOne "Feliz will now create a new partition table,"
+    PrintOne "and set up the partitions you have defined."
+    echo
+    PrintOne "This will erase any data on ${UseDisk}"
+    PrintOne "Are you sure you wish to continue?: "
+    echo
+    listgen1 "Yes No" "" "nodone"
+    case $Response in
+      "1" | "Y" | "y") WipeDevice   # Format the drive
+        break
+       ;;
+      "2" | "N" | "n") UseDisk=""
+        CheckParts                  # Go right back to start
+        ;;
+        *) invalid_option
+    esac
+  done
+
+# Boot partition
+# --------------
+  TPecho "Creating boot partition"
+  # Calculate end-point
+  Unit=${BootSize: -1}                # Save last character of boot (eg: M)
+  Chars=${#BootSize}                  # Count characters in boot variable
+  Var=${BootSize:0:Chars-1}           # Remove unit character from boot variable
+  if [ ${Unit} = "G" ]; then
+    Var=$((Var*1024))                 # Convert to MiB
+  fi
+  EndPoint=$((Var+1))                 # Add start and finish. Result is MiBs, numerical only (has no unit)
+  Parted "mkpart ESP fat32 1MiB ${EndPoint}MiB"
+  Parted "set 1 boot on"
+  EFIPartition="${GrubDevice}1"       # "/dev/sda1"
+  NextStart=${EndPoint}               # Save for next partition. Numerical only (has no unit)
+  
+# Root partition
+# --------------
+  TPecho "Creating root partition"
+  # Calculate end-point
+  Unit=${RootSize: -1}                # Save last character of root (eg: G)
+  Chars=${#RootSize}                  # Count characters in root variable
+  Var=${RootSize:0:Chars-1}           # Remove unit character from root variable
+  if [ ${Unit} = "G" ]; then
+    Var=$((Var*1024))                 # Convert to MiB
+    EndPart=$((NextStart+Var))        # Add to previous end
+    EndPoint="${EndPart}MiB"          # Add unit
+  elif [ ${Unit} = "M" ]; then
+    EndPart=$((NextStart+Var))        # Add to previous end
+    EndPoint="${EndPart}MiB"          # Add unit
+  elif [ ${Unit} = "%" ]; then
+    EndPoint="${Var}%"
+  fi
+  # Make the partition
+  Parted "mkpart primary ${RootType} ${NextStart}MiB ${EndPoint}"
+  RootPartition="${GrubDevice}2"      # "/dev/sda2"
+  NextStart=${EndPart}                # Save for next partition. Numerical only (has no unit)
+
+# Swap partition
+# --------------
+  if [ $SwapSize ]; then
+    TPecho "Creating swap partition"
+    # Calculate end-point
+    Unit=${SwapSize: -1}              # Save last character of swap (eg: G)
+    Chars=${#SwapSize}                # Count characters in swap variable
+    Var=${SwapSize:0:Chars-1}         # Remove unit character from swap variable
+    if [ ${Unit} = "G" ]; then
+      Var=$((Var*1024))               # Convert to MiB
+      EndPart=$((NextStart+Var))      # Add to previous end
+      EndPoint="${EndPart}MiB"        # Add unit
+    elif [ ${Unit} = "M" ]; then
+      EndPart=$((NextStart+Var))      # Add to previous end
+      EndPoint="${EndPart}MiB"        # Add unit
+    elif [ ${Unit} = "%" ]; then
+      EndPoint="${Var}%"
+    fi
+    # Make the partition
+    Parted "mkpart primary linux-swap ${NextStart}MiB ${EndPoint}"
+    SwapPartition="${GrubDevice}3"    # "/dev/sda3"
+    MakeSwap="Y"
+    NextStart=${EndPart}              # Save for next partition. Numerical only (has no unit)
+  fi
+
+# Home partition
+# --------------
+  if [ $HomeSize ]; then
+    TPecho "Creating home partition"
+    # Calculate end-point
+    Unit=${HomeSize: -1}              # Save last character of home (eg: G)
+    Chars=${#HomeSize}                # Count characters in home variable
+    Var=${HomeSize:0:Chars-1}         # Remove unit character from home variable
+    if [ ${Unit} = "G" ]; then
+      Var=$((Var*1024))               # Convert to MiB
+      EndPart=$((NextStart+Var))  # Add to previous end
+      EndPoint="${EndPart}MiB"        # Add unit
+    elif [ ${Unit} = "M" ]; then
+      EndPart=$((NextStart+Var))      # Add to previous end
+      EndPoint="${EndPart}MiB"        # Add unit
+    elif [ ${Unit} = "%" ]; then
+      EndPoint="${Var}%"
+    fi
+    # Make the partition
+    Parted "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}"
+    HomePartition="${GrubDevice}4"    # "/dev/sda4"
+    Home="Y"
+  fi
+
+  ShowPart1="Boot: `lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}'`" >/dev/null
+  ShowPart2="Root: `lsblk -l | grep "${UseDisk}2" | awk '{print $4, $1}'`" >/dev/null
+  ShowPart3="Swap: `lsblk -l | grep "${UseDisk}3" | awk '{print $4, $1}'`" >/dev/null
+  ShowPart4="Home: `lsblk -l | grep "${UseDisk}4" | awk '{print $4, $1}'`" >/dev/null
+  AutoPart=1 # Treat as auto-partitioned. Set flag to 'on' for mounting
+  
+  print_heading
+  PrintOne "Partitioning of ${GrubDevice} successful"
+  PrintOne "-------------------------------------"
+  PrintMany "$ShowPart1"
+  PrintMany "$ShowPart2"
+  PrintMany "$ShowPart3"
+  PrintMany "$ShowPart4"
+  echo
+  PrintOne "You will have the opportunity to review these later."
+  echo
+  PrintOne "Press any key to continue"
+  read -n1
+
+}
+
+WipeDevice() { #  If necessary, format the drive ...
+  
+  TPecho "Wiping the device"
+  sgdisk --zap-all /dev/sda
+  wipefs -a /dev/sda
+  
+  TPecho "Creating GPT partition table"
+  Parted "mklabel gpt"        # Create EFI partition table
+  
+}

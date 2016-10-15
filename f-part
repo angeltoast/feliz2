@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 13th October 2016
+# Revision date: 15th October 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,21 +56,21 @@ CheckParts() {
       echo
       PrintOne "There are no partitions on the device, and at least"
       if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
-        PrintOne "two partitions are needed - one for the EFI /boot"
-        PrintOne "partition, and one for the root directory. It is"
-        PrintOne "not yet possible to create an EFI partition table"
-        PrintOne "from within Feliz. You can exit now to do this, or"
+        PrintOne "two partitions are needed - one for EFI /boot, and"
+        PrintOne "one for /root. An option for guided manual partitioning"
+        PrintOne "and creation of an EFI partition table has been added,"
+        PrintOne "or you can exit now to use an external tool. Alternatively,"
       else                                # Installing in BIOS environment
         PrintOne "one partition is needed for the root directory."
         PrintOne "You can use 'cfdisk' to create a partition table, or "
       fi
-      PrintOne "Feliz can create partitions for you, if you wish."
-      PrintOne "If you choose to do nothing now, the script will"
+      PrintOne "Feliz can automatically create partitions for you, if you"
+      PrintOne "wish. If you choose to do nothing now, the script will"
       PrintOne "terminate to allow you to partition in some other way."
       echo
-      if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment  
+      if [ ${UEFI} -eq 1 ]; then  
         PartitioningEFI                   # Partitioning options for EFI 
-      else                                # Installing in BIOS environment
+      else 
         Partitioning                      # Partitioning options for BIOS
       fi
                                           # Terminate
@@ -105,8 +105,11 @@ CheckParts() {
     done
     echo
     if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
-      PrintOne "Feliz can overwrite them with a new partition table if you"
-      PrintOne "wish. If you choose to 'Leave it as it is' the script will"
+      PrintOne "There is a guided manual partitioning option, or Feliz"
+      PrintOne "can automatically create a new GPT partition table for"
+      PrintOne "you, if you wish. Please note that both these options"
+      PrintOne "will wipe the disk - any exisiting data will be erased!"
+      PrintOne "If you choose to 'Leave it as it is' the script will"
       PrintOne "next enable you to allocate the existing partitions."
       echo
       PartitioningEFI                   # UEFI partitioning options    
@@ -322,11 +325,6 @@ AutoWarning() {
         PrintMany "$ShowPart2"
         PrintMany "$ShowPart3"
         PrintMany "$ShowPart4"
-
-      #  if [ ${Home} = "Y" ]; then
-      #    ShowPart3=$(lsblk -l | grep "${UseDisk}3" | awk '{print $4}') >/dev/null
-      #    PrintMany "Home: ${AddPartList[0]} ${AddPartType[0]} $ShowPart3"
-      #  fi
         echo
         PrintOne "You will have the opportunity to review these later."
         echo
@@ -418,7 +416,7 @@ BIOS_autopart() { # Partitioning for a BIOS environment
   AutoPart=1                                        # Set auto-partition flag to 'on'
 }
 
-select_filesystem() { # $1 = list passed as string by caller
+select_filesystem() { # User chooses filesystem from list in global variable ${TypeList}
   local Counter=0
   PrintOne "Please now select the file system for ${Partition}"
   PrintOne "It is not recommended to mix the btrfs file-system with others."
@@ -641,17 +639,9 @@ SetSwapFile() {
       SwapFile=""
     else
       SwapFile=$RESPONSE
-      LoopRepeat="N"
-    fi
-    if [ ${LoopRepeat} = "N" ]
-    then
       break
     fi
   done
-}
-
-Parted() {
-  parted --script /dev/${UseDisk} "$1" 2>> feliz.log
 }
 
 MorePartitions() {

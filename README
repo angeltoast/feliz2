@@ -4,7 +4,7 @@ Feliz is a progression from the Achoo scripts, and speeds up the installation of
 
 The latest iso, Feliz.2, builds on the best of the original Achoo and Feliz cli-style presentation. Feliz.2 is fast and easy-to-use, with helpful on-screen advice at every stage. During the installation phase, all output is displayed on the screen, so that the user can see exactly what the installer is doing - just like a manual installation.
 
-Feliz.1 is no longer maintained, but the scripts are still available and functional, and your existing iso should still work, but the scripts will not receive further development.
+Achoo and Feliz.1 are no longer maintained. Due to changes in Arch Linux, these older scripts may no longer work.
 
 Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts a live session of Arch Linux, and runs the script. All you have to do is follow the prompts. Installation follows closely the Arch Wiki beginners' guide, and hopefully you will understand something of the process by the time it has finished; you may even like to try a manual installation with the help of the Wiki.
 

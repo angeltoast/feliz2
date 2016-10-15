@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 28th September 2016
+# Revision date: 15th October 2016
 
 # Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,11 @@ declare -a NewArray       # For copying any array
 declare -A LabellingArray # Associative array of user labels for partitions
 declare -A Labelled       # Associative array of labelled partitions
 declare -A FileSystem     # Associative array of filesystem types (ext* swap)
+BootSize=""               # Boot variable for EasyEFI
+RootSize=""               # Root variable for EasyEFI
+SwapSize=""               # Swap variable for EasyEFI
+HomeSize=""               # Home variable for EasyEFI
+HomeType=""               # Home variable for EasyEFI
 SwapPartition=""          # eg: /dev/sda3
 FormatSwap="N"            # User selects whether to reuse swap
 MakeSwap="Y"
