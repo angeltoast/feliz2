@@ -378,7 +378,6 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
 
 # Boot partition
 # --------------
-  TPecho "Creating boot partition"
   # Calculate end-point
   Unit=${BootSize: -1}                # Save last character of boot (eg: M)
   Chars=${#BootSize}                  # Count characters in boot variable
@@ -394,7 +393,6 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
   
 # Root partition
 # --------------
-  TPecho "Creating root partition"
   # Calculate end-point
   Unit=${RootSize: -1}                # Save last character of root (eg: G)
   Chars=${#RootSize}                  # Count characters in root variable
@@ -417,7 +415,6 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
 # Swap partition
 # --------------
   if [ $SwapSize ]; then
-    TPecho "Creating swap partition"
     # Calculate end-point
     Unit=${SwapSize: -1}              # Save last character of swap (eg: G)
     Chars=${#SwapSize}                # Count characters in swap variable
@@ -442,7 +439,6 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
 # Home partition
 # --------------
   if [ $HomeSize ]; then
-    TPecho "Creating home partition"
     # Calculate end-point
     Unit=${HomeSize: -1}              # Save last character of home (eg: G)
     Chars=${#HomeSize}                # Count characters in home variable
@@ -461,6 +457,9 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
     Parted "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}"
     HomePartition="${GrubDevice}4"    # "/dev/sda4"
     Home="Y"
+    AddPartList[0]="${GrubDevice}4"                 # /dev/sda4     | add to
+    AddPartMount[0]="/home"                         # Mountpoint    | array of
+    AddPartType[0]="ext4"                           # Filesystem    | additional partitions
   fi
 
   ShowPart1="Boot: `lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}'`" >/dev/null
@@ -486,11 +485,9 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
 
 WipeDevice() { #  If necessary, format the drive ...
   
-  TPecho "Wiping the device"
   sgdisk --zap-all /dev/sda
   wipefs -a /dev/sda
   
-  TPecho "Creating GPT partition table"
   Parted "mklabel gpt"        # Create EFI partition table
   
 }

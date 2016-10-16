@@ -369,9 +369,9 @@ BIOS_autopart() { # Partitioning for a BIOS environment
     RootPartition="${GrubDevice}2"                  # /dev/sda2
     RootType="ext4"
     Parted "mkpart primary ext4 19GiB 100%"         # /home remainder (from 21GiB)
-    AddPartList[0]="${GrubDevice}3"                 # /dev/sda3     |  
-    AddPartMount[0]="/home"                         # Mountpoint    | array of additional partitions
-    AddPartType[0]="ext4"                           # Filesystem    |
+    AddPartList[0]="${GrubDevice}3"                 # /dev/sda3     | add to
+    AddPartMount[0]="/home"                         # Mountpoint    | array of
+    AddPartType[0]="ext4"                           # Filesystem    | additional partitions
     Home="Y"
   elif [ $DiskSize -ge 30 ]; then                   # ------------- separate /home partition -------------
     Parted "mkpart primary linux-swap 1MiB 4GiB"    # /swap 4GiB
