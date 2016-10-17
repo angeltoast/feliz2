@@ -170,7 +170,7 @@ InstallKernel() {   # Selected kernel and some other core systems
   esac
 
   TPecho "Installing cli tools"
-  pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
+  pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh os-prober screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
 
   # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null

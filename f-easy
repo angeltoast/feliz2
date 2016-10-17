@@ -483,11 +483,11 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
 
 }
 
-WipeDevice() { #  If necessary, format the drive ...
-  
-  sgdisk --zap-all /dev/sda
-  wipefs -a /dev/sda
-  
+WipeDevice() { # Format the drive
+  tput setf 0                 # Change foreground colour to black temporarily to hide error message
+  sgdisk --zap-all /dev/sda   # Remove all partitions
+  wipefs -a /dev/sda          # Remove filesystem
+  tput sgr0                   # Reset colour
   Parted "mklabel gpt"        # Create EFI partition table
-  
+ 
 }

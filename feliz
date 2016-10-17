@@ -83,7 +83,11 @@ SetHostname
 PickLuxuries                           # Add extra applications
 
 if [ $Scope != "Basic" ]; then         # If any extra apps have been added
-
+  
+  if [ -n $DesktopEnvironment ]; then 
+    ChooseDM
+  fi
+  
   UserName                             # Enter name of primary user
   
   # Check if running in Virtualbox, and offer to include guest utilities
@@ -136,11 +140,13 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
       mv /mnt/boot/EFI/boot/grubx64.efi /mnt/boot/EFI/boot/bootx64.efi
     fi
+    arch_chroot "os-prober"
     arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
   elif [ ${GrubDevice} ]; then                     # Installing in BIOS environment
     TPecho "Installing Grub to $GrubDevice" ""
     pacstrap /mnt grub 2>> feliz.log
     arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
+    arch_chroot "os-prober"
     arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
   else                                             # No grub device selected
     echo "Not installing Grub" >> feliz.log
