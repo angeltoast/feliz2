@@ -462,11 +462,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       LuxuriesList="${LuxuriesList} ${SaveResult}"
     fi
   done
-  
-  if [ -n $DesktopEnvironment ]; then   # Only call once
-    ChooseDM
-  fi
-  
+
   Passed=""     # Clear the information variable
   
 }
