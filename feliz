@@ -202,7 +202,7 @@ if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
 
-cp feliz.log /mnt/etc # Copy installation log for reference
+cp feliz.log ltsgroup.txt /mnt/etc # Copy installation log for reference
 
 print_heading
 PrintOne "Congratulations, installation is complete."

@@ -24,14 +24,14 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           36       ReflectorMirrorList  190
-# Parted                41
-# TPecho                45       LocalMirrorList      200
-# read_timed            63       InstallDM            215
-# MountPartitions       76       InstallLuxuries      225
-# InstallKernel        157       UserAdd              325
-# AddCodecs            166       SetRootPassword      340
-# McInitCPIO           181       SetUserPassword      378
+# arch_chroot           36       McInitCPIO           195
+# Parted                41       ReflectorMirrorList  205
+#                                LocalMirrorList      215
+# TPecho                63       InstallDM            230
+# read_timed            81       InstallLuxuries      240
+# MountPartitions       99       UserAdd              325
+# InstallKernel        162       SetRootPassword      340
+# AddCodecs            180       SetUserPassword      378
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
@@ -82,10 +82,10 @@ MountPartitions() {
   TPecho "Preparing and mounting partitions" ""
   
   # First unmount any mounted partitions
-  umount ${RootPartition} /mnt >/dev/null 2>> feliz.log # eg: umount /dev/sda1 /mnt
+  umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
   # 1) Root partition  
   case $RootType in
-  "") echo "Not formatting root partition" >> feliz.log   # If /root filetype not set - do nothing
+  "") echo "Not formatting root partition" >> feliz.log # If /root filetype not set - do nothing
   ;;
   *) # Otherwise, check if replacing existing ext3/4 /root partition with btrfs
     CurrentType=$(file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
@@ -94,14 +94,16 @@ MountPartitions() {
       btrfs-convert ${RootPartition} 2>> feliz.log      # Convert existing partition to btrfs
     elif [ $RootType = "btrfs" ]; then                  # Otherwise, for btrfs /root
       mkfs.btrfs -f ${RootPartition} 2>> feliz.log      # eg: mkfs.btrfs -f /dev/sda2
+    elif [ $RootType = "xfs" ]; then                    # Otherwise, for xfs /root
+      mkfs.xfs -f ${RootPartition} 2>> feliz.log        # eg: mkfs.xfs -f /dev/sda2
     else                                                # /root is not btrfs
       Partition=${RootPartition: -4}                    # Last 4 characters (eg: sda1)
       Label="${LabellingArray[${Partition}]}"           # Check to see if it has a label
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
-    fi                                                  # eg: mke2fs -L Arch-Root -t ext4 /dev/sda1
+      mke2fs ${Label} -t ${RootType} ${RootPartition} 2>> feliz.log
+    fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   mount ${RootPartition} /mnt &>> feliz.log             # eg: mount /dev/sda1 /mnt
   
@@ -152,7 +154,7 @@ MountPartitions() {
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"                             # Prepare label
       fi
-      mke2fs ${Label} -t ${AddPartType[$Counter]} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
     fi
     mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
     Counter=$((Counter+1))
@@ -160,10 +162,16 @@ MountPartitions() {
 }
 
 InstallKernel() {   # Selected kernel and some other core systems
+    
+  LANG=C            # Temporary addition to overcome bug in Arch
+
   case $Kernel in
   1) TPecho "Installing LTS kernel and core systems"
     # This is the full linux group list at 13th October 2016 with linux-lts in place of linux
     pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs libtool gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs s-nail sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log
+    # To be replaced by:
+    echo pacman -Qgq base | sed s/^linux\$/linux-lts/g > ltsgroup.txt # base group with linux-lts in place of linux.
+    # pacstrap /mnt "${LTSGroup}"
   ;;
   *) TPecho "Installing Latest kernel and core systems"
     pacstrap /mnt base base-devel 2>> feliz.log
@@ -171,25 +179,23 @@ InstallKernel() {   # Selected kernel and some other core systems
 
   TPecho "Installing cli tools"
   pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh os-prober screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
-
-  # Enable sshd
   arch_chroot "systemctl enable sshd.service" >/dev/null
 
 }
 
 AddCodecs() {
   TPecho "Adding codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab flashplugin 2>> feliz.log
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab flashplugin
   
   TPecho "Installing Wireless Tools"
-  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
-  pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
+  pacstrap /mnt iw wireless_tools wpa_supplicant
 
   TPecho "Installing X, Graphics, etc"
-  pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
+  pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm
   
   TPecho "Installing  opensource video drivers"
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics
 }
 
 McInitCPIO() {
@@ -255,7 +261,7 @@ InstallLuxuries()
       "Deepin") TPecho "Installing the Deepin desktop Environment"
           pacstrap /mnt deepin 2>> feliz.log
           TPecho "Installing the Deepin extras package"
-          pacstrap /mnt deepin-extra 2>> feliz.log
+          pacstrap /mnt deepin-extras 2>> feliz.log
           # Change the greeter line in lightdm.conf
           if [ -d /mnt/etc/lightdm ]; then
             sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
@@ -284,7 +290,8 @@ InstallLuxuries()
           fi
         ;;
       "LXQt") TPecho "Installing the LXQt desktop Environment"
-        pacstrap /mnt lxqt oxygen-icons connman lxappearance xscreensaver 2>> feliz.log
+          pacstrap /mnt lxqt 2>> feliz.log
+          pacstrap /mnt oxygen-icons connman lxappearance xscreensaver
         ;;
       "Mate") TPecho "Installing the Mate desktop Environment"
         pacstrap /mnt mate 2>> feliz.log
@@ -325,7 +332,7 @@ InstallLuxuries()
         pacstrap /mnt conky 2>> feliz.log
         ;;
       *) TPecho "Installing $i"
-        pacstrap /mnt $i 2>> feliz.log
+        pacstrap /mnt "$i" 2>> feliz.log
       esac
     done
   fi

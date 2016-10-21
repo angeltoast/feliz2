@@ -25,16 +25,16 @@
 # -----------------------      ------------------------
 # Functions          Line       Functions           Line
 # -----------------------      ------------------------
-# CheckParts           38       AllocateRoot        460
-# BuildPatitionLists  113       CheckPartition      519
-# Partitioning        208       AllocateSwap        527
-# MakePartitionList   239       NoPartitions        610
-# AutoPartition       254       SetSwapFile         625
-# AutoWarning         297       Parted              649
-# RunAutoPart         333       MorePartitions      653
-# BIOS_autopart       347       MakePartition       708
-# select_filesystem   418       UpdateArray         767
-# EditLabel           435       SetLabel            792
+# CheckParts           40       AllocateRoot        460
+# BuildPatitionLists  130      CheckPartition      519
+# Partitioning        225       AllocateSwap        527
+# MakePartitionList   259       NoPartitions        610
+# AutoPartition       272       SetSwapFile         625
+# AutoWarning         315       Parted              649
+# RunAutoPart         348       MorePartitions      653
+# BIOS_autopart       360       MakePartition       708
+# select_filesystem   421       UpdateArray         767
+# EditLabel           438       SetLabel            792
 # -----------------------      ------------------------
 
 CheckParts() {

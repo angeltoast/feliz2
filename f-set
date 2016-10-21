@@ -4,7 +4,6 @@
 # Developed by Elizabeth Mills
 # Revision date: 13th October 2016
 
-# Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
@@ -24,9 +23,9 @@
 # --------------------   ------------------------
 # Function        Line   Function            Line
 # --------------------   ------------------------
-# invalid_option    41    KeepOrDelete        315
-# TPread            46    ShoppingList        343
-# SetKernel         61    ChooseDM            401
+# invalid_option    39    KeepOrDelete        315
+# TPread            44    ShoppingList        343
+# SetKernel         59    ChooseDM            401
 # ConfirmVbox       75    SetGrubDevice       549
 # getkeymap        100     --- Review stage ---
 # setlocale        138    FinalCheck          577
@@ -229,9 +228,10 @@ SetSubZone() {
     print_heading
     PrintOne "World Zone = $ZONE"
     echo
-    PrintOne "Please enter the first letter of your nearest"
+    PrintOne "We can search on the first letter of your nearest"
     PrintOne "major city. To change World Zone, leave empty."
-    TPread "Type a letter, or leave empty: "
+    echo
+    TPread "Please enter one letter: "
     echo
     if [ -z ${Response} ]
     then
@@ -304,7 +304,8 @@ PickLuxuries() { # User selects any combination from a store of extras
   local Complete=0
   print_heading
   case "$LuxuriesList" in
-  "") PrintOne "Now you have the option to add extras, such as a web browser, etc"
+  "") PrintOne "Now you have the option to add extras, such as a web browser,"
+     PrintOne "desktop environment, etc, from the following categories."
      echo
     PrintOne "If you want only a base Arch installation, exit without choosing any extras."
   ;;
