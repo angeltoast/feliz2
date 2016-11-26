@@ -3,7 +3,11 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 15th October 2016
+# Revision date: 28th October 2016 ...
+# Modules renamed:
+# f-part is now f-part1
+# f-easy is now f-part2
+# f-UEFI is now f-part3 ... Note that this file will eventually also hold lvm functions
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,12 +31,12 @@
 # Include source files
 #
 source f-vars     # Most variables and arrays are declared here
-source f-run      # Functions called during installation
-source f-part     # Functions concerned with allocating partitions
-source f-set      # Functions that set variables to be used during installation
+source f-set      # Functions to set variables used during installation
 source listgen    # The two listgen functions and their required variables
-source f-UEFI     # Functions exclusive to installation on an EFI system
-source f-easy     # Guided partitioning for EFI systems
+source f-part1    # Functions concerned with allocating partitions
+source f-part2    # Guided partitioning for BIOS systems
+source f-part3    # Functions for installation on an EFI system
+source f-run      # Functions called during installation
 
 Backtitle="The Feliz install scripts for Arch Linux"
 
@@ -44,7 +48,7 @@ StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
 
 print_heading
-TestUEFI                               # Check if on UEFI system 
+TestUEFI                               # Check if on UEFI system
 
 CheckParts                             # Check partition table & offer options
 
@@ -52,17 +56,17 @@ if [ $AutoPart -eq 0 ]; then
 
   BuildPartitionLists                  # Prepare table of available partitions
   AllocateRoot                         # Allow user to select root partition
-  
+
   if [ -n "${PartitionList}" ]; then   # If there are unallocated partitions
     AllocateSwap                       # Display display them for user to choose swap
   else                                 # If there is no partition for swap
     NoPartitions                       # Inform user and allow swapfile
   fi
-  
+
   if [ -n "${PartitionList}" ]; then   # Check contents of PartitionList again
     MorePartitions                     # Allow user to allocate any remaining partitions
   fi
-  
+
 fi
 
 SetKernel                              # Select kernel and device for Grub
@@ -83,20 +87,20 @@ SetHostname
 PickLuxuries                           # Add extra applications
 
 if [ $Scope != "Basic" ]; then         # If any extra apps have been added
-  
-  if [ -n $DesktopEnvironment ]; then 
+
+  if [ -n $DesktopEnvironment ]; then
     ChooseDM
   fi
-  
+
   UserName                             # Enter name of primary user
-  
+
   # Check if running in Virtualbox, and offer to include guest utilities
   if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
     ConfirmVbox
   else
     IsInVbox=""
   fi
-  
+
 fi
 
 FinalCheck                             # Allow user to change any variables
@@ -158,17 +162,17 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
   fi
 
-# Reconfigure kernel
-  McInitCPIO
+# Reconfigure kernel - already done by pacstrap installing kernel, so try without it
+ # McInitCPIO
 
 # Set keyboard to selected language at next startup
   echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
 
 # Extra processes for desktop installation
   if [ $Scope != "Basic" ]; then
-  
+
     AddCodecs # Various bits
-    
+
     if [ ${IsInVbox} = "VirtualBox" ]; then                  # If in Virtualbox
       case $Kernel in
       1) TPecho "Installing dkms & linux-lts-headers for lts kernel" ""
@@ -184,11 +188,11 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
       pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
       arch-chroot /mnt systemctl enable vboxservice
     fi
-    
+
     InstallLuxuries # Install DEs, WMs and DMs
-    
+
     UserAdd
-    
+
   fi
 
 EndTime=$(date +%s)

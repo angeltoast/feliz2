@@ -2,23 +2,24 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 15th October 2016
+# Revision date: 21st October 2016
 
-# Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
 
 # This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
+#      WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+#            General Public License for more details.
 
 # A copy of the GNU General Public License is available from the Feliz2
-# page at http://sourceforge.net/projects/feliz2/files
-# or https://github.com/angeltoast/feliz2, or write to:
-# The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#        page at http://sourceforge.net/projects/feliz2/files
+#        or https://github.com/angeltoast/feliz2, or write to:
+#                 The Free Software Foundation, Inc.
+#                  51 Franklin Street, Fifth Floor
+#                    Boston, MA 02110-1301 USA
 
 # In this module: functions used during installation
 # -------------------------      -------------------------
@@ -80,10 +81,8 @@ read_timed() { # Timed display - $1 = text to display; $2 = duration
 
 MountPartitions() {
   TPecho "Preparing and mounting partitions" ""
-  
-  # First unmount any mounted partitions
-  umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
-  # 1) Root partition  
+
+  # 1) Root partition
   case $RootType in
   "") echo "Not formatting root partition" >> feliz.log # If /root filetype not set - do nothing
   ;;
@@ -102,18 +101,18 @@ MountPartitions() {
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} 2>> feliz.log
+      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   mount ${RootPartition} /mnt &>> feliz.log             # eg: mount /dev/sda1 /mnt
-  
+
   # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if EFI /boot partition required
     mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
   fi
-  
+
   # 3) Swap
   if [ ${SwapPartition} ]; then
     swapoff -a 2>> feliz.log                            # Make sure any existing swap cleared
@@ -130,7 +129,7 @@ MountPartitions() {
 
   if [ ${SwapFile} ]; then
     fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> feliz.log
-    chmod 600 /mnt/swapfile >/dev/null 2>> feliz.log 
+    chmod 600 /mnt/swapfile >/dev/null 2>> feliz.log
     mkswap /mnt/swapfile >/dev/null 2>> feliz.log
     swapon /mnt/swapfile >/dev/null 2>> feliz.log
     # echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
@@ -162,18 +161,14 @@ MountPartitions() {
 }
 
 InstallKernel() {   # Selected kernel and some other core systems
-    
-  LANG=C            # Temporary addition to overcome bug in Arch
+
+  LANG=C            # To overcome bug in Arch
 
   case $Kernel in
-  1) TPecho "Installing LTS kernel and core systems"
-    # This is the full linux group list at 13th October 2016 with linux-lts in place of linux
-    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs libtool gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs s-nail sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log
-    # To be replaced by:
-    echo pacman -Qgq base | sed s/^linux\$/linux-lts/g > ltsgroup.txt # base group with linux-lts in place of linux.
-    # pacstrap /mnt "${LTSGroup}"
+  1) TPecho "Installing LTS kernel plus core systems and base-devel"
+    pacstrap /mnt $(pacman -Qgq base | sed s/^linux\$/linux-lts/g) base-devel 2>> feliz.log # base group with linux-lts
   ;;
-  *) TPecho "Installing Latest kernel and core systems"
+  *) TPecho "Installing Latest kernel plus core systems and base-devel"
     pacstrap /mnt base base-devel 2>> feliz.log
   esac
 
@@ -186,14 +181,14 @@ InstallKernel() {   # Selected kernel and some other core systems
 AddCodecs() {
   TPecho "Adding codecs"
   pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab flashplugin
-  
+
   TPecho "Installing Wireless Tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
   pacstrap /mnt iw wireless_tools wpa_supplicant
 
   TPecho "Installing X, Graphics, etc"
   pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm
-  
+
   TPecho "Installing  opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics
 }
@@ -309,7 +304,7 @@ InstallLuxuries()
       *) continue # Ignore all others on this pass
       esac
     done
-    
+
     # Install Yaourt
     TPecho "Modifying pacman.conf and installing Yaourt"
     cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
@@ -318,7 +313,7 @@ InstallLuxuries()
     pacman-key --populate archlinux 2>> feliz.log
     pacman -Sy 2>> feliz.log              # Update
     pacstrap /mnt yaourt 2>> feliz.log    # Then install Yaourt
-    
+
     # Second parse through LuxuriesList - any extras
     for i in ${LuxuriesList}
     do
