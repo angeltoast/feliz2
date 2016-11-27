@@ -3,11 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 28th October 2016 ...
-# Modules renamed:
-# f-part is now f-part1
-# f-easy is now f-part2
-# f-UEFI is now f-part3 ... Note that this file will eventually also hold lvm functions
+# Revision date: 27th November 2016 ...
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

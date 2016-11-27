@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 21st October 2016
+# Revision date: 28th Nobember 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -306,13 +306,32 @@ InstallLuxuries()
     done
 
     # Install Yaourt
-    TPecho "Modifying pacman.conf and installing Yaourt"
-    cp pacman.conf /mnt/etc 2>> feliz.log # For installed system
-    cp pacman.conf /etc 2>> feliz.log     # For installer
+    TPecho "Installing Yaourt"
+    arch=$(uname -m)
+    if [ ${arch} = "x86_64" ]; then                     # New: Identify 64 bit architecture
+      echo "" >> /mnt/etc/pacman.conf 2>> feliz.log             # Add a blank line
+      echo "[multilib]" >> /mnt/etc/pacman.conf 2>> feliz.log   # For installed system
+      echo "Include = /etc/pacman.d/mirrorlist" >> /mnt/etc/pacman.conf 2>> feliz.log
+      echo "[multilib]" >> /etc/pacman.conf 2>> feliz.log       # For installer
+      echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf 2>> feliz.log
+    fi
+    # For installed system
+    echo "" >> /mnt/etc/pacman.conf 2>> feliz.log               # Add a blank line
+    echo "[archlinuxfr]" >> /mnt/etc/pacman.conf 2>> feliz.log  # Then add the archlinux.fr repo
+    echo "SigLevel = Never" >> /mnt/etc/pacman.conf 2>> feliz.log
+    echo "Server = http://repo.archlinux.fr/$arch" >> /mnt/etc/pacman.conf 2>> feliz.log
+    echo "" >> /mnt/etc/pacman.conf 2>> feliz.log               # Add a blank line to finish
+    # For installer
+    echo "" >> /etc/pacman.conf 2>> feliz.log                   # Add a blank line
+    echo "[archlinuxfr]" >> /etc/pacman.conf 2>> feliz.log      # Then add the archlinux.fr repo
+    echo "SigLevel = Never" >> /etc/pacman.conf 2>> feliz.log
+    echo "Server = http://repo.archlinux.fr/$arch" >> /etc/pacman.conf 2>> feliz.log
+
+    # Update, then install yaourt to /mnt
     pacman-key --init 2>> feliz.log
     pacman-key --populate archlinux 2>> feliz.log
-    pacman -Sy 2>> feliz.log              # Update
-    pacstrap /mnt yaourt 2>> feliz.log    # Then install Yaourt
+    pacman -Sy 2>> feliz.log
+    pacstrap /mnt yaourt 2>> feliz.log
 
     # Second parse through LuxuriesList - any extras
     for i in ${LuxuriesList}
