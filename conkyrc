@@ -1,43 +1,51 @@
-# Text settings
-use_xft yes
-xftfont 123:size=8
-xftalpha 0.1
-update_interval 1
-total_run_times 0
+conky.config = {
 
-# Window specifications
-own_window yes
-own_window_type conky
-own_window_transparent yes
-own_window_hints undecorated,below,sticky,skip_taskbar,skip_pager
-own_window_colour 2E3436
-own_window_argb_visual no
-own_window_argb_value 0
+-- Text settings
+use_xft = true,
+font = '123:size=8',
+xftalpha  = 0.8,
+update_interval = 1,
+total_run_times = 0,
 
-double_buffer yes
-minimum_size 500 200
-maximum_width 500
-draw_shades no
-draw_outline no
-draw_borders no
-draw_graph_borders no
-default_color white
-default_shade_color red
-default_outline_color green
+-- Window specifications
+own_window = true,
+own_window_type = 'dock',
+own_window_transparent = true,
+own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+own_window_colour = '2E3436',
+own_window_argb_visual = false,
+own_window_argb_value  = 0,
 
-alignment top_left
-gap_x 1100
-gap_y 150
-no_buffers yes
-uppercase no
-cpu_avg_samples 2
-net_avg_samples 1
-override_utf8_locale yes
-use_spacer left
+double_buffer = true,
 
-TEXT
+maximum_width = 500,
+minimum_height = 200,
+draw_shades = false,
+draw_outline = false,
+draw_borders = false,
+draw_graph_borders = false,
+default_color = 'white',
+default_shade_color = 'red',
+default_outline_color = 'green',
+
+alignment = 'top_left',
+gap_x = 1100,
+gap_y = 150,
+no_buffers = true,
+uppercase = false,
+cpu_avg_samples = 2,
+net_avg_samples = 1,
+override_utf8_locale = true,
+use_spacer = 'left',
+}
+
+conky.text = [[
+
 ${voffset -10}${offset 70}${color #47C8E8}${font Ubuntu:pixelsize=37} Feliz Arch Linux${font}
 ${voffset 2}${font Ubuntu:pixelsize=22}${offset 125}Kernel: ${color #2014B5}${kernel}
 ${voffset -8}${font Ubuntu:pixelsize=90}${time %R}${font}${voffset -70}${offset 7}${color #EC0F2D}${font Ubuntu:pixelsize=40}${time %d}${voffset -8}${color #2014B5} ${font Ubuntu:pixelsize=24}${time %B }${time %Y}${font}${voffset 25}${font Ubuntu:pixelsize=34}${offset -220}${time %A}${font}
 ${voffset 10}${font Ubuntu:pixelsize=17}${color #47C8E8}${offset 6}HD${offset 6}${color #2014B5}${fs_used /home} / ${fs_size /home}${offset 8}${color #47C8E8}RAM${offset 6}${color #2014B5}$mem / $memmax
-${offset 150}${color #47C8E8}CPU${offset 10}${color #2014B5}${cpu cpu0}%
+${offset 150}${color #47C8E8}CPU${offset 10}${color #2014B5}${cpu cpu0} %
+
+
+]]
