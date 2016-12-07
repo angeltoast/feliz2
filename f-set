@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 13th October 2016
+# Revision date: 4th December 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 # Function        Line   Function            Line
 # --------------------   ------------------------
 # invalid_option    39    KeepOrDelete        315
-# TPread            44    ShoppingList        343
+# TPread            44    ShoppingList        376
 # SetKernel         59    ChooseDM            401
 # ConfirmVbox       75    SetGrubDevice       549
 # getkeymap        100     --- Review stage ---
@@ -38,129 +38,133 @@
 # PickLuxuries     280    AddExtras           736
 # --------------------    -----------------------
 
-invalid_option() { # (from AUI scripts)
-  echo
-  read_timed "Invalid entry. Try again ..." 1
+invalid_option() {
+  Echo
+  read_timed "Invalid entry. Please try again ..." 1
+}
+
+not_found() {
+  Echo
+  read_timed "Not found. Please try again ..." 1
+}
+
+Echo() { # Use in place of echo for all screen display
+  printf "%-s\n" "$1"
+  cursor_row=$((cursor_row+1))
 }
 
 TPread() { # Aligned prompt for user-entry
   # $1 = prompt ... Returns result through $Response
-  T_COLS=`tput cols`
+  T_COLS=$(tput cols)
   lov=${#1}
   if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
+    stpt=$(( (T_COLS - lov) / 2 ))
   elif [ ${lov} -gt ${T_COLS} ]; then
     stpt=0
   else
-    stpt=$(( ($T_COLS - 10) / 2 ))
+    stpt=$(( (T_COLS - 10) / 2 ))
   fi
   EMPTY="$(printf '%*s' $stpt)"
   read -p "$EMPTY $1" Response
+  cursor_row=$((cursor_row+1))
 }
 
 SetKernel() {
   print_heading
-  echo
+  Echo
   PrintOne "Choose your kernel"
   PrintOne "The Long-Term-Support kernel (LTS) offers stabilty,"
   PrintOne "while the Latest kernel has all the new features."
   PrintOne "If in doubt, choose LTS."
-  echo
+  Echo
   local Counter=0
-  listgen1 "LTS Latest" "Kernels" "nodone"
+  listgen1 "LTS Latest" "Kernels" "nocancel"
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
 ConfirmVbox() {
-  Retry="Y"
-  until [ $Retry = "N" ]
+  while :
   do
     print_heading
     PrintOne "It appears that feliz is running in Virtualbox."
     PrintOne "If it is, feliz can install Virtualbox guest"
     PrintOne "utilities and make appropriate settings for you."
-    echo
+    Echo
     PrintOne "Install Virtualbox guest utilities?: "
-    echo
-    listgen1 "Yes No" "" "nodone"
-    echo
+    Echo
+    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Echo
     case $Response in
       1) IsInVbox="VirtualBox"
-        Retry="N"
       ;;
       "") invalid_option
+        continue
       ;;
       *) IsInVbox=""
-        Retry="N"
     esac
+    return 0
   done
 }
 
 getkeymap() {
   print_heading
-  echo
+  Echo
   PrintOne "Let's try to find your keyboard"
-  Repeat=1
-  while [ $Repeat -eq 1 ]
+  while :
   do
-    echo
-    PrintOne "If you know the code for your keyboard layout, enter"
-    PrintOne "it now. If not, try entering an abbreviation for your"
-    PrintOne "country or language and a list will be displayed ..."
-    echo
+    PrintOne "If you know the code for your keyboard layout, please enter"
+    PrintOne "it now. If not, try entering a two-letter abbreviation for"
+    PrintOne "your country or language and a list will be displayed. If"
+    PrintOne "your keyboard is not listed, select [ Exit ] to try again."
+    Echo
     TPread "(eg: 'atari' or 'us'): "
     local Term="${Response,,}"
-    echo
-    ListKbs=`cat keymaps.list | grep ${Term} | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`
-    case ${ListKbs} in
-      "") print_heading
-        echo
-        PrintOne "No keyboards found containing '$Term'"
-        PrintOne "Try again"
+    Echo
+    ListKbs=$(cat keymaps.list | grep ${Term})
+    if [ -n "${ListKbs}" ]; then  # If a match or matches found
+      print_heading
+      listgen1 "$ListKbs" "" ""
+      if [ ${Result} = "Exit" ]; then
+        print_heading
+        Echo
         continue
-        ;;
-      *) listgen1 "$ListKbs" "Keyboards" "Retry"
-    esac
-    case ${Result} in
-    "Retry") print_heading
-      continue
-      ;;
-    *) Repeat=0
-      Countrykbd="${Result}"
+      else
+        Countrykbd="${Result}"
+      fi
       loadkeys ${Countrykbd} 2>> feliz.log
-    esac
+      break
+    else
+      print_heading
+      Echo
+      PrintOne "No keyboards found containing '$Term'"
+      PrintOne "Please try again"
+      continue
+    fi
   done
   print_heading
   read_timed "The keyboard is now set to: '$Countrykbd'" 1
 }
 
 setlocale() {
-  SearchPrompt=" (for example: GB or en): "
+  SearchPrompt=" (for example: GB or PT): "
   print_heading
   PrintOne "Next we will try to find your locale. This will"
   PrintOne "be used to set fonts and language, and to find"
   PrintOne "the best mirrors for downloading your system"
-  InvalidEntry=1
-  while [ $InvalidEntry -eq 1 ]
+  while :
   do
-    echo
-    PrintOne "Please enter a two-letter code for your country or language."
-    echo
+    Echo
+    PrintOne "Please enter a two-letter code for your country."
+    Echo
     TPread "$SearchPrompt"
-    print_heading
     if [ -z ${Response} ]
     then
       invalid_option
-      print_heading
     else
-      echo
-      searchterm="${Response,,}"
-      LocaleList=(`cat /etc/locale.gen | grep ${searchterm}....UTF-8 | sed 's/\..*$//' | sed '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-      if [ ${#LocaleList[@]} -eq 0 ]
-      then
-        SEARCHTERM="${Response^^}"
-        LocaleList=(`cat /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | sed 's/\..*$//' | sed  '/@/d' | awk '{print $1}' | uniq | sed 's/#//g'`);
-      fi
+      Echo
+      Response="${Response:0:2}"              # Make sure only two characters
+      SEARCHTERM="${Response^^}"              # Set to all uppercase
+      LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | sed 's/\..*$//' | sed 's/#//g' | awk '{print $1}' | sort | uniq)
       local Counter=0
       localelist=""
       for l in ${LocaleList[@]}
@@ -169,20 +173,27 @@ setlocale() {
         Counter=$((Counter+1))
       done
       if [ $Counter -eq 0 ]; then
-        invalid_option
-        print_heading
+        not_found
         continue
       fi
-      PrintOne "Choose your locale from this list, or 'Try_again': "
-      echo
-      listgen1 "${localelist}" "" "Try_again"
+      Counted=$(echo $localelist | wc -w)
+      Newlist=""
+      for (( i=1; i <= Counted; ++i ))
+      do
+        loc=$(echo $localelist | awk "{print \$$i}")
+        Newlist="$Newlist ${loc:0:2}"
+      done
+      localelist="${Newlist}"
+      print_heading
+      Echo
+      PrintOne "Now please choose your language from this list,"
+      PrintOne "or [ Exit ] to try again."
+      listgen1 "${localelist}" "" ""
       case $Result in
-      "Try_again") print_heading
-          continue
+      "Exit") Echo
       ;;
-      *) CountryLocale="${Result}.UTF-8"
+      *) CountryLocale="${Result}_${SEARCHTERM}.UTF-8"
         CountryCode=${Result:3:2}                     # 2 characters from position 3 in $Result
-        break
         break
       esac
     fi
@@ -193,53 +204,59 @@ setlocale() {
 }
 
 SetTimeZone() {
-  Complete=0
-  while [ $Complete -eq 0 ]
+  while :
   do
     print_heading
     PrintOne "To set the system clock, please first"
     PrintOne "choose the World Zone of your location."
-    Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
-    echo
+    Zones=$(timedatectl list-timezones | sed 's/\/.*$//' | uniq)
+    Echo
     zones=""
     for x in ${Zones[@]}
     do
       zones="$zones $x"
     done
-    listgen1 "${zones}" "World_Zones" "nodone"
+    listgen1 "${zones}" "" "nocancel"
     ZONE=$Result
-    echo
+    Echo
     case $Result in
       "UTC") SUBZONE=""
           print_heading
           read_timed "Zone set to: '$ZONE'" 1
-          Complete=1
+          return 0
+      ;;
+      "Exit") continue
       ;;
       *) SetSubZone
-      print_heading
-      read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
+        if [ $Return = "Exit" ]; then
+          continue
+        else
+          print_heading
+          read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
+          return 0
+        fi
     esac
   done
-  echo
 }
 
 SetSubZone() {
-  SubZones=(`timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///'`)
-  while [ $Complete -eq 0 ]
+  SubZones=$(timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///')
+  while :
   do
     print_heading
     PrintOne "World Zone = $ZONE"
-    echo
+    Echo
     PrintOne "We can search on the first letter of your nearest"
     PrintOne "major city. To change World Zone, leave empty."
-    echo
+    Echo
     TPread "Please enter one letter: "
-    echo
+    Echo
     if [ -z ${Response} ]
     then
       SetTimeZone
     else
-      Zone2="${Response^^}"
+      Response="${Response:0:1}"  # In case user enters more than one letter
+      Zone2="${Response^^}"     # Convert the first letter to upper case
     fi
     subzones=""
     local Counter=0
@@ -256,15 +273,15 @@ SetSubZone() {
     fi
     print_heading
     PrintOne "Now choose your city from this list"
-    PrintOne "... or try again if it is not there"
-    echo
-    listgen1 "$subzones" "" "Try_again"
+    PrintOne "... or [ Exit ] to try again if it is not there"
+    Echo
+    listgen1 "$subzones" "" ""
     case $Result in
-      "Try_again") break
+      "Exit") SUBZONE=""
       ;;
       *) SUBZONE=$Result
     esac
-    Complete=1
+    break
   done
 }
 
@@ -273,7 +290,7 @@ UserName() {
   PrintOne "Enter a name for the primary user of the new system."
   PrintOne "If you don't create a username here, a default user"
   PrintOne "called 'archie' will be set up"
-  echo
+  Echo
   TPread "User Name: "
   Entered=${Response,,}
   case $Entered in
@@ -290,7 +307,7 @@ SetHostname() {
   PrintOne "A hostname is needed. This will be a unique name to identify"
   PrintOne "your device on a network. If you do not enter one, the"
   PrintOne "default hostname of 'arch-linux' will be used."
-  echo
+  Echo
   TPread "Enter a hostname for your computer: "
   Entered=${Response,,}
   case $Entered in
@@ -303,31 +320,27 @@ SetHostname() {
 
 PickLuxuries() { # User selects any combination from a store of extras
   CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
-  local Complete=0
   print_heading
   case "$LuxuriesList" in
   "") PrintOne "Now you have the option to add extras, such as a web browser,"
-     PrintOne "desktop environment, etc, from the following categories."
-     echo
+    PrintOne "desktop environment, etc, from the following categories."
     PrintOne "If you want only a base Arch installation, exit without choosing any extras."
   ;;
   *) PrintOne "You can add more items, or select items to delete."
   esac
-  echo
-  while [ $Complete -eq 0 ]
+  Echo
+  while :
   do
-    listgen1 "${CategoriesList}" "Categories" "Done"
+    listgen1 "${CategoriesList}" "" ""
     Category=$Response
-    if [ $Result = "Done" ]; then
+    if [ $Result = "Exit" ]; then
       break
     else
       ShoppingList
       print_heading
       PrintOne "Added so far:: ${LuxuriesList}"
-      echo
       PrintOne "You can now choose from any of the other lists,"
-      PrintOne "or choose <Done> to finish this part of the setup"
-      echo
+      PrintOne "or choose [ Exit ] to finish this part of the setup."
     fi
   done
   if [ -n "${LuxuriesList}" ]; then
@@ -339,15 +352,14 @@ PickLuxuries() { # User selects any combination from a store of extras
 
 KeepOrDelete() {
   Bagged="$1"
-  Validated="N"
-  until [ $Validated = "Y" ]
+  while :
   do
     print_heading
-    Message="$Bagged is already in your shopping list.\n"
-    listgen1 "Keep Delete" "$Bagged" "nodone"
+    Message="$Bagged is already in your shopping list."
+    DisplayButtons "Yes/No" "[ Keep ] [ Delete ]" "Use arrow keys to move. [Enter] to select"
     case $Response in
-      1) Validated="Y"
-        Temp="$LuxuriesList"
+      1) Temp="$LuxuriesList"
+        break
       ;;
       2) Validated="Y"
         Temp=""
@@ -357,6 +369,7 @@ KeepOrDelete() {
             Temp="$Temp $lux"
           fi
         done
+        break
       ;;
       *) invalid_option
     esac
@@ -365,15 +378,13 @@ KeepOrDelete() {
 }
 
 ShoppingList() { # Called by PickLuxuries after a category has been chosen.
-  local Complete=0
   Passed="Choose your first item"
-  while [ $Complete -eq 0 ]
+  while :
   do
     print_heading
     PrintOne "Added so far: ${LuxuriesList}"
-    echo
-     # $Category passed here is number of item in CategoriesList
-    Headline=${Categories[$Category]}
+    Echo
+    PrintOne "${Categories[$Category]}" # $Category is number of item in CategoriesList
     # Pass category to listgen2 for user to choose one item;
     local Counter=1
     case $Category in
@@ -382,21 +393,21 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
            LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
            (( Counter+=1 ))
           done
-         listgen2 "$Accessories" "${Headline}" "" "LongAccs1"
+         listgen2 "$Accessories" "" "" "LongAccs1"
        ;;
        2) for i in ${Desktops}
           do
            LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
            (( Counter+=1 ))
           done
-         listgen2 "$Desktops" "${Headline}" "" "LongDesk1"
+         listgen2 "$Desktops" "" "" "LongDesk1"
        ;;
        3) for i in ${Graphical}
           do
             LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
            (( Counter+=1 ))
           done
-           listgen2 "$Graphical" "${Headline}" "" "LongGraph1"
+           listgen2 "$Graphical" "" "" "LongGraph1"
        ;;
        4) for i in ${Internet}
           do
@@ -410,33 +421,33 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
             LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
             (( Counter+=1 ))
           done
-          listgen2 "$Multimedia" "${Headline}" "" "LongMulti1"
+          listgen2 "$Multimedia" "" "" "LongMulti1"
        ;;
        6) for i in ${Office}
           do
             LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
             (( Counter+=1 ))
           done
-          listgen2 "$Office" "${Headline}" "" "LongOffice1"
+          listgen2 "$Office" "" "" "LongOffice1"
        ;;
        7) for i in ${Programming}
           do
             LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
             (( Counter+=1 ))
           done
-          listgen2 "$Programming" "${Headline}" "" "LongProg1"
+          listgen2 "$Programming" "" "" "LongProg1"
        ;;
        8) for i in ${WindowManagers}
           do
             LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
             (( Counter+=1 ))
           done
-          listgen2 "$WindowManagers" "${Headline}" "" "LongWMs1"
+          listgen2 "$WindowManagers" "" "" "LongWMs1"
       ;;
       *) break
     esac
-    Passed="Choose your next item" # Loop until user selects "Done"
-    if [ $Result = "Done" ]; then
+    Passed="Choose your next item" # Loop until user selects "Exit"
+    if [ $Result = "Exit" ]; then
       break
     fi
     AddToList="Y"
@@ -457,7 +468,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
        ;;
       "") continue
        ;;
-      *) echo
+      *) Echo
     esac
     if [ ${SaveResult} = "libreoffice" ]; then
       LuxuriesList="${LuxuriesList} libreoffice-fresh"
@@ -465,9 +476,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       LuxuriesList="${LuxuriesList} ${SaveResult}"
     fi
   done
-
   Passed=""     # Clear the information variable
-  
 }
 
 ChooseDM() { # Choose a display manager
@@ -481,8 +490,8 @@ ChooseDM() { # Choose a display manager
       PrintOne "If in doubt, choose LightDM."
       PrintOne "If you do not install a display manager, you will have"
       PrintOne "to launch your desktop environment manually."
-      echo
-      listgen1 "${DMList}" "Display_Manager/Greeter" "None"
+      Echo
+      listgen1 "${DMList}" "" ""
       Reply=$Response
       for item in ${DMList}
       do
@@ -514,11 +523,11 @@ ChooseDM() { # Choose a display manager
       print_heading
       PrintOne "Display manager is already set as: $DisplayManager."
       PrintOne "Only one display manager can be active"
-      echo
+      Echo
       PrintOne "Do you wish to change it?: "
-      echo
-      listgen1 "Yes No" "" "nodone"
-      echo
+      Echo
+      DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      Echo
       if [ $Response -eq 1 ]; then    # User wishes to change DM
         DisplayManager=""             # Clear DM variable
         Greeter=""                    # and greeter
@@ -532,24 +541,20 @@ SetGrubDevice() {
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
   print_heading
   GrubDevice=""
-  Counter=0
+  local Counter=0
   PrintOne "Select the device where Grub is to be installed."
   PrintOne "Note that if you do not select a device, Grub"
   PrintOne "will not be installed, and you will have to make"
   PrintOne "alternative arrangements for booting your new system."
-  echo
-  listgen1 "${DevicesList}" "Devices" "None"
+  Echo
+  listgen1 "${DevicesList}" "" ""
   Reply=$Response
   for i in ${DevicesList}
   do
     Item=$i
     Counter=$((Counter+1))
     if [ $Counter -eq $Reply ]; then
-      if [ $Item = "$Done" ]; then
-        GrubDevice=""
-      else
-        GrubDevice=$Item
-      fi
+      GrubDevice=$Item
       break
     fi
   done
@@ -560,7 +565,7 @@ FinalCheck() {
   do
     print_heading
     PrintOne "These are the settings you have entered. Please check them ..."
-    echo
+    Echo
     if [ ${UEFI} -eq 1 ]; then
       PrintOne "0)  Boot partition ... $EFIPartition             "
       PrintMany "1)  Root partition ... $RootPartition : $RootType"
@@ -611,7 +616,7 @@ FinalCheck() {
     PrintMany "     User = '$UserName'"
     PrintMany "12) The following extras have been selected ..."
     PrintOne "${LuxuriesList}"
-    echo
+    Echo
     PrintOne "Press [Enter] to install with these settings, or"
     Response=20
     TPread "enter an item number if you wish to change it: "
@@ -663,18 +668,16 @@ FinalCheck() {
 }
 
 ManualSettings() {
-  Retry="Y"
-  Response=3
-  while [ $Retry = "Y" ]
+  while :
   do
     print_heading
     PrintOne "Enter number for data to change, or [Enter] to finish:"
-    echo
+    Echo
     PrintOne "1) Hostname (currently $HostName)"
     PrintMany "2) Username (currently $UserName)"
-    echo
+    Echo
     TPread "Enter the number of your selection : "
-    echo
+    Echo
     case $Response in
       1) TPread "Enter new Hostname (currently $HostName) : "
          HostName=$Response
@@ -682,8 +685,7 @@ ManualSettings() {
       2) TPread "Enter new username to be created (currently $UserName) : "
          UserName=$Response
         ;;
-      *) Retry="N"
-         break
+      *) return 0
     esac
   done
 }

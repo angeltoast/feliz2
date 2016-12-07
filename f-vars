@@ -2,9 +2,8 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 15th October 2016
+# Revision date: 4th December 2016
 
-# Please read the introduction in the README file
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
@@ -32,6 +31,12 @@ declare -a AddPartMount   # Array of mountpoints for the same partitions eg: /ho
 declare -a AddPartType    # Array of format type for the same partitions eg: ext4
 declare -a PartitionArray # Array of long identifiers
 declare -a NewArray       # For copying any array
+declare -a NewArray       # For copying any array
+
+declare -a button_start   # Used in listgen
+declare -a button_text    # Used in listgen
+declare -a button_len     # Used in listgen
+
 declare -A LabellingArray # Associative array of user labels for partitions
 declare -A Labelled       # Associative array of labelled partitions
 declare -A FileSystem     # Associative array of filesystem types (ext* swap)
@@ -81,8 +86,21 @@ Response=""
 Result=""
 
 # Miscellaneous
-helpMESSAGE=""            # Used by help system
+Backtitle="Feliz2 Arch Linux installation script"
 declare -a Options        # For listgen functions
+PrimaryFile=""
+
+# ---- Partitioning ----
+PartitioningOptions="cfdisk guided auto leave"
+LongPart[1]="Open cfdisk so I can partition manually"
+LongPart[2]="Guided manual partitioning tool"
+LongPart[3]="Allow feliz to partition the whole device"
+LongPart[4]="Leave it as it is"
+# EFI
+EFIPartitioningOptions="guided auto leave"
+LongPartE[1]="Guided manual partitioning tool"
+LongPartE[2]="Allow feliz to partition the whole device"
+LongPartE[3]="Leave it as it is"
 
 # ---- Arrays for extra Applications ----
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
@@ -95,14 +113,11 @@ Categories[6]="Office"
 Categories[7]="Programming"
 Categories[8]="Window_Managers"
 # Accessories
-Accessories="brasero conky gnome-calculator gedit gparted nautilus gnome-terminal"
+Accessories="brasero conky gedit gparted"
 LongAccs[1]="Disc burning application from Gnome"
 LongAccs[2]="Desktop time and system information"
-LongAccs[3]="Calculator for your taskbar"
-LongAccs[4]="The text editor from Gnome"
-LongAccs[5]="Tool to make/delete/resize partitions"
-LongAccs[6]="The file-manager from Gnome"
-LongAccs[7]="The Gnome terminal emulator"
+LongAccs[3]="The text editor from Gnome"
+LongAccs[4]="Tool to make/delete/resize partitions"
 # Desktops
 Desktops="Budgie Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Modern desktop focusing on simplicity & elegance"
@@ -163,13 +178,3 @@ LongWMs[4]="Customizable dock & launcher application"
 LongWMs[5]="For opening applications & managing windows"
 LongWMs[6]="Desktop panel"
 LongWMs[7]="Desktop panel"
-
-# Various functions
-
-print_heading() {
-  clear
-  T_COLS=`tput cols`
-  tput cup 1 $((($T_COLS/2)-20))
-  printf "~ $Backtitle ~\n"
-  printf "%$(tput cols)s\n"|tr ' ' '-'
-}

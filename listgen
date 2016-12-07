@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Menu functions - listgen1 and listgen2
 # Developed by Elizabeth Mills
-# Revision date: 7th September 2016
+# Revision date: 6th December 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -10,20 +9,55 @@
 # your option) any later version.
 
 # This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
+#      WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+#            General Public License for more details.
 
 # A copy of the GNU General Public License is available from the Feliz2
-# page at http://sourceforge.net/projects/feliz2/files
-# or https://github.com/angeltoast/feliz2, or write to:
-# The Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#        page at http://sourceforge.net/projects/feliz2/files
+#        or https://github.com/angeltoast/feliz2, or write to:
+#                 The Free Software Foundation, Inc.
+#                  51 Franklin Street, Fifth Floor
+#                    Boston, MA 02110-1301 USA
 
-# See listgen.manual for further guidance
-
-# Both functions return the name of the selected item using global variable $Result
-# and item number as global variable $Response
+# Functions return the text of the selected item as global variable $Result
+# and the selected item number as global variable $Response
 # Window width and height are adjusted according to content
+
+# See listgen.manual for guidance on the use of these functions
+
+# In this module:
+# Functions for providing an intuitive interface without using Dialog
+# --------------------   ------------------------
+# Function        Line
+# --------------------   ------------------------
+# invalid_option   46    Also used outside listgen - check in case duplicated
+# print_heading    52
+# PrintOne         50    Retained for backwards compatibility
+# PrintMany        62     ---- " ---- " ---- " ---- " ----
+# first_item       52    Prints first item of a menu
+# subsequent_item  63    Prints successive menu items
+# PrintRev         69    Reverses text colour
+# DisplayButtons   78    Prints a row of buttons. 3 arguments: Type; Button string; Message string
+# ActiveMenu      140    Controls the highlighting of menu items. 1 argument - Type (Menu, Yes/No)
+# listgen1        243    Generates a simple menu of one-word items
+# listgen2        298    Generates a menu of multi-word items
+# --------------------   ------------------------
+
+invalid_option() {
+  Echo
+  read_timed "Invalid entry. Try again ..." 1
+  cursor_row=$((cursor_row+1))
+}
+
+print_heading() {   # Always use this function to clear the screen
+  clear
+  T_COLS=$(tput cols)                   # Get width of terminal
+  tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
+  printf "%-s\n" "$Backtitle"           # Display backtitle
+  printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
+  cursor_row=3                          # Save cursor row after heading
+}
 
 PrintOne() { # Aligned text according to screen size
   width=$(tput cols)
@@ -33,143 +67,313 @@ PrintOne() { # Aligned text according to screen size
     stpt=$(( (width - lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
   fi
-  echo "$EMPTY $1"
+  Echo "$EMPTY $1"
 }
 
 PrintMany() { # Subsequent item(s) in an aligned list
-  echo "$EMPTY $1"
+  Echo "$EMPTY $1"
 }
 
-Invalid() { # (from AUI scripts)
-  echo
-  read_timed "Invalid entry. Try again ..." 1
+first_item() { # Aligned text according to screen size
+  local width=$(tput cols)
+  local lov=${#1}                             # Length of Variable
+  if [ ${lov} -lt ${width} ]; then
+    stpt=$(( (width - lov) / 2 ))
+  fi
+  tput cup $cursor_row $stpt                  # Move cursor to startpoint
+  printf "%-s\v" "$1"
+  cursor_row=$((cursor_row+1))
+}
+
+subsequent_item() { # Subsequent item(s) in an aligned list
+  tput cup $cursor_row $stpt                  # Move cursor to startpoint
+  printf "%-s\n" "$1"
+  cursor_row=$((cursor_row+1))
+}
+
+PrintRev() {  # Receives numeric argument of item number
+  tput rev                                     # Reverse colour
+  ItemLen=${#ListgenArray[${1}]}
+  Spaces=$((MaxLen-ItemLen))
+  Padding="$(printf '%*s' "$Spaces")"          # Pad with spaces to make length
+  printf "%-s" "${ListgenArray[${1}]}$Padding" # Reprint the item at this position
+  tput sgr0 	                                 # Reset colour
+}
+
+DisplayButtons() {
+  # Receives 3 arguments: 1) Type (Menu, Yes/No); 2) Button string; 3) Message string
+  # Uses arrays declared in f-var
+  local Len=${#2}               # Measure length of button string
+  button_count=0
+  button_end=0
+  this_button_start=0
+  for (( i=1; i <= Len; ++i ))  # Go through the string counting button delimiters
+  do
+    x=$(echo $2 | cut -c $i)
+    if [ $x ] && [ $x = "[" ]; then
+      button_count=$((button_count+1))    # Increment the button counter
+      if [ $button_count -eq 1 ]; then    # Currently limited to two buttons
+        button_start[${button_count}]=$i  # Save start position in the string
+        this_button_start=$i              # Retain start position for end calculation
+      else
+        button_start[${button_count}]=$((i-1))  # Save start position in the string
+        this_button_start=$i                    # Save position for end calculation
+      fi
+      this_button_start=$i                      # Retain start position for end calculation
+    elif [ $x ] && [ $x = "]" ]; then
+      if [ $button_count -eq 1 ]; then
+        button_len[${button_count}]=$((i - this_button_start +1)) # Calculate length
+        button_len[2]=0
+        button_text[2]=""
+      else
+        button_len[${button_count}]=$((i - this_button_start))    # Calculate length
+      fi
+      button_text[${button_count}]=$(echo $2 | cut -c ${button_start[${button_count}]}-$i)
+    fi
+  done
+  if [ $button_count -eq 0 ]; then              # Error exit
+    echo "listgen-sgi line $LINENO - No buttons specified" > feliz.log
+    return 1
+  fi
+
+  # Prepare display
+  local width=$(tput cols)
+  local lov=${#2}                           # Total length of button string
+  if [ ${lov} -lt ${width} ]; then
+    first_button_start=$(( (width - lov) / 2 ))
+  else
+    first_button_start=1
+  fi
+  if [ $button_count -gt 1 ]; then
+    second_button_start=$((first_button_start+button_start[2]))
+  else
+    second_button_start=$first_button_start
+  fi
+  Echo
+  tput cup $cursor_row $first_button_start  # Reposition cursor
+  button_row=$cursor_row                    # Save row position of buttons
+  printf "%-s\n" "$2"                       # Print buttons
+  cursor_row=$((cursor_row+1))              # Advance cursor row after buttons
+  Echo
+  lov=${#3}                                 # Length of message
+  if [ ${lov} -lt ${width} ]; then
+    message_start=$(( (width - lov) / 2 ))
+  else
+    message_start=1
+  fi
+  tput cup $cursor_row $message_start       # Reposition cursor
+  Echo "$3"                                 # Print message
+  ActiveMenu "$1"
+}
+
+ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listgen1 or listgen2)
+  tput civis &
+  local Counter=0
+  selected_button=1
+  if [ $1 = "Yes/No" ]; then        # Prevent vertical cursor movement
+    cursor_bottom=0
+    cursor_top=100
+    cursor_row=$first_button_start  # Prepare to move cursor to first button
+    tput cup $cursor_row $stpt      # Move cursor to selected position
+  else                              # ie: Not Yes/No
+    cursor_row=$cursor_top          # Prepare to move cursor to top
+    tput cup $cursor_row $stpt      # Move cursor to selected position
+    PrintRev "$Counter"             # Print top item in reverse colour
+  fi
+  while :
+  do
+    if [ $selected_button -eq 1 ]; then
+      tput cup $button_row $first_button_start          # Move cursor to button position
+      tput rev                                          # Reverse colour
+      printf "%-${button_len[1]}s" "${button_text[1]}"  # Highlight first button
+      tput sgr0                                         # Restore colour settings
+    else
+      tput cup $button_row $second_button_start         # Move cursor to button position
+      tput rev                                          # Reverse colour
+      printf "%-${button_len[2]}s" "${button_text[2]}"  # Highlight first button
+      tput sgr0                                         # Restore colour settings
+    fi
+    read -rsn1 KeyPress
+    case "${KeyPress}" in                               # Capture key press
+      "") # Ok/Return pressed
+        if [ $1 = "Yes/No" ]; then
+          if [ $selected_button -eq 1 ]; then
+            Response=1
+            Result=""
+          else
+            Response=2
+            Result=""
+          fi
+        else  # ie: menu
+          if [ $selected_button -eq 1 ]; then
+            Response=$((Counter+1))
+            if [ $CalledBy = "listgen2" ]; then
+              Compare=1
+              for i in $PrimaryFile
+              do
+                if [ $Compare -eq $Response ]; then
+                  Result="$i"
+                  break
+                fi
+                Compare=$((Compare+1))
+              done
+            else
+              Result="${ListgenArray[${Counter}]}"
+            fi
+          else
+            Response=0
+            Result="Exit"
+          fi
+        fi
+        tput cnorm
+        break
+      ;;
+      A) # Up arrow:
+        if [ $cursor_row -gt $cursor_top ]; then            # Not already at top
+          tput cup $cursor_row $stpt                        # Reposition cursor
+          printf "%-s\n" "${ListgenArray[${Counter}]}$Padding" # Reprint item at this position
+          cursor_row=$((cursor_row-1))                      # Next row up
+          tput cup $cursor_row $stpt                        # move cursor to selected row
+          Counter=$((Counter-1))                            # Decrease counter for next list item
+          PrintRev $Counter                                 # Print current item in reverse colour
+        fi
+      ;;
+      B) # Down arrow
+        if [ $cursor_row -lt $cursor_bottom ]; then         # Not already at bottom
+          tput cup $cursor_row $stpt                        # Reposition cursor
+          printf "%-s\n" "${ListgenArray[${Counter}]}$Padding" # Reprint item at this position
+          cursor_row=$((cursor_row+1))                      # Next row down
+          tput cup $cursor_row $stpt                        # move cursor to selected row
+          Counter=$((Counter+1))                            # Increase counter for next list item
+          PrintRev $Counter                                 # Print current item in reverse colour
+        fi
+      ;;
+      C) # Right arrow
+        if [ $selected_button -eq 1 ]; then
+          tput cup $button_row $first_button_start          # Move cursor to ok button position
+          printf "%-${button_len[1]}s" "${button_text[1]}"  # Unhighlight ok button
+          tput rev                                          # Reverse colour
+          tput cup $button_row $second_button_start         # Move cursor to exit button position
+          printf "%-${button_len[2]}s" "${button_text[2]}"  # Highlight exit button
+          tput sgr0                                         # Reset
+          tput cup $cursor_row $stpt                        # return cursor to menu row
+          selected_button=2                                 # Set button variable
+        fi
+      ;;
+      D) # Left arrow
+        if [ $selected_button -eq 2 ]; then
+          tput cup $button_row $second_button_start         # Move cursor to second button
+          printf "%-${button_len[2]}s" "${button_text[2]}"  # Unhighlight second button
+          tput rev                                          # Reverse colour
+          tput cup $button_row $first_button_start          # Move cursor to first button position
+          printf "%-${button_len[1]}s" "${button_text[1]}"  # Highlight ok button
+          tput sgr0                                         # Reset
+          tput cup $cursor_row $stpt                        # return cursor to menu row
+          selected_button=1
+        fi
+      ;;
+      *) tput cup $cursor_row $stpt                         # Reposition cursor
+      continue
+    esac
+  done
 }
 
 listgen1() { # Simple listing alternative to the bash 'select' function
-# Arguments:
-# 1) Primary file (string of single-word references)
-# 2) Optional one-word --title
-# 3) Optional hiding of <Cancel> ("nocancel")
-# Read listgen.manual for full details
-local Complete=0
-while [ $Complete -eq 0 ]
-do
-  local Done=$3
-  if [ $2 ]; then
-    PrintOne $2
-    Underscore=$(echo $2 | sed 's/./-/g')
-    PrintOne $Underscore
-  fi
-  local Counter=0
-  MenuList=$1
-  for i in $MenuList
+  # Arguments:
+  # 1) Primary file (string of single-word references)
+  # 2) No longer used
+  # 3) Optional hiding of [ Exit ] ("nocancel")
+  # Read listgen.manual for full details
+  Padding=" "
+  MaxLen=2
+  while :
   do
-    Counter=$((Counter+1))
-    if [ $Counter -eq 1 ]; then
-      PrintOne "$Counter) $i"
-    else
-      PrintMany "$Counter) $i"
-    fi
-    ConvertToArray[$Counter]=$i
-  done
-  case $Done in
-    "") Counter=$((Counter+1))
-        Done="Done"
-        PrintMany "$Counter) Done"
-    ;;
-    "nodone") Done=""
-    ;;
-    *) Counter=$((Counter+1))
-        PrintMany "$Counter) ${Done}"
-  esac
-  echo
-  TPread "Please enter the number of your selection: "
-  case $Response in
-    ''|*[!0-9]*) Invalid
-           continue
-    ;;
-    *) if [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
-        Invalid
-        continue
-      elif [ ${Response} -eq ${Counter} ] && [ -z $Done ]; then
-        Result=${ConvertToArray[${Response}]}
-        Complete=1
-      elif [ ${Response} -eq ${Counter} ]; then
-        Result="$Done"
-        Complete=1
+    local Counter=0
+    MenuList=$1
+    # Find length of longest item to create padding for use in reverse colour
+    for i in $MenuList
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq 1 ]; then
+        MaxLen=${#i}              # Save length
       else
-        Result=${ConvertToArray[${Response}]}
-        Complete=1
+        ItemLen=${#i}
+        if [ $ItemLen -gt $MaxLen ]; then
+          MaxLen=$ItemLen
+        fi
       fi
-  esac
-  clear
-done
+    done
+    # Now run through the file again to print each item
+    Counter=0
+    for i in $MenuList
+    do
+      if [ $Counter -eq 0 ]; then
+        cursor_top=$cursor_row
+        first_item "$i"
+      else
+        subsequent_item "$i"
+      fi
+      ListgenArray[$Counter]=$i   # Save to array for menu actions
+      Counter=$((Counter+1))
+    done
+    CalledBy="listgen1"
+    cursor_bottom=$((cursor_row-1))
+    if [ $3 ] && [ $3 = "nocancel" ]; then
+      DisplayButtons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
+    else
+      DisplayButtons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
+    fi
+    break
+  done
 }
 
 listgen2() { # Advanced menuing function with extended descriptions
-# Arguments:
-# 1) Primary file (string of single-word references)
-# 2) An optional one-word menu heading (which will be underlined on display)
-# 3) Optional alternative word to 'Done'
-# 4) Secondary file (the name of the array containing long descriptions)
-# Read listgen.manual for full details
-local Complete=0
-while [ $Complete -eq 0 ]
-do
-  local Done=$3
-  Result=""
-  PrimaryFile="$1"
-  name=$4[@]
-  LongDescription=("${!name}")
-  local Counter=0
-  echo
-  if [ -n $2 ]; then
-    PrintOne $2
-    Underscore=$(echo $2 | sed 's/./-/g')
-    PrintOne $Underscore
-  fi
-  Counter=0
-  for i in "${LongDescription[@]}"; do
-    Counter=$((Counter+1))
-    if [ $Counter -eq 1 ]; then
-      PrintOne "${Counter}) $i"
-    else
-      PrintMany "${Counter}) $i"
-    fi
-  done
-  case $Done in
-    "") Counter=$((Counter+1))
-        Done="Done"
-        PrintMany "$Counter) Done"
-    ;;
-    "nodone") Done=""
-    ;;
-    *) Counter=$((Counter+1))
-        PrintMany "$Counter) ${Done}"
-  esac
-  echo
-  TPread "Please enter the number of your selection: "
-  case $Response in
-    ''|*[!0-9]*) Invalid
-            continue
-    ;;
-    *) if [ ${Response} -gt ${Counter} ]; then
-        Invalid
-        continue
-      elif [ ${Response} -eq ${Counter} ]; then
-        Result="$Done"
-        Complete=1
+  # Arguments:
+  # 1) Primary file (string of single-word references)
+  # 2) Not used in interactive menus
+  # 3) Optional hiding of [ Exit ] ("nocancel")
+  # 4) Secondary file (the name {only} of the array containing long descriptions)
+  # Read listgen.manual for full details
+  Padding=" "
+  MaxLen=2
+  while :
+  do
+    Result=""
+    PrimaryFile="$1"
+    name=$4[@]
+    LongDescription=("${!name}")
+    # First find length of longest item to create padding for use in reverse colour
+    Max=$(echo $PrimaryFile | wc -w)
+    for (( i=0; i < $Max; ++i ))
+    do
+      if [ $i -eq 0 ]; then
+        MaxLen=${#LongDescription[${i}]}
       else
-        local Match=0
-        for i in $PrimaryFile; do
-          Match=$((Match+1))
-          if [ $Match -eq $Response ]; then
-            Result="$i"
-          fi
-        done
-        Complete=1
+        ItemLen=${#LongDescription[${i}]}
+        if [ $ItemLen -gt $MaxLen ]; then
+          MaxLen=$ItemLen
+        fi
       fi
-  esac
-  clear
-done
+    done
+    # Now run through the file again to print each item
+    for (( i=0; i < $Max; ++i ))
+    do
+      if [ $i -eq 0 ]; then
+        cursor_top=$cursor_row
+        ListgenArray[$i]="${LongDescription[${i}]}"   # Save to array for menu actions
+        first_item "${LongDescription[${i}]}"
+      else
+        ListgenArray[$i]="${LongDescription[${i}]}"   # Save to array for menu actions
+        subsequent_item "${LongDescription[${i}]}"
+      fi
+    done
+    CalledBy="listgen2"
+    cursor_bottom=$((cursor_row-1))
+    if [ $3 ] && [ $3 = "nocancel" ]; then
+      DisplayButtons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
+    else
+      DisplayButtons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
+    fi
+    return 0
+  done
 }
