@@ -225,16 +225,19 @@ Partitioning() {  # THIS TO BE EXPANDED TO INCLUDE LVM
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    listgen2 "$PartitioningOptions" "Partitioning" "" "LongPart"
+    listgen2 "$PartitioningOptions" "" "nocancel" "LongPart"
     Proceed=$Response
     Echo
     case $Proceed in
       1) cfdisk 2>> feliz.log
-        tput setf 0 # Change foreground colour to black temporarily to hide error message
+        tput setf 0             # Change foreground colour to black temporarily to hide error message
         clear
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
-        tput sgr0 # Reset colour
+        tput sgr0               # Reset colour
         ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+        if [ -z $ShowPartitions ]; then
+          CheckParts            # If no partitions, restart
+        fi
       ;;
       2) GuidedMBR
       ;;
@@ -500,7 +503,7 @@ AllocateRoot() {
           EditLabel $PassPart
         fi
       fi
-      break
+      # break             # Debug
     else
       Remaining="$Remaining $i" # Add next available partition
     fi
@@ -712,6 +715,7 @@ MakePartition() { # Called by MorePartitions
   LoopRepeat="Y"
   while [ ${LoopRepeat} = "Y" ]
   do
+    print_heading
     Echo
     PrintOne "Enter a mountpoint for ${Partition} ..."
     TPread "(eg: /home) ... /"

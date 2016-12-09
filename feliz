@@ -202,7 +202,4 @@ fi
 
 cp feliz.log ltsgroup.txt /mnt/etc # Copy installation log for reference
 
-print_heading
-PrintOne "Congratulations, installation is complete."
-read_timed "Shutting down the computer so you can remove the installation media"
-shutdown -h now
+Restart     # Function with options to shutdown or eject media and reboot

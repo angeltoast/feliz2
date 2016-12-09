@@ -25,14 +25,14 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           36       McInitCPIO           195
-# Parted                41       ReflectorMirrorList  205
-#                                LocalMirrorList      215
+# arch_chroot           36       ReflectorMirrorList  205
+# Parted                41       LocalMirrorList      215
 # TPecho                63       InstallDM            230
 # read_timed            81       InstallLuxuries      240
 # MountPartitions       99       UserAdd              325
 # InstallKernel        162       SetRootPassword      340
 # AddCodecs            180       SetUserPassword      378
+# McInitCPIO           195       Restart
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
@@ -104,7 +104,7 @@ MountPartitions() {
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mke2fs ${Label} -q -t ${RootType} ${RootPartition} 2>> feliz.log
+      mkfs.${RootType} ${Label} ${RootPartition} 2>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
@@ -150,13 +150,15 @@ MountPartitions() {
       btrfs-convert ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} 2>> feliz.log &>> feliz.log   # eg: mkfs.btrfs -f /dev/sda2
+    elif [ ${AddPartType[$Counter]} = "xfs" ]; then
+      mkfs.xfs -f ${id} 2>> feliz.log                   # eg: mkfs.xfs -f /dev/sda2
     elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=${id: -4}                               # Last 4 characters of ${id}
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"                             # Prepare label
       fi
-      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log # eg: mkfs.ext4 -L Arch-Home /dev/sda3
     fi
     mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
     Counter=$((Counter+1))
@@ -431,3 +433,14 @@ SetUserPassword() {
     fi
   done
 }
+
+Restart() {
+  print_heading
+  Echo
+  read_timed "Congratulations, installation is complete." 1
+  Echo
+  read_timed "Feliz will now shut the computer down, to allow" 1
+  read_timed "you to remove the installation media before rebooting." 1
+  shutdown -h now
+}
+

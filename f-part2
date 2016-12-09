@@ -527,15 +527,17 @@ GuidedRoot() { # Variables: RootSize, RootType
     PrintOne "and perhaps also a home partition. The root partition"
     PrintOne "should not be less than 8GiB - ideally more, up to 20GiB"
     Echo
-    PrintOne "Please enter the desired size in Gigabytes"
-    PrintOne "or, to allocate all the remaining space, enter: 100%"
+    PrintOne "Please enter the desired size in Gigabytes, or"
+    PrintOne "to allocate all the remaining space, enter: 100%"
     Echo
     TPread "Size [eg: 12G or 100%]: "
     RESPONSE="${Response^^}"
     # Check that entry includes 'G or %'
     CheckInput=${RESPONSE: -1}
     Echo
-    if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ]; then
+    if [ -z ${CheckInput} ]; then
+      continue
+    elif [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ]; then
       PrintOne "You must include G or %"
       RootSize=""
       continue
@@ -543,6 +545,7 @@ GuidedRoot() { # Variables: RootSize, RootType
       RootSize=$RESPONSE
       Partition="/root"
       print_heading
+      PrintOne "${RootSize} allocated to /root"
       select_filesystem
       RootType=${PartitionType}
       break
@@ -633,7 +636,7 @@ GuidedHome() { # Variables: HomeSize, HomeType
     PrintOne "Please enter the desired size in Gigabytes"
     PrintOne "or, to allocate all the remaining space, enter: 100%"
     Echo
-    TPread "Size [eg: ${FreeGigs}G or 100% or 0]: "
+    TPread "Size [eg: 100% or 0]: "
     RESPONSE="${Response^^}"
     Echo
     case ${RESPONSE} in
@@ -649,6 +652,7 @@ GuidedHome() { # Variables: HomeSize, HomeType
           HomeSize=$RESPONSE
           Partition="/home"
           print_heading
+          PrintOne "${RootSize} of remaining space allocated to /home"
           select_filesystem
           HomeType=${PartitionType}
           break

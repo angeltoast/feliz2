@@ -76,7 +76,8 @@ PrintMany() { # Subsequent item(s) in an aligned list
 
 first_item() { # Aligned text according to screen size
   local width=$(tput cols)
-  local lov=${#1}                             # Length of Variable
+  # local lov=${#1}                             # Length of Variable
+  local lov=$MaxLen
   if [ ${lov} -lt ${width} ]; then
     stpt=$(( (width - lov) / 2 ))
   fi
@@ -318,11 +319,13 @@ listgen1() { # Simple listing alternative to the bash 'select' function
     done
     CalledBy="listgen1"
     cursor_bottom=$((cursor_row-1))
-    if [ $3 ] && [ $3 = "nocancel" ]; then
-      DisplayButtons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
-    else
-      DisplayButtons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
-    fi
+    case $3 in
+    "nocancel") DisplayButtons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
+    ;;
+    "") DisplayButtons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
+    ;;
+    *) DisplayButtons "Menu" "[ Ok ] [ $3 ]" "Use arrow keys to move. [Enter] to select"
+    esac
     break
   done
 }

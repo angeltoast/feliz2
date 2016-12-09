@@ -38,11 +38,6 @@
 # PickLuxuries     280    AddExtras           736
 # --------------------    -----------------------
 
-invalid_option() {
-  Echo
-  read_timed "Invalid entry. Please try again ..." 1
-}
-
 not_found() {
   Echo
   read_timed "Not found. Please try again ..." 1
@@ -109,7 +104,7 @@ ConfirmVbox() {
 getkeymap() {
   print_heading
   Echo
-  PrintOne "Let's try to find your keyboard"
+  PrintOne "Let's try to find your keyboard layout"
   while :
   do
     PrintOne "If you know the code for your keyboard layout, please enter"
@@ -117,12 +112,13 @@ getkeymap() {
     PrintOne "your country or language and a list will be displayed. If"
     PrintOne "your keyboard is not listed, select [ Exit ] to try again."
     Echo
-    TPread "(eg: 'atari' or 'us'): "
+    TPread "(eg: 'dvorak' or 'us'): "
     local Term="${Response,,}"
     Echo
     ListKbs=$(cat keymaps.list | grep ${Term})
     if [ -n "${ListKbs}" ]; then  # If a match or matches found
       print_heading
+      PrintOne "Select your keyboard, or [ Exit ] to try again"
       listgen1 "$ListKbs" "" ""
       if [ ${Result} = "Exit" ]; then
         print_heading
@@ -169,7 +165,7 @@ setlocale() {
       localelist=""
       for l in ${LocaleList[@]}
       do
-        localelist="${localelist} $l"
+        localelist="${localelist} $l" # Convert to text list
         Counter=$((Counter+1))
       done
       if [ $Counter -eq 0 ]; then
@@ -184,16 +180,35 @@ setlocale() {
         Newlist="$Newlist ${loc:0:2}"
       done
       localelist="${Newlist}"
+      choosefrom=""
+      Newlist=""
+      for l in ${localelist}
+      do
+        Item="$(grep $l\$ languages.list | awk '{print $1}')"
+        if [ -n $Item ]; then
+        choosefrom="$choosefrom $Item"
+        newlist="$newlist $l"
+        fi
+      done
       print_heading
       Echo
       PrintOne "Now please choose your language from this list,"
       PrintOne "or [ Exit ] to try again."
-      listgen1 "${localelist}" "" ""
+      listgen1 "${choosefrom}" "" ""
       case $Result in
       "Exit") Echo
       ;;
-      *) CountryLocale="${Result}_${SEARCHTERM}.UTF-8"
-        CountryCode=${Result:3:2}                     # 2 characters from position 3 in $Result
+      *) Counted=0
+        for l in ${localelist}
+        do
+          if [ $Counted -eq $Response ]; then
+            Item="$l"
+            break
+          fi
+          Counted=$((Counted+1))
+        done
+        CountryLocale="${Item}_${SEARCHTERM}.UTF-8"
+        CountryCode=${CountryLocale:3:2}                     # 2 characters from position 3
         break
       esac
     fi
