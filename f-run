@@ -61,28 +61,8 @@ TPecho() { # For displaying status while running on auto
   tput sgr0
 }
 
-read_timed() { # Timed display - $1 = text to display; $2 = duration
-  T_COLS=`tput cols`
-  lov=${#1}
-  if [ $2 ]; then
-    tim=$2
-  else
-    tim=2
-  fi
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
-  else
-    EMPTY=""
-  fi
-  read -t ${tim} -p "$EMPTY $1"
-  cursor_row=$((cursor_row+1))
-  Echo
-}
-
 MountPartitions() {
   TPecho "Preparing and mounting partitions" ""
-
   # First unmount any mounted partitions
   umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
   # 1) Root partition
@@ -104,18 +84,16 @@ MountPartitions() {
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mkfs.${RootType} ${Label} ${RootPartition} 2>> feliz.log
+      mkfs.${RootType} -f ${Label} ${RootPartition} 2>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
-
   # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if EFI /boot partition required
     mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
   fi
-
   # 3) Swap
   if [ ${SwapPartition} ]; then
     swapoff -a 2>> feliz.log                            # Make sure any existing swap cleared
@@ -439,8 +417,9 @@ Restart() {
   Echo
   read_timed "Congratulations, installation is complete." 1
   Echo
-  read_timed "Feliz will now shut the computer down, to allow" 1
-  read_timed "you to remove the installation media before rebooting." 1
+  read_timed "The computer will now shut down, so you can" 1
+  read_timed "remove the installation media before rebooting." 1
+  Echo
   shutdown -h now
 }
 

@@ -309,7 +309,7 @@ AutoWarning() {
     PrintOne "This will erase any data on ${UseDisk}"
     PrintOne "Are you sure you wish to continue?: "
     Echo
-    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
     case $Response in
       "1" | "Y" | "y") autopart   # Consolidated auto-partitioning function
         print_heading
@@ -573,7 +573,7 @@ AllocateSwap() {
             PrintOne "system will no longer be unable to access the partition."
             PrintOne "Do you wish to reformat it?"
             Echo
-            DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+            Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
             case $Response in
               "1" | "Y" | "y") MakeSwap="Y"
               ;;
@@ -612,7 +612,7 @@ NoPartitions() { # There are no unallocated partitions
   PrintOne "but you can allocate a swap file, if you wish."
   Message="Create a swap file?: "
   Echo
-  DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+  Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
   case $Response in
     "1" | "Y" | "y") SetSwapFile
       SwapPartition=""

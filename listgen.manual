@@ -1,8 +1,7 @@
-Using the listgen functions
----------------------------
-Developed by Elizabeth Mills
+Using the listgen functions - Elizabeth Mills
+---------------------------------------------
 
-Functions for providing an intuitive cli interface without using Dialog, Whiptail, or any other menuing package.
+Listgen provides functions for providing an intuitive cli interface without using Dialog, Whiptail, or any other menuing package.
 
 The listgen scripts are free software; you can redistribute it and/or modify them under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -34,6 +33,7 @@ These functions are designed to be application-independent, and any of them may 
 # ActiveMenu       -  Controls the highlighting of menu items
 # listgen1         -  Generates a menu of one-word items
 # listgen2         -  Generates a menu of multi-word items
+# listgenx         -  Generates a numbered list, for lists that exceed screen size
 
 listgen1
 --------
@@ -45,7 +45,7 @@ It takes the form: listgen1 "argument1" "argument2" "argument3"
 
 It receives up to three string arguments:
  1) A simple string array variable of the items to be listed;
- 2) This argument is no longer used;
+ 2) Optional argument 'nodescription' to display without instructions below buttons. This is for situations where a menu is close to filling the screen;
  3) An optional argument 'nocancel' to display without an [ Exit ] button (useful to ensure that one of the options is chosen).
 
 If the 3rd argument is required, there must be a 2nd argument, even if it is an empty string.
@@ -72,6 +72,9 @@ The first (string array) variable may be passed in one of three ways:
 listgen1 sets 2 global variables for use by the calling function ...
  1) $Response - the item number selected by the user, and
  2) $Result - the label (from the variable array) of the item selected.
+ 
+listgenx is similar to listgen1, but instead of a cursor-driven menu, it generates a numbered list from which the user can choose by enetering the number of the item. This is provided for situations where a
+listgen1 menu would scroll off the screen.
 
 -----------------------------------------------------------------------
 

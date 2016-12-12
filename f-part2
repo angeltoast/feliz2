@@ -53,7 +53,7 @@ EasyEFI() {               # Main EFIfunction - Inform user of purpose, call each
     Echo
     PrintOne "Do you wish to allocate a swapfile?"
     Echo
-    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
     Echo
     if [ $Response -eq 1 ]; then
       print_heading
@@ -264,7 +264,7 @@ EasySwap() { # Variables: SwapSize
     case ${RESPONSE} in
       "" | 0) PrintOne "Do you wish to allocate a swapfile?"
           Echo
-        DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+        Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
         Echo
         if [ $Response -eq 1 ]; then
           SetSwapFile
@@ -348,7 +348,7 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
     PrintOne "This will erase any data on ${UseDisk}"
     PrintOne "Are you sure you wish to continue?: "
     Echo
-    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
     case $Response in
       "1" | "Y" | "y") WipeDevice   # Format the drive
         Parted "mklabel gpt"        # Create EFI partition table
@@ -461,7 +461,7 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
   Echo
   PrintOne "You will have the opportunity to review these later."
   Echo
-  DisplayButtons "Yes/No" "[ Ok ]" "Press [Enter] to continue"
+  Buttons "Yes/No" "[ Ok ]" "Press [Enter] to continue"
 }
 
 WipeDevice() {                # Format the drive for EFI
@@ -493,7 +493,7 @@ GuidedMBR() {                 # Main MBR function - Inform user of purpose, call
     Echo
     PrintOne "Do you wish to allocate a swapfile?"
     Echo
-    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
     Echo
     if [ $Response -eq 1 ]; then
       print_heading
@@ -596,7 +596,7 @@ GuidedSwap() { # Variables: SwapSize
     case ${RESPONSE} in
       "" | 0) PrintOne "Do you wish to allocate a swapfile?"
           Echo
-        DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+        Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
         Echo
         if [ $Response -eq 1 ]; then
           SetSwapFile
@@ -676,7 +676,7 @@ ActionGuided() {  # Final step - Uses the variables set above to create partitio
     PrintOne "This will erase any data on ${UseDisk}"
     PrintOne "Are you sure you wish to continue?: "
     Echo
-    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
     case $Response in
       "1" | "Y" | "y") Parted "mklabel msdos"  # Create mbr partition table
         break
@@ -771,5 +771,5 @@ ActionGuided() {  # Final step - Uses the variables set above to create partitio
   Echo
   PrintOne "You will have the opportunity to review these later."
   Echo
-  DisplayButtons "Yes/No" "[ Ok ]" "Press [Enter] to continue"
+  Buttons "Yes/No" "[ Ok ]" "Press [Enter] to continue"
 }

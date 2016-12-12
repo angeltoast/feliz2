@@ -25,17 +25,19 @@
 # --------------------   ------------------------
 # Function        Line   Function            Line
 # --------------------   ------------------------
-# invalid_option    39    KeepOrDelete        315
-# TPread            44    ShoppingList        376
-# SetKernel         59    ChooseDM            401
-# ConfirmVbox       75    SetGrubDevice       549
-# getkeymap        100     --- Review stage ---
-# setlocale        138    FinalCheck          577
-# SetTimeZone      195    ManualSettings      682
-# SetSubZone       208    ChangeRootPartition 708
-# Username         248    ChangeSwapPartition 716
-# Hostname         264    ChangePartitions    724
-# PickLuxuries     280    AddExtras           736
+# not_found         42    SetHostname         487
+# Echo              47    PickLuxuries        504
+# TPread            52    KeepOrDelete        536
+# SetKernel         68    ShoppingList        563
+# ConfirmVbox       81    ChooseDM            665
+# getkeymap        105    SetGrubDevice       722
+# setlocale        145     --- Review stage ---
+# SetTimeZone      279    FinalCheck          746
+# SelectSubZone    319    ManualSettings      853
+# SetSubZone       328    ChangeRootPartition 876
+# America          415    ChangeSwapPartition 884
+# DoCities         446    ChangePartitions    892
+# Username         471    AddExtras           904
 # --------------------    -----------------------
 
 not_found() {
@@ -87,7 +89,7 @@ ConfirmVbox() {
     Echo
     PrintOne "Install Virtualbox guest utilities?: "
     Echo
-    DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
     Echo
     case $Response in
       1) IsInVbox="VirtualBox"
@@ -143,161 +145,317 @@ getkeymap() {
 
 setlocale() {
   SearchPrompt=" (for example: GB or PT): "
-  print_heading
-  PrintOne "Next we will try to find your locale. This will"
-  PrintOne "be used to set fonts and language, and to find"
-  PrintOne "the best mirrors for downloading your system"
+  City=$SUBZONE                                     # Use a copy of $SUBZONE set in SetTimeZone
   while :
   do
-    Echo
-    PrintOne "Please enter a two-letter code for your country."
-    Echo
-    TPread "$SearchPrompt"
-    if [ -z ${Response} ]
-    then
-      invalid_option
-    else
-      Echo
-      Response="${Response:0:2}"              # Make sure only two characters
-      SEARCHTERM="${Response^^}"              # Set to all uppercase
-      LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | sed 's/\..*$//' | sed 's/#//g' | awk '{print $1}' | sort | uniq)
-      local Counter=0
-      localelist=""
-      for l in ${LocaleList[@]}
-      do
-        localelist="${localelist} $l" # Convert to text list
-        Counter=$((Counter+1))
-      done
-      if [ $Counter -eq 0 ]; then
-        not_found
+    print_heading
+    PrintOne "Next we will try to find your locale. This will"
+    PrintOne "be used to set fonts and language, and to find"
+    PrintOne "the best mirrors for downloading your system"
+    if [ $City ] && [ -n "$City" ]; then            # If subzone found  ...
+      cityfile=$(cat cities.list | grep "$City")    # Try to find $City in cities.list
+                                                    # The characters up to the ':' are the city name
+                                                    # cityname=$(echo "${cityfile%%:*}")
+      SEARCHTERM=$(echo "${cityfile##*:}")          # The characters after the ':' are the country code
+      SEARCHTERM=${SEARCHTERM:0:2}                  # Ensure no trailing spaces
+      if [ $SEARCHTERM ]; then
+        Echo
+        PrintOne "Country code: $SEARCHTERM found from your city: ${City}."
+        PrintOne "Shall we use this as your locale?"  # Allow user to confirm
+        Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      else
+        Response=2
+      fi
+      if [ $Response -eq 2 ]; then
+        City=""
         continue
       fi
-      Counted=$(echo $localelist | wc -w)
-      Newlist=""
-      for (( i=1; i <= Counted; ++i ))
-      do
-        loc=$(echo $localelist | awk "{print \$$i}")
-        Newlist="$Newlist ${loc:0:2}"
-      done
-      localelist="${Newlist}"
-      choosefrom=""
-      Newlist=""
-      for l in ${localelist}
-      do
-        Item="$(grep $l\$ languages.list | awk '{print $1}')"
-        if [ -n $Item ]; then
-        choosefrom="$choosefrom $Item"
-        newlist="$newlist $l"
-        fi
-      done
-      print_heading
+    else                                            # If not found, user will have to enter country code
       Echo
-      PrintOne "Now please choose your language from this list,"
-      PrintOne "or [ Exit ] to try again."
-      listgen1 "${choosefrom}" "" ""
-      case $Result in
-      "Exit") Echo
-      ;;
-      *) Counted=0
-        for l in ${localelist}
-        do
-          if [ $Counted -eq $Response ]; then
-            Item="$l"
-            break
-          fi
-          Counted=$((Counted+1))
-        done
+      PrintOne "Please enter a two-letter code for your country."
+      Echo
+      TPread "$SearchPrompt"                        # Could be GB or gb
+      if [ -z ${Response} ]
+      then
+        invalid_option
+        continue
+      else
+        Echo
+        Response="${Response:0:2}"                  # Make sure only two characters
+        SEARCHTERM="${Response^^}"                  # Set to all uppercase
+      fi
+    fi
+    LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | sed 's/\..*$//' | sed 's/#//g' | awk '{print $1}' | sort | uniq)      # Find all matching entries in locale.gen
+    local Counter=0                                 # This will be a table of locales in the
+    localelist=""                                   # form cy_GB en_GB gd_GB ...
+    for l in ${LocaleList[@]}
+    do
+      localelist="${localelist} $l"                 # Add each item to text list for handling
+      Counter=$((Counter+1))
+    done
+    if [ $Counter -eq 0 ]; then                     # If none found, try again
+      not_found
+      continue
+    fi
+    Counted=$(echo $localelist | wc -w)             # Count number of words in $localelist
+    Newlist=""
+    for (( i=1; i <= Counted; ++i ))                # Get list of all languages for locale
+    do
+      loc=$(echo $localelist | awk "{print \$$i}")  # Save the $i item from localelist to Newlist
+      Newlist="$Newlist ${loc:0:2}"                 # First two characters are language code
+    done
+    if [ $i -lt 2 ]; then                           # No language code found
+      not_found
+      continue
+    elif [ $i -lt 3 ]; then                         # Only one language code found
+      Echo
+      Item=$(echo ${Newlist} | xargs)               # Trim any leading and trailing spaces
+      Language="$(grep $Item\$ languages.list | awk 'BEGIN { FS = ":"; OFS = ":" } {print $1}')"
+      PrintOne "Only one language found for your location: $Language"
+      PrintOne "Shall we use this as your language?"  # Allow user to confirm
+      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      if [ $Response -eq 2 ]; then
+        City=""
+        continue
+      else
         CountryLocale="${Item}_${SEARCHTERM}.UTF-8"
         CountryCode=${CountryLocale:3:2}                     # 2 characters from position 3
         break
-      esac
+      fi
+    else
+      localelist="${Newlist}"
     fi
+    Newlist=""
+    Prev="xyz"
+    for l in $localelist                                    # Remove any duplicates
+    do
+      if [ $l != $Prev ]; then
+        Newlist="$Newlist $l"
+        Prev=$l
+      fi
+    done
+    localelist="${Newlist}"                                 # Copy to working variable
+    choosefrom=""
+    Newlist=""
+    Counter=0                         # Prepare to limit length of file
+    local Rows=$(tput lines)          # to ensure list doesn't over-run
+    Rows=$((Rows-2))                  # Available (printable) rows
+    for l in ${localelist}
+    do
+      Item="$(grep $l\$ languages.list | awk 'BEGIN { FS = ":"; OFS = ":" } {print $1}')" # Find the language
+      if [ $Item ]; then
+        choosefrom="$choosefrom $Item"                    # Create a list of languages for user
+        Newlist="$Newlist $l"                             # ... and a matching list of codes
+      fi
+      Counter=$((Counter+1))
+    done
+    localelist="${Newlist}"                               # Ensure that localelist matches choosefrom
     print_heading
+    PrintOne "Now please choose your language from this list, or [ Exit ] to try again."
+    if [ $Counter -ge $Rows ]; then
+      listgenx "${choosefrom}" "nomessage" ""            # Alternative (numbered) list
+    else
+      listgen1 "${choosefrom}" "nomessage" ""
+    fi
+    case $Result in
+    "Exit") Echo
+    ;;
+    *) Counted=1
+      for l in ${localelist}
+      do
+        if [ $Counted -eq $Response ]; then
+          break
+        fi
+        Counted=$((Counted+1))
+      done
+      CountryLocale="${l}_${SEARCHTERM}.UTF-8"
+      CountryCode=${CountryLocale:3:2}                        # 2 characters from position 3
+      break
+    esac
   done
   print_heading
-  read_timed "Locale is set to: ${CountryLocale:0:5}" 1 # 5 characters from position 0 in $CountryLocale
+  read_timed "Locale is set to: ${CountryLocale:0:5}" 1       # 5 characters from position 0 in $CountryLocale
 }
 
 SetTimeZone() {
-  while :
+  SUBZONE=""
+  while [ -z $SUBZONE ]
   do
     print_heading
     PrintOne "To set the system clock, please first"
     PrintOne "choose the World Zone of your location."
-    Zones=$(timedatectl list-timezones | sed 's/\/.*$//' | uniq)
+    Zones=$(timedatectl list-timezones | sed 's/\/.*$//' | uniq) # Ten world zones
     Echo
     zones=""
-    for x in ${Zones[@]}
+    for x in ${Zones[@]}                      # Convert to space-separated list
     do
       zones="$zones $x"
     done
-    listgen1 "${zones}" "" "nocancel"
+    listgen1 "${zones}" "" "nocancel"         # Allow user to select one
     ZONE=$Result
     Echo
-    case $Result in
+    case $Result in                           # UTC requires no subzone
       "UTC") SUBZONE=""
           print_heading
-          read_timed "Zone set to: '$ZONE'" 1
-          return 0
+          read_timed "Zone set to: '$ZONE'" 1 # Display and exit
+          break
       ;;
-      "Exit") continue
+      *) SetSubZone                           # Call subzone function
+        case $SUBZONE in                      # If user elects to change zone
+        "Exit") SUBZONE=""
+            continue
       ;;
-      *) SetSubZone
-        if [ $Return = "Exit" ]; then
-          continue
-        else
-          print_heading
+      "") continue                            # ... or if escape, etc
+      ;;
+      *) print_heading                        # Should be complete
           read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
-          return 0
-        fi
+        esac
     esac
   done
 }
 
-SetSubZone() {
-  SubZones=$(timedatectl list-timezones | grep ${ZONE} | sed 's/^.*\///')
-  while :
+SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
+  SubZones=$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')
+  Ocean=0
+  SUBZONE=""
+  while [ -z $SUBZONE ]
   do
-    print_heading
-    PrintOne "World Zone = $ZONE"
-    Echo
-    PrintOne "We can search on the first letter of your nearest"
-    PrintOne "major city. To change World Zone, leave empty."
-    Echo
-    TPread "Please enter one letter: "
-    Echo
-    if [ -z ${Response} ]
-    then
-      SetTimeZone
-    else
-      Response="${Response:0:1}"  # In case user enters more than one letter
-      Zone2="${Response^^}"     # Convert the first letter to upper case
-    fi
-    subzones=""
-    local Counter=0
-    for x in ${SubZones[@]}
-    do
-      if [ ${x:0:1} = ${Zone2} ]; then    # 1 character at position 0 in string $x
-        subzones="$subzones $x"
-        Counter=$((Counter+1))
-      fi
-    done
-    if [ ${Counter} -eq 0 ]; then
-      invalid_option
-      continue
-    fi
-    print_heading
-    PrintOne "Now choose your city from this list"
-    PrintOne "... or [ Exit ] to try again if it is not there"
-    Echo
-    listgen1 "$subzones" "" ""
-    case $Result in
-      "Exit") SUBZONE=""
-      ;;
-      *) SUBZONE=$Result
+    case $ZONE in
+    "Antarctica") SelectSubzone
+    ;;
+    "Arctic") SUBZONE="Longyearbyen"
+    ;;
+    "Atlantic") Ocean=1
+      SelectSubzone
+    ;;
+    "Australia") Ocean=1
+      SelectSubzone
+    ;;
+    "Indian") Ocean=1
+      SelectSubzone
+    ;;
+    "Pacific") Ocean=1
+      SelectSubzone
+    ;;
+    "America") America
+     ;;
+    *)  SelectSubzone
     esac
-    break
   done
+}
+
+SelectSubzone() {
+  print_heading
+  case $Ocean in
+  1) PrintOne "Now we need to find your location in the $ZONE"
+      PrintOne "ocean. Please enter the first letter of the island"
+      PrintOne "or group where you are located."
+    ;;
+  *) PrintOne "Now we need to find your location in $ZONE"
+    PrintOne "Please enter the first letter of your nearest major city"
+  esac
+  PrintOne "... or leave blank to select another world zone"
+  Echo
+  FindCity
+}
+
+America() {
+  SUBZONE=""      # Make sure this variable is empty
+  print_heading
+  PrintOne "Are you in any of these states?"
+  SubList=""      # Start an empty list
+  Previous=""     # Prepare to save previous record
+  local Toggle="First"
+  for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}')
+  do
+    if [ $Previous ] && [ $i = $Previous ] && [ $Toggle = "First" ]; then # First reccurance
+      SubList="$SubList $i"
+      Toggle="Second"
+    elif [ $Previous ] && [ $i != $Previous ] && [ $Toggle = "Second" ]; then # 1st occ after prev group
+      Toggle="First"
+      Previous=$i
+    else                                                                  # Subsequent occurances
+      Previous=$i
+    fi
+  done
+  SubGroup=""
+  SubList="$SubList None_of_these"        # Add a decline option
+  listgen1 "$SubList"
+  case $Result in
+  "None_of_these") SelectSubzone          # No subgroup, call general city function
+  ;;
+  "Exit") SetTimeZone
+  ;;
+  *) SubGroup=$Result                     # Save subgroup for next function
+    ZONE="${ZONE}/$SubGroup"              # Add subgroup to ZONE
+    DoCities                              # City function for subgroups
+  esac
+}
+
+FindCity() {  # Called by SelectSubzone
+  TPread "Please enter the initial letter: "
+  Echo
+  if [ -z ${Response} ]
+  then
+    SUBZONE=""
+    SetTimeZone
+  else
+    Response="${Response:0:1}"        # In case user enters more than one letter
+    Zone2="${Response^^}"             # Convert the first letter to upper case
+  fi
+  subzones=""
+  local Rows=$(tput lines)            # Used to allow for longer (numbered) lists
+  Rows=$((Rows-6))                    # Available (printable) rows
+  local Counter=0
+  for x in ${SubZones[@]}             # Search long list of subzones that match ZONE
+  do                                  # to find those that start with user's letter
+    if [ ${x:0:1} = ${Zone2} ]; then  # If first character in subzone matches ...
+      subzones="$subzones $x"         # Save to list
+      Counter=$((Counter+1))
+    fi
+  done
+  if [ ${Counter} -eq 0 ]; then       # None found
+    not_found
+    continue
+  fi
+  print_heading
+  PrintOne "Now choose your nearest location from this list"
+  PrintOne "... or [ Exit ] to try again if it is not there"
+  if [ $Counter -ge $Rows ]; then
+    listgenx "$subzones" "" ""
+  else
+    listgen1 "$subzones" "nomessage" ""
+  fi
+  case $Result in
+    "Exit") SUBZONE=""
+    ;;
+    *) SUBZONE=$Result
+  esac
+}
+
+DoCities() { # Specifically for America, which has subgroups
+  print_heading
+  Cities=""
+  case $SubGroup in
+  "") # No subgroup selected. Here we are working on the second field - cities without a subgroup
+      for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}')
+      do
+        Cities="$Cities $i"
+      done
+  ;;
+  *) # Here we are working on the third field - cities within the chosen subgroup
+      for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $3}')
+      do
+        Cities="$Cities $i"
+      done
+  esac
+  PrintOne "Please select a city from this list"
+  listgen1 "$Cities"
+  case $Result in
+  "Exit") SetTimeZone
+  ;;
+  *) SUBZONE=$Result
+  esac
 }
 
 UserName() {
@@ -371,7 +529,7 @@ KeepOrDelete() {
   do
     print_heading
     Message="$Bagged is already in your shopping list."
-    DisplayButtons "Yes/No" "[ Keep ] [ Delete ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Keep ] [ Delete ]" "Use arrow keys to move. [Enter] to select"
     case $Response in
       1) Temp="$LuxuriesList"
         break
@@ -541,7 +699,7 @@ ChooseDM() { # Choose a display manager
       Echo
       PrintOne "Do you wish to change it?: "
       Echo
-      DisplayButtons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
       Echo
       if [ $Response -eq 1 ]; then    # User wishes to change DM
         DisplayManager=""             # Clear DM variable

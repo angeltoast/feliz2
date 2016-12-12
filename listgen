@@ -38,16 +38,32 @@
 # first_item       52    Prints first item of a menu
 # subsequent_item  63    Prints successive menu items
 # PrintRev         69    Reverses text colour
-# DisplayButtons   78    Prints a row of buttons. 3 arguments: Type; Button string; Message string
+# Buttons          78    Prints a row of buttons. 3 arguments: Type; Button string; Message string
 # ActiveMenu      140    Controls the highlighting of menu items. 1 argument - Type (Menu, Yes/No)
 # listgen1        243    Generates a simple menu of one-word items
 # listgen2        298    Generates a menu of multi-word items
 # --------------------   ------------------------
 
-invalid_option() {
-  Echo
-  read_timed "Invalid entry. Try again ..." 1
+read_timed() { # Timed display - $1 = text to display; $2 = duration
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
   cursor_row=$((cursor_row+1))
+}
+
+invalid_option() {
+  read_timed "Invalid entry. Try again ..." 1
 }
 
 print_heading() {   # Always use this function to clear the screen
@@ -76,8 +92,7 @@ PrintMany() { # Subsequent item(s) in an aligned list
 
 first_item() { # Aligned text according to screen size
   local width=$(tput cols)
-  # local lov=${#1}                             # Length of Variable
-  local lov=$MaxLen
+  local lov=$MaxLen                           # Maximum length of Variable
   if [ ${lov} -lt ${width} ]; then
     stpt=$(( (width - lov) / 2 ))
   fi
@@ -101,7 +116,7 @@ PrintRev() {  # Receives numeric argument of item number
   tput sgr0 	                                 # Reset colour
 }
 
-DisplayButtons() {
+Buttons() {
   # Receives 3 arguments: 1) Type (Menu, Yes/No); 2) Button string; 3) Message string
   # Uses arrays declared in f-var
   local Len=${#2}               # Measure length of button string
@@ -154,16 +169,20 @@ DisplayButtons() {
   tput cup $cursor_row $first_button_start  # Reposition cursor
   button_row=$cursor_row                    # Save row position of buttons
   printf "%-s\n" "$2"                       # Print buttons
-  cursor_row=$((cursor_row+1))              # Advance cursor row after buttons
-  Echo
-  lov=${#3}                                 # Length of message
-  if [ ${lov} -lt ${width} ]; then
-    message_start=$(( (width - lov) / 2 ))
-  else
-    message_start=1
-  fi
-  tput cup $cursor_row $message_start       # Reposition cursor
-  Echo "$3"                                 # Print message
+  case $3 in
+  "nomessage") Message=$3
+  ;;
+    *) cursor_row=$((cursor_row+1))              # Advance cursor row after buttons
+    Echo
+    lov=${#3}                                 # Length of message
+    if [ ${lov} -lt ${width} ]; then
+      message_start=$(( (width - lov) / 2 ))
+    else
+      message_start=1
+    fi
+    tput cup $cursor_row $message_start       # Reposition cursor
+    Echo "$3"                                 # Print message
+  esac
   ActiveMenu "$1"
 }
 
@@ -172,7 +191,7 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
   local Counter=0
   selected_button=1
   if [ $1 = "Yes/No" ]; then        # Prevent vertical cursor movement
-    cursor_bottom=0
+    cursor_bottom=0                 # Initialise at unrealistic limits
     cursor_top=100
     cursor_row=$first_button_start  # Prepare to move cursor to first button
     tput cup $cursor_row $stpt      # Move cursor to selected position
@@ -282,9 +301,14 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
 listgen1() { # Simple listing alternative to the bash 'select' function
   # Arguments:
   # 1) Primary file (string of single-word references)
-  # 2) No longer used
+  # 2) No longer used - experimenting with 'nomessage'
   # 3) Optional hiding of [ Exit ] ("nocancel")
   # Read listgen.manual for full details
+  case $2 in
+    "nomessage") Message="$2"
+    ;;
+    *) Message="Use arrow keys to move. [Enter] to select"
+  esac
   Padding=" "
   MaxLen=2
   while :
@@ -320,11 +344,11 @@ listgen1() { # Simple listing alternative to the bash 'select' function
     CalledBy="listgen1"
     cursor_bottom=$((cursor_row-1))
     case $3 in
-    "nocancel") DisplayButtons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
+    "nocancel") Buttons "Menu" "[ Ok ]" "$Message"
     ;;
-    "") DisplayButtons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
+    "") Buttons "Menu" "[ Ok ] [ Exit ]" "$Message"
     ;;
-    *) DisplayButtons "Menu" "[ Ok ] [ $3 ]" "Use arrow keys to move. [Enter] to select"
+    *) Buttons "Menu" "[ Ok ] [ $3 ]" "$Message"
     esac
     break
   done
@@ -373,10 +397,61 @@ listgen2() { # Advanced menuing function with extended descriptions
     CalledBy="listgen2"
     cursor_bottom=$((cursor_row-1))
     if [ $3 ] && [ $3 = "nocancel" ]; then
-      DisplayButtons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
+      Buttons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
     else
-      DisplayButtons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
+      Buttons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
     fi
     return 0
   done
+}
+
+listgenx() { # Simple listing alternative to the bash 'select' function
+# This version for numbered list - retained for 'difficult' situations
+local Complete=0
+while [ $Complete -eq 0 ]
+do
+  local Done=$3
+  local Counter=0
+  MenuList=$1
+  for i in $MenuList
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq 1 ]; then
+      PrintOne "$Counter) $i"
+    else
+      PrintMany "$Counter) $i"
+    fi
+    ConvertToArray[$Counter]=$i
+  done
+  case $Done in
+    "") Counter=$((Counter+1))
+        Done="Exit"
+        PrintMany "$Counter) Exit"
+    ;;
+    "nodone") Done=""
+    ;;
+    *) Counter=$((Counter+1))
+        PrintMany "$Counter) ${Done}"
+  esac
+  TPread "Please enter the number of your selection: "
+  case $Response in
+    '') Result="Exit"
+        Complete=1
+    ;;
+    *[!0-9]*) invalid_option
+    ;;
+    *) if [ ${Response} -gt ${Counter} ] || [ ${Response} -lt 1 ]; then
+        invalid_option
+      elif [ ${Response} -eq ${Counter} ] && [ -z $Done ]; then
+        Result=${ConvertToArray[${Response}]}
+        Complete=1
+      elif [ ${Response} -eq ${Counter} ]; then
+        Result="$Done"
+        Complete=1
+      else
+        Result=${ConvertToArray[${Response}]}
+        Complete=1
+      fi
+  esac
+done
 }
