@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th December 2016
+# Revision date: 22nd December 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -235,7 +235,7 @@ Partitioning() {  # THIS TO BE EXPANDED TO INCLUDE LVM
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0               # Reset colour
         ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
-        if [ -z $ShowPartitions ]; then
+        if [ ! $ShowPartitions ]; then
           CheckParts            # If no partitions, restart
         fi
       ;;
@@ -608,6 +608,7 @@ AllocateSwap() {
 }
 
 NoPartitions() { # There are no unallocated partitions
+  print_heading
   PrintOne "There are no partitions available for swap,"
   PrintOne "but you can allocate a swap file, if you wish."
   Message="Create a swap file?: "
@@ -637,6 +638,7 @@ SetSwapFile() {
       SwapFile=""
     else
       SwapFile=$RESPONSE
+      print_heading
       break
     fi
   done

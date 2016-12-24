@@ -28,7 +28,7 @@
 # arch_chroot           36       ReflectorMirrorList  205
 # Parted                41       LocalMirrorList      215
 # TPecho                63       InstallDM            230
-# read_timed            81       InstallLuxuries      240
+#                                InstallLuxuries      240
 # MountPartitions       99       UserAdd              325
 # InstallKernel        162       SetRootPassword      340
 # AddCodecs            180       SetUserPassword      378
@@ -84,7 +84,7 @@ MountPartitions() {
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mkfs.${RootType} -f ${Label} ${RootPartition} 2>> feliz.log
+      mkfs.${RootType} ${Label} ${RootPartition} 2>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
@@ -415,11 +415,11 @@ SetUserPassword() {
 Restart() {
   print_heading
   Echo
-  read_timed "Congratulations, installation is complete." 1
+  PrintOne "Congratulations, installation is complete."
   Echo
-  read_timed "The computer will now shut down, so you can" 1
-  read_timed "remove the installation media before rebooting." 1
-  Echo
+  PrintOne "The computer will now shut down, so you can"
+  PrintOne "remove the installation media before rebooting."
+  read_timed
   shutdown -h now
 }
 

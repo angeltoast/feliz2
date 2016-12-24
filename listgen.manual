@@ -1,7 +1,7 @@
-Using the listgen functions - Elizabeth Mills
----------------------------------------------
+Using the listgen functions - Elizabeth Mills - 23rd December 2016
+------------------------------------------------------------------
 
-Listgen provides functions for providing an intuitive cli interface without using Dialog, Whiptail, or any other menuing package.
+Listgen provides functions for creating intuitive cli interfaces without using Dialog, Whiptail, or any other external menuing package. Instead, the tput library is used to determine the terminal dimensions and to position the cursor and displayed items according to content.
 
 The listgen scripts are free software; you can redistribute it and/or modify them under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -15,13 +15,13 @@ The Free Software Foundation, Inc.
 51 Franklin Street, Fifth Floor
 Boston, MA 02110-1301 USA
 
-The listgen functions return the text of the selected item as a global variable $Result and the selected item number as global variable $Response Window width and height are adjusted according to content
+The listgen functions return the text of the selected item as a global variable $Result and the selected item number as global variable $Response.
 
 These functions are designed to be application-independent, and any of them may be called independently from any scripts, as long as the listgen script is available and sourced.
 
-# ----------------------------------------------------------
+# ---------------- - ------------------------------------------------
 # Function name         Purpose
-# ----------------------------------------------------------
+# ---------------- - ------------------------------------------------
 # invalid_option   -  Informs user that the data entered was not valid
 # print_heading    -  Prints the contents of variable $Backtitle in a banner
 # PrintOne         -  Retained for compatibility with previous edition of listgen
@@ -37,9 +37,7 @@ These functions are designed to be application-independent, and any of them may 
 
 listgen1
 --------
-listgen1 is an alternative to the bash 'select' function for use in shell scripts to
-generate a numbered menu. Unlike 'select' it centres the menu on the screen, using the
-PrintOne and PrintMany functions.
+listgen1 is for use in shell scripts to generate an interactive menu. 
 
 It takes the form: listgen1 "argument1" "argument2" "argument3"
 
@@ -72,24 +70,17 @@ The first (string array) variable may be passed in one of three ways:
 listgen1 sets 2 global variables for use by the calling function ...
  1) $Response - the item number selected by the user, and
  2) $Result - the label (from the variable array) of the item selected.
- 
-listgenx is similar to listgen1, but instead of a cursor-driven menu, it generates a numbered list from which the user can choose by enetering the number of the item. This is provided for situations where a
-listgen1 menu would scroll off the screen.
 
 -----------------------------------------------------------------------
 
 listgen2
 --------
-listgen2 is specifically designed for displaying longer descriptions in a menu.
-When an item is selected, listgen2 finds that item in a reference variable array
-of short (one-word) names, and saves it as the global variable $Result which may
-then be used by the calling function if desired. Although complex to set up, it
-adds greater functionality and user-friendliness for menus.
+listgen2 is specifically designed for displaying longer descriptions in a menu. It receives the text of the long items via an array. When an item is selected, listgen2 finds that item in a reference array of short (one-word) names, and saves it as the global variable $Result which may
+then be used by the calling function if desired. Although complex to set up, it adds greater functionality and user-friendliness for menus.
 
-The reference array must be specifically declared using the -A option, and the
-elements filled, before it can be used.
+The reference array must be specifically declared using the -A option, and the elements filled, before it can be used.
 
-It takes the form: listgen2 "$PrimaryFile" "" "" "ReferenceArray"
+It takes the form: listgen2 "$PrimaryFile" "argument2" "argument3" "ReferenceArray"
 
 Example:
 Declare -A LongDesk
@@ -111,4 +102,41 @@ Example: listgen2 "$Graphical" "" "nocancel" "LongGraph"
 ... or ...
 Example: listgen2 "$Office" "" "" "LongOffice"
 
-listgen2 accesses the same global variables as listgen1 and uses the same built-in functions
+listgen2 returns the same global variables as listgen1 and uses the same built-in functions
+
+-----------------------------------------------------------------------
+
+listgenx
+--------
+
+listgenx is similar to listgen1, but instead of a cursor-driven menu, it generates a numbered list from which the user can choose by enetering the number of the item. This is provided for situations where a listgen1 menu would scroll off the screen.
+
+It called in the form: listgenx "argument1" "argument2"
+
+Before calling listgenx, the calling function must generate a list (\n separated) named input.file, containing the items to be displayed. listgenx will display as many columns as can be fitted onto the width of the terminal, instructing the user to enter a number for the item selected, or < or > to display the previous or next page of data, if relevant.
+
+It can receives two optional arguments:
+ 1) A string of text to be displayed at the top of the screen;
+ 2) A number representing the maximum number of characters to be displayed for each item;
+
+Example calls:
+ cat /etc/locale.gen > input.file
+ listgenx "Choose your location from this list"
+ cat names.list > input.file
+ listgenx "Here are the available names" 15
+
+The input.file may be generated in any way that produces a list of items, one on each line:
+1) It may be passed directly: "item1 item2 item3 ..." > input.file
+2) It may be generated in a loop: 
+      for i in names.list
+      do
+	echo $i >> input.file
+      done
+3) It may be generated by a bash command ...
+      lsblk -l | grep 'part' > input.file
+      timedatectl list-timezones | sed 's/\/.*$//' | uniq > input.file
+
+listgenx sets the same output variables as listgen1 and listgen2 ...
+ 1) $Response - the item number selected by the user, and
+ 2) $Result - the label of the item selected.
+

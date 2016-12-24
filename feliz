@@ -71,11 +71,10 @@ elif [ ${AutoPart} -eq 0 ]; then       # If not auto-artition
   SetGrubDevice                        # User chooses grub partition
 fi
 
-getkeymap                              # Select keyboard layout
-
 # Localisation
-SetTimeZone
-setlocale
+SetTimeZone                            # ZONE and SUBZONE eg: Europe/London
+setlocale                              # CountryLocale eg: en_GB.UTF-8
+getkeymap                              # Select keyboard layout eg: uk
 SetHostname
 
 PickLuxuries                           # Add extra applications
