@@ -27,6 +27,8 @@
 # not_found         41    SetHostname         441
 # Echo              46    PickLuxuries        458
 # TPread            51    KeepOrDelete        490
+# SetLanguage
+# Translate
 # SetKernel         67    ShoppingList        517
 # ConfirmVbox       80    ChooseDM            619
 # SetTimeZone      104    SetGrubDevice       676
@@ -43,7 +45,7 @@ not_found() {
   read_timed "Not found. Please try again ..." 1
 }
 
-Echo() { # Use in place of echo for all screen display
+Echo() { # Use in place of 'echo' for basic text print
   printf "%-s\n" "$1"
   cursor_row=$((cursor_row+1))
 }
@@ -108,7 +110,7 @@ SetTimeZone() {
     print_heading
     PrintOne "To set the system clock, please first"
     PrintOne "choose the World Zone of your location."
-    Zones=$(timedatectl list-timezones | sed 's/\/.*$//' | uniq) # Ten world zones
+    Zones=$(timedatectl list-timezones | cut -d'/' -f1 | uniq) # Ten world zones
     Echo
     zones=""
     for x in ${Zones[@]}                      # Convert to space-separated list
@@ -138,7 +140,6 @@ SetTimeZone() {
 
 SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
 
-  SubZones=$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')
   SUBZONE=""
 
   while :
@@ -148,19 +149,19 @@ SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
     ;;
     "Antarctica" | "Australia") print_heading
       PrintOne "Please choose your nearest location in ${ZONE}, or [Exit] to go back"
-      listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')"
+      listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)"
       if [ $Result = "Exit" ] || [ $Result = "" ]; then
         SetTimeZone
       fi
     ;;
     "Atlantic" | "Indian") print_heading
       PrintOne "Please choose your nearest location in $ZONE Ocean, or [Exit] to go back"
-      listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')"
+      listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)"
       if [ $Result = "Exit" ] || [ $Result = "" ]; then
         SetTimeZone
       fi
     ;;
-    "Pacific") timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///' > input.file
+    "Pacific") timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > input.file
       listgenx "Please choose your nearest location in $ZONE Ocean, or type Exit to go back"
       if [ $Result = "Exit" ] || [ $Result = "" ]; then
         SetTimeZone
@@ -168,7 +169,7 @@ SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
     ;;
     "America") America
      ;;
-    *) timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///' > input.file  # List of subzones
+    *) timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > input.file  # List of subzones
       listgenx "Please choose your nearest location in ${ZONE}, or type Exit to go back"
       if [ $Result = "Exit" ] || [ $Result = "" ]; then
         SetTimeZone
@@ -185,7 +186,7 @@ America() {
   SubList=""      # Start an empty list
   Previous=""     # Prepare to save previous record
   local Toggle="First"
-  for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}')
+  for i in $(timedatectl list-timezones | grep "$ZONE/" | cut -d'/' -f2)
   do
     if [ $Previous ] && [ $i = $Previous ] && [ $Toggle = "First" ]; then # First reccurance
       SubList="$SubList $i"
@@ -202,7 +203,7 @@ America() {
   listgen1 "$SubList"
 
   case $Result in
-  "None_of_these") timedatectl list-timezones | grep $ZONE | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | tr '/' ' ' | awk '{print $2}' > input.file
+  "None_of_these") timedatectl list-timezones | grep $ZONE | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2 > input.file
     listgenx "$Instruction"
   ;;
   '' | "Exit") SetTimeZone
@@ -210,7 +211,7 @@ America() {
   *) SubGroup=$Result                     # Because America has some cities in subgroups
     print_heading
     PrintOne "Please choose your nearest location in $ZONE or Exit to go back"
-    listgen1 "$(timedatectl list-timezones | grep ${ZONE}/${SubGroup} | tr '/' ' ' | awk '{print $NF}')"
+    listgen1 "$(timedatectl list-timezones | grep ${ZONE}/${SubGroup} | cut -d'/' -f3)"
     if [ $Result = "" ] || [ $Result = "Exit" ]; then
       SetTimeZone
     fi
@@ -218,23 +219,21 @@ America() {
 }
 
 setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to country-code,
-                        # ... and hence to the list of languages generated from /etc/locale.gen
+              # ... and hence to the list of languages generated from /etc/locale.gen
   ZoneID="${ZONE}/${SUBZONE}"         # Use a copy of zones set in SetTimeZone (eg: Europe/London)
   CountryLocale=
   while [ -z $CountryLocale ]
   do
-    location=$(grep "$ZoneID" cities.list)      # Find location in cities.list
-    SEARCHTERM=$(echo "${location}" | awk -F':' '{ print $2 }' ) # field $2 is the country code (eg: GB)
+    # Find in cities.list (field $2 is the country code, eg: GB)
+    SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)
     SEARCHTERM=${SEARCHTERM:0:2}                # Ensure no trailing spaces
-
     print_heading
-    LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | sed 's/\..*$//' | sed 's/#//g' | awk '{print $1}' | sort | uniq)  # Find all matching entries in locale.gen
-                                                # This will be a table of locales in the form: en_GB
-    HowMany=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | sed 's/\..*$//' | sed 's/#//g' | awk '{print $1}' | sort | uniq | wc -w)   # Count them
-
-    Rows=$(tput lines)                          # to ensure menu doesn't over-run
-    Rows=$((Rows-4))                            # Available (printable) rows
-    case $HowMany in                            # Offer language options for the selected country
+    # Find all matching entries in locale.gen # This will be a table of locales in the form: en_GB
+    LocaleList=$(grep "\#" /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | cut -d'.' -f1 | sort | uniq | cut -d'#' -f2 | cut -d' ' -f2)
+    HowMany=$(echo $LocaleList | wc -w)   # Count them
+    Rows=$(tput lines)       # Ensure menu doesn't over-run
+    Rows=$((Rows-4))         # Available (printable) rows
+    case $HowMany in         # Offer language options for the selected country
     0) print_heading
       Echo
       PrintOne "No language has been found for your location."
@@ -262,7 +261,7 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
       CountryCode=${CountryLocale:3:2}            # 2 characters from position 3
     ;;
     1) Item="${LocaleList:0:2}"     # First two characters of the record in locale.gen (eg: en)
-      Language="$(grep :$Item languages.list | awk 'BEGIN { FS = ":"; OFS = ":" } {print $1}')"
+      Language="$(grep :$Item languages.list | cut -d':' -f1)"
       if [ -z $Language ] || [ $Language = "" ]; then  # If language name not found in languages.list
         Language=$Item                                 # Use the abbreviation
       fi
@@ -292,7 +291,7 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
       if [ $HowMany -ge $Rows ]; then                 # Too many to display in menu, so use listgenx
         # Make a shortlist of relevant language codes
         rm input.file
-        ShortList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | awk '{print $2}' | cut -c 1-2 | uniq)
+        ShortList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | cut -d' ' -f2 | cut -c 1-2 | uniq)
         for l in ${ShortList}
         do
           grep "$l$" languages.list >> input.file
@@ -314,7 +313,7 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         Newlist=""                                      # Prepare to make list of language names from codes
         for (( i=1; i <= Counted; ++i ))
         do                                              # For each item in localelist (eg: en_GB)
-          loc=$(echo $localelist | awk "{print \$$i}")  # Save the $i-th item from localelist
+          loc=$(echo $localelist | cut -d' ' -f$i)      # Save the $i-th item from localelist
           Newlist="$Newlist ${loc:0:2}"                 # Add first two characters (language code) to list
         done
         # If more than one language found
@@ -334,7 +333,7 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         Counter=0                                       # Prepare to limit length of file
         for l in ${localelist}
         do                                              # Find the language in languages.list
-          Item="$(grep $l\$ languages.list | awk 'BEGIN { FS = ":"; OFS = ":" } {print $1}')"
+          Item="$(grep $l\$ languages.list | cut -d':' -f1)"
           if [ $Item ]; then                            # If found
             choosefrom="$choosefrom $Item"              # Add to list of languages for user
             Newlist="$Newlist $l"                       # ... and a matching list of codes
@@ -392,6 +391,9 @@ getkeymap() {
   esac
   ListKbs=$(cat keymaps.list | grep ${Term})
   Found=$(cat keymaps.list | grep ${Term} | wc -l)  # Count records
+  if [ ! $Found ]; then
+    Found=0
+  fi
   while [ -z $Countrykbd ]
   do
     print_heading
@@ -511,7 +513,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
   print_heading
   case "$LuxuriesList" in
-  "") PrintOne "Now you have the option to add extras, such as a web browser,"
+  '') PrintOne "Now you have the option to add extras, such as a web browser,"
     PrintOne "desktop environment, etc, from the following categories."
     PrintOne "If you want only a base Arch installation, exit without choosing any extras."
   ;;
@@ -527,7 +529,7 @@ PickLuxuries() { # User selects any combination from a store of extras
     else
       ShoppingList
       print_heading
-      PrintOne "Added so far:: ${LuxuriesList}"
+      PrintOne "Added so far: ${LuxuriesList}"
       PrintOne "You can now choose from any of the other lists,"
       PrintOne "or choose [ Exit ] to finish this part of the setup."
     fi
@@ -727,7 +729,7 @@ ChooseDM() { # Choose a display manager
 
 SetGrubDevice() {
   DEVICE=""
-  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/' # This is good use of awk
   print_heading
   GrubDevice=""
   local Counter=0

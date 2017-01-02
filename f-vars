@@ -23,7 +23,88 @@
 
 # In this module:
 
-# 1) Declaration of variables and arrays
+# 1) Global functions
+
+print_heading() {   # Always use this function to clear the screen
+  tput sgr0         # Make sure colour inversion is reset
+  clear
+  T_COLS=$(tput cols)                   # Get width of terminal
+  tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
+  printf "%-s\n" "$Backtitle"           # Display backtitle
+  printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
+  cursor_row=3                          # Save cursor row after heading
+}
+
+PrintOne() { # Text is translated, then aligned according to content and screen size
+  Text="$1"
+  if [ ! $2 ]; then                 # Don't translate if $2
+    Translate "$Text"
+    Text="$Result"
+  fi
+  width=$(tput cols)
+  EMPTY=" "
+  lov=${#Text}
+  if [ ${lov} -lt ${width} ]; then
+    stpt=$(( (width - lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  fi
+  Echo "$EMPTY $Text"
+}
+
+PrintMany() { # Subsequent item(s) in an aligned list
+  Text="$1"
+  if [ ! $2 ]; then                 # Don't translate if $2
+    Translate "$Text"
+    Text="$Result"
+  fi
+  Echo "$EMPTY $Text"
+}
+
+read_timed() { # Timed display - $1 = text to display; $2 = duration
+  T_COLS=`tput cols`
+  lov=${#1}
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
+  cursor_row=$((cursor_row+1))
+}
+
+invalid_option() {
+  read_timed "          Invalid entry. Please try again ...                     " 1
+}
+
+SetLanguage() {
+  print_heading
+  listgen1 "$(ls *.lan | cut -d'.' -f1)"
+  case $Result in
+  "" | "Exit") LanguageFile=english.lan
+  ;;
+  *) LanguageFile="${Result}.lan"
+  esac
+}
+
+Translate() { # Called by ReadOne & ReadMany and by other functions as required
+              # $1 is text to be translated
+  Text="$1"
+  # Get line number of text in english.lan | restrict to first find | display only number
+  RecordNumber=$(grep -n "$Text" english.lan | head -n 1 | cut -d':' -f1)
+  case $RecordNumber in
+  "" | 0) Result="$Text"  # If not found, use English
+  ;;
+  *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target file
+  esac
+}
+
+# 2) Declaration of variables and arrays
 
 # Partition variables and arrays
 declare -a AddPartList    # Array of additional partitions eg: /dev/sda5
@@ -70,6 +151,8 @@ CountryLocale=""          # eg: en_GB.UTF-8
 Countrykbd=""             # eg: uk
 ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
+LanguageFile="english.lan" # For translation
+RecordNumber=0            # Used during translation
 
 # Desktop environment, display manager and greeter variables
 DesktopEnvironment=""     # eg: xfce

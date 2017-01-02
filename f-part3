@@ -67,7 +67,7 @@ PartitioningEFI() { # THIS TO BE EXPANDED TO INCLUDE LVM
         print_heading
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0               # Reset colour
-        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+        ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
       ;;
       2) ChooseDevice
       ;;

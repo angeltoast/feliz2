@@ -42,6 +42,12 @@ StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
 
 print_heading
+# SetLanguage                            # Use appropriate language file
+LanguageFile="english.lan"
+
+timedatectl set-ntp true
+
+print_heading
 TestUEFI                               # Check if on UEFI system
 
 CheckParts                             # Check partition table & offer options

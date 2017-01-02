@@ -72,7 +72,7 @@ EasyEFI() {               # Main EFIfunction - Inform user of purpose, call each
 }
 
 EasyDevice() {            # Get details of device to use from all connected devices
-  DiskDetails=$(lsblk -l | grep 'disk' | awk '{print $1}')  # eg: sda
+  DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)     # eg: sda
   UseDisk=$DiskDetails                                      # If more than one, $UseDisk will be first
   local Counter=0
   CountDisks=0
@@ -123,17 +123,17 @@ EasyDiskSize() {                # Establish size of device in MiB
   fi
   # 5) Warn user if space is limited
   if [ ${FreeSpace} -lt 2048 ]; then      # If less than 2GiB
-    Echo "Your device has only ${FreeSpace}MiB: This is not enough for an installation"
+    PrintOne "Your device has only ${FreeSpace}MiB: This is not enough for an installation"
     read -p "Please press [Enter] - the installer will shut down"
     shutdown -h now
   elif [ ${FreeSpace} -lt 4096 ]; then    # If less than 4GiB
-    Echo "Your device has only ${FreeSpace}MiB: This is just enough for a basic"
-    Echo "installation, but you should choose light applications only, and"
-    Echo "you may run out of space during installation or at some later time."
+    PrintOne "Your device has only ${FreeSpace}MiB: This is just enough for a basic"
+    PrintOne "installation, but you should choose light applications only, and"
+    PrintOne "you may run out of space during installation or at some later time."
     TPread "Please press [Enter] to continue"
   elif [ ${FreeSpace} -lt 8192 ]; then    # If less than 8GiB
-    Echo "Your device has ${FreeSpace}MiB: This is enough for"
-    Echo "installation, but you should choose light applications only."
+    PrintOne "Your device has ${FreeSpace}MiB: This is enough for"
+    PrintOne "installation, but you should choose light applications only."
     TPread "Please press [Enter] to continue"
   fi
 }
@@ -262,7 +262,7 @@ EasySwap() { # Variables: SwapSize
     RESPONSE="${Response^^}"
     Echo
     case ${RESPONSE} in
-      "" | 0) PrintOne "Do you wish to allocate a swapfile?"
+      '' | 0) PrintOne "Do you wish to allocate a swapfile?"
           Echo
         Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
         Echo
@@ -325,7 +325,6 @@ EasyHome() { # Variables: HomeSize, HomeType
           print_heading
           select_filesystem
           HomeType=${PartitionType}
-read -p "Home partition: ${HomeType} : ${HomeSize}"
           break
         fi
     esac
@@ -453,7 +452,7 @@ ActionEasyPart() {  # Final step - Uses the variables set here to create partiti
   AutoPart=1                  # Treat as auto-partitioned. Set flag to 'on' for mounting
   print_heading
   PrintOne "Partitioning of ${GrubDevice} successful"
-  PrintOne "-------------------------------------"
+  Echo
   PrintOne "$ShowPart1"
   PrintMany "$ShowPart2"
   PrintMany "$ShowPart3"
@@ -594,7 +593,7 @@ GuidedSwap() { # Variables: SwapSize
     RESPONSE="${Response^^}"
     Echo
     case ${RESPONSE} in
-      "" | 0) PrintOne "Do you wish to allocate a swapfile?"
+      '' | 0) PrintOne "Do you wish to allocate a swapfile?"
           Echo
         Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
         Echo
@@ -764,7 +763,7 @@ ActionGuided() {  # Final step - Uses the variables set above to create partitio
   AutoPart=1 # Treat as auto-partitioned. Set flag to 'on' for mounting
   print_heading
   PrintOne "Partitioning of ${GrubDevice} successful"
-  PrintOne "-------------------------------------"
+  Echo
   PrintOne "$ShowPart1"
   PrintMany "$ShowPart2"
   PrintMany "$ShowPart3"

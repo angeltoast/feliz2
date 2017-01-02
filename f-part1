@@ -39,7 +39,7 @@
 
 CheckParts() {
 # First test for existing partitions
-  ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+  ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   local Counter=0
   for i in $ShowPartitions
   do
@@ -79,7 +79,7 @@ CheckParts() {
         shutdown -h now
       fi
                                           # Check that partitions have been created
-      ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+      ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
       Counter=0
       for i in $ShowPartitions
       do
@@ -97,9 +97,9 @@ CheckParts() {
     for part in ${PartitionList}
     do
       if [ $Counter = 0 ]; then
-        PrintOne "${PartitionArray[$Counter]}"
+        PrintOne "${PartitionArray[$Counter]}" "x"
       else
-        PrintMany "${PartitionArray[$Counter]}"
+        PrintMany "${PartitionArray[$Counter]}" "x"
       fi
       Counter=$((Counter+1))
     done
@@ -130,10 +130,10 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
     # First an array of all partitions up to sd*99
     #                           |includes word | select 1st field | cut /dev/ | remove colon
-    ListTypeIDs=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $1}' | cut -c 6- | sed s/://g)
+    ListTypeIDs=$(blkid /dev/sd* | grep ' TYPE' | cut -d':' -f1 | cut -d'/' -f3)
     # Then a matching array of types
-    #                         |includes word |  select last field   | remove TYPE | remove quotes
-    ListTypes=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -c 6- | sed s/\"//g)
+    #                          |includes TYPE |  select last field   | remove TYPE & quotes
+    ListTypes=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -d'"' -f2)
     # Add records from those two indexed arrays into the associative array
     local Counter=0
     for i in ${ListTypeIDs}
@@ -151,10 +151,10 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
     done
 
   # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
-  ListLabelledIDs=$(blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g)
+  ListLabelledIDs=$(blkid /dev/sd* | grep LABEL | cut -d':' -f1 | cut -d'/' -f3)
   # If at least one labelled partition found, get a matching list of labels (remove quotes)
   if [ -n "$ListLabelledIDs" ]; then
-    ListLabelledLabels=$(blkid /dev/sd* | grep LABEL | awk '{print $2}' | cut -c 7- | sed s/\"//g)
+    ListLabelledLabels=$(blkid /dev/sd* | grep LABEL | cut -d':' -f2 | cut -d'"' -f2)
   fi
   # Add records from those two indexed arrays into associative array
   Counter=0
@@ -174,7 +174,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   local HowManyLabelled="${#Labelled[@]}"
 
   # 3) Find any partitions flagged as bootable
-  ListAll=$(sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-)
+  ListAll=$(sfdisk -l | grep /dev | grep '*' | cut -d' ' -f1 | cut -d'/' -f3)
   declare -a Flagged
   Counter=0
   for i in $ListAll
@@ -185,7 +185,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   local HowManyFlagged="${#Flagged[@]}"
   # 4) Prepare list of short identifiers (sda1 sda2 ...)
   PartitionList=""
-  ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+  ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   # 5) Run through short identifiers, checking the three arrays for a match
   Counter=0 # For count of partitions
   Label=""
@@ -234,7 +234,7 @@ Partitioning() {  # THIS TO BE EXPANDED TO INCLUDE LVM
         clear
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0               # Reset colour
-        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+        ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
         if [ ! $ShowPartitions ]; then
           CheckParts            # If no partitions, restart
         fi
@@ -270,7 +270,7 @@ ChooseDevice() {
   AutoPart=0
   until [ ${AutoPart} -gt 0 ]
   do
-    DiskDetails=$(lsblk -l | grep 'disk' | awk '{print $1}')
+    DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)
     UseDisk=$DiskDetails # If more than one, UseDisk will be first
     # Count lines. If more than one disk, ask user which to use
     local Counter=0
@@ -309,16 +309,17 @@ AutoWarning() {
     PrintOne "This will erase any data on ${UseDisk}"
     PrintOne "Are you sure you wish to continue?: "
     Echo
-    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Translate "Use arrow keys to move. [Enter] to select" "${Language}"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "${Result}"
     case $Response in
       "1" | "Y" | "y") autopart   # Consolidated auto-partitioning function
         print_heading
         PrintOne "Partitioning of ${GrubDevice} successful"
-        PrintOne "-------------------------------------"
-        PrintMany "$ShowPart1"
-        PrintMany "$ShowPart2"
-        PrintMany "$ShowPart3"
-        PrintMany "$ShowPart4"
+        Echo
+        PrintMany "$ShowPart1" "x"
+        PrintMany "$ShowPart2" "x"
+        PrintMany "$ShowPart3" "x"
+        PrintMany "$ShowPart4" "x"
         Echo
         PrintOne "You will have the opportunity to review these later."
         Echo
@@ -373,7 +374,7 @@ partition_maker() {
 autopart() { # Consolidated partitioning for BIOS or EFI environment
   GrubDevice="/dev/${UseDisk}"
   Home="N"                                          # No /home partition at this point
-  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g) # Get disk size
+  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed "s/G\|M\|K//g") # Get disk size
   tput setf 0 # Change foreground colour to black temporarily to hide error message
   clear
   if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
@@ -563,8 +564,7 @@ AllocateSwap() {
             break
         ;;
         *) SwapPartition="/dev/$i"
-         # IsSwap=`lsblk -l | grep $i | grep SWAP | awk '{print $7}'`
-          IsSwap=$(blkid /dev/sd* | grep 'swap' | awk '{print $1}')
+          IsSwap=$(blkid $SwapPartition | grep 'swap' | cut -d':' -f1)
           if [ -n "$IsSwap" ]; then
             print_heading
             PrintOne "$i is already formatted as a swap partition."
@@ -724,7 +724,7 @@ MakePartition() { # Called by MorePartitions
     # Check that entry includes '/'
     CheckInput=${Response:0:1}        # First character of ${Response}
     case ${CheckInput} in
-      "") PrintOne "You must enter a valid mountpoint"
+      '') PrintOne "You must enter a valid mountpoint"
           PartMount=""
           ;;
       *) if [ ${CheckInput} != "/" ]; then
