@@ -1,16 +1,12 @@
 #!/bin/bash
 
-# UEFIcode - Functions and variables for installing on UEFI systems
-# -------------------------------------------------------------
-
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 28th October 2016 ...
-# This file was renamed from f-UEFA; UEFI_autopart removed (now covered by consolidated 'autopart'
+# Revision date: 22nd December 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation - either version 2 of the License, or
 # (at your option) any later version.
 
 # This program is distributed in the hope that it will be useful, but
@@ -27,18 +23,18 @@
 
 # Variables for UEFI Architecture
 UEFI=0            # 1 = UEFI; 0 = BIOS
-EFIPartition=""   # "/dev/sda1" 
+EFIPartition=""   # "/dev/sda1"
 UEFI_MOUNT=""    	# UEFI mountpoint
 DualBoot="N"      # For formatting EFI partition
 
 # All UEFI-specific functions are in this module
 # ---- ------------    ---------------------------------------------------------
-# Line   Function      Purpose                                          
+# Line   Function      Purpose
 # ---- ------------    ---------------------------------------------------------
 #  41  TestUEFI        Test environment; set UEFI variable
-#  58  PartitioningEFI Menu options - THIS TO BE EXPANDED TO INCLUDE LVM ##################################
+#  58  PartitioningEFI Menu options - THIS TO BE EXPANDED TO INCLUDE LVM
 #  55  AllocateEFI     Offers list of partitions for user to select EFI /boot
-#  94  UEFI_autopart   REMOVED - Now use consolidated 'autopart' in f-part1     
+#  94  UEFI_autopart   REMOVED - Now use consolidated 'autopart' in f-part1
 # ---- ------------    ---------------------------------------------------------
 
 # 1) Assess environment
@@ -60,26 +56,22 @@ PartitioningEFI() { # THIS TO BE EXPANDED TO INCLUDE LVM
   AutoPart=0                    # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    PrintOne "1) Guided manual partitioning"
-    PrintMany "2) Allow feliz to partition the whole device"
-    PrintMany "3) Leave it as it is"
-    echo
-    TPread "Enter the number of your selection : "
+    listgen2 "$EFIPartitioningOptions" "Partitioning" "" "LongPartE"
     Proceed=$Response
-    echo
+    Echo
     case $Proceed in
       1) print_heading
-        echo
+        Echo
         EasyEFI                 # New guided manual partitioning functions
         tput setf 0             # Change foreground colour to black temporarily to hide error message
-        clear
+        print_heading
         partprobe 2>> feliz.log #Inform kernel of changes to partitions
         tput sgr0               # Reset colour
-        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+        ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
       ;;
       2) ChooseDevice
       ;;
-      3) echo
+      3) printf
       ;;
       *) invalid_option
         Proceed=""
@@ -95,14 +87,14 @@ AllocateEFI() { # Called at start of AllocateRoot, before allocating root partit
 	local Counter=0
   Partition=""
 	PartitionType=""
-  echo
+  Echo
 	PrintOne "Here are the partitions that are available."
 	PrintOne "First you should select one to use for EFI /boot"
-	PrintOne "This must be of type vfat, and may be about 512MiB"  
-  echo
+	PrintOne "This must be of type vfat, and may be about 512MiB"
+  Echo
   listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
   Reply=$Response
-  if [ $Result != "Done" ]; then
+  if [ $Result != "Exit" ]; then
     PassPart=$Result
     SetLabel "$Result"
     UpdateArray                 # Remove the selected partition from $PartitionArray[]

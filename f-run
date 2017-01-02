@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 28th Nobember 2016
+# Revision date: 4th December 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,14 +25,14 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           36       McInitCPIO           195
-# Parted                41       ReflectorMirrorList  205
-#                                LocalMirrorList      215
+# arch_chroot           36       ReflectorMirrorList  205
+# Parted                41       LocalMirrorList      215
 # TPecho                63       InstallDM            230
-# read_timed            81       InstallLuxuries      240
+#                                InstallLuxuries      240
 # MountPartitions       99       UserAdd              325
 # InstallKernel        162       SetRootPassword      340
 # AddCodecs            180       SetUserPassword      378
+# McInitCPIO           195       Restart
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
@@ -61,27 +61,10 @@ TPecho() { # For displaying status while running on auto
   tput sgr0
 }
 
-read_timed() { # Timed display - $1 = text to display; $2 = duration
-  T_COLS=`tput cols`
-  lov=${#1}
-  if [ $2 ]; then
-    tim=$2
-  else
-    tim=2
-  fi
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
-    EMPTY="$(printf '%*s' $stpt)"
-  else
-    EMPTY=""
-  fi
-  read -t ${tim} -p "$EMPTY $1"
-  echo
-}
-
 MountPartitions() {
   TPecho "Preparing and mounting partitions" ""
-
+  # First unmount any mounted partitions
+  umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
   # 1) Root partition
   case $RootType in
   "") echo "Not formatting root partition" >> feliz.log # If /root filetype not set - do nothing
@@ -101,18 +84,16 @@ MountPartitions() {
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mke2fs ${Label} -t ${RootType} ${RootPartition} &>> feliz.log
+      mkfs.${RootType} ${Label} ${RootPartition} &>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
-  mount ${RootPartition} /mnt &>> feliz.log             # eg: mount /dev/sda1 /mnt
-
+  mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
   # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if EFI /boot partition required
     mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
   fi
-
   # 3) Swap
   if [ ${SwapPartition} ]; then
     swapoff -a 2>> feliz.log                            # Make sure any existing swap cleared
@@ -147,13 +128,15 @@ MountPartitions() {
       btrfs-convert ${id} 2>> feliz.log
     elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} 2>> feliz.log &>> feliz.log   # eg: mkfs.btrfs -f /dev/sda2
+    elif [ ${AddPartType[$Counter]} = "xfs" ]; then
+      mkfs.xfs -f ${id} 2>> feliz.log                   # eg: mkfs.xfs -f /dev/sda2
     elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=${id: -4}                               # Last 4 characters of ${id}
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
         Label="-L ${Label}"                             # Prepare label
       fi
-      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log # eg: mke2fs -L Arch-Home -t ext4 /dev/sda3
+      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log # eg: mkfs.ext4 -L Arch-Home /dev/sda3
     fi
     mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log # eg: mount /dev/sda3 /mnt/home
     Counter=$((Counter+1))
@@ -162,13 +145,23 @@ MountPartitions() {
 
 InstallKernel() {   # Selected kernel and some other core systems
 
-  LANG=C            # To overcome bug in Arch
+  LANG=C            # Temporary addition to overcome bug in Arch
+
+  TPecho "Updating keys"
+  pacman-db-upgrade
+  pacman-key --init # And this trying to solve keys issue
+  pacman-key --populate archlinux
+  pacman-key --refresh-keys
 
   case $Kernel in
-  1) TPecho "Installing LTS kernel plus core systems and base-devel"
-    pacstrap /mnt $(pacman -Qgq base | sed s/^linux\$/linux-lts/g) base-devel 2>> feliz.log # base group with linux-lts
+  1) TPecho "Installing LTS kernel and core systems"
+    # This is the full linux group list at 13th October 2016 with linux-lts in place of linux
+    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs libtool gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs s-nail sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log
+    # To be replaced by:
+    echo pacman -Qgq base | sed s/^linux\$/linux-lts/g > ltsgroup.txt # base group with linux-lts in place of linux.
+    # pacstrap /mnt "${LTSGroup}"
   ;;
-  *) TPecho "Installing Latest kernel plus core systems and base-devel"
+  *) TPecho "Installing Latest kernel and core systems"
     pacstrap /mnt base base-devel 2>> feliz.log
   esac
 
@@ -180,7 +173,7 @@ InstallKernel() {   # Selected kernel and some other core systems
 
 AddCodecs() {
   TPecho "Adding codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab flashplugin
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab
 
   TPecho "Installing Wireless Tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
@@ -309,23 +302,15 @@ InstallLuxuries()
     TPecho "Installing Yaourt"
     arch=$(uname -m)
     if [ ${arch} = "x86_64" ]; then                     # New: Identify 64 bit architecture
-      echo "" >> /mnt/etc/pacman.conf 2>> feliz.log             # Add a blank line
-      echo "[multilib]" >> /mnt/etc/pacman.conf 2>> feliz.log   # For installed system
-      echo "Include = /etc/pacman.d/mirrorlist" >> /mnt/etc/pacman.conf 2>> feliz.log
-      echo "[multilib]" >> /etc/pacman.conf 2>> feliz.log       # For installer
-      echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf 2>> feliz.log
+      # For installed system
+      echo -e "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /mnt/etc/pacman.conf 2>> feliz.log
+      # For installer
+      echo -e "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf 2>> feliz.log
     fi
     # For installed system
-    echo "" >> /mnt/etc/pacman.conf 2>> feliz.log               # Add a blank line
-    echo "[archlinuxfr]" >> /mnt/etc/pacman.conf 2>> feliz.log  # Then add the archlinux.fr repo
-    echo "SigLevel = Never" >> /mnt/etc/pacman.conf 2>> feliz.log
-    echo "Server = http://repo.archlinux.fr/$arch" >> /mnt/etc/pacman.conf 2>> feliz.log
-    echo "" >> /mnt/etc/pacman.conf 2>> feliz.log               # Add a blank line to finish
+    echo -e "\n[archlinuxfr]\nSigLevel = Never\nServer = http://repo.archlinux.fr/$arch" >> /mnt/etc/pacman.conf 2>> feliz.log
     # For installer
-    echo "" >> /etc/pacman.conf 2>> feliz.log                   # Add a blank line
-    echo "[archlinuxfr]" >> /etc/pacman.conf 2>> feliz.log      # Then add the archlinux.fr repo
-    echo "SigLevel = Never" >> /etc/pacman.conf 2>> feliz.log
-    echo "Server = http://repo.archlinux.fr/$arch" >> /etc/pacman.conf 2>> feliz.log
+    echo -e "\n[archlinuxfr]\nSigLevel = Never\nServer = http://repo.archlinux.fr/$arch" >> /etc/pacman.conf 2>> feliz.log
 
     # Update, then install yaourt to /mnt
     pacman-key --init 2>> feliz.log
@@ -370,25 +355,23 @@ UserAdd() {
 
 SetRootPassword() {
   print_heading
-  echo
+  Echo
   PrintOne "Success!"
-  echo
+  Echo
   PrintOne "Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
-  echo
-  PrintOne "-----------------------"
-  echo
+  Echo
   PrintOne "Finally we need to set passwords ..."
-  echo
+  Echo
   PrintOne "Note that you will not be able to "
   PrintOne "see passwords as you enter them ..."
-  echo
+  Echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
   do
     read -s -p "Enter a password for root: " Pass1
-    echo
+    Echo
     read -s -p "Re-enter password for root: " Pass2
-    echo
+    Echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
       read_timed "Passwords cannot be blank. Try again ..." 1
@@ -407,14 +390,14 @@ SetRootPassword() {
 }
 
 SetUserPassword() {
-  echo
+  Echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
   do
     read -s -p "Enter a password for $UserName: " Pass1
-    echo
+    Echo
     read -s -p "Re-enter password for $UserName: " Pass2
-    echo
+    Echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
       read_timed "Passwords cannot be blank. Try again ..." 1
@@ -427,8 +410,20 @@ SetUserPassword() {
       Repeat="N"
     else
       print_heading
-      echo "Passwords don't match. Try again"
+      PrintOne "Passwords don't match. Try again"
       continue
     fi
   done
 }
+
+Restart() {
+  print_heading
+  Echo
+  PrintOne "Congratulations, installation is complete."
+  Echo
+  PrintOne "The computer will now shut down, so you can"
+  PrintOne "remove the installation media before rebooting."
+  read_timed
+  shutdown -h now
+}
+
