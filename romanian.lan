@@ -1,74 +1,78 @@
-# Romanian language file by condor
-Choose your kernel
-The Long-Term-Support kernel (LTS) offers stabilty,
-while the Latest kernel has all the new features.
-If in doubt, choose LTS.
-It appears that feliz is running in Virtualbox.
-If it is, feliz can install Virtualbox guest
-utilities and make appropriate settings for you.
-Install Virtualbox guest utilities?: 
-To set the system clock, please first
+# Romanian language file by xxvirusxx
+# Tradus de xxvirusxx
+Alegeți kernel-ul
+Kernel-ul LTS oferă stabilitate,
+în timp ce ultimul kernel are toate noile caracteristici.
+Dacă aveți îndoieli, alegeți LTS.
+Se pare că Feliz rulează în Virtualbox.
+Dacă este așa, feliz poate instala utilitarele
+VirtualBox și să facă setările adecvate.
+Instalați utilitarele Virtualbox?: 
+Pentru a seta ceasul, vă rugăm mai întâi
 choose the World Zone of your location.
-Please choose your nearest location in ${ZONE}, or [Exit] to go back
+Vă rugăm să alegeți locația cea mai apropiată în ${ZONE}, sau tastați [Exit] pentru a reveni
 Please choose your nearest location in $ZONE Ocean, or [Exit] to go back
-Are you in any of these states?
+Sunteți într-unul din aceste state?
 Please choose your nearest location in $ZONE or Exit to go back
-No language has been found for your location.
+Nicio limbă nu a fost găsită pentru locația dvs.
 Would you like to use one of the following?
-Only one language found for your location: $Language
-Shall we use this as your language?
+Doar o singură limbă găsită pentru locația dvs.: $Language
+Să folosim această limbă?
 Now please choose your language from this list, or [ Exit ] to try again.
-Only one keyboard found based on your location
-Do you wish to accept this? Select [ No ] to search for alternatives
-The following keyboards match your location. You can
-choose one, or [ Exit ] to search for alternatives
-If you know the code for your keyboard layout, please enter
-it now. If not, try entering a two-letter abbreviation
-for your country or language and a list will be displayed.
-Alternatively, enter 'Exit' to start again.
-Select your keyboard, or [ Exit ] to try again
-No keyboards found containing '$Term'
-Please try again
-Enter a name for the primary user of the new system.
-If you don't create a username here, a default user
-called 'archie' will be set up
-User '${UserName}' will be created.
-A hostname is needed. This will be a unique name to identify
-your device on a network. If you do not enter one, the
-default hostname of 'arch-linux' will be used.
-Hostname = $HostName
+Doar o singură tastatură găsită pentru locația dvs.
+Do you wish to accept this? Selectați [ No ] pentru a căuta alternative
+Următoarele tastaturi se potrivesc cu locația dvs. Puteți alege
+una, sau apăsați pe [ Exit ] pentru a căuta alternative.
+Dacă cunoașteți codul pentru layout-ul tastaturii, vă rugăm să-l introduceți
+acum. Dacă nu, încercați să introduceți o abreviere de două litere
+pentru țara sau limba dvs. și o listă va fi afișată
+Alternativ, tastați 'Exit' pentru a porni din nou.
+Selectați tastatura, sau apăsați pe 'Exit' pentru a încerca din nou
+Nu există tastaturi găsite care conțin '$Term'
+Vă rugăm să încercați din nou
+Introduceți un nume pentru utilizatorul principal al noului sistem.
+Dacă nu creați un utilizator aici, un utilizator implicit
+numit 'archie' va fi configurat
+Utilizatorul '${UserName}' va fi creat.
+Un nume de hostname este necesar. Acesta va fi un nume unic pentru
+a identifica dispozitivul în rețea. Dacă nu introduceți unul, un
+nume de hostname implicit 'arch-linux' va fi folosit.
+Nume hostname = $HostName
 Now you have the option to add extras, such as a web browser,
 desktop environment, etc, from the following categories.
 If you want only a base Arch installation, exit without choosing any extras.
 You can add more items, or select items to delete.
-Added so far: ${LuxuriesList}
+Adăugate până acum: ${LuxuriesList}
 You can now choose from any of the other lists,
 or choose [ Exit ] to finish this part of the setup.
-Added so far: ${LuxuriesList}
-A display manager provides a graphical login screen.
-If in doubt, choose LightDM.
-If you do not install a display manager, you will have
-to launch your desktop environment manually.
-Display manager is already set as: $DisplayManager.
-Only one display manager can be active
-Do you wish to change it?: 
+Adăugate până acum: ${LuxuriesList}
+Un display manager oferă un ecran pentru autentificare grafică. 
+Dacă aveți îndoieli, alegeți LightDM
+Dacă nu instalați un display manager, va trebui să
+lansați manual desktopul prin comanda 'startx'.
+Display manager-ul este deja setat ca: $DisplayManager.
+Doar un display manager poate fi activ
+Doriți să-l schimbați?:
 Select the device where Grub is to be installed.
 Note that if you do not select a device, Grub
 will not be installed, and you will have to make
 alternative arrangements for booting your new system.
-These are the settings you have entered. Please check them ...
-0)  Boot partition ... $EFIPartition             
-1)  Root partition ... $RootPartition : $RootType
-Press [Enter] to install with these settings, or
+Acestea sunt setările pe care le-ați introdus. Vă rugăm să le verificați ...
+0)  Partiție Boot ... $EFIPartition             
+1)  Partiție Root ... $RootPartition : $RootType
+Apăsați [Enter] pentru a instala cu aceste setări, sau
 Enter number for data to change, or [Enter] to finish:
-1) Hostname (currently $HostName)
-If you are uncertain about partitioning, you should read the Arch Wiki.
+1) Nume hostname ($HostName acum)
+Dacă nu sunteți sigur cu privire la partiționare, ar trebui să citiți Arch Wiki.
+Nu există partiții pe dispozitiv, și cel puțin
+două partiții sunt necesare - una pentru EFI /boot, și
+una pentru /root. 
 There are no partitions on the device, and at least
 two partitions are needed - one for EFI /boot, and
-one for /root. An option for guided manual partitioning
-and creation of an EFI partition table has been added,
-or you can exit now to use an external tool. Alternatively,
-one partition is needed for the root directory.
+one for /root. O opțiune pentru partiționare manuală ghidată
+și crearea unui tabel de partiții EFI a fost adăugat,
+sau puteți ieși acum pentru a folosi un utilitar extern. Alternativ, 
+o partiție este necesară pentru directorul root.
 You can use 'cfdisk' to create a partition table, or 
 Feliz can automatically create partitions for you, if you
 wish. If you choose to do nothing now, the script will
@@ -242,7 +246,7 @@ Here are the partitions that are available.
 First you should select one to use for EFI /boot
 This must be of type vfat, and may be about 512MiB
 Success!
-Finished installing in $DIFFMIN minutes and $DIFFSEC seconds
+Instalare terminată în $DIFFMIN minute și $DIFFSEC secunde
 Finally we need to set passwords ...
 Note that you will not be able to 
 see passwords as you enter them ...
@@ -255,19 +259,19 @@ remove the installation media before rebooting.
 2)  No provision has been made for swap
 3)  Extra partitions ...
 3)  No additional partitions have been allocated
-4)  The LTS kernel will be installed
-4)  The latest kernel will be installed
-5)  Grub will be installed to $GrubDevice
+4)  Kernel-ul LTS va fi instalat
+4)  Ultimul kernel va fi instalat
+5)  Bootloaderul Grub va fi instalat pe $GrubDevice
 5)  No provision has been made for Grub
 6)  Zone/subZone will be $ZONE/$SUBZONE
 7)  Locale will be set to $CountryLocale
-8)  Keyboard is $Countrykbd
+8)  Tastatura este $Countrykbd
 9)  Virtualbox guest utilities will not be installed
 10)  No Display Manager selected
 10)  Display Manager = $DisplayManager
-11)  Root and user settings ...
+11)  Setări root și utilizator ...
      Hostname = '$HostName'
-     User = '$UserName'
+     Utilizator = '$UserName'
 12) The following extras have been selected ...
 2) Username (currently $UserName)
 If you wish to delete the label, enter 2
