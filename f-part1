@@ -36,6 +36,10 @@
 # select_filesystem   420       UpdateArray         767
 # EditLabel           437       SetLabel            792
 # -----------------------      ------------------------
+print_heading
+# SetLanguage                            # Use appropriate language file
+LanguageFile="romanian.lan"
+
 
 CheckParts() {
 # First test for existing partitions
@@ -66,7 +70,8 @@ CheckParts() {
       fi
       PrintOne "Feliz can automatically create partitions for you, if you"
       PrintOne "wish. If you choose to do nothing now, the script will"
-      PrintOne "terminate to allow you to partition in some other way."
+      # PrintOne "terminate to allow you to partition in some other way."
+      PrintOne "test"
       Echo
       if [ ${UEFI} -eq 1 ]; then
         PartitioningEFI                   # Partitioning options for EFI
@@ -114,7 +119,7 @@ CheckParts() {
       PartitioningEFI                   # UEFI partitioning options
     else                                # Installing in BIOS environment
       PrintOne "'cfdisk' is available for you to edit them. Alternatively, you"
-      PrintOne "can use the guided manual partitioning option, or Feliz can"
+      PrintOne "$terminate_msg"
       PrintOne "overwrite the disk with a new partition table if you wish. Please"
       PrintOne "note that both these options will wipe the disk - any exisiting"
       PrintOne "data will be erased! If you choose to 'Leave it as it is' the"
