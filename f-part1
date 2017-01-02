@@ -119,7 +119,7 @@ CheckParts() {
       PartitioningEFI                   # UEFI partitioning options
     else                                # Installing in BIOS environment
       PrintOne "'cfdisk' is available for you to edit them. Alternatively, you"
-      PrintOne "can use the guided manual partitioning option, or Feliz can"
+      PrintOne "$terminate_msg"
       PrintOne "overwrite the disk with a new partition table if you wish. Please"
       PrintOne "note that both these options will wipe the disk - any exisiting"
       PrintOne "data will be erased! If you choose to 'Leave it as it is' the"
