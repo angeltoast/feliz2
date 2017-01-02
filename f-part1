@@ -36,6 +36,10 @@
 # select_filesystem   420       UpdateArray         767
 # EditLabel           437       SetLabel            792
 # -----------------------      ------------------------
+print_heading
+# SetLanguage                            # Use appropriate language file
+LanguageFile="romanian.lan"
+
 
 CheckParts() {
 # First test for existing partitions
@@ -67,6 +71,7 @@ CheckParts() {
       PrintOne "Feliz can automatically create partitions for you, if you"
       PrintOne "wish. If you choose to do nothing now, the script will"
       PrintOne "terminate to allow you to partition in some other way."
+      PrintOne "$terminate_msg"
       Echo
       if [ ${UEFI} -eq 1 ]; then
         PartitioningEFI                   # Partitioning options for EFI
