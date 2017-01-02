@@ -70,7 +70,7 @@ CheckParts() {
       fi
       PrintOne "Feliz can automatically create partitions for you, if you"
       PrintOne "wish. If you choose to do nothing now, the script will"
-      PrintOne "terminate to allow you to partition in some other way."
+      #PrintOne "terminate to allow you to partition in some other way."
       PrintOne "$terminate_msg"
       Echo
       if [ ${UEFI} -eq 1 ]; then
