@@ -24,20 +24,19 @@
 # --------------------   ------------------------
 # Function        Line   Function            Line
 # --------------------   ------------------------
-# not_found         41    SetHostname         441
-# Echo              46    PickLuxuries        458
-# TPread            51    KeepOrDelete        490
-# SetLanguage
-# Translate
-# SetKernel         67    ShoppingList        517
-# ConfirmVbox       80    ChooseDM            619
-# SetTimeZone      104    SetGrubDevice       676
-# SetSubZone       140     --- Review stage ---
-# America          183    FinalCheck          699
-# setlocale        222    ManualSettings      829
-# SearchKeyboards  390    ChangeSwapPartition 837
-# getkeymap        359    ChangePartitions    845
-# Username         425    AddExtras           857
+# not_found         41    SetHostname         491
+# Echo              46    PickLuxuries        508
+# TPread            51    KeepOrDelete        540
+# SetKernel         67    ShoppingList        568
+# ConfirmVbox       80    ChooseDM            670
+# SetTimeZone      105    SetGrubDevice       728
+# SetSubZone       137     --- Review stage ---
+# America          173    FinalCheck          752
+# setlocale        211    ManualSettings      859
+# AllLanguages     363    ChangeRootPartition 882
+# getkeymap        380    ChangeSwapPartition 890
+# SearchKeyboards  441    ChangePartitions    898
+# Username         475    AddExtras           910
 # --------------------    -----------------------
 
 not_found() {
@@ -89,7 +88,8 @@ ConfirmVbox() {
     Echo
     PrintOne "Install Virtualbox guest utilities?: "
     Echo
-    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Translate "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Yes ] [ No ]" "$Result"
     Echo
     case $Response in
       1) IsInVbox="VirtualBox"
@@ -104,8 +104,8 @@ ConfirmVbox() {
 }
 
 SetTimeZone() {
-  SUBZONE=""
-  while [ -z $SUBZONE ]
+  SUBZONE=
+  until [ $SUBZONE ]
   do
     print_heading
     PrintOne "To set the system clock, please first"
@@ -120,15 +120,12 @@ SetTimeZone() {
     listgen1 "${zones}" "" "nocancel"         # Allow user to select one
     ZONE=$Result
     Echo
-    case $Result in                           # UTC requires no subzone
-      "UTC") SUBZONE=""
-          print_heading
-          read_timed "Zone set to: '$ZONE'" 1 # Display and exit
-          break
+    case $Result in
+      "") continue
       ;;
       *) SetSubZone                           # Call subzone function
         case $Result in                       # If user quits
-        "Exit" | "") SUBZONE=""
+        "Exit" | "") SUBZONE=
         ;;
         *) SUBZONE="$Result"
           print_heading
@@ -139,44 +136,39 @@ SetTimeZone() {
 }
 
 SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
-
-  SUBZONE=""
-
-  while :
-  do
-    case $ZONE in
-    "Arctic") Result="Longyearbyen"
-    ;;
-    "Antarctica" | "Australia") print_heading
-      PrintOne "Please choose your nearest location in ${ZONE}, or [Exit] to go back"
-      listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)"
-      if [ $Result = "Exit" ] || [ $Result = "" ]; then
-        SetTimeZone
-      fi
-    ;;
-    "Atlantic" | "Indian") print_heading
-      PrintOne "Please choose your nearest location in $ZONE Ocean, or [Exit] to go back"
-      listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)"
-      if [ $Result = "Exit" ] || [ $Result = "" ]; then
-        SetTimeZone
-      fi
-    ;;
-    "Pacific") timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > input.file
-      listgenx "Please choose your nearest location in $ZONE Ocean, or type Exit to go back"
-      if [ $Result = "Exit" ] || [ $Result = "" ]; then
-        SetTimeZone
-      fi
-    ;;
-    "America") America
-     ;;
-    *) timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > input.file  # List of subzones
-      listgenx "Please choose your nearest location in ${ZONE}, or type Exit to go back"
-      if [ $Result = "Exit" ] || [ $Result = "" ]; then
-        SetTimeZone
-      fi
-    esac
-    break
-  done
+  case $ZONE in
+  "Arctic") Result="Longyearbyen"
+  ;;
+  "Antarctica" | "Australia") print_heading
+    PrintOne "Please choose your nearest location in ${ZONE}, or [Exit] to go back"
+    listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)"
+    if [ $Result = "Exit" ] || [ $Result = "" ]; then
+      SetTimeZone
+    fi
+  ;;
+  "Atlantic" | "Indian") print_heading
+    PrintOne "Please choose your nearest location in $ZONE Ocean, or [Exit] to go back"
+    listgen1 "$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)"
+    if [ $Result = "Exit" ] || [ $Result = "" ]; then
+      SetTimeZone
+    fi
+  ;;
+  "Pacific") timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > input.file
+    Translate "Please choose your nearest location in $ZONE Ocean, or type Exit to go back"
+    listgenx "$Result"
+    if [ $Result = "Exit" ] || [ $Result = "" ]; then
+      SetTimeZone
+    fi
+  ;;
+  "America") America
+   ;;
+  *) timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > input.file  # List of subzones
+    Translate "Please choose your nearest location in ${ZONE}, or type Exit to go back"
+    listgenx "$Result"
+    if [ $Result = "Exit" ] || [ $Result = "" ]; then
+      SetTimeZone
+    fi
+  esac
 }
 
 America() {
@@ -201,7 +193,6 @@ America() {
   SubGroup=""
   SubList="$SubList None_of_these"        # Add a decline option
   listgen1 "$SubList"
-
   case $Result in
   "None_of_these") timedatectl list-timezones | grep $ZONE | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2 > input.file
     listgenx "$Instruction"
@@ -219,32 +210,38 @@ America() {
 }
 
 setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to country-code,
-              # ... and hence to the list of languages generated from /etc/locale.gen
+                        # ... and hence to the list of languages generated from /etc/locale.gen
   ZoneID="${ZONE}/${SUBZONE}"         # Use a copy of zones set in SetTimeZone (eg: Europe/London)
   CountryLocale=
   while [ -z $CountryLocale ]
   do
-    # Find in cities.list (field $2 is the country code, eg: GB)
-    SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)
+  #  location=$(grep "$ZoneID" cities.list)      # Find location in cities.list
+  #  SEARCHTERM=$(echo "${location}" | awk -F':' '{ print $2 }' ) # field $2 is the country code (eg: GB)
+    SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)  # Find in cities.list (field $2 is the country code, eg: GB)
     SEARCHTERM=${SEARCHTERM:0:2}                # Ensure no trailing spaces
     print_heading
     # Find all matching entries in locale.gen # This will be a table of locales in the form: en_GB
-    LocaleList=$(grep "\#" /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | cut -d'.' -f1 | sort | uniq | cut -d'#' -f2 | cut -d' ' -f2)
+  #  LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | cut -d' ' -f2 | cut -d'.' -f1 | sort | uniq)
+    LocaleList=$(grep "#" /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | cut -d'.' -f1 | cut -d'#' -f2)
     HowMany=$(echo $LocaleList | wc -w)   # Count them
-    Rows=$(tput lines)       # Ensure menu doesn't over-run
+
+read -p "f-set line $LINENO : $HowMany $LocaleList"
+
+    Rows=$(tput lines)       # to ensure menu doesn't over-run
     Rows=$((Rows-4))         # Available (printable) rows
     case $HowMany in         # Offer language options for the selected country
     0) print_heading
       Echo
       PrintOne "No language has been found for your location."
       PrintOne "Would you like to use one of the following?"
-      listgen1 "English French Spanish" "Use arrow keys to move. [Enter] to select" "No"
-      case $Result in
-      "English") Item="en"
+      Translate "Use arrow keys to move. [Enter] to select"
+      listgen1 "English French Spanish" "$Result"
+      case $Response in
+      1) Item="en"
       ;;
-      "French") Item="fr"
+      2) Item="fr"
       ;;
-      "Spanish") Item="es"
+      3) Item="es"
       ;;
       *) City=""
         AllLanguages
@@ -268,7 +265,8 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
       Echo
       PrintOne "Only one language found for your location: $Language"
       PrintOne "Shall we use this as your language?"  # Allow user to confirm
-      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      Translate "Use arrow keys to move. [Enter] to select"
+      Buttons "Yes/No" "[ Yes ] [ No ]" "$Result"
       if [ $Result = "No" ]; then
         City=""
         AllLanguages
@@ -346,18 +344,16 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         listgen1 "${choosefrom}" "nomessage" ""         # Menu if less than one screenful
       fi
       case $Result in
-      "Exit" | "") AllLanguages
-          if [ $Result = "Exit" ]; then
-            SetTimeZone
-          else
-            CountryLocale="${Result}_${SEARCHTERM}.UTF-8"
-            CountryCode=${CountryLocale:3:2}              # 2 characters from position 3
-          fi
+      "Exit" | "exit" | "") SetTimeZone
       ;;
-      *) Language=$(grep $Result languages.list)          # Lookup the result in languages file
-        loc=${Language: -2:2}                             # Just the last two characters
-        CountryLocale="${loc}_${SEARCHTERM}.UTF-8"
-        CountryCode=${CountryLocale:3:2}                  # 2 characters from position 3
+      *) Language=$(grep $Result languages.list)        # Lookup the result in languages file
+        if [ $Language ]; then
+          loc=${Language: -2:2}                         # Just the last two characters
+          CountryLocale="${loc}_${SEARCHTERM}.UTF-8"
+          CountryCode=${CountryLocale:3:2}              # 2 characters from position 3
+        else
+          SetTimeZone
+        fi
       esac
     esac
   done
@@ -406,7 +402,8 @@ getkeymap() {
     1)  # If the search found one match
       PrintOne "Only one keyboard found based on your location"
       PrintOne "Do you wish to accept this? Select [ No ] to search for alternatives"
-      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      Translate "Use arrow keys to move. [Enter] to select"
+      Buttons "Yes/No" "[ Yes ] [ No ]" "$Result"
       case ${Result} in
       "Exit"|"exit"|"") SearchKeyboards
       ;;
@@ -547,7 +544,8 @@ KeepOrDelete() {
   do
     print_heading
     Message="$Bagged is already in your shopping list."
-    Buttons "Yes/No" "[ Keep ] [ Delete ]" "Use arrow keys to move. [Enter] to select"
+    Translate "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "[ Keep ] [ Delete ]" "Result"
     case $Response in
       1) Temp="$LuxuriesList"
         break
@@ -717,7 +715,8 @@ ChooseDM() { # Choose a display manager
       Echo
       PrintOne "Do you wish to change it?: "
       Echo
-      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      Translate "Use arrow keys to move. [Enter] to select"
+      Buttons "Yes/No" "[ Yes ] [ No ]" "$Result"
       Echo
       if [ $Response -eq 1 ]; then    # User wishes to change DM
         DisplayManager=""             # Clear DM variable
