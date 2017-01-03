@@ -224,9 +224,6 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
   #  LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | cut -d' ' -f2 | cut -d'.' -f1 | sort | uniq)
     LocaleList=$(grep "#" /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | cut -d'.' -f1 | cut -d'#' -f2)
     HowMany=$(echo $LocaleList | wc -w)   # Count them
-
-read -p "f-set line $LINENO : $HowMany $LocaleList"
-
     Rows=$(tput lines)       # to ensure menu doesn't over-run
     Rows=$((Rows-4))         # Available (printable) rows
     case $HowMany in         # Offer language options for the selected country
