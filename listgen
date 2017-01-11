@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Developed by Elizabeth Mills
-# Revision date: 23rd December 2016
+# Revision date: 11th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,16 @@
 # See listgen.manual for guidance on the use of these functions
 
 # In this module:
+
+# All variables used by listgen initialised here
+declare -a Options        # For listgen functions
+Response=""
+Result=""
+Backtitle="Feliz2 - Arch Linux installation script"
+Ok="Ok"
+Exit="Exit"
+Instructions="Use arrow keys to move. Enter to select"
+
 # Functions for providing an intuitive interface without using Dialog
 # --------------------   ------------------------
 # Function        Line
@@ -49,7 +59,7 @@ Heading() {   # Always use this function to clear the screen
   clear
   T_COLS=$(tput cols)                   # Get width of terminal
   tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
-  printf "%-s\n" "$Backtitle"           # Display backtitle
+  printf "%-s\n" "$_Backtitle"           # Display backtitle
   printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
   cursor_row=3                          # Save cursor row after heading
 }
@@ -82,60 +92,39 @@ PrintRev() {  # Receives numeric argument of item number
 
 Buttons() {
   # Receives 3 arguments: 1) Type (Menu, Yes/No); 2) Button string; 3) Message string
-  local Len=${#2}                             # Measure length of button string
-  button_count=0
-  button_end=0
-  this_button_start=0
-  for (( i=1; i <= Len; ++i ))                # Go through the string counting button delimiters
-  do
-    x=$(echo $2 | cut -c $i)
-    if [ $x ] && [ $x = "[" ]; then
-      button_count=$((button_count+1))        # Increment the button counter
-      if [ $button_count -eq 1 ]; then        # Currently limited to two buttons
-        button_start[${button_count}]=$i      # Save start position in the string
-        this_button_start=$i                  # Retain start position for end calculation
-      else
-        button_start[${button_count}]=$((i-1))  # Save start position in the string
-        this_button_start=$i                    # Save position for end calculation
-      fi
-      this_button_start=$i                      # Retain start position for end calculation
-    elif [ $x ] && [ $x = "]" ]; then
-      if [ $button_count -eq 1 ]; then
-        button_len[${button_count}]=$((i - this_button_start +1)) # Calculate length
-        button_len[2]=0
-        button_text[2]=""
-      else
-        button_len[${button_count}]=$((i - this_button_start))    # Calculate length
-      fi
-      button_text[${button_count}]=$(echo $2 | cut -c ${button_start[${button_count}]}-$i)
-    fi
-  done
-  if [ $button_count -eq 0 ]; then              # Error exit
+  # Button string should contain one or two words: eg: 'Ok' or 'Ok Exit' (this may be extended to three options after further testing)
+  Echo
+  button_row=$cursor_row                      # Save row position of buttons
+  button_count=$(echo $2 | wc -w)
+  Button1="$(echo $2 | cut -d' ' -f1)"
+  Len=$(echo $Button1 | wc -c)
+  Button1Len=$((Len+2))                       # Add for braces
+  local width=$(tput cols)
+  if [ $button_count -eq 0 ]; then            # Error exit
     echo "listgen-sgi line $LINENO - No buttons specified" > feliz.log
     return 1
   fi
-
-  # Prepare display
-  local width=$(tput cols)
-  local lov=${#2}                             # Total length of button string
-  if [ ${lov} -lt ${width} ]; then
-    first_button_start=$(( (width - lov) / 2 ))
-  else
-    first_button_start=1
-  fi
+  Button1="$(echo $2 | cut -d' ' -f1)"
+  Len=$(echo $Button1 | wc -c)
+  Button1Len=$((Len+2))                       # Add for braces
+  ButtonString="[ $Button1 ]"
   if [ $button_count -gt 1 ]; then
-    second_button_start=$((first_button_start+button_start[2]))
+    Button2="$(echo $2 | cut -d' ' -f2)"
+    Len=$(echo $Button2 | wc -c)
+    Button2Len=$((Len+3))                     # Add for braces and spaces
+    ButtonString="[ $Button1 ] [ $Button2 ]"
   else
-    second_button_start=$first_button_start
+    Button2=""
+    Button2Len=0
   fi
-  Echo
-  tput cup $cursor_row $first_button_start    # Reposition cursor
-  button_row=$cursor_row                      # Save row position of buttons
-  printf "%-s\n" "$2"                         # Print buttons
+  ButtonStringLen=${#ButtonString}
+  button_start=$(((width-Button1Len-Button2Len)/2))
+  tput cup $button_row $button_start          # Reposition cursor
+  printf "%-s\n" "$ButtonString"              # Print buttons
   case $3 in
-    "nomessage" | "") Message=
+  "") Message=""
     ;;
-    *) cursor_row=$((cursor_row+1))           # Advance cursor row after buttons
+  *) cursor_row=$((cursor_row+1))             # Advance cursor row after buttons
     Echo
     lov=${#3}                                 # Length of message
     if [ ${lov} -lt ${width} ]; then
@@ -165,25 +154,27 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
   fi
   while :
   do
-    if [ $selected_button -eq 1 ]; then
-      tput cup $button_row $first_button_start          # Move cursor to button position
-      tput rev                                          # Reverse colour
-      printf "%-${button_len[1]}s" "${button_text[1]}"  # Highlight first button
-      tput sgr0                                         # Restore colour settings
-    else
-      tput cup $button_row $second_button_start         # Move cursor to button position
-      tput rev                                          # Reverse colour
-      printf "%-${button_len[2]}s" "${button_text[2]}"  # Highlight first button
-      tput sgr0                                         # Restore colour settings
+    if [ $selected_button -eq 1 ]; then                   # Left button
+      tput cup $button_row $button_start                  # Move cursor to button position
+      tput rev                                            # Reverse colour
+      printf "%-${Button1Len}s" "[ ${Button1} ]"          # Highlight first button
+      tput sgr0                                           # Restore colour settings
+    else                                                  # Right button
+      tput cup $button_row $((button_start+Button1Len+2)) # Move cursor to second button position
+      tput rev                                            # Reverse colour
+      printf "%-${Button2Len}s" "[ ${Button2} ]"          # Highlight second button
+      tput sgr0                                           # Restore colour settings
     fi
-    read -rsn1 KeyPress                                 # Capture key press
+    read -rsn1 KeyPress                                   # Capture key press
     case "${KeyPress}" in
       "") # Ok/Return pressed
         if [ $1 = "Yes/No" ]; then
           Response=$selected_button
-          UseLength=${button_len[${Response}]}
-          UseLength=$((UseLength-2))             # This is -4 for braces +2 characters from start
-          Result="$(echo ${button_text[${Response}]} | cut -c 3-${UseLength})"
+          case $Response in
+          1) Result="${Button1}"
+          ;;
+          2) Result="${Button2}"
+          esac
         else  # ie: menu
           if [ $selected_button -eq 1 ]; then
             Response=$((Counter+1))
@@ -206,7 +197,8 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
           fi
         fi
         tput cnorm
-        break
+      #  break
+      return $Response
       ;;
       A) # Up arrow:
         if [ $cursor_row -gt $cursor_top ]; then            # Not already at top
@@ -230,11 +222,11 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
       ;;
       C) # Right arrow
         if [ $selected_button -eq 1 ]; then
-          tput cup $button_row $first_button_start          # Move cursor to ok button position
-          printf "%-${button_len[1]}s" "${button_text[1]}"  # Unhighlight ok button
+          tput cup $button_row $button_start                # Move cursor to first button position
+          printf "%-${ButtonStringLen}s" "${ButtonString} " # Unhighlight all buttons
+          tput cup $button_row $((button_start+Button1Len+2)) # Move cursor to second button position
           tput rev                                          # Reverse colour
-          tput cup $button_row $second_button_start         # Move cursor to exit button position
-          printf "%-${button_len[2]}s" "${button_text[2]}"  # Highlight exit button
+          printf "%-${Button2Len}s" "[ ${Button2} ]"        # Highlight second button
           tput sgr0                                         # Reset
           tput cup $cursor_row $stpt                        # return cursor to menu row
           selected_button=2                                 # Set button variable
@@ -242,11 +234,11 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
       ;;
       D) # Left arrow
         if [ $selected_button -eq 2 ]; then
-          tput cup $button_row $second_button_start         # Move cursor to second button
-          printf "%-${button_len[2]}s" "${button_text[2]}"  # Unhighlight second button
+          tput cup $button_row $button_start                # Move cursor to first button position
+          printf "%-${ButtonStringLen}s" "${ButtonString} " # Unhighlight all buttons
+          tput cup $button_row $button_start                # Move cursor to first button position
           tput rev                                          # Reverse colour
-          tput cup $button_row $first_button_start          # Move cursor to first button position
-          printf "%-${button_len[1]}s" "${button_text[1]}"  # Highlight ok button
+          printf "%-${Button1Len}s" "[ ${Button1} ]"        # Highlight first button
           tput sgr0                                         # Reset
           tput cup $cursor_row $stpt                        # return cursor to menu row
           selected_button=1
@@ -261,14 +253,14 @@ ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listg
 listgen1() { # Simple listing alternative to the bash 'select' function
   # Arguments:
   # 1) Primary file (string of single-word references)
-  # 2) May be a translated message or 'nomessage'
-  # 3) Optional hiding of [ Exit ] ("nocancel")
+  # 2) May be a translated message or empty
+  # 3) Translated button text eg: 'Ok Exit' or just 'Ok'
   # Read listgen.manual for full details
-  if [ $2 ]; then
-    Message="$2"
-  else
-    Message="nomessage"
-  fi
+  case $2 in
+    "") Message=""
+    ;;
+    *) Message="$2"
+  esac
   Padding=" "
   MaxLen=2
   while :
@@ -304,11 +296,9 @@ listgen1() { # Simple listing alternative to the bash 'select' function
     CalledBy="listgen1"
     cursor_bottom=$((cursor_row-1))
     case $3 in
-    "nocancel") Buttons "Menu" "[ Ok ]" "$Message"
+    "") read -p "No buttons passed"
     ;;
-    "") Buttons "Menu" "[ Ok ] [ Exit ]" "$Message"
-    ;;
-    *) Buttons "Menu" "[ Ok ] [ $3 ]" "$Message"
+    *) Buttons "Menu" "$3" "$Message"
     esac
     break
   done
@@ -317,10 +307,15 @@ listgen1() { # Simple listing alternative to the bash 'select' function
 listgen2() { # Advanced menuing function with extended descriptions
   # Arguments:
   # 1) Primary file (string of single-word references)
-  # 2) Not used in interactive menus
-  # 3) Optional hiding of [ Exit ] ("nocancel")
+  # 2) May be a translated message or empty
+  # 3) Translated button text eg: 'Ok Exit' or just 'Ok'
   # 4) Secondary file (the name {only} of the array containing long descriptions)
   # Read listgen.manual for full details
+  case $2 in
+  "") Message=""
+  ;;
+  *) Message="$2"
+  esac
   Padding=" "
   MaxLen=2
   while :
@@ -356,36 +351,52 @@ listgen2() { # Advanced menuing function with extended descriptions
     done
     CalledBy="listgen2"
     cursor_bottom=$((cursor_row-1))
-    if [ $3 ] && [ $3 = "nocancel" ]; then
-      Buttons "Menu" "[ Ok ]" "Use arrow keys to move. [Enter] to select"
-    else
-      Buttons "Menu" "[ Ok ] [ Exit ]" "Use arrow keys to move. [Enter] to select"
+    if [ "$3" ]; then
+      Buttons "Menu" "$3" "$_Instructions"
     fi
     return 0
   done
 }
 
-listgenx() { # Calling function creates input.file before calling listgenx
-             # input.file must be one record per line
-             # This version of listgen is to create numbered lists for 'difficult'
-             # situations. Calling function can send optional 'Headline' string as
-             # $1 and optional limit on length of any item as $2
+listgenx() { # The calling function creates temp.file before calling listgenx
+             # The input.file must be one record per line
+             # Calling function can send an optional 'Headline' string as $1
+             # to appear at the top of the screen, and an optional 'Message' as $2
+             # to appear at the bottom of the screen. $3, $4 and $5 are paging advice
+  mv temp.file input.file # Rename the file to ensure that it is read every time
+  tput cnorm              # Ensure cursor is visible
   if [ "$1" ]; then
     Headline="$1"
   else
     Headline=""
   fi
-  if [ $2 ]; then
-    RestrictLength=$2
+  if [ "$2" ]; then
+    Message="$2"
   else
-    RestrictLength=18
+    Message="Please enter the number of your selection: " # ... In language files
   fi
+  if [ "$3" ]; then
+    Advise="$3"
+  else
+    Advise="or ' ' to go back" # ... In language files
+  fi
+  if [ "$4" ]; then
+    Previous="$4"
+  else
+    Previous="Enter '<' for previous page"
+  fi
+  if [ "$5" ]; then
+    Next="$5"
+  else
+    Next="Enter '>' for next page"
+  fi
+
   total_items=$(cat input.file | wc -l)
   LastItem="$(tail -n 1 input.file)"
   Heading
   # Establish terminal size
   terminal_width=$(tput cols)             # Start with full terminal width
-  terminal_width=$((terminal_width-4))    # Allow for two characters margin each side
+  display_width=$((terminal_width-4))     # Allow for two characters margin each side
   terminal_centre=$((terminal_width/2))   # Page centre used to calculate start point
   terminal_height=$(tput lines)           # Full height of terminal
   top_row=4                               # Leave space for heading
@@ -395,6 +406,7 @@ listgenx() { # Calling function creates input.file before calling listgenx
   # Prepare an array of columns
   declare -a Columns                      # Prepare an array to hold all prepared columns
   declare -a ColumnWidths                 # And one for their widths
+
   WidthOfColumns=2                        # Initialise for loop
   local Counter=0
   RecordNumber=0                          # Initialise record-counting variable
@@ -421,6 +433,7 @@ listgenx() { # Calling function creates input.file before calling listgenx
     ColumnWidths[${NumberOfColumns}]=$TestLen     # Save the width of this column
     Column=""                                     # Empty the string for next column
   done # ........ End of file loop #####
+  rm input.file
 
   # Now build all pages, before proceeding to page-handling in SelectPage()
   declare -a Pages  # Each element of this array will hold a list of the columns forming the page
@@ -429,19 +442,18 @@ listgenx() { # Calling function creates input.file before calling listgenx
   PageNumber=1      # Page selector
   PageWidth=4       # Start width accumulator with margins
   ColumnWidth=0
-  RecordCounter=0   # For numbering
-  LastPage=0        #
-
+  LastPage=0
   while :
   do
-    for (( column=1; column <= $NumberOfColumns; ++column )) # Build a page #########################
+    for (( column=1; column <= $NumberOfColumns; ++column )) # Build a page
     do
-      if [ $((PageWidth+ColumnWidth+4)) -ge $terminal_width ]; then # If adding another column would
-        PageWidths[${PageNumber}]=$PageWidth  # exceed page width ... save this page's width
+      if [ $((PageWidth+ColumnWidth+4)) -ge $display_width ]; then
+                                              # If adding another column would exceed
+        PageWidths[${PageNumber}]=$PageWidth  # page width ... save this page's width
         PageWidth=4                           # and reset variable for next page
         Pages[${PageNumber}]="${Page}"        # Copy the list of columns to Pages array
         PageNumber=$((PageNumber+1))          # Then set next page, advance page counter, and
-        Page=""                               # Empty string for next list of columns
+        Page=""                               # empty string for next list of columns
       fi
 
       ColumnWidth=0
@@ -454,13 +466,13 @@ listgenx() { # Calling function creates input.file before calling listgenx
         fi
       done
       if [ $((PageWidth+ColumnWidth+1)) -lt $terminal_width ]; then # Page is not full
-        PageWidth=$((PageWidth+ColumnWidth+1))  # Add column width to page width accumulator
-        Page="$Page $column"                  # and append the column number to this page
+        PageWidth=$((PageWidth+ColumnWidth+1)) # Add column width to page width accumulator
+        Page="$Page $column"                   # and append the column number to this page
       fi
       if [ $column -eq $NumberOfColumns ]; then # Last column
         LastPage=$PageNumber
         PageWidths[${PageNumber}]=$PageWidth
-        Pages[${PageNumber}]="${Page}"        # Copy the list of columns to Pages array
+        Pages[${PageNumber}]="${Page}"          # Copy the list of columns to Pages array
         break 2
       fi
     done
@@ -468,6 +480,7 @@ listgenx() { # Calling function creates input.file before calling listgenx
 
   PageNumber=1    # Start at first page
   SelectPage      # Switch between pages
+
 }
 
 SelectPage() {
@@ -476,10 +489,11 @@ SelectPage() {
     # Display appropriate page according to user input
     case $PageNumber in
     1) if [ $LastPage -gt 1 ]; then   # On page 1, with more than 1 page in total
-        Instructions="                 Enter '>' for next page"
+        Instructions="$Next - $Advise"
       else
-        Instructions=""
+        Instructions="$Advise"
       fi
+      InstrLen=${#Instructions}
       PrintPage
       case $? in                       # Return will be 0, 1, or 2
       1) PageNumber=$PageNumber        # < (left arrow) = illegal call to previous page
@@ -493,24 +507,34 @@ SelectPage() {
       *) break                        # 0 : an item was selected or 'Exit' entered
       esac
     ;;
-    $LastPage) Instructions="         Enter '<' for previous page"
+    $LastPage) Instructions="$Previous - $Advise"
+      InstrLen=${#Instructions}
       PrintPage
       case $? in                      # Return will be 0, 1, or 2
       1) PageNumber=$((PageNumber-1)) # < (left arrow) = previous page
       ;;
-      2) PageNumber=PageNumber        # > (right arrow) = illegal call to next page
+      2) PageNumber=$PageNumber        # > (right arrow) = illegal call to next page
       ;;
       *) break                        # 0 : an item was selected or 'Exit' entered
       esac
     ;;
-    *) Instructions="  Enter '<' for previous page - or - '>' for next page"
+    *) Instructions="$Previous - $Advise - $Next"
+      InstrLen=${#Instructions}
       PrintPage
-      case $? in                      # Return will be 0, 1, or 2
-      1) PageNumber=$((PageNumber-1)) # < (left arrow) = previous page
+      case $? in                          # Return will be 0, 1, or 2
+      1) if [ $PageNumber -gt 1 ]; then   # Not on page 1
+          PageNumber=$((PageNumber-1))    # < (left arrow) = previous page
+        else
+          PageNumber=$PageNumber          # < (left arrow) = illegal call to previous page
+        fi
       ;;
-      2) PageNumber=$((PageNumber+1)) # > (right arrow) = next page
+      2) if [ $PageNumber -lt $LastPage ]; then   # Not on last page
+        PageNumber=$((PageNumber+1))      # > (right arrow) = next page
+      else
+        PageNumber=$PageNumber            # > (right arrow) = illegal call to next page
+      fi
       ;;
-      *) break                        # 0 : an item was selected or 'Exit' entered
+      *) break                            # 0 : an item was selected or '' entered
       esac
     esac
   done
@@ -525,12 +549,16 @@ PrintPage() {
   PageWidth=${PageWidths[${PageNumber}]}        # Full width of this page
   column_start=$(( terminal_centre - (PageWidth/2) -3 ))
   cursor_row=$top_row                           # Start at top row
+  local Counter
   while :
   do
     local Counter=1
     for column in ${ThisPage}                   # Outer loop iterates through columns for $ThisPage
     do                                          # getting the column numbers
       ColumnWidth=${ColumnWidths[${column}]}
+      if [ -z "$ColumnWidth" ]; then
+        continue
+      fi
       for item in ${Columns[${column}]}         # Inner loop iterates through contents of columns
       do
         tput cup $cursor_row $column_start      # Move cursor to print point
@@ -544,19 +572,28 @@ PrintPage() {
       column_start=$((column_start+ColumnWidth+2))  # Start next column
       cursor_row=$top_row                           # ... at top row
     done
-    tput cup $((terminal_height-2)) $((terminal_centre-25)) # Move cursor to bottom of screen
+
+    InstrLen=$((InstrLen/2))
+    tput cup $((terminal_height-2)) $((terminal_centre-InstrLen)) # Position cursor at bottom of screen
     Echo "${Instructions}"
     tput cup $((bottom_row+1)) 0                    # Then back to row below bottom row
-    TPread "Please enter the number of your selection: "
+    TPread "${Message}: "
     case $Response in
-    '' | "Exit" | "exit") Result="Exit"
-      return 0                  # Quit without selecting anything
+    '') return 0                                    # Quit without selecting anything
     ;;
     "<") return 1                                   # Previous page, if valid
     ;;
     ">") return 2                                   # Next page, if valid
     ;;
-    *[!0-9]*) continue
+    *[!0-9]*) Heading
+      if [ "$Headline" ]; then
+        PrintOne "${Headline}"
+      fi
+      ThisPage="${Pages[${PageNumber}]}"            # String of column numbers for this page
+      PageWidth=${PageWidths[${PageNumber}]}        # Full width of this page
+      column_start=$(( terminal_centre - (PageWidth/2) -3 ))
+      cursor_row=$top_row                           # Start at top row
+      continue
     ;;
     *) Counter=0                            # Find the numbered item in the columns of this page
       for column in ${ThisPage}             # Outer loop iterates through $ThisPage

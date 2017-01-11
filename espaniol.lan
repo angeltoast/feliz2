@@ -1,0 +1,299 @@
+# Archivo en espaniol de Elizabeth Audrey Mills
+Feliz2 - Script de instalación de Arch Linux
+Elige tu kernel
+Escoge un objeto
+El kernel de soporte a largo plazo (LTS) ofrece estabilización,
+Mientras que el último kernel tiene todas las nuevas características
+En caso de duda, seleccione LTS.
+Parece que feliz se está ejecutando en Virtualbox
+Si lo es, feliz puede instalar Virtualbox invitado
+Utilidades y haga los ajustes apropiados para usted
+¿Instalar las utilidades invitadas de Virtualbox?
+Para configurar el reloj del sistema, primero
+Elige la Zona Mundial de tu ubicación
+Sí
+No
+Guardar
+Borrar
+De_acuerdo
+Salida
+¿Estás en alguno de estos estados?
+Elija su ubicación más cercana
+O Salir para regresar
+No se ha encontrado ningún idioma para tu ubicación
+¿Desea utilizar uno de los siguientes?
+Solo se encontró un idioma para su ubicación
+¿Utilizaremos esto como su idioma?
+Ahora elija su idioma de esta lista
+O Salir para intentarlo de nuevo
+Solo un teclado encontrado en función de su ubicación
+¿Quieres aceptar esto? Seleccione No para buscar alternativas
+Los teclados siguientes coinciden con su ubicación. Usted puede
+Elija uno o Salir para buscar alternativas
+Si conoce el código de la distribución del teclado, escriba
+Es ahora. Si no, intente ingresar una abreviatura de dos letras
+Para su país o idioma y se mostrará una lista
+Alternativamente, ingrese "Salir" para comenzar de nuevo
+Seleccione su teclado o Salir para volver a intentarlo
+No se encontraron teclados que contengan '$ Term'
+Por favor, inténtelo de nuevo
+Introduzca un nombre para el usuario principal del nuevo sistema.
+Si no crea un nombre de usuario aquí, un usuario predeterminado
+Llamado "archie" se creará
+se creará
+Se necesita un nombre de host. Este será un nombre único para identificar
+Su dispositivo en una red. Si no introduce uno, el
+Se usará el nombre de host predeterminado de 'arch-linux'
+Ingrese un nombre de host para su computadora
+Ahora tiene la opción de agregar extras, como un navegador web
+Ambiente de escritorio, etc, de las siguientes categorías
+Si desea sólo una instalación de Arch base, salga sin elegir ningún extras
+Puede agregar más elementos o seleccionar elementos para eliminarlos.
+Añadido hasta ahora
+Ahora puede elegir entre cualquiera de las otras listas
+O seleccione Salir para finalizar esta parte de la configuración
+Un gestor de visualización proporciona una pantalla de inicio de sesión gráfica
+En caso de duda, seleccione LightDM
+Si no instala un gestor de pantalla, tendrá
+Para iniciar su entorno de escritorio manualmente
+El gestor de visualización ya está configurado como
+Sólo un gestor de visualización puede estar activo
+¿Desea cambiarlo?
+Seleccione el dispositivo donde se instalará Grub
+Tenga en cuenta que si no selecciona un dispositivo, Grub
+No se instalará, y usted tendrá que hacer
+Arreglos alternativos para arrancar tu nuevo sistema
+Estos son los ajustes que ha introducido. Por favor, compruébalo
+Pulse Intro para instalar con estos ajustes, o
+Introduzca el número para que los datos cambien o Intro para finalizar
+1) Nombre de host (actualmente
+Si no está seguro acerca de la partición, debe leer el Wiki Arch
+No hay particiones en el dispositivo y al menos
+Se necesitan dos particiones: una para EFI / boot y
+Uno para / root. Una opción para la partición manual guiada
+Y se ha añadido la creación de una tabla de particiones EFI
+O puede salir ahora para utilizar una herramienta externa. Alternativamente
+Una partición es necesaria para el directorio raíz
+Puede utilizar 'cfdisk' para crear una tabla de particiones o
+Feliz puede crear particiones automáticamente para ti, si
+deseo. Si elige no hacer nada ahora, el script
+Terminar de permitir que la partición de alguna otra manera
+Aquí hay una lista de particiones disponibles en todos los dispositivos conectados
+Hay una opción de partición manual guiada, o Feliz
+Puede crear automáticamente una nueva tabla de particiones GPT para
+Usted, si usted desea. Tenga en cuenta que ambas opciones
+Borrará el disco - cualquier información existente será borrada!
+Si elige "Dejar como está", el guión
+A continuación le permiten asignar las particiones existentes.
+'Cfdisk' está disponible para su edición. Alternativamente, usted
+Puede usar la opción de partición manual guiada, o Feliz puede
+Sobrescribir el disco con una nueva tabla de particiones si lo desea. Por favor
+Tenga en cuenta que ambas opciones borrarán el disco: cualquier
+Los datos se borrarán! Si elige "Dejar como está",
+Script le permitirá asignar las particiones existentes
+Estos son los dispositivos disponibles
+¿Qué desea utilizar para esta instalación?
+(Recuerde, esto es auto-partición, y cualquier dato
+En el dispositivo elegido será destruido)
+Esto borrará cualquier
+¿Seguro que desea continuar?
+Particionamiento de
+exitoso
+Usted tendrá la oportunidad de revisar estos últimos
+Pulse cualquier tecla para continuar
+Seleccione ahora el sistema de archivos para
+No se recomienda mezclar el sistema de archivos btrfs con otros
+La partición que ha elegido está etiquetada
+Si desea guardar esa etiqueta, escriba 1
+Seleccione ahora una partición para usarla como root
+Usted puede elegir dejarlo como está, pero debe
+Entender que no reformatear la raíz
+Partición puede tener consecuencias inesperadas
+La partición seleccionada
+Está actualmente formateado para
+Reformatear eliminará todos los datos que se encuentren actualmente en él
+Seleccione una partición para el intercambio de los que
+O puede asignar un archivo de intercambio
+Advertencia: Btrfs no admite archivos de intercambio
+Si omite este paso, no se asignará ningún intercambio
+Ya está formateado como una partición de intercambio
+Reformatear cambiará el UUID, y si este intercambio
+Partición es utilizada por otro sistema operativo, que
+El sistema ya no podrá acceder a la partición
+¿Desea reformatearlo?
+No hay particiones disponibles para swap,
+Pero puede asignar un archivo de intercambio, si lo desea.
+Asigne el tamaño de su archivo de intercambio (M = Megabytes, G = Gigabytes)
+Las siguientes particiones permanecen sin asignar
+Si desea utilizar uno, selecciónelo de la lista
+O elija Salir para finalizar el particionamiento
+Puede elegir dejarlo como está, seleccionando Salir, pero no
+El reformateo de una partición existente puede tener consecuencias inesperadas
+Introduzca un punto de montaje para
+Debe introducir un punto de montaje válido
+Aquí puede decirle a Feliz el tamaño y el formato de las particiones que desea
+crear. Cuando se hayan configurado todos los detalles, Feliz borrará el disco y
+Cree una tabla de particiones EFI con las particiones que ha especificado
+Comenzamos con la partición / boot
+No hay espacio para una partición / swap, pero puede
+Asignar un archivo de intercambio. Se aconseja permitir algún intercambio
+¿Desea asignar un archivo de intercambio?
+Existen
+Dispositivos disponibles
+Su dispositivo sólo tiene
+Esto no es suficiente para una instalación
+Esto es suficiente para
+Instalación, pero sólo debe seleccionar aplicaciones ligeras
+Y puede quedarse sin espacio durante la instalación o en algún momento posterior
+Su dispositivo tiene
+Esto es suficiente para
+Tienes
+Disponible en el dispositivo elegido
+Todo lo que necesitamos establecer aquí es el tamaño de su partición EFI / boot.
+Debe ser no menos de 512MiB y no debe ser mayor de 1GiB
+De modo que se ajuste el tamaño correcto
+Ahora tienes
+tamaño
+Puede utilizar todo el espacio restante en el dispositivo, si lo desea
+Aunque es posible que desee dejar algún espacio para una partición de intercambio
+Y tal vez también una partición de origen
+La partición raíz no debe ser inferior a 8GiB
+Idealmente más, hasta 20GiB
+Introduzca el tamaño deseado
+O, para asignar todo el espacio restante, ingrese: 100%
+Hay espacio para una partición / swap
+Swap puede ser cualquier cosa de 512MiB hacia arriba pero
+No es necesario exceder 4GiB
+Es posible que desee dejar algún espacio para una partición de origen
+Sólo hay espacio para una partición / swap
+Partición de arranque EFI
+Feliz creará ahora una nueva tabla de particiones
+Y configurar las particiones que ha definido
+Particionamiento exitoso
+crear. Esta facilidad está restringida a crear / root, / swap y / home
+(Si es deseado). Cuando se hayan configurado todos los detalles, Feliz borrará el disco y
+Cree una nueva tabla de particiones GPT con las particiones que haya especificado
+Se requiere una partición A / root
+Asignado a / root
+Partición raíz
+Generalmente no menos de 1GiB
+O, para asignar todo el espacio restante, ingrese: 100%
+Debe incluir M, G o%
+Del espacio restante asignado a
+Esa es toda la preparación hecha
+Se ha particionado correctamente
+Aquí están las particiones que están disponibles
+Primero debe seleccionar uno para EFI / boot
+Debe ser del tipo vfat, y puede ser alrededor de 512MiB
+¡Éxito!
+Finalizada la instalación en
+Minutos y
+segundos
+Finalmente necesitamos establecer contraseñas
+Tenga en cuenta que no podrá
+Ver contraseñas al entrar en ellas
+Las contraseñas no coinciden. Inténtalo de nuevo
+Felicitaciones, la instalación está completa
+El ordenador se apagará, para que pueda
+Quite el medio de instalación antes de reiniciar
+Partición de arranque
+Intercambiar partición
+No se han hecho previsiones para
+Particiones adicionales
+No se han asignado particiones adicionales
+El kernel LTS se instalará
+Se instalará el último kernel
+Grub se instalará en
+No se han hecho previsiones para Grub
+La zona / subzona será
+La configuración regional se establecerá en
+El teclado es
+Las utilidades de invitado de Virtualbox no se instalarán
+No se ha seleccionado el Administrador de Display
+Administrador de Display
+Configuración de root y de usuario
+Ya está en tu lista de compras
+Nombre de host
+Usuario
+Se han seleccionado los siguientes extras
+Nombre de usuario (actualmente
+Si desea eliminar la etiqueta, introduzca 2
+Si desea introducir una nueva etiqueta, escríbala en el indicador
+Introduzca el número de su selección
+Usa las teclas de flecha para moverte. Enter para seleccionar
+Presione Enter para continuar
+La configuración regional está establecida en
+Abrir cfdisk para que pueda particionar manualmente
+Herramienta de partición manual guiada
+Permitir a feliz particionar todo el dispositivo
+Déjalo así
+Accesorios
+Entornos_de_escritorio
+Gráfico
+Internet
+Multimedia
+Oficina
+Programación
+Gerentes_de_ventanas
+Aplicación de grabación de disco desde Gnome
+Tiempo de escritorio e información del sistema
+Calculadora de escritorio práctica
+Herramienta para hacer / eliminar / cambiar el tamaño de las particiones
+Handy editor de texto ligero de LXDE
+Emulador de terminal ligero de LXDE
+El administrador de archivos de LXDE
+Moderno escritorio centrado en la simplicidad y la elegancia
+Slick DE del equipo de la Casa de Moneda
+El entorno de escritorio Deepin
+DE moderno y completo
+Plasma 5 y accesorios
+Tradicional, ligero DE
+Ligero y moderno Qt DE
+DE tradicional del equipo de la Casa de la Moneda
+DE ligero y altamente configurable
+Lector para PDF y otros formatos de documento
+Conjunto de edición avanzada de imágenes
+Manipulación de la imagen de línea de comandos
+Visor de imágenes y editor básico
+Una interfaz gráfica de usuario sencilla de escáner
+Frontal sano de GTK con todas las funciones
+Navegador web de código abierto de Google
+Gnome WebKitGTK + navegador (también conocido como Web)
+Rápido y fiable FTP, FTPS y SFTP cliente
+Navegador extensible de Mozilla
+Cliente de BitTorrent de código abierto
+Cliente de correo electrónico rico en funciones de Mozilla
+Cliente BitTorrent fácil de usar
+Editor de video fácil de usar
+Reproductor de audio rico en funciones
+Simple pero potente transcodificador de video
+Editor de vídeo no lineal fácil de usar
+Reproductor de vídeo de peso medio
+Grabadora de CD de GUI
+Procesador de textos completo
+Programa de hoja de cálculo de GNOME
+Conjunto de software de oficina de código abierto
+Calendario y administrador de tareas (incluido con Xfce)
+Programa de edición electrónica
+GTK + IDE con soporte para complementos de Python
+Código abierto y multiplataforma C / C ++ IDE
+Editor de texto extensible y personalizable
+Editor de texto avanzado y IDE
+Sistema de control de versiones distribuidas de código abierto
+Entorno de desarrollo integrado (IDE)
+Administrador de ventanas y kit de herramientas
+WM ligero, rápido y versátil
+Ligero, potente y apilable configurable WM
+Aplicación de muelle y lanzador personalizable
+Para abrir aplicaciones y administrar ventanas
+Panel de escritorio
+África
+America
+Antártida
+Ártico
+Asia
+atlántico
+Australia
+Europa
+indio
+Pacífico

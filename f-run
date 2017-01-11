@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th December 2016
+# Revision date: 10th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ MountPartitions() {
   esac
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
   # 2) EFI (if required)
-  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if EFI /boot partition required
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if /boot partition required
     mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
@@ -358,23 +358,29 @@ SetRootPassword() {
   Echo
   PrintOne "Success!"
   Echo
-  PrintOne "Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+  Translate "minutes"
+  mins="$Result"
+  Translate "Finished installing in"
+  PrintOne "$Result" "${DIFFMIN}:${DIFFSEC} $mins"
   Echo
-  PrintOne "Finally we need to set passwords ..."
+  PrintOne "Finally we need to set passwords"
   Echo
-  PrintOne "Note that you will not be able to "
-  PrintOne "see passwords as you enter them ..."
+  PrintOne "Note that you will not be able to"
+  PrintOne "see passwords as you enter them"
   Echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
   do
-    read -s -p "Enter a password for root: " Pass1
+    Translate "Enter a password for"
+    read -s -p "$Result root: " Pass1
     Echo
-    read -s -p "Re-enter password for root: " Pass2
+    Translate "Re-enter a password for"
+    read -s -p "$Result root: " Pass2
     Echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
-      read_timed "Passwords cannot be blank. Try again ..." 1
+      Translate "Passwords cannot be blank. Try again"
+      read_timed "$Result ..." 1
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
@@ -394,13 +400,16 @@ SetUserPassword() {
   Repeat="Y"
   while [ $Repeat = "Y" ]
   do
-    read -s -p "Enter a password for $UserName: " Pass1
+    Translate "Enter a password for"
+    read -s -p "$Result $UserName: " Pass1
     Echo
-    read -s -p "Re-enter password for $UserName: " Pass2
+    Translate "Re-enter a password for"
+    read -s -p "$Result $UserName: " Pass2
     Echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
-      read_timed "Passwords cannot be blank. Try again ..." 1
+      Translate "Passwords cannot be blank. Try again"
+      read_timed "$Result ..." 1
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
@@ -419,11 +428,16 @@ SetUserPassword() {
 Restart() {
   print_heading
   Echo
-  PrintOne "Congratulations, installation is complete."
+  PrintOne "Congratulations, installation is complete"
   Echo
-  PrintOne "The computer will now shut down, so you can"
-  PrintOne "remove the installation media before rebooting."
-  read_timed
-  shutdown -h now
+  Translate "Shutdown Reboot"
+  listgen1 "$Result" "" "$_Ok $_Exit"
+  case $Response in
+  1) shutdown -h now
+  ;;
+  2) reboot
+  ;;
+  *) exit 1
+  esac
 }
 

@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th December 2016
+# Revision date: 10th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,29 +21,31 @@
 #                  51 Franklin Street, Fifth Floor
 #                    Boston, MA 02110-1301 USA
 
-# In this module:
-
 # 1) Global functions
 
 print_heading() {   # Always use this function to clear the screen
   tput sgr0         # Make sure colour inversion is reset
   clear
-  T_COLS=$(tput cols)                   # Get width of terminal
+  local T_COLS=$(tput cols)             # Get width of terminal
   tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
-  printf "%-s\n" "$Backtitle"           # Display backtitle
+  printf "%-s\n" "$_Backtitle"           # Display backtitle
   printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
   cursor_row=3                          # Save cursor row after heading
 }
 
-PrintOne() { # Text is translated, then aligned according to content and screen size
-  Text="$1"
-  if [ ! $2 ]; then                 # Don't translate if $2
-    Translate "$Text"
+PrintOne() {  # Receives up to 2 arguments
+              # If $2 contains anything, don't translate $1
+              # Then print aligned according to content and screen size
+  if [ ! "$2" ]; then
+    Translate "$1"
     Text="$Result"
+  else
+    Text="$1 $2"
   fi
-  width=$(tput cols)
+  local width=$(tput cols)
   EMPTY=" "
-  lov=${#Text}
+  local stpt=0
+  local lov=${#Text}
   if [ ${lov} -lt ${width} ]; then
     stpt=$(( (width - lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
@@ -51,18 +53,22 @@ PrintOne() { # Text is translated, then aligned according to content and screen 
   Echo "$EMPTY $Text"
 }
 
-PrintMany() { # Subsequent item(s) in an aligned list
-  Text="$1"
-  if [ ! $2 ]; then                 # Don't translate if $2
-    Translate "$Text"
+PrintMany() { # Receives up to 2 arguments
+              # If $2 contains anything, don't translate $1
+              # Then print aligned according to content and screen size
+  if [ ! "$2" ]; then
+    Translate "$1"
     Text="$Result"
+  else
+    Text="$1 $2"
   fi
   Echo "$EMPTY $Text"
 }
 
 read_timed() { # Timed display - $1 = text to display; $2 = duration
-  T_COLS=`tput cols`
-  lov=${#1}
+  local T_COLS=`tput cols`
+  local lov=${#1}
+  local stpt=0
   if [ $2 ]; then
     tim=$2
   else
@@ -84,12 +90,46 @@ invalid_option() {
 
 SetLanguage() {
   print_heading
-  listgen1 "$(ls *.lan | cut -d'.' -f1)"
+  PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
+  Echo
+  listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"
   case $Result in
   "" | "Exit") LanguageFile=english.lan
   ;;
   *) LanguageFile="${Result}.lan"
   esac
+  # Some common translations
+  Translate "Feliz2 - Arch Linux installation script"
+  _Backtitle="$Result"
+  # listgen1/2 variables
+  Translate "Ok"
+  _Ok="$Result"
+  Translate "Exit"
+  _Exit="$Result"
+  Translate "Use arrow keys to move. Enter to select"
+  _Instructions="${Result}"
+  Translate "Yes"
+  _Yes="$Result"
+  Translate "No"
+  _No="$Result"
+  # listgenx variables
+  Translate "Please enter the number of your selection"
+  _xNumber="$Result"
+  Translate "or ' ' to exit"
+  _xExit="$Result"
+  Translate "Enter '<' for previous page"
+  _xLeft="$Result"
+  Translate "Enter '>' for next page"
+  _xRight="$Result"
+  # Partitioning
+  Translate "/boot partition"
+  _BootPartition="$Result"
+    Translate "/root partition"
+  _RootPartition="$Result"
+    Translate "/swap partition"
+  _SwapPartition="$Result"
+    Translate "/home partition"
+  _HomePartition="$Result"
 }
 
 Translate() { # Called by ReadOne & ReadMany and by other functions as required
@@ -165,13 +205,9 @@ HostName=""               # eg: arch-linux
 UserName=""               # eg: archie
 Scope=""                  # Installation scope ... 'Full' or 'Basic'
 
-# Global user input variables
-Response=""
-Result=""
+
 
 # Miscellaneous
-Backtitle="Feliz2 Arch Linux installation script"
-declare -a Options        # For listgen functions
 PrimaryFile=""
 
 # ---- Partitioning ----
@@ -208,7 +244,7 @@ LongAccs[7]="The file manager from LXDE"
 # Desktops
 Desktops="Budgie Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Modern desktop focusing on simplicity & elegance"
-LongDesk[2]="Slick DE from the Mint team      "
+LongDesk[2]="Slick DE from the Mint team"
 LongDesk[3]="The Deepin Desktop Environment"
 LongDesk[4]="Full-featured, modern DE"
 LongDesk[5]="Plasma 5 and accessories pack"

@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 4th December 2016 ...
+# Revision date: 10th January 2017 ...
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,8 +30,7 @@ source f-vars     # Most variables and arrays are declared here
 source f-set      # Functions to set variables used during installation
 source listgen    # Menuing functions
 source f-part1    # Functions concerned with allocating partitions
-source f-part2    # Guided partitioning for BIOS systems
-source f-part3    # Functions for installation on an EFI system
+source f-part2    # Guided partitioning for BIOS & EFI systems
 source f-run      # Functions called during installation
 
 # ...............................................................................
@@ -42,8 +41,7 @@ StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
 
 print_heading
-# SetLanguage                            # Use appropriate language file
-LanguageFile="english.lan"
+SetLanguage                            # Use appropriate language file
 
 timedatectl set-ntp true
 
