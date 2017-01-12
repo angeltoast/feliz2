@@ -178,7 +178,7 @@ and set up the partitions you have defined
 Partitioning successful
 This facility is restricted to creating /root, /swap and /home
 M = Megabytes, G = Gigabytes
-xxx free
+Other
 A /root partition is required
 allocated to /root
 /root partition
