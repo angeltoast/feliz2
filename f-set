@@ -474,7 +474,7 @@ UserName() {
   PrintOne "called 'archie' will be set up"
   Echo
   Translate "User Name"
-  TPread "$Result: "
+  TPread "${Result}: "
   Entered=${Response,,}
   case $Entered in
     "") UserName="archie"
@@ -883,7 +883,7 @@ FinalCheck() {
     PrintMany "11) $Result" "..."
     Translate "Hostname"
     PrintMany "      $Result" "= '$HostName'"
-    Translate "User"
+    Translate "User Name"
     PrintMany "      $Result" "= '$UserName'"
     Translate "The following extras have been selected"
     PrintMany "12) $Result" "..."
