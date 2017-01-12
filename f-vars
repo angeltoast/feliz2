@@ -137,7 +137,7 @@ Translate() { # Called by ReadOne & ReadMany and by other functions as required
   Text="$1"
   # Get line number of text in english.lan
   #                      exact match only | restrict to first find | display only number
-  RecordNumber=$(grep -n "^${Text}$" english.lan | head -n 1 | cut -d':' -f1)
+  RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
   case $RecordNumber in
   "" | 0) Result="$Text"  # If not found, use English
   ;;
