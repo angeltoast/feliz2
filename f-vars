@@ -94,7 +94,7 @@ SetLanguage() {
   Echo
   listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"
   case $Result in
-  "" | "Exit") LanguageFile=english.lan
+  "" | "Exit") LanguageFile=English.lan
   ;;
   *) LanguageFile="${Result}.lan"
   esac
