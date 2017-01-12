@@ -335,7 +335,7 @@ AutoWarning() {
         Echo
         PrintOne "You will have the opportunity to review these later"
         Echo
-        PrintOne "Press any key to continue"
+        PrintOne "Press any key"
         read -n1
         break
         ;;

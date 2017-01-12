@@ -944,10 +944,13 @@ ManualSettings() {
   while :
   do
     print_heading
-    PrintOne "Enter number for data to change, or [Enter] to finish"
+    PrintOne "Enter number for data to change"
+    PrintOne "or ' ' to exit"
     Echo
-    PrintOne "" "1) " "Hostname (currently" "$HostName)"
-    PrintMany "" "2) " "Username (currently" "$UserName)"
+    Translate "Hostname (currently"
+    PrintOne "1) $Result" "${HostName})"
+    Translate "Username (currently"
+    PrintMany "2) $Result" "${UserName})"
     Echo
     Translate "Enter the number of your selection"
     TPread "${Result}: "
