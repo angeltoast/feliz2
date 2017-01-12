@@ -952,7 +952,7 @@ ManualSettings() {
     Translate "Username (currently"
     PrintMany "2) $Result" "${UserName})"
     Echo
-    Translate "Enter the number of your selection"
+    Translate "Please enter the number of your selection"
     TPread "${Result}: "
     Echo
     case $Response in
@@ -960,7 +960,7 @@ ManualSettings() {
         TPread "${Result} ${HostName}): "
          HostName=$Response
         ;;
-      2) Translate "Enter new username to be created (currently"
+      2) Translate "Enter new username (currently"
       TPread "${Result} ${UserName}) : "
          UserName=$Response
         ;;

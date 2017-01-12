@@ -485,7 +485,7 @@ AllocateRoot() {
   local Counter=0
   Partition=""
   PartitionType=""
-  PrintOne "Please now select a partition to use for root"
+  PrintOne "Please select a partition to use for /root"
   Echo
   listgen2 "$PartitionList" "" "$_Ok" "PartitionArray"
   Reply=$Response

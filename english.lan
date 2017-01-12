@@ -111,7 +111,7 @@ It is not recommended to mix the btrfs file-system with others
 The partition you have chosen is labelled
 If you wish to keep that label, enter 1
 Enter 1, 2 or a new label
-Please now select a partition to use for /root
+Please select a partition to use for /root
 You can choose to leave it as it is, but should
 understand that not reformatting the /root
 partition can have unexpected consequences
