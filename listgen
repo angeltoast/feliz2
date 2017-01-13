@@ -363,7 +363,10 @@ listgenx() { # The calling function creates temp.file before calling listgenx
              # Calling function can send an optional 'Headline' string as $1
              # to appear at the top of the screen, and an optional 'Message' as $2
              # to appear at the bottom of the screen. $3, $4 and $5 are paging advice
-  mv temp.file input.file # Rename the file to ensure that it is read every time
+  # Prepare input file
+  grep -v '^$' temp.file > input.file         # Remove any blank lines
+  rm temp.file                                # Remove the temp file
+
   tput cnorm              # Ensure cursor is visible
   if [ "$1" ]; then
     Headline="$1"
@@ -436,11 +439,11 @@ listgenx() { # The calling function creates temp.file before calling listgenx
   rm input.file
 
   # Now build all pages, before proceeding to page-handling in SelectPage()
-  declare -a Pages  # Each element of this array will hold a list of the columns forming the page
-  declare -a PageWidths  # Each element of this array will hold total width of columns forming the page
-  Page=""           # This variable will hold a list of column numbers for the selected page
-  PageNumber=1      # Page selector
-  PageWidth=4       # Start width accumulator with margins
+  declare -a Pages        # Each element of this array will hold a list of the columns forming the page
+  declare -a PageWidths   # Each element of this array will hold total width of columns forming the page
+  Page=""                 # This variable will hold a list of column numbers for the selected page
+  PageNumber=1            # Page selector
+  PageWidth=4             # Start width accumulator with margins
   ColumnWidth=0
   LastPage=0
   while :
