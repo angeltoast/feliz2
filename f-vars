@@ -135,7 +135,7 @@ SetLanguage() {
 Translate() { # Called by ReadOne & ReadMany and by other functions as required
               # $1 is text to be translated
   Text="$1"
-  # Get line number of text in english.lan
+  # Get line number of text in English.lan
   #                      exact match only | restrict to first find | display only number
   RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
   case $RecordNumber in
@@ -192,7 +192,7 @@ CountryLocale=""          # eg: en_GB.UTF-8
 Countrykbd=""             # eg: uk
 ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
-LanguageFile="english.lan" # For translation
+LanguageFile="English.lan" # For translation
 RecordNumber=0            # Used during translation
 
 # Desktop environment, display manager and greeter variables
