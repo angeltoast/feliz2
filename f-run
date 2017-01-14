@@ -388,7 +388,11 @@ SetRootPassword() {
     fi
     if [ $Pass1 = $Pass2 ]; then
      printf "$Pass1\n$Pass2" | arch-chroot "passwd" &>/dev/null
+<<<<<<< HEAD
 +    unset Pass1 Pass2 2>> feliz.log
+=======
+     unset Pass1 Pass2
+>>>>>>> b4351aea792b508fa6da5c8dcaea2124d4933a90
      Repeat="N"
     else
       print_heading
@@ -416,7 +420,11 @@ SetUserPassword() {
     fi
     if [ $Pass1 = $Pass2 ]; then
       printf "$Pass1\n$Pass2" | arch-chroot "passwd ${UserName}" &>/dev/null
+<<<<<<< HEAD
 +     unset Pass1 Pass2 2>> feliz.log
+=======
+      unset Pass1 Pass2
+>>>>>>> b4351aea792b508fa6da5c8dcaea2124d4933a90
       Repeat="N"
     else
       print_heading
