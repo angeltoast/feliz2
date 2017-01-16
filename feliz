@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 10th January 2017 ...
+# Revision date: 4th December 2016 ...
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@ source f-vars     # Most variables and arrays are declared here
 source f-set      # Functions to set variables used during installation
 source listgen    # Menuing functions
 source f-part1    # Functions concerned with allocating partitions
-source f-part2    # Guided partitioning for BIOS & EFI systems
+source f-part2    # Guided partitioning for BIOS systems
+source f-part3    # Functions for installation on an EFI system
 source f-run      # Functions called during installation
 
 # ...............................................................................
@@ -39,11 +40,6 @@ source f-run      # Functions called during installation
 
 StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
-
-print_heading
-SetLanguage                            # Use appropriate language file
-
-timedatectl set-ntp true
 
 print_heading
 TestUEFI                               # Check if on UEFI system
@@ -75,10 +71,11 @@ elif [ ${AutoPart} -eq 0 ]; then       # If not auto-artition
   SetGrubDevice                        # User chooses grub partition
 fi
 
+getkeymap                              # Select keyboard layout
+
 # Localisation
-SetTimeZone                            # ZONE and SUBZONE eg: Europe/London
-setlocale                              # CountryLocale eg: en_GB.UTF-8
-getkeymap                              # Select keyboard layout eg: uk
+SetTimeZone
+setlocale
 SetHostname
 
 PickLuxuries                           # Add extra applications

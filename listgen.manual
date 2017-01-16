@@ -1,7 +1,12 @@
-Using the listgen functions - Elizabeth Mills - 10th January 2017
-------------------------------------------------------------------
+Using the listgen functions - Elizabeth Mills
+---------------------------------------------
 
-The scripts described herein are shared in the hope that they will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+Listgen provides functions for providing an intuitive cli interface without using Dialog, Whiptail, or any other menuing package.
+
+The listgen scripts are free software; you can redistribute it and/or modify them under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+
+The scripts are distributed in the hope that they will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
 A copy of the GNU General Public License is available from the Feliz2 page at:
    http://sourceforge.net/projects/feliz2/files
    or https://github.com/angeltoast/feliz2
@@ -9,132 +14,101 @@ Or write to:
 The Free Software Foundation, Inc.
 51 Franklin Street, Fifth Floor
 Boston, MA 02110-1301 USA
-~~~~~
-Email: elizabeth@itsliz.net
-Website: www.itsliz.net
 
-Introduction
-The listgen scripts are part of the independent Feliz installer for the Arch Linux operating system. They are written entirely in bash, so you can edit them to suit your purposes.
-In this book, aimed at intermediate scripters, we will look at how the functions in the listgen module can be incorporated to help you to improve the display of information while running your own scripts.
-The listgen module is self-contained; it initialises all its own variables, and contains all the functions it needs. You only have to put a copy of the module in the same location as your scripts, and source it, to be able to add all the features of listgen to your scripts.
+The listgen functions return the text of the selected item as a global variable $Result and the selected item number as global variable $Response Window width and height are adjusted according to content
 
-About The listgen functions
-The listgen functions have been an integral part of the Feliz installer since its birth, and have grown with it. They are designed to help with creating intuitive cli interfaces without using Dialog, Whiptail, or any other external package. Instead, the tput library is used to determine the terminal dimensions and to display lists and text centrally according to content.
-The Listgen script is designed to be self-contained and application-independent, and any of the functions may be called independently from any scripts, as long as the listgen script is available and sourced, or the functions are copied into your script.
+These functions are designed to be application-independent, and any of them may be called independently from any scripts, as long as the listgen script is available and sourced.
 
-The functions are:
-Heading - Prints the contents of a variable $Backtitle (which may be set elsewhere in your scripts) in a banner at the centre-top of the terminal or screen.
-first_item – Used by the list-printing functions to centralise the first item of a menu;
-subsequent_item – Used by the list-printing functions to align successive menu items;
-PrintRev – Reverses (ie: highlights) text colour for selected menu item and/or button;
-Buttons - Prints a row of buttons;
-ActiveMenu - Controls the selection and highlighting of menu items;
-listgen1 - Generates a menu of one-word items;
-listgen2 - Generates a menu of multi-word items;
-listgenx - Generates pages of numbered lists, for lists that would exceed screen size;
-SelectPage - Selects appropriate page according to user input;
-PrintPage – Displays the selected page of data, fitting as many columns as possible according to the terminal/screen size.
-
-A simple example, using the 'Buttons' function
-Buttons can be used to generate an interactive Yes/No display.
-A call to buttons uses three arguments:
-1) Type (Menu, Yes/No);
-2) Button string. This should contain one or two words: eg: 'Ok' or 'Ok Exit'
-3) Message string.
-
-At the time of writing, Buttons is limited to displaying only two buttons, but this may be extended to three options in the near future.
-
-Call Buttons with a line like this:
-Buttons "Yes/No" "Yes No" "Use arrow keys to move. [Enter] to select"
-The arguments in the example above inform the Buttons function of the type of operation, that the the buttons are to be labelled 'Yes' and 'No', and a short line of guidance to the user is to be displayed. 
+# ----------------------------------------------------------
+# Function name         Purpose
+# ----------------------------------------------------------
+# invalid_option   -  Informs user that the data entered was not valid
+# print_heading    -  Prints the contents of variable $Backtitle in a banner
+# PrintOne         -  Retained for compatibility with previous edition of listgen
+# PrintMany        -  Retained for compatibility with previous edition of listgen
+# first_item       -  Prints the first item of a menu
+# subsequent_item  -  Prints successive menu items
+# PrintRev         -  Reverses text colour for menus and buttons
+# DisplayButtons   -  Prints a row of buttons
+# ActiveMenu       -  Controls the highlighting of menu items
+# listgen1         -  Generates a menu of one-word items
+# listgen2         -  Generates a menu of multi-word items
+# listgenx         -  Generates a numbered list, for lists that exceed screen size
 
 listgen1
-The first and simplest listing function, listgen1, is for use in shell scripts to generate an interactive menu. It prints the list of options provided, in the form of a scrollable menu, with a pair of 'buttons' to confirm or exit.
-Arguments:
-1)  A simple string array variable of the items to be listed;
-2) An optional one-line string of text to be displayed beneath the 'buttons', advising the user how to use the menu. If this argument is passed as an empty string, the menu will display without the instructions line. This is for situations where a menu may be close to filling the screen, or where no instructions are necessary;
-3) Button text eg: 'Ok Exit' or just 'Ok'. These must be single-word options. If only one word is passed (eg: 'Ok') then no exit option will be printed; in this way you can make sure that your users pick one of the menu items offered.
+--------
+listgen1 is an alternative to the bash 'select' function for use in shell scripts to
+generate a numbered menu. Unlike 'select' it centres the menu on the screen, using the
+PrintOne and PrintMany functions.
 
-A call to listgen1 takes the form ...
-listgen1 "argument1" "argument2" "argument3"
-All three arguments must be passed, although the second argument can be an empty string, if no message is required.
+It takes the form: listgen1 "argument1" "argument2" "argument3"
 
-Example call:
-listgen1 "Reboot Shutdown" "" "Ok Exit"
+It receives up to three string arguments:
+ 1) A simple string array variable of the items to be listed;
+ 2) Optional argument 'nodescription' to display without instructions below buttons. This is for situations where a menu is close to filling the screen;
+ 3) An optional argument 'nocancel' to display without an [ Exit ] button (useful to ensure that one of the options is chosen).
 
-The first (string array) argument may be passed in one of three ways:
-1) It may be specified in the calling line (as above):
-	listgen1 "item1 item2 item3 ... "
-2) It may be assigned to a variable:
-	VariableName="item1 item2 item3 ... "
-	For example ...
-      	Accessories="Conky Geany Nautilus Terminator"
-	listgen1 "$Accessories"
+If the 3rd argument is required, there must be a 2nd argument, even if it is an empty string.
+
+Example calls:
+ listgen1 "$Accessories" ""
+ listgen1 "Reboot Shutdown" "" "nocancel"
+
+The first (string array) variable may be passed in one of three ways:
+1) It may be passed directly: "item1 item2 item3 ... "
+2) It may be assigned to a variable: VariableName="item1 item2 item3 ... "
+      Example: Accessories="Conky Geany Nautilus Terminator"
 3) It may be generated by a bash command ...
-      	For example …
-	Partitionlist=$(lsblk -l | grep 'part')
-	listgen1 "$Partitionlist" "" "nocancel"
+      Example: Partitionlist=$(lsblk -l | grep 'part')
       Note: A bash-generated list should be converted to a string array. For example:
-	Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
-	passzones=""
-	for z in ${Zones[@]}; do
-	    passzones="$passzones $z"
-	done
-	 ...
-	listgen1 "${passzones}" "" "nocancel"
-listgen1 sets two global variables for use by the calling function ...
-1) $Response - the item number selected by the user, and
-2) $Result - the label (from the variable array) of the item selected.
-This means that you can respond to the user input by using (for example) a 'case - esac' statement or an 'if – else- fi' statement.
+        Zones=(`timedatectl list-timezones | sed 's/\/.*$//' | uniq`)
+        passzones=""
+        for z in ${Zones[@]}; do
+          passzones="$passzones $z"
+        done
+      ...
+      listgen1 "${passzones}" "" "nocancel"
+
+listgen1 sets 2 global variables for use by the calling function ...
+ 1) $Response - the item number selected by the user, and
+ 2) $Result - the label (from the variable array) of the item selected.
+ 
+listgenx is similar to listgen1, but instead of a cursor-driven menu, it generates a numbered list from which the user can choose by enetering the number of the item. This is provided for situations where a
+listgen1 menu would scroll off the screen.
+
+-----------------------------------------------------------------------
 
 listgen2
-listgen2 is designed for displaying longer descriptions in a menu. It receives the text of the long items via an array. When an item is selected, listgen2 finds that item in a reference array of short (one-word) names that match the array of long-descriptions, and saves it as the global variable $Result which may then be used by the calling function if desired. Although complex to set up, it adds greater functionality and user-friendliness for menus. The reference array must be specifically declared, and the elements filled, before it can be used.
-Calling listgen2 takes the form:
-listgen2 "$PrimaryFile" "argument2" "argument3" "ReferenceArray"
-Arguments:
-Calling listgen2 is similar to calling listgen1, but with one added argument:
- 1) The primary file. That is, a string of single-word references, as with listgen1;
- 2) A short message to be displayed to help the user. This may be left empty;
- 3) The button text eg: 'Ok Exit' or just 'Ok';
- 4) The name (only) of the reference array (this will be used to access the array).
-Four arguments MUST be passed, although argument2 may be a null string.
-listgen2 returns the same global variables as listgen1 and uses the same built-in functions
+--------
+listgen2 is specifically designed for displaying longer descriptions in a menu.
+When an item is selected, listgen2 finds that item in a reference variable array
+of short (one-word) names, and saves it as the global variable $Result which may
+then be used by the calling function if desired. Although complex to set up, it
+adds greater functionality and user-friendliness for menus.
 
-listgenx
-listgenx differs from the other two, in that, instead of a cursor-driven menu, it generates a numbered list from which the user can choose by entering the number displayed next to the item. This is provided for situations where a large number of options is to be offered, and a listgen1 or listgen2 menu would scroll off the screen.
-Because listgenx must redraw the screen for each pageful of data to be displayed, it must be provided with all the text it needs for user advice and prompting. As a result, listgenx requires five arguments
-Before calling listgenx, the calling function must generate a file containing the items to be displayed. The items in the file must be only one word each, must be one to a line, and the file must be named input.file.
-The input.file may be generated in any way that produces a list of items, one on each line:
-1) It may be passed directly:
-printf "%-s\n" "item1" "item2" "item3" > input.file
-2) It may be generated in a loop: 
-for i in names.list
-do
-    echo $i >> input.file
-done
-3) It may be generated by a bash command ...
-lsblk -l | grep 'part' > input.file
+The reference array must be specifically declared using the -A option, and the
+elements filled, before it can be used.
 
-Calling function can send optional 'Headline' string as
-             # $1, to appear at the top of the screen, and an optional 'Message' as
-             # $2, to appear at the bottom of the screen. $3, $4 and $5 are prompts
+It takes the form: listgen2 "$PrimaryFile" "" "" "ReferenceArray"
 
-listgenx is called in the form:
-listgenx "argument1" "argument2" "argument3" "argument4" "argument5"
-argument1 is an optional string of text to be displayed at the top of the screen as information for the user. If passed as a null string, no message will be printed;
-argument2 is an optional instruction line to appear at the prompt, which will be printed at the bottom of the terminal/screen, beneath the pageful of data – for example:
-"Please enter the number of your selection: "
-If argument1 is empty, no instruction will be printed – this could be confusing for the user, so it is advised that a message similar to that above is sent;
-The remaining three arguments are paging advice:
-argument3 allows for the user to back out of listgenx and return to the calling function without making a selection – for example:
-"or ' ' to go back"
-argument4 and argument5 inform the user that they can page forwards or back through the data by entering either '>' for the next page, or '<' for the previous page. listgenx will intelligently display these messages only if appropriate for the circumstances (ie: it will not suggest '>' if there are no more pages to be displayed. The arguments may be as follows:
-"Enter '<' for previous page"
-"Enter '>' for next page"
-listgenx will display as many columns as can be fitted onto the width of the terminal, instructing the user to enter a number for the item selected, or < or > to display the previous or next page of data, if relevant.
-listgenx sets the same output variables as listgen1 and listgen2
+Example:
+Declare -A LongDesk
+Desktop="conky cairo-dock docky gparted yaourt"
+LongDesk[1]="Conky - Desktop time and system information           "
+LongDesk[2]="Cairo Dock - Highly customizable dock and launcher application"
+LongDesk[3]="Docky - Application for opening applications and managing windows"
+LongDesk[4]="GParted - make/delete/resize partitions"
+LongDesk[5]="Yaourt - Easy to use AUR package installer"
 
-Further Developments
-Feliz is in constant development, and has recently become multi-lingual, but great care has been taken to keep Listgen separate from the translation code. This is so that you can use Listgen in any situation. Nevertheless, in listgen, as in Feliz, prompts and button-text were all in English, and an extensive rewrite of the listgen functions has been necessary to allow any calling functions to specify exactly the text to be displayed in and below the lists.
+listgen2 receives four arguments (four MUST be passed, even if one or more is empty):
+ 1) The primary file. That is, the string of short references;
+ 2) This argument is no longer referenced;
+ 3) An option to display without an [ Exit ] button, if set to 'nocancel'.
+ 4) The name (only) of the reference array (this will be used to access the array;
+    Only 1) and 4) are essential - 2) and 3) are optional and may be blank strings (but MUST be included).
 
-Details of the implementation of translation capability into Feliz and Listgen will form the basis of another small book, for those of you who may like to examine and experiment with it.
+Example: listgen2 "$Graphical" "" "nocancel" "LongGraph"
+... or ...
+Example: listgen2 "$Office" "" "" "LongOffice"
+
+listgen2 accesses the same global variables as listgen1 and uses the same built-in functions

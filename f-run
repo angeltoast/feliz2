@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 10th January 2017
+# Revision date: 4th December 2016
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 # arch_chroot           36       ReflectorMirrorList  205
 # Parted                41       LocalMirrorList      215
 # TPecho                63       InstallDM            230
-#                                InstallLuxuries      240
+# read_timed            81       InstallLuxuries      240
 # MountPartitions       99       UserAdd              325
 # InstallKernel        162       SetRootPassword      340
 # AddCodecs            180       SetUserPassword      378
@@ -84,12 +84,12 @@ MountPartitions() {
       if [ -n "${Label}" ]; then                        # If it has a label ...
         Label="-L ${Label}"                             # ... prepare to use it
       fi
-      mkfs.${RootType} ${Label} ${RootPartition} &>> feliz.log
+      mkfs.${RootType} -f ${Label} ${RootPartition} 2>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
   # 2) EFI (if required)
-  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if /boot partition required
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if EFI /boot partition required
     mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
@@ -124,13 +124,13 @@ MountPartitions() {
     mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs (as with /root)
     CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
-    if [ "${AddPartType[$Counter]}" = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
+    if [ ${AddPartType[$Counter]} = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id} 2>> feliz.log
-    elif [ "${AddPartType[$Counter]}" = "btrfs" ]; then
+    elif [ ${AddPartType[$Counter]} = "btrfs" ]; then
       mkfs.btrfs -f ${id} 2>> feliz.log &>> feliz.log   # eg: mkfs.btrfs -f /dev/sda2
-    elif [ "${AddPartType[$Counter]}" = "xfs" ]; then
+    elif [ ${AddPartType[$Counter]} = "xfs" ]; then
       mkfs.xfs -f ${id} 2>> feliz.log                   # eg: mkfs.xfs -f /dev/sda2
-    elif [ "${AddPartType[$Counter]}" != "" ]; then       # If no type, do not format
+    elif [ ${AddPartType[$Counter]} != "" ]; then
       Partition=${id: -4}                               # Last 4 characters of ${id}
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
@@ -147,14 +147,11 @@ InstallKernel() {   # Selected kernel and some other core systems
 
   LANG=C            # Temporary addition to overcome bug in Arch
 
-  # Instead of updating the keys, try setting Siglevel to Never
-  sed -i '/\[options\]/a Siglevel = Never' /etc/pacman.conf
-
-  # TPecho "Updating keys"
-  # pacman-db-upgrade
-  # pacman-key --init # And this, trying to solve keys issue
-  # pacman-key --populate archlinux
-  # pacman-key --refresh-keys
+  TPecho "Updating keys"
+  pacman-db-upgrade
+  pacman-key --init # And this trying to solve keys issue
+  pacman-key --populate archlinux
+  pacman-key --refresh-keys
 
   case $Kernel in
   1) TPecho "Installing LTS kernel and core systems"
@@ -358,37 +355,34 @@ UserAdd() {
 
 SetRootPassword() {
   print_heading
-  Echo
+  echo
   PrintOne "Success!"
-  Echo
-  Translate "minutes"
-  mins="$Result"
-  Translate "Finished installing in"
-  PrintOne "$Result" "${DIFFMIN}:${DIFFSEC} $mins"
-  Echo
-  PrintOne "Finally we need to set passwords"
-  Echo
-  PrintOne "Note that you will not be able to"
-  PrintOne "see passwords as you enter them"
-  Echo
+  echo
+  PrintOne "Finished installing in $DIFFMIN minutes and $DIFFSEC seconds"
+  echo
+  PrintOne "-----------------------"
+  echo
+  PrintOne "Finally we need to set passwords ..."
+  echo
+  PrintOne "Note that you will not be able to "
+  PrintOne "see passwords as you enter them ..."
+  echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
   do
-    Translate "Enter a password for"
-    read -s -p "$Result root: " Pass1
-    Echo
-    Translate "Re-enter a password for"
-    read -s -p "$Result root: " Pass2
-    Echo
+    read -s -p "Enter a password for root: " Pass1
+    echo
+    read -s -p "Re-enter password for root: " Pass2
+    echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
-      Translate "Passwords cannot be blank. Try again"
-      read_timed "$Result ..." 1
+      read_timed "Passwords cannot be blank. Try again ..." 1
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
-     printf "$Pass1\n$Pass2" | arch-chroot "passwd" &>/dev/null
-+    unset Pass1 Pass2 2>> feliz.log
+     echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
+     arch_chroot "passwd root" < /tmp/.passwd >/dev/null
+     rm /tmp/.passwd 2>> feliz.log
      Repeat="N"
     else
       print_heading
@@ -398,29 +392,27 @@ SetRootPassword() {
 }
 
 SetUserPassword() {
-  Echo
+  echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
   do
-    Translate "Enter a password for"
-    read -s -p "$Result $UserName: " Pass1
-    Echo
-    Translate "Re-enter a password for"
-    read -s -p "$Result $UserName: " Pass2
-    Echo
+    read -s -p "Enter a password for $UserName: " Pass1
+    echo
+    read -s -p "Re-enter password for $UserName: " Pass2
+    echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
-      Translate "Passwords cannot be blank. Try again"
-      read_timed "$Result ..." 1
+      read_timed "Passwords cannot be blank. Try again ..." 1
       continue
     fi
     if [ $Pass1 = $Pass2 ]; then
-      printf "$Pass1\n$Pass2" | arch-chroot "passwd ${UserName}" &>/dev/null
-+     unset Pass1 Pass2 2>> feliz.log
+      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
+      arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+      rm /tmp/.passwd 2>> feliz.log
       Repeat="N"
     else
       print_heading
-      PrintOne "Passwords don't match. Try again"
+      echo "Passwords don't match. Try again"
       continue
     fi
   done
@@ -429,16 +421,11 @@ SetUserPassword() {
 Restart() {
   print_heading
   Echo
-  PrintOne "Congratulations, installation is complete"
+  read_timed "Congratulations, installation is complete." 1
   Echo
-  Translate "Shutdown Reboot"
-  listgen1 "$Result" "" "$_Ok $_Exit"
-  case $Response in
-  1) shutdown -h now
-  ;;
-  2) reboot
-  ;;
-  *) exit 1
-  esac
+  read_timed "The computer will now shut down, so you can" 1
+  read_timed "remove the installation media before rebooting." 1
+  Echo
+  shutdown -h now
 }
 

@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# The Feliz2 installation scripts for Arch Linux
+# Developed by Elizabeth Mills
+# Revision date: 4th December 2016
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful, but
+#      WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#            General Public License for more details.
+
+# A copy of the GNU General Public License is available from the Feliz2
+#        page at http://sourceforge.net/projects/feliz2/files
+#        or https://github.com/angeltoast/feliz2, or write to:
+#                 The Free Software Foundation, Inc.
+#                  51 Franklin Street, Fifth Floor
+#                    Boston, MA 02110-1301 USA
+
+# Variables for UEFI Architecture
+UEFI=0            # 1 = UEFI; 0 = BIOS
+EFIPartition=""   # "/dev/sda1"
+UEFI_MOUNT=""    	# UEFI mountpoint
+DualBoot="N"      # For formatting EFI partition
+
+# All UEFI-specific functions are in this module
+# ---- ------------    ---------------------------------------------------------
+# Line   Function      Purpose
+# ---- ------------    ---------------------------------------------------------
+#  41  TestUEFI        Test environment; set UEFI variable
+#  58  PartitioningEFI Menu options - THIS TO BE EXPANDED TO INCLUDE LVM
+#  55  AllocateEFI     Offers list of partitions for user to select EFI /boot
+#  94  UEFI_autopart   REMOVED - Now use consolidated 'autopart' in f-part1
+# ---- ------------    ---------------------------------------------------------
+
+# 1) Assess environment
+TestUEFI() { # Called at launch of Feliz script, before all other actions
+ dmesg | grep -q "efi: EFI"           # Test for EFI (-q tells grep to be quiet)
+ if [ $? -eq 0 ]; then                # check exit code; 0 = EFI, else BIOS
+    # Mount efivarfs if it is not already mounted
+    if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+      mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+    fi
+    UEFI=1
+  else
+    UEFI=0
+ fi
+}
+
+PartitioningEFI() { # THIS TO BE EXPANDED TO INCLUDE LVM
+  local Proceed=""
+  AutoPart=0                    # Set flag to 'off' by default
+  while [ -z $Proceed ]
+  do
+    listgen2 "$EFIPartitioningOptions" "Partitioning" "" "LongPartE"
+    Proceed=$Response
+    Echo
+    case $Proceed in
+      1) print_heading
+        Echo
+        EasyEFI                 # New guided manual partitioning functions
+        tput setf 0             # Change foreground colour to black temporarily to hide error message
+        print_heading
+        partprobe 2>> feliz.log #Inform kernel of changes to partitions
+        tput sgr0               # Reset colour
+        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+      ;;
+      2) ChooseDevice
+      ;;
+      3) printf
+      ;;
+      *) invalid_option
+        Proceed=""
+        print_heading
+    esac
+  done
+}
+
+AllocateEFI() { # Called at start of AllocateRoot, before allocating root partition
+  # Uses list of available partitions in PartitionList created in ManagePartitions
+  print_heading
+	Remaining=""
+	local Counter=0
+  Partition=""
+	PartitionType=""
+  Echo
+	PrintOne "Here are the partitions that are available."
+	PrintOne "First you should select one to use for EFI /boot"
+	PrintOne "This must be of type vfat, and may be about 512MiB"
+  Echo
+  listgen2 "$PartitionList" "Partitions" "" "PartitionArray"
+  Reply=$Response
+  if [ $Result != "Exit" ]; then
+    PassPart=$Result
+    SetLabel "$Result"
+    UpdateArray                 # Remove the selected partition from $PartitionArray[]
+  fi
+  Counter=0
+  for i in ${PartitionList}
+  do
+    Counter=$((Counter+1))
+    if [ $Counter -eq $Reply ]; then
+			Partition="/dev/$i"
+			EFIPartition="${Partition}"
+		else
+			Remaining="$Remaining $i"	# Add next available partition
+		fi
+	done
+  PartitionList=$Remaining			# Replace original PartitionList with remaining options
+}
