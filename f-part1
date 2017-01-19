@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th December 2016
+# Revision date: 19th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,36 +37,31 @@
 # EditLabel           437       SetLabel            792
 # -----------------------      ------------------------
 
-CheckParts() {
-# First test for existing partitions
-  ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+CheckParts() {  # Test for existing partitions
+  ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   local Counter=0
   for i in $ShowPartitions
   do
     Counter=$((Counter+1))
   done
   PARTITIONS=${Counter}
-
   if [ $PARTITIONS -eq 0 ]; then          # If no partitions exist, offer options
     print_heading
     while [ $PARTITIONS -eq 0 ]
     do
       Echo
-      PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki."
+      PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki"
       Echo
       PrintOne "There are no partitions on the device, and at least"
       if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
         PrintOne "two partitions are needed - one for EFI /boot, and"
-        PrintOne "one for /root. An option for guided manual partitioning"
-        PrintOne "and creation of an EFI partition table has been added,"
-        PrintOne "or you can exit now to use an external tool. Alternatively,"
+        PrintOne "There is a guided manual partitioning option"
+        PrintOne "or you can exit now to use an external tool"
       else                                # Installing in BIOS environment
-        PrintOne "one partition is needed for the root directory."
-        PrintOne "You can use 'cfdisk' to create a partition table, or "
+        PrintOne "one partition is needed for the root directory"
       fi
-      PrintOne "Feliz can automatically create partitions for you, if you"
-      PrintOne "wish. If you choose to do nothing now, the script will"
-      PrintOne "terminate to allow you to partition in some other way."
+      PrintOne "If you choose to do nothing now, the script will"
+      PrintOne "terminate to allow you to partition in some other way"
       Echo
       if [ ${UEFI} -eq 1 ]; then
         PartitioningEFI                   # Partitioning options for EFI
@@ -75,11 +70,14 @@ CheckParts() {
       fi
                                           # Terminate
       if [ $Response = "4" ]; then
-        read_timed "Exiting to allow you to partition the device"
-        shutdown -h now
+        print_heading
+        Echo
+        PrintOne "Exiting to allow you to partition the device"
+        Echo
+        Restart
       fi
-                                          # Check that partitions have been created
-      ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+      # Check that partitions have been created
+      ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
       Counter=0
       for i in $ShowPartitions
       do
@@ -87,53 +85,39 @@ CheckParts() {
       done
       PARTITIONS=${Counter}
     done
-    BuildPartitionLists                   # Generate an array of partitions - this is a first call
-  else                                    # Partitions exist
+    BuildPartitionLists                 # Generate an array of partitions - this is a first call
+  else                                  # There are existing partitions on the device
     print_heading
-    PrintOne "Here is a list of available partitions on all connected devices ..."
-    Echo
-    BuildPartitionLists                   # Generate an array of partitions - this is a first call
+    PrintOne "Here is a list of available partitions"
+    BuildPartitionLists                 # Generate an array of partitions - this is a first call
     Counter=0
     for part in ${PartitionList}
     do
       if [ $Counter = 0 ]; then
-        PrintOne "${PartitionArray[$Counter]}"
+        PrintOne "" "${PartitionArray[$Counter]}"
       else
-        PrintMany "${PartitionArray[$Counter]}"
+        PrintMany "" "${PartitionArray[$Counter]}"
       fi
       Counter=$((Counter+1))
     done
-    Echo
     if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
-      PrintOne "There is a guided manual partitioning option, or Feliz"
-      PrintOne "can automatically create a new GPT partition table for"
-      PrintOne "you, if you wish. Please note that both these options"
-      PrintOne "will wipe the disk - any exisiting data will be erased!"
-      PrintOne "If you choose to 'Leave it as it is' the script will"
-      PrintOne "next enable you to allocate the existing partitions."
       PartitioningEFI                   # UEFI partitioning options
     else                                # Installing in BIOS environment
-      PrintOne "'cfdisk' is available for you to edit them. Alternatively, you"
-      PrintOne "can use the guided manual partitioning option, or Feliz can"
-      PrintOne "overwrite the disk with a new partition table if you wish. Please"
-      PrintOne "note that both these options will wipe the disk - any exisiting"
-      PrintOne "data will be erased! If you choose to 'Leave it as it is' the"
-      PrintOne "script will next enable you to allocate the existing partitions."
       Partitioning                      # BIOS partitioning options
     fi
     MakePartitionList                   # Regenerate the array of partitions
   fi
 }
 
-BuildPartitionLists() { # First called by CheckParts to generate details of existing partitions for display, then to prepare partition arrays for selection for root, swap and others
-
+BuildPartitionLists() { # First called by CheckParts to generate details of existing partitions for display
+                        # Then to prepare partition arrays for selection for root, swap and others
   # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
     # First an array of all partitions up to sd*99
-    #                           |includes word | select 1st field | cut /dev/ | remove colon
-    ListTypeIDs=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $1}' | cut -c 6- | sed s/://g)
+    #                           |includes TYPE | select 1st field | ignore /dev/
+    ListTypeIDs=$(blkid /dev/sd* | grep ' TYPE' | cut -d':' -f1 | cut -d'/' -f3) #2>/dev/null
     # Then a matching array of types
-    #                         |includes word |  select last field   | remove TYPE | remove quotes
-    ListTypes=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -c 6- | sed s/\"//g)
+    #                          |includes TYPE |  select last field   | remove TYPE & quotes
+    ListTypes=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -d'"' -f2) #2>/dev/null
     # Add records from those two indexed arrays into the associative array
     local Counter=0
     for i in ${ListTypeIDs}
@@ -151,10 +135,10 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
     done
 
   # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
-  ListLabelledIDs=$(blkid /dev/sd* | grep LABEL | awk '{print $1}' | cut -c 6- | sed s/://g)
+  ListLabelledIDs=$(blkid /dev/sd* | grep LABEL | cut -d':' -f1 | cut -d'/' -f3)
   # If at least one labelled partition found, get a matching list of labels (remove quotes)
   if [ -n "$ListLabelledIDs" ]; then
-    ListLabelledLabels=$(blkid /dev/sd* | grep LABEL | awk '{print $2}' | cut -c 7- | sed s/\"//g)
+    ListLabelledLabels=$(blkid /dev/sd* | grep LABEL | cut -d':' -f2 | cut -d'"' -f2)
   fi
   # Add records from those two indexed arrays into associative array
   Counter=0
@@ -174,7 +158,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   local HowManyLabelled="${#Labelled[@]}"
 
   # 3) Find any partitions flagged as bootable
-  ListAll=$(sfdisk -l | grep /dev | grep '*' | awk '{print $1}' | cut -c 6-)
+  ListAll=$(sfdisk -l 2>/dev/null | grep /dev | grep '*' | cut -d' ' -f1 | cut -d'/' -f3)
   declare -a Flagged
   Counter=0
   for i in $ListAll
@@ -185,7 +169,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   local HowManyFlagged="${#Flagged[@]}"
   # 4) Prepare list of short identifiers (sda1 sda2 ...)
   PartitionList=""
-  ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
+  ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   # 5) Run through short identifiers, checking the three arrays for a match
   Counter=0 # For count of partitions
   Label=""
@@ -210,7 +194,8 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
     fi
     # Finally get the filesystem type
     ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
-    LongID=$(lsblk -l | grep ${part} | awk '{print $1 " " $4 " " $7}')
+    #          | add space after $part to maintain proper sort order | use fields 1, 4 & 7   
+    LongID=$(lsblk -l | grep "${part} " | awk '{print $1 " " $4 " " $7}')
     PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
     Label=""
     # Save the short ID for later functions
@@ -220,24 +205,29 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   PARTITIONS=${Counter}
 }
 
-Partitioning() {  # THIS TO BE EXPANDED TO INCLUDE LVM
+Partitioning() { 
   local Proceed=""
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    listgen2 "$PartitioningOptions" "" "nocancel" "LongPart"
+    local Counter=1
+    for Option in "${LongPart[@]}"
+    do
+      Translate "$Option"
+      LongPart[${Counter}]="$Result"
+      Counter=$((Counter+1))
+    done
+    Echo
+    listgen2 "$PartitioningOptions" "" "$_Ok" "LongPart"
     Proceed=$Response
     Echo
     case $Proceed in
       1) cfdisk 2>> feliz.log
         tput setf 0             # Change foreground colour to black temporarily to hide error message
         clear
-        partprobe 2>> feliz.log #Inform kernel of changes to partitions
+        partprobe 2>> feliz.log # Inform kernel of changes to partitions
         tput sgr0               # Reset colour
-        ShowPartitions=$(lsblk -l | grep 'part' | awk '{print $1}')
-        if [ -z $ShowPartitions ]; then
-          CheckParts            # If no partitions, restart
-        fi
+        CheckParts              # Restart partitioning
       ;;
       2) GuidedMBR
       ;;
@@ -270,7 +260,7 @@ ChooseDevice() {
   AutoPart=0
   until [ ${AutoPart} -gt 0 ]
   do
-    DiskDetails=$(lsblk -l | grep 'disk' | awk '{print $1}')
+    DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)
     UseDisk=$DiskDetails # If more than one, UseDisk will be first
     # Count lines. If more than one disk, ask user which to use
     local Counter=0
@@ -286,12 +276,12 @@ ChooseDevice() {
       while [ -z $UseDisk ]
       do
         print_heading
-        PrintOne "These are the available devices."
+        PrintOne "These are the available devices"
         PrintOne "Which do you wish to use for this installation?"
         PrintOne "(Remember, this is auto-partition, and any data"
         PrintOne "on the chosen device will be destroyed)"
-
-        listgen1 "$DiskDetails"
+        Echo
+        listgen1 "$DiskDetails" "" "[ $_Ok ]"
         UseDisk="${Result}"
         AutoWarning
       done
@@ -306,24 +296,13 @@ AutoWarning() {
   do
     print_heading
     Echo
-    PrintOne "This will erase any data on ${UseDisk}"
-    PrintOne "Are you sure you wish to continue?: "
+    Translate "This will erase any data on"
+    PrintOne "$Result" "${UseDisk}"
+    PrintOne "Are you sure you wish to continue?"
     Echo
-    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
     case $Response in
       "1" | "Y" | "y") autopart   # Consolidated auto-partitioning function
-        print_heading
-        PrintOne "Partitioning of ${GrubDevice} successful"
-        PrintOne "-------------------------------------"
-        PrintMany "$ShowPart1"
-        PrintMany "$ShowPart2"
-        PrintMany "$ShowPart3"
-        PrintMany "$ShowPart4"
-        Echo
-        PrintOne "You will have the opportunity to review these later."
-        Echo
-        PrintOne "Press any key to continue"
-        read -n1
         break
         ;;
       "2" | "N" | "n") UseDisk=""
@@ -334,38 +313,40 @@ AutoWarning() {
   done
 }
 
-partition_maker() {
-  # $1 = StartPoint; $2 (if exists) = Swap; $3 = Root (set boot on for BIOS); $4 (if exists) = Home
-  local StartPoint=$1
-  if [ ${UEFI} -eq 1 ]; then                        # Installing in EFI environment
-    local MountDevice=2                             # Next partition after /boot = sda2
-  else
-    local MountDevice=1                             # In BIOS = first partition = sda1
-  fi
-  if [ $2 ]; then
-    Parted "mkpart primary linux-swap ${StartPoint} ${2}" # /swap
-    SwapPartition="${GrubDevice}1"                        # BIOS=/dev/sda1 : EFI=/dev/sda2
-    MakeSwap="Y"
-    StartPoint=$2                                   # Reset startpoint for root
-    MountDevice=$((MountDevice+1))                  # Advance partition numbering
-  fi
+partition_maker() { # Called from autopart()
 
-  Parted "mkpart primary ext4 ${StartPoint} ${3}"   # /root
-  if [ ${UEFI} -eq 0 ]; then                        # Installing in BIOS environment
-    Parted "set ${MountDevice} boot on"             # Bootable
+# Change to: $1 = StartPoint; $2 = Root (set boot on for BIOS); $3 (if exists) = Home ; $4 (if exists) = Swap
+  
+  local StartPoint=$1
+  
+  # Set the device to be used to 'set x boot on'
+  if [ ${UEFI} -eq 1 ]; then                        # Installing in EFI environment
+    local MountDevice=2                             # Next partition after /boot = [sda]2
+  else
+    local MountDevice=1                             # In BIOS = first partition = [sda]1
   fi
-  RootPartition="${GrubDevice}${MountDevice}"       # BIOS+Swap=/dev/sda2 : EFI+Swap=/dev/sda3
-                                                    # BIOS-Swap=/dev/sda1 : EFI-Swap=/dev/sda2
+ 
+  Parted "mkpart primary ext4 ${StartPoint} ${2}"   # /root
+  Parted "set ${MountDevice} boot on"               # Bootable
+  RootPartition="${GrubDevice}${MountDevice}"       # Save
   RootType="ext4"
-  StartPoint=$3                                     # Reset startpoint for home
+  StartPoint=$2                                     # Reset startpoint for /home or /swap
   MountDevice=$((MountDevice+1))                    # Advance partition numbering
 
-  if [ $4 ]; then
-    Parted "mkpart primary ext4 ${StartPoint} ${4}" # /home
-    AddPartList[0]="${GrubDevice}${MountDevice}"    # /dev/sda3 or 4 | add to
+  if [ $3 ]; then
+    Parted "mkpart primary ext4 ${StartPoint} ${3}" # /home
+    AddPartList[0]="${GrubDevice}${MountDevice}"    # /dev/sda3      | add to
     AddPartMount[0]="/home"                         # Mountpoint     | array of
     AddPartType[0]="ext4"                           # Filesystem     | additional partitions
     Home="Y"
+    StartPoint=$3                                   # Reset startpoint for /swap
+    MountDevice=$((MountDevice+1))                  # Advance partition numbering
+  fi
+ 
+  if [ $4 ]; then
+    Parted "mkpart primary linux-swap ${StartPoint} ${4}" # /swap
+    SwapPartition="${GrubDevice}${MountDevice}"
+    MakeSwap="Y"
   fi
 
 }
@@ -373,9 +354,11 @@ partition_maker() {
 autopart() { # Consolidated partitioning for BIOS or EFI environment
   GrubDevice="/dev/${UseDisk}"
   Home="N"                                          # No /home partition at this point
-  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed s/G//g) # Get disk size
-  tput setf 0 # Change foreground colour to black temporarily to hide error message
+  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed "s/G\|M\|K//g") # Get disk size
+  tput setf 0                                       # Change foreground colour to black to hide error message
   clear
+
+  # Create a new partition table
   if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
     sgdisk --zap-all ${GrubDevice} &>> feliz.log    # Remove all existing filesystems
     wipefs -a ${GrubDevice} &>> feliz.log           # from the drive
@@ -385,53 +368,53 @@ autopart() { # Consolidated partitioning for BIOS or EFI environment
     StartPoint="513MiB"                             # For next partition
   else                                              # Installing in BIOS environment
     dd if=/dev/zero of=${GrubDevice} bs=512 count=1 # Remove any existing partition table
-    # This seems to work ok for BIOS but needs to be silenced
     Parted "mklabel msdos"                          # Create new filesystem
     StartPoint="1MiB"                               # For next partition
   fi
-  tput sgr0 # Reset colour
-  print_heading
-  if [ $DiskSize -ge 40 ]; then                     # ------ /swap, /root and /home partitions ------
-    partition_maker "${StartPoint}" "4GiB" "19GiB" "100%"
-  elif [ $DiskSize -ge 30 ]; then                   # ------ /swap, /root and /home partitions ------
-    partition_maker "${StartPoint}" "3GiB" "15GiB" "100%"
-  elif [ $DiskSize -ge 18 ]; then                   # ------  /swap and /root partitions only -------
-    partition_maker "${StartPoint}" "2GiB" "100%" ""
-  elif [ $DiskSize -gt 10 ]; then                   # ------  /swap and /root partitions only -------
-    partition_maker "${StartPoint}" "1GiB" "100%" ""
+
+  # Decide partition sizes
+  if [ $DiskSize -ge 40 ]; then                     # ------ /root /home /swap partitions ------
+    HomeSize=$((DiskSize-19-4))
+    partition_maker "${StartPoint}" "19GiB" "${HomeSize}GiB" "100%"
+  elif [ $DiskSize -ge 30 ]; then                   # ------ /root /home /swap partitions ------
+    HomeSize=$((DiskSize-15-3))
+    partition_maker "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
+  elif [ $DiskSize -ge 18 ]; then                   # ------ /root & /swap partitions only ------
+    RootSize=$((DiskSize-2))
+    partition_maker "${StartPoint}" "${RootSize}GiB" "" "100%"
+  elif [ $DiskSize -gt 10 ]; then                   # ------ /root & /swap partitions only ------
+    RootSize=$((DiskSize-1))
+    partition_maker "${StartPoint}" "${RootSize}GiB" "" "100%"
   else                                              # ------ Swap file and /root partition only -----
-    partition_maker "${StartPoint}" "" "100%" ""
+    partition_maker "${StartPoint}" "100%" "" ""
     SwapFile="2G"                                   # Swap file
     SwapPartition=""                                # Clear swap partition variable
   fi
-  if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
-    ShowPart1="Boot:  `lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}'`" >/dev/null
-    ShowPart2="Swap:  `lsblk -l | grep "${UseDisk}2" | awk '{print $4, $1}'`" >/dev/null
-    ShowPart3="Root:  `lsblk -l | grep "${UseDisk}3" | awk '{print $4, $1}'`" >/dev/null
-    ShowPart4="Other: `lsblk -l | grep "${UseDisk}4" | awk '{print $4, $1}'`" >/dev/null
-  else
-    ShowPart1="Swap:  `lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}'`" >/dev/null
-    ShowPart2="Root:  `lsblk -l | grep "${UseDisk}2" | awk '{print $4, $1}'`" >/dev/null
-    ShowPart3="Other: `lsblk -l | grep "${UseDisk}3" | awk '{print $4, $1}'`" >/dev/null
-  fi
+  partprobe 2>> feliz.log                           # Inform kernel of changes to partitions
+  tput sgr0                                         # Reset colour
   AutoPart=1                                        # Set auto-partition flag to 'on'
 }
 
 select_filesystem() { # User chooses filesystem from list in global variable ${TypeList}
   local Counter=0
-  PrintOne "Please now select the file system for ${Partition}"
-  PrintOne "It is not recommended to mix the btrfs file-system with others."
+  Translate "Please now select the file system for"
+  PrintOne "$Result" "${Partition}"
+  PrintOne "It is not recommended to mix the btrfs file-system with others"
   Echo
-  listgen1 "${TypeList}" "" ""
-  for i in ${TypeList}
-  do
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Response ]
-    then
-      PartitionType=$i
-      break
-    fi
-  done
+  listgen1 "${TypeList}" "" "$_Ok $_Exit"
+  if [ "$Result" = "$_Exit" ]; then
+    PartitionType=""
+  else
+    for i in ${TypeList}
+    do
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Response ]
+      then
+        PartitionType=$i
+        break
+      fi
+    done
+  fi
 }
 
 EditLabel() {
@@ -440,13 +423,15 @@ EditLabel() {
     # Inform the user and accept input
     print_heading
     Echo
-    PrintOne "The partition you have chosen is labelled '${Label}'"
+    Translate "The partition you have chosen is labelled"
+    PrintOne "$Result" "'${Label}'"
     Echo
     PrintOne "If you wish to keep that label, enter 1            "
     PrintMany "If you wish to delete the label, enter 2"
     PrintMany "If you wish to enter a new label, type it at the prompt"
     Echo
-    TPread "Enter 1, 2 or a new label: "
+    Translate "Enter 1, 2 or a new label"
+    TPread "$Result" ": "
     # Save to the -A array
     case $Response in
       1) LabellingArray[$PartitionID]=$Label
@@ -458,24 +443,25 @@ EditLabel() {
   fi
 }
 
-AllocateRoot() {
-  # Display partitions for user-selection
-  # Uses list of all available partitions in PartitionList
+AllocateRoot() {  # Manual allocation of an existing partition as /root
+  # Display partitions for user-selection (uses list of all available partitions in PartitionList
   if [ ${UEFI} -eq 1 ]; then      # Installing in UEFI environment
-    AllocateEFI                   # First allocate the EFI /boot partition
+    AllocateEFI                   # First allocate the /boot partition (sets boot on for EFI)
   fi
   print_heading
   Remaining=""
   local Counter=0
   Partition=""
   PartitionType=""
-  PrintOne "Please now select a partition to use for root"
+  PrintOne "Please select a partition to use for /root"
   Echo
-  listgen2 "$PartitionList" "" "nocancel" "PartitionArray"
+  listgen2 "$PartitionList" "" "$_Ok" "PartitionArray"
   Reply=$Response
-  PassPart=${Result:0:4}
+  PassPart=${Result:0:4}          # eg: sda4
+  MountDevice=${PassPart:3:2}     # Save the device number for 'set x boot on'
+ 
   SetLabel "$PassPart"
-  UpdateArray "$PassPart" # Remove the selected partition from $PartitionArray[]
+  UpdateArray "$PassPart"         # Remove the selected partition from $PartitionArray[]
   Counter=0
   for i in ${PartitionList}
   do
@@ -488,27 +474,26 @@ AllocateRoot() {
       if [ ${CurrentType} ]; then
         PrintOne "You can choose to leave it as it is, but should"
         PrintOne "understand that not reformatting the root"
-        PrintOne "partition can have unexpected consequences."
+        PrintOne "partition can have unexpected consequences"
         Echo
       fi
       # Now select a filesystem
       select_filesystem
-      if [ -z ${PartitionType} ]
-      then
-        RootType="ext4"
-      else
-        RootType="${PartitionType}"
-        Label="${Labelled[${PassPart}]}"
-        if [ -n "${Label}" ]; then
-          EditLabel $PassPart
-        fi
+      RootType="${PartitionType}"                   # PartitionType can be empty (will not be formatted)
+      Label="${Labelled[${PassPart}]}"
+      if [ -n "${Label}" ]; then
+        EditLabel $PassPart
       fi
-      # break             # Debug
     else
-      Remaining="$Remaining $i" # Add next available partition
+      Remaining="$Remaining $i"                     # Add next available partition
     fi
   done
-  PartitionList=$Remaining      # Replace original PartitionList with remaining options
+  PartitionList=$Remaining                          # Replace original PartitionList with remaining options
+    
+  if [ ${UEFI} -eq 0 ]; then                        # Installing in BIOS environment
+    Parted "set ${MountDevice} boot on"             # Make /root bootable
+  fi
+
 }
 
 CheckPartition() {
@@ -516,16 +501,20 @@ CheckPartition() {
   print_heading
   CurrentType=$(file -sL ${Partition} | grep "ext" | cut -c26-30)
   if [ ${CurrentType} ]; then
-    PrintOne "The selected partition ${Partition} is currently formatted to ${CurrentType}"
-    PrintOne "Reformatting it will remove all data currently on it."
+    Translate "The selected partition"
+    P1="$Result"
+    Translate "is currently formatted to"
+    P2="$Result"
+    PrintOne "$P1 ${Partition}" "$P2 ${CurrentType}"
+    PrintOne "Reformatting it will remove all data currently on it"
   fi
 }
 
 AllocateSwap() {
   print_heading
   PrintOne "Select a partition for swap from the ones that"
-  PrintOne "remain, or you can allocate a swap file."
-  PrintOne "Warning: Btrfs does not support swap files."
+  PrintOne "remain, or you can allocate a swap file"
+  PrintOne "Warning: Btrfs does not support swap files"
   Echo
   Remaining=""
   local Counter=0
@@ -540,11 +529,11 @@ AllocateSwap() {
     Counter=$((Counter+1))
   done
   CopyArray[${Counter}]="Swapfile"
-  PrintOne "If you skip this step, no swap will be allocated."
+  PrintOne "If you skip this step, no swap will be allocated"
   Echo
-  listgen2 "$PickFrom" "" "" "CopyArray"
+  listgen2 "$PickFrom" "" "$_Ok $_Exit" "CopyArray"
   Reply=$Response # Number of selected item
-  if [ $Result != "Swapfile" ] && [ $Result != "Exit" ]; then # Short ID of selected item
+  if [ "$Result" ] && [ "$Result" != "Swapfile" ] && [ "$Result" != "$_Exit" ]; then # Short ID of item
     PassPart=${Result:0:4}
   fi
   Echo
@@ -555,29 +544,30 @@ AllocateSwap() {
     if [ $Counter -eq $Reply ]
     then
       case $i in
-        "Exit") SwapPartition=""
+        "$_Exit") SwapPartition=""
               break
         ;;
-        "Swapfile") SetSwapFile
+        "Swapfile") Echo
+            SetSwapFile
             SwapPartition=""
             break
         ;;
         *) SwapPartition="/dev/$i"
-         # IsSwap=`lsblk -l | grep $i | grep SWAP | awk '{print $7}'`
-          IsSwap=$(blkid /dev/sd* | grep 'swap' | awk '{print $1}')
+          IsSwap=$(blkid $SwapPartition | grep 'swap' | cut -d':' -f1)
           if [ -n "$IsSwap" ]; then
             print_heading
-            PrintOne "$i is already formatted as a swap partition."
+            Translate "is already formatted as a swap partition"
+            PrintOne "$i " "$Result"
             PrintOne "Reformatting it will change the UUID, and if this swap"
             PrintOne "partition is used by another operating system, that"
-            PrintOne "system will no longer be unable to access the partition."
+            PrintOne "system will no longer be unable to access the partition"
             PrintOne "Do you wish to reformat it?"
             Echo
-            Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+            Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
             case $Response in
-              "1" | "Y" | "y") MakeSwap="Y"
+              "1" | "$_Yes" | "y") MakeSwap="Y"
               ;;
-              "2" | "N" | "n") MakeSwap="N"
+              "2" | "$_No" | "n") MakeSwap="N"
               ;;
               *) MakeSwap="Y"
             esac
@@ -590,31 +580,34 @@ AllocateSwap() {
           UpdateArray "$PassPart" # Remove the selected partition from $PartitionArray[]
       esac
     else
-      if [ $i != "Exit" ] && [ $i != Swapfile ]; then
+      if [ $i != "$_Exit" ] && [ $i != Swapfile ]; then
         Remaining="$Remaining $i" # Add next available partition
       fi
     fi
   done
   print_heading
   if [ $SwapPartition ]; then
-    read_timed "$SwapPartition will be used for swap" 1
+    Translate "Swap partition"
+    read_timed "$Result = $SwapPartition" 1
   elif [ $SwapFile ]; then
-    read_timed "A swap file of ${SwapFile} will be allocated." 1
+    read_timed "Swap file = ${SwapFile}" 1
   else
-    read_timed "No swap option has been allocated." 1
+    Translate "No provision has been made for swap"
+    read_timed "$Result" 1
   fi
   Echo
   PartitionList=$Remaining  # Replace original PartitionList with remaining options
 }
 
 NoPartitions() { # There are no unallocated partitions
-  PrintOne "There are no partitions available for swap,"
-  PrintOne "but you can allocate a swap file, if you wish."
-  Message="Create a swap file?: "
+  print_heading
+  PrintOne "There are no partitions available for swap"
+  PrintOne "but you can allocate a swap file, if you wish"
+  Message="Create a swap file?"
   Echo
-  Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+  Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
   case $Response in
-    "1" | "Y" | "y") SetSwapFile
+    "1" | "$_Yes" | "y") SetSwapFile
       SwapPartition=""
      ;;
     *) SwapPartition=""
@@ -626,8 +619,8 @@ SetSwapFile() {
   LoopRepeat="Y"
   while [ ${LoopRepeat} = "Y" ]
   do
-    PrintOne "Allocate the size of your swap file (M = Megabytes, G = Gigabytes)"
-    TPread "Size of swap file [eg: 512M or 2G]: "
+    PrintOne "Allocate the size of your swap file"
+    TPread "M = Megabytes, G = Gigabytes [eg: 512M or 2G]: "
     RESPONSE="${Response^^}"
     # Check that entry includes 'M or G'
     CheckInput=$(grep "G\|M" <<< "${RESPONSE}" )
@@ -637,6 +630,7 @@ SetSwapFile() {
       SwapFile=""
     else
       SwapFile=$RESPONSE
+      print_heading
       break
     fi
   done
@@ -653,12 +647,12 @@ MorePartitions() {
   do
     print_heading
     Remaining=""
-    PrintOne "The following partitions remain unallocated."
-    PrintOne "If you wish to use one, select it from the list,"
-    PrintOne "or choose [ Exit ] to finish partitioning."
+    PrintOne "The following partitions remain unallocated"
+    PrintOne "If you wish to use one, select it from the list"
+    PrintOne "or choose Exit to finish partitioning"
     Echo
-    listgen2 "$PartitionList" "" "" "PartitionArray"
-    if [ $Result != "Exit" ]; then
+    listgen2 "$PartitionList" "" "$_Ok $_Exit" "PartitionArray"
+    if [ $Result != "$_Exit" ]; then
       PassPart=${Result:0:4}
       SetLabel "$Result"
       UpdateArray "$PassPart" # Remove the selected partition from $PartitionArray[]
@@ -668,20 +662,20 @@ MorePartitions() {
     do
       Partition=""
       PartitionType=""
-      if [ $Part = $Result ] && [ $Result != "Exit" ]; then
+      if [ $Part = $Result ] && [ $Result != "$_Exit" ]; then
         Partition="/dev/$Part"
         MakePartition # Call complete details
         Label="${Labelled[${PassPart}]}"
         if [ -n "${Label}" ]; then
           EditLabel $PassPart
         fi
-      elif [ $Part != "Exit" ]; then   # Part is not selected and not 'Exit'
+      elif [ "$Part" != "$_Exit" ]; then   # Part is not selected and not 'Exit'
         Remaining="$Remaining $Part" # Add unused partition to temp list
         AddedToRemaining=$(($AddedToRemaining+1))
       fi
     done
     PartitionList=$Remaining  # Replace original PartitionList with temp list
-    if [ $Result = "Exit" ]; then
+    if [ "$Result" = "$_Exit" ]; then
       Elements=0
       break
     else
@@ -704,8 +698,8 @@ MakePartition() { # Called by MorePartitions
   AddPartList[$ExtraPartitions]="${Partition}"
   CheckPartition   # Before going to select_filesystem, check the partition
   if [ ${CurrentType} ]; then
-    PrintOne "You can choose to leave it as it is, by selecting [ Exit ], but not"
-    PrintOne "reformatting an existing partition can have unexpected consequences."
+    PrintOne "You can choose to leave it as it is, by selecting Exit, but not"
+    PrintOne "reformatting an existing partition can have unexpected consequences"
     Echo
   fi
   # 2) Select filesystem
@@ -717,12 +711,13 @@ MakePartition() { # Called by MorePartitions
   do
     print_heading
     Echo
-    PrintOne "Enter a mountpoint for ${Partition} ..."
+    Translate "Enter a mountpoint for"
+    PrintOne "$Result " "${Partition}"
     TPread "(eg: /home) ... /"
     # Check that entry includes '/'
     CheckInput=${Response:0:1}        # First character of ${Response}
     case ${CheckInput} in
-      "") PrintOne "You must enter a valid mountpoint"
+      '') PrintOne "You must enter a valid mountpoint"
           PartMount=""
           ;;
       *) if [ ${CheckInput} != "/" ]; then

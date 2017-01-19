@@ -2,12 +2,12 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th December 2016
+# Revision date: 19th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or (at
-# your option) any later version.
+# the Free Software Foundation - either version 2 of the License, or
+# (at your option) any later version.
 
 # This program is distributed in the hope that it will be useful, but
 #      WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,40 +20,42 @@
 #                 The Free Software Foundation, Inc.
 #                  51 Franklin Street, Fifth Floor
 #                    Boston, MA 02110-1301 USA
-
 # In this module: functions for setting variables used during installation
 # --------------------   ------------------------
 # Function        Line   Function            Line
 # --------------------   ------------------------
-# not_found         42    SetHostname         487
-# Echo              47    PickLuxuries        504
-# TPread            52    KeepOrDelete        536
-# SetKernel         68    ShoppingList        563
-# ConfirmVbox       81    ChooseDM            665
-# getkeymap        105    SetGrubDevice       722
-# setlocale        145     --- Review stage ---
-# SetTimeZone      279    FinalCheck          746
-# SelectSubZone    319    ManualSettings      853
-# SetSubZone       328    ChangeRootPartition 876
-# America          415    ChangeSwapPartition 884
-# DoCities         446    ChangePartitions    892
-# Username         471    AddExtras           904
+# not_found         42    SetHostname          570
+# Echo              48    PickLuxuries         587
+# TPread            53    KeepOrDelete         627
+# SetKernel         70    ShoppingList         659
+# ConfirmVbox       82    ChooseDM             819
+# SetTimeZone      106    SetGrubDevice        876
+# SetSubZone       138
+# America          188      --- Review stage ---
+# FindCity         224    FinalCheck           900
+# setlocale        301    ManualSettings       970
+# AllLanguages     445    ChangeRootPartition  999
+# getkeymap        461    ChangeSwapPartition 1007
+# SearchKeyboards  519    ChangePartitions    1015
+# Username         554    AddExtras           1027
 # --------------------    -----------------------
 
 not_found() {
   Echo
-  read_timed "Not found. Please try again ..." 1
+  Translate "Please try again"
+  read_timed "$Result ..." 1
 }
 
-Echo() { # Use in place of echo for all screen display
+Echo() { # Use in place of 'echo' for basic text print
   printf "%-s\n" "$1"
   cursor_row=$((cursor_row+1))
 }
 
 TPread() { # Aligned prompt for user-entry
   # $1 = prompt ... Returns result through $Response
-  T_COLS=$(tput cols)
-  lov=${#1}
+  local T_COLS=$(tput cols)
+  local lov=${#1}
+  local stpt=0
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( (T_COLS - lov) / 2 ))
   elif [ ${lov} -gt ${T_COLS} ]; then
@@ -70,12 +72,11 @@ SetKernel() {
   print_heading
   Echo
   PrintOne "Choose your kernel"
-  PrintOne "The Long-Term-Support kernel (LTS) offers stabilty,"
-  PrintOne "while the Latest kernel has all the new features."
-  PrintOne "If in doubt, choose LTS."
+  PrintOne "The Long-Term-Support kernel (LTS) offers stabilty"
+  PrintOne "while the Latest kernel has all the new features"
+  PrintOne "If in doubt, choose LTS"
   Echo
-  local Counter=0
-  listgen1 "LTS Latest" "Kernels" "nocancel"
+  listgen1 "LTS Latest" "" "$_Ok"
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
@@ -83,13 +84,13 @@ ConfirmVbox() {
   while :
   do
     print_heading
-    PrintOne "It appears that feliz is running in Virtualbox."
+    PrintOne "It appears that feliz is running in Virtualbox"
     PrintOne "If it is, feliz can install Virtualbox guest"
-    PrintOne "utilities and make appropriate settings for you."
+    PrintOne "utilities and make appropriate settings for you"
     Echo
-    PrintOne "Install Virtualbox guest utilities?: "
+    PrintOne "Install Virtualbox guest utilities?"
     Echo
-    Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+    Buttons "Yes/No" "$_Yes $_No" ""
     Echo
     case $Response in
       1) IsInVbox="VirtualBox"
@@ -103,215 +104,37 @@ ConfirmVbox() {
   done
 }
 
-getkeymap() {
-  print_heading
-  Echo
-  PrintOne "Let's try to find your keyboard layout"
-  while :
-  do
-    PrintOne "If you know the code for your keyboard layout, please enter"
-    PrintOne "it now. If not, try entering a two-letter abbreviation for"
-    PrintOne "your country or language and a list will be displayed. If"
-    PrintOne "your keyboard is not listed, select [ Exit ] to try again."
-    Echo
-    TPread "(eg: 'dvorak' or 'us'): "
-    local Term="${Response,,}"
-    Echo
-    ListKbs=$(cat keymaps.list | grep ${Term})
-    if [ -n "${ListKbs}" ]; then  # If a match or matches found
-      print_heading
-      PrintOne "Select your keyboard, or [ Exit ] to try again"
-      listgen1 "$ListKbs" "" ""
-      if [ ${Result} = "Exit" ]; then
-        print_heading
-        Echo
-        continue
-      else
-        Countrykbd="${Result}"
-      fi
-      loadkeys ${Countrykbd} 2>> feliz.log
-      break
-    else
-      print_heading
-      Echo
-      PrintOne "No keyboards found containing '$Term'"
-      PrintOne "Please try again"
-      continue
-    fi
-  done
-  print_heading
-  read_timed "The keyboard is now set to: '$Countrykbd'" 1
-}
-
-setlocale() {
-  SearchPrompt=" (for example: GB or PT): "
-  City=$SUBZONE                                     # Use a copy of $SUBZONE set in SetTimeZone
-  while :
-  do
-    print_heading
-    PrintOne "Next we will try to find your locale. This will"
-    PrintOne "be used to set fonts and language, and to find"
-    PrintOne "the best mirrors for downloading your system"
-    if [ $City ] && [ -n "$City" ]; then            # If subzone found  ...
-      cityfile=$(cat cities.list | grep "$City")    # Try to find $City in cities.list
-                                                    # The characters up to the ':' are the city name
-                                                    # cityname=$(echo "${cityfile%%:*}")
-      SEARCHTERM=$(echo "${cityfile##*:}")          # The characters after the ':' are the country code
-      SEARCHTERM=${SEARCHTERM:0:2}                  # Ensure no trailing spaces
-      if [ $SEARCHTERM ]; then
-        Echo
-        PrintOne "Country code: $SEARCHTERM found from your city: ${City}."
-        PrintOne "Shall we use this as your locale?"  # Allow user to confirm
-        Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
-      else
-        Response=2
-      fi
-      if [ $Response -eq 2 ]; then
-        City=""
-        continue
-      fi
-    else                                            # If not found, user will have to enter country code
-      Echo
-      PrintOne "Please enter a two-letter code for your country."
-      Echo
-      TPread "$SearchPrompt"                        # Could be GB or gb
-      if [ -z ${Response} ]
-      then
-        invalid_option
-        continue
-      else
-        Echo
-        Response="${Response:0:2}"                  # Make sure only two characters
-        SEARCHTERM="${Response^^}"                  # Set to all uppercase
-      fi
-    fi
-    LocaleList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | grep -v "@" | sed 's/\..*$//' | sed 's/#//g' | awk '{print $1}' | sort | uniq)      # Find all matching entries in locale.gen
-    local Counter=0                                 # This will be a table of locales in the
-    localelist=""                                   # form cy_GB en_GB gd_GB ...
-    for l in ${LocaleList[@]}
-    do
-      localelist="${localelist} $l"                 # Add each item to text list for handling
-      Counter=$((Counter+1))
-    done
-    if [ $Counter -eq 0 ]; then                     # If none found, try again
-      not_found
-      continue
-    fi
-    Counted=$(echo $localelist | wc -w)             # Count number of words in $localelist
-    Newlist=""
-    for (( i=1; i <= Counted; ++i ))                # Get list of all languages for locale
-    do
-      loc=$(echo $localelist | awk "{print \$$i}")  # Save the $i item from localelist to Newlist
-      Newlist="$Newlist ${loc:0:2}"                 # First two characters are language code
-    done
-    if [ $i -lt 2 ]; then                           # No language code found
-      not_found
-      continue
-    elif [ $i -lt 3 ]; then                         # Only one language code found
-      Echo
-      Item=$(echo ${Newlist} | xargs)               # Trim any leading and trailing spaces
-      Language="$(grep $Item\$ languages.list | awk 'BEGIN { FS = ":"; OFS = ":" } {print $1}')"
-      PrintOne "Only one language found for your location: $Language"
-      PrintOne "Shall we use this as your language?"  # Allow user to confirm
-      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
-      if [ $Response -eq 2 ]; then
-        City=""
-        continue
-      else
-        CountryLocale="${Item}_${SEARCHTERM}.UTF-8"
-        CountryCode=${CountryLocale:3:2}                     # 2 characters from position 3
-        break
-      fi
-    else
-      localelist="${Newlist}"
-    fi
-    Newlist=""
-    Prev="xyz"
-    for l in $localelist                                    # Remove any duplicates
-    do
-      if [ $l != $Prev ]; then
-        Newlist="$Newlist $l"
-        Prev=$l
-      fi
-    done
-    localelist="${Newlist}"                                 # Copy to working variable
-    choosefrom=""
-    Newlist=""
-    Counter=0                         # Prepare to limit length of file
-    local Rows=$(tput lines)          # to ensure list doesn't over-run
-    Rows=$((Rows-2))                  # Available (printable) rows
-    for l in ${localelist}
-    do
-      Item="$(grep $l\$ languages.list | awk 'BEGIN { FS = ":"; OFS = ":" } {print $1}')" # Find the language
-      if [ $Item ]; then
-        choosefrom="$choosefrom $Item"                    # Create a list of languages for user
-        Newlist="$Newlist $l"                             # ... and a matching list of codes
-      fi
-      Counter=$((Counter+1))
-    done
-    localelist="${Newlist}"                               # Ensure that localelist matches choosefrom
-    print_heading
-    PrintOne "Now please choose your language from this list, or [ Exit ] to try again."
-    if [ $Counter -ge $Rows ]; then
-      listgenx "${choosefrom}" "nomessage" ""            # Alternative (numbered) list
-    else
-      listgen1 "${choosefrom}" "nomessage" ""
-    fi
-    case $Result in
-    "Exit") Echo
-    ;;
-    *) Counted=1
-      for l in ${localelist}
-      do
-        if [ $Counted -eq $Response ]; then
-          break
-        fi
-        Counted=$((Counted+1))
-      done
-      CountryLocale="${l}_${SEARCHTERM}.UTF-8"
-      CountryCode=${CountryLocale:3:2}                        # 2 characters from position 3
-      break
-    esac
-  done
-  print_heading
-  read_timed "Locale is set to: ${CountryLocale:0:5}" 1       # 5 characters from position 0 in $CountryLocale
-}
-
 SetTimeZone() {
   SUBZONE=""
-  while [ -z $SUBZONE ]
+  until [ $SUBZONE ]
   do
     print_heading
     PrintOne "To set the system clock, please first"
-    PrintOne "choose the World Zone of your location."
-    Zones=$(timedatectl list-timezones | sed 's/\/.*$//' | uniq) # Ten world zones
+    PrintOne "choose the World Zone of your location"
+    Zones=$(timedatectl list-timezones | cut -d'/' -f1 | uniq) # Ten world zones
     Echo
     zones=""
-    for x in ${Zones[@]}                      # Convert to space-separated list
+    for x in ${Zones}                      # Convert to space-separated list
     do
-      zones="$zones $x"
+      Translate "$x"                          # Translate
+      zones="$zones $Result"
     done
-    listgen1 "${zones}" "" "nocancel"         # Allow user to select one
-    ZONE=$Result
+    listgen1 "${zones}" "" "$_Ok"         # Allow user to select one
+    # Because the list is translated, we need to get the system version of the selected item
+    ZONE=$(echo "$Zones" | head -n $Response | tail -n 1)
     Echo
-    case $Result in                           # UTC requires no subzone
-      "UTC") SUBZONE=""
-          print_heading
-          read_timed "Zone set to: '$ZONE'" 1 # Display and exit
-          break
+    case $Result in
+      "") continue
       ;;
       *) SetSubZone                           # Call subzone function
-        case $SUBZONE in                      # If user elects to change zone
-        "Exit") SUBZONE=""
-            continue
-      ;;
-      "") continue                            # ... or if escape, etc
-      ;;
-      *) print_heading                        # Should be complete
-          read_timed "Zone and Subzone set to: '$ZONE/$SUBZONE'" 1
+        case $Result in                       # If user quits
+        "$_Exit" | "") SUBZONE=
+        ;;
+        *) SUBZONE="$Result"
         esac
     esac
   done
+
 }
 
 SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
@@ -328,8 +151,7 @@ SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
     "Atlantic") Ocean=1
       SelectSubzone
     ;;
-    "Australia") Ocean=1
-      SelectSubzone
+    "Australia") SelectSubzone
     ;;
     "Indian") Ocean=1
       SelectSubzone
@@ -346,15 +168,20 @@ SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
 
 SelectSubzone() {
   print_heading
+  Translate "Now we need to find your location in"
+  _P1="$Result"
+  Translate "Please enter the first letter of"
+  _P2="$Result"
   case $Ocean in
-  1) PrintOne "Now we need to find your location in the $ZONE"
-      PrintOne "ocean. Please enter the first letter of the island"
-      PrintOne "or group where you are located."
+  1) Translate "the island or group where you are located"
+    _P3="$Result"
     ;;
-  *) PrintOne "Now we need to find your location in $ZONE"
-    PrintOne "Please enter the first letter of your nearest major city"
+  *) Translate "your nearest major city"
+    _P3="$Result"
   esac
-  PrintOne "... or leave blank to select another world zone"
+  PrintOne "$_P1" "$ZONE"
+  PrintOne "" "$_P2"
+  PrintOne "" "$_P3"
   Echo
   FindCity
 }
@@ -379,12 +206,14 @@ America() {
     fi
   done
   SubGroup=""
-  SubList="$SubList None_of_these"        # Add a decline option
-  listgen1 "$SubList"
+  Translate "None_of_these"
+  _None="$Result"
+  SubList="$SubList $_None"        # Add a decline option
+  listgen1 "$SubList" "" "$_Ok"
   case $Result in
-  "None_of_these") SelectSubzone          # No subgroup, call general city function
+  "$_None") SelectSubzone          # No subgroup, call general city function
   ;;
-  "Exit") SetTimeZone
+  "$_Exit") SetTimeZone
   ;;
   *) SubGroup=$Result                     # Save subgroup for next function
     ZONE="${ZONE}/$SubGroup"              # Add subgroup to ZONE
@@ -393,12 +222,20 @@ America() {
 }
 
 FindCity() {  # Called by SelectSubzone
-  TPread "Please enter the initial letter: "
+  Translate "enter ' ' to see a list"
+  TPread "$_or $Result: "
   Echo
-  if [ -z ${Response} ]
+  if [ -z ${Response} ]               # User has entered ' '
   then
-    SUBZONE=""
-    SetTimeZone
+    # Prepare file to use listgenx
+    timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > temp.file
+    Translate "Please choose your nearest location"
+    listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+    if [ $Result = "$_Exit" ] || [ $Result = "" ]; then
+      SetTimeZone
+    fi
+    SUBZONE="$Result"    
+    break
   else
     Response="${Response:0:1}"        # In case user enters more than one letter
     Zone2="${Response^^}"             # Convert the first letter to upper case
@@ -418,16 +255,19 @@ FindCity() {  # Called by SelectSubzone
     not_found
     continue
   fi
-  print_heading
-  PrintOne "Now choose your nearest location from this list"
-  PrintOne "... or [ Exit ] to try again if it is not there"
+
   if [ $Counter -ge $Rows ]; then
-    listgenx "$subzones" "" ""
+    echo "$subzones" > temp.file
+    Translate "Please choose your nearest location"
+    listgenx "$Result" "" ""
   else
-    listgen1 "$subzones" "nomessage" ""
+    print_heading
+    PrintOne "Please choose your nearest location"
+    PrintOne "Choose one or Exit to search for alternatives"
+    listgen1 "$subzones" "" "$_Ok $_Exit"
   fi
   case $Result in
-    "Exit") SUBZONE=""
+    "$_Exit") SUBZONE=""
     ;;
     *) SUBZONE=$Result
   esac
@@ -450,28 +290,282 @@ DoCities() { # Specifically for America, which has subgroups
       done
   esac
   PrintOne "Please select a city from this list"
-  listgen1 "$Cities"
+  listgen1 "$Cities" "" "$_Ok $_Exit"
   case $Result in
-  "Exit") SetTimeZone
+  "$_Exit") SetTimeZone
   ;;
   *) SUBZONE=$Result
   esac
 }
 
+setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to country-code,
+                        # ... and hence to the list of languages generated from /etc/locale.gen
+  ZoneID="${ZONE}/${SUBZONE}"         # Use a copy of zones set in SetTimeZone (eg: Europe/London)
+  CountryLocale=""
+  while [ -z "$CountryLocale" ]
+  do
+    # Find in cities.list (field $2 is the country code, eg: GB)
+    SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)
+    SEARCHTERM=${SEARCHTERM// }            # Ensure no leading spaces
+    SEARCHTERM=${SEARCHTERM%% }            # Ensure no trailing spaces
+    print_heading
+    # Find all matching entries in locale.gen - This will be a table of locales in the form: en_GB
+    LocaleList=$(grep "#" /etc/locale.gen | grep ${SEARCHTERM}.UTF-8 | cut -d'.' -f1 | cut -d'#' -f2)
+    HowMany=$(echo $LocaleList | wc -w)   # Count them
+    Rows=$(tput lines)                    # to ensure menu doesn't over-run
+    Rows=$((Rows-4))                      # Available (printable) rows
+
+    case $HowMany in                      # Offer language options for the selected country
+    0) print_heading
+      Echo                                # If none found, offer main languages
+      PrintOne "No language has been found for your location"
+      PrintOne "Would you like to use one of the following?"
+      listgen1 "English French Spanish" "$_Instructions" "$_Ok $_Exit"
+      case $Response in
+      1) Item="en"
+      ;;
+      2) Item="fr"
+      ;;
+      3) Item="es"
+      ;;
+      *) City=""
+        AllLanguages
+        if [ -z "$Result" ] || [ $Result = "$_Exit" ]; then
+          SetTimeZone
+        else
+          Item=$(grep "${Language}:" languages.list)
+          Item=${Item: -2:2}                      # Last two characters
+          CountryLocale="${Item}_${SEARCHTERM}.UTF-8"
+          CountryCode=${CountryLocale:3:2}        # 2 characters from position 3
+        fi
+      esac
+      CountryLocale="${Item}_${SEARCHTERM}.UTF-8"
+      CountryCode=${CountryLocale:3:2}            # 2 characters from position 3
+    ;;
+    1) Item=$(echo $LocaleList | cut -d'_' -f1)     # First field of the record in locale.gen (eg: en)
+      Language="$(grep :$Item languages.list | cut -d':' -f1)"  # Find long name eg: English
+      if [ -z "$Language" ]; then                               # If not found in languages.list
+        Language=$Item                                          # Use the abbreviation
+      fi
+      Echo
+      Translate "Only one language found for your location"
+      PrintOne "$Result" ": $Language"
+      PrintOne "Shall we use this as your language?"    # Allow user to confirm
+      Buttons "Yes/No" "$_Yes $_No" ""
+      if [ $Result = "$N" ]; then                       # User declines offered language
+        City=""
+        AllLanguages                                    # Call function to display all languages
+        if [ $Result = "$_Exit" ] || [ $Result = "" ]; then
+          SetTimeZone
+        else
+          Item=$(grep "${Language}:" languages.list)    # eg: Abkhazian:ab
+          Item=${Item: -2:2}                            # Last 2 characters
+          CountryLocale="${Item}_${SEARCHTERM}.UTF-8"   # Set locale
+          CountryCode=${CountryLocale:3:2}              # Extract 2 characters from position 3 (eg: GB)
+        fi
+      else                                              # User accepts offered language
+        Item=$(grep "${Language}:" languages.list)      # eg: Abkhazian:ab
+        Item=${Item: -2:2}                              # Last 2 characters
+        CountryLocale="${Item}_${SEARCHTERM}.UTF-8"     # Set locale
+        CountryCode=${CountryLocale:3:2}                # Extract 2 characters from position 3 (eg: GB)
+      fi
+    ;;
+    *) # Check the short code for each language against long names in language.list
+      if [ $HowMany -ge $Rows ]; then                 # Too many to display in menu, so use listgenx
+        # Make a shortlist of relevant language codes
+        ShortList=$(grep ${SEARCHTERM}.UTF-8 /etc/locale.gen | cut -d'_' -f1| uniq)
+        for l in ${ShortList}
+        do
+          grep "$l$" languages.list >> temp.file        # listgenx checks temp.file then renames it
+        done
+        Translate "Now please choose your language from this list"
+        listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+      else                                              # List is short enough for listgen1
+        local Counter=0
+        localelist=""
+        for l in ${LocaleList[@]}                       # Convert to space-separated list
+        do
+          localelist="${localelist} $l"                 # Add each item to text list for handling
+          Counter=$((Counter+1))
+        done
+        if [ $Counter -eq 0 ]; then                     # If none found, try again
+          not_found
+          SetTimeZone
+        fi
+        Counted=$(echo $localelist | wc -w)             # Count number of words in $localelist
+        Newlist=""                                      # Prepare to make list of language names from codes
+        for (( i=1; i <= Counted; ++i ))
+        do                                              # For each item in localelist (eg: en_GB)
+          loc=$(echo $localelist | cut -d' ' -f$i)      # Save the $i-th item from localelist
+          Newlist="$Newlist ${loc:0:2}"                 # Add first two characters (language code) to list
+        done
+        # If more than one language found
+        localelist="${Newlist}"                         # Save the list to continue
+        Newlist=""                                      # Prepare new empty list
+        Prev="xyz"                                      # Arbitrary comparison
+        for l in $localelist                            # Remove any duplicates
+        do
+          if [ $l != $Prev ]; then
+            Newlist="$Newlist $l"
+            Prev=$l
+          fi
+        done
+        localelist="${Newlist}"                               # Copy to working variable
+        choosefrom=""
+        Newlist=""                                            # Empty new list again
+        for l in ${localelist}
+        do                                                    # Find the language in languages.list
+          Item="$(grep $l\$ languages.list | cut -d':' -f1)"  # First field eg: English
+          if [ $Item ]; then                                  # If found
+            choosefrom="$choosefrom $Item"                    # Add to list of languages for user
+            Newlist="$Newlist $l"                             # ... and a matching list of codes
+          fi
+        done
+        localelist="${Newlist}"                         # Ensure that localelist matches choosefrom
+        print_heading
+        PrintOne "Now please choose your language from this list" "" "or Exit to try again."
+        listgen1 "${choosefrom}" "" "$_Ok $_Exit"       # Menu if less than one screenful
+      fi
+      case $Result in
+      "$_Exit" | "") SetTimeZone
+      ;;
+      *) Language=$(grep $Result languages.list)        # Lookup the result in languages file
+        if [ -n "$Language" ]; then
+          loc=${Language: -2:2}                         # Just the last two characters
+          CountryLocale="${loc}_${SEARCHTERM}.UTF-8"
+          CountryCode=${CountryLocale:3:2}              # 2 characters from position 3
+        else
+          SetTimeZone
+        fi
+      esac
+    esac
+  done
+}
+
+AllLanguages() {
+  while :
+  do
+    print_heading
+    Echo
+    cat languages.list > temp.file         # Prepare file for listgenx to display all languages
+    Translate "Now please choose your language from this list"
+    listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+    if [ $Result = "" ] || [ $Result = "$_Exit" ]; then
+      SetTimeZone                                   # Start again from time zone
+    else
+      Result="${Result: -2:2}"                      # Pass short code back to caller
+      break
+    fi
+  done
+}
+
+getkeymap() {
+  Countrykbd=""
+  country="${CountryLocale,,}"
+  case ${country:3:2} in
+  "gb") Term="uk"
+  ;;
+  *) Term="${country:3:2}"
+  esac
+  ListKbs=$(cat keymaps.list | grep ${Term})
+  Found=$(cat keymaps.list | grep ${Term} | wc -l)  # Count records
+  if [ ! $Found ]; then
+    Found=0
+  fi
+  while [ -z "$Countrykbd" ]
+  do
+    print_heading
+    Echo
+    case $Found in
+    0)  # If the search found no matches
+      Translate "Sorry, no keyboards found based on your location"
+      read_timed "$Result" 2
+      SearchKeyboards
+    ;;
+    1)  # If the search found one match
+      PrintOne "Only one keyboard found based on your location"
+      PrintOne "Do you wish to accept this? Select No to search for alternatives"
+      Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
+      case ${Result} in
+      "$_No") SearchKeyboards
+      ;;
+      *) Countrykbd="${Result}"
+      esac
+      loadkeys ${Countrykbd} 2>> feliz.log
+    ;;
+    *) # If the search found multiple matches, check to ensure menu doesn't over-run
+      Rows=$(tput lines)
+      Rows=$((Rows-7))    # Available (printable) rows
+      if [ $Found -ge $Rows ]; then
+        for i in $ListKbs
+        do
+          echo $i >> temp.file
+        done
+        Translate "Choose one, or ' ' to search for alternatives"
+        listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+      else
+        PrintOne "Choose one or Exit to search for alternatives"
+        listgen1 "$ListKbs" "" "$_Ok $_Exit"
+      fi
+      case ${Result} in
+      "$_Exit"|"") SearchKeyboards
+      ;;
+      *) Countrykbd="${Result}"
+      esac
+      loadkeys ${Countrykbd} 2>> feliz.log
+    esac
+  done
+}
+
+SearchKeyboards() {
+  while [ -z "$Countrykbd" ]
+  do
+    print_heading
+    PrintOne "If you know the code for your keyboard layout, please enter"
+    PrintOne "it now. If not, try entering a two-letter abbreviation"
+    PrintOne "for your country or language and a list will be displayed"
+    PrintOne "Alternatively, enter ' ' to start again"
+    Echo
+    TPread "(eg: 'dvorak' or 'us'): "
+    local Term="${Response,,}"
+    if [ $Term = "exit" ]; then
+      SetTimeZone
+    fi
+    Echo
+    ListKbs=$(cat keymaps.list | grep ${Term})
+    if [ -n "${ListKbs}" ]; then  # If a match or matches found
+      print_heading
+      PrintOne "Select your keyboard, or Exit to try again"
+      listgen1 "$ListKbs" "" "$_Ok $_Exit"
+      if [ "${Result}" = "$_Exit" ]; then
+        continue
+      else
+        Countrykbd="${Result}"
+      fi
+      loadkeys ${Countrykbd} 2>> feliz.log
+    else
+      print_heading
+      Echo
+      PrintOne "No keyboards found containing" "'$Term'"
+      PrintOne "Please try again"
+    fi
+  done
+}
+
 UserName() {
   print_heading
-  PrintOne "Enter a name for the primary user of the new system."
+  PrintOne "Enter a name for the primary user of the new system"
   PrintOne "If you don't create a username here, a default user"
   PrintOne "called 'archie' will be set up"
   Echo
-  TPread "User Name: "
+  Translate "User Name"
+  TPread "${Result}: "
   Entered=${Response,,}
   case $Entered in
     "") UserName="archie"
     ;;
     *) UserName=${Entered}
   esac
-  PrintOne "User '${UserName}' will be created."
 }
 
 SetHostname() {
@@ -479,41 +573,49 @@ SetHostname() {
   print_heading
   PrintOne "A hostname is needed. This will be a unique name to identify"
   PrintOne "your device on a network. If you do not enter one, the"
-  PrintOne "default hostname of 'arch-linux' will be used."
+  PrintOne "default hostname of 'arch-linux' will be used"
   Echo
-  TPread "Enter a hostname for your computer: "
+  Translate "Enter a hostname for your computer"
+  TPread "${Result}: "
   Entered=${Response,,}
   case $Entered in
     "") HostName="arch-linux"
     ;;
     *) HostName=${Entered}
   esac
-  PrintOne "Hostname = $HostName"
 }
 
 PickLuxuries() { # User selects any combination from a store of extras
-  CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
+  CategoriesList=""
+  Translate "Added so far"
+  AddedSoFar="$Result"
+  for category in Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers
+  do
+    Translate "$category"
+    CategoriesList="$CategoriesList $Result"
+  done
   print_heading
   case "$LuxuriesList" in
-  "") PrintOne "Now you have the option to add extras, such as a web browser,"
-    PrintOne "desktop environment, etc, from the following categories."
-    PrintOne "If you want only a base Arch installation, exit without choosing any extras."
+  '') PrintOne "Now you have the option to add extras, such as a web browser"
+    PrintOne "desktop environment, etc, from the following categories"
+    PrintOne "If you want only a base Arch installation"
+    PrintOne "exit without choosing any extras"
   ;;
-  *) PrintOne "You can add more items, or select items to delete."
+  *) PrintOne "You can add more items, or select items to delete"
   esac
   Echo
   while :
   do
-    listgen1 "${CategoriesList}" "" ""
+    listgen1 "${CategoriesList}" "" "$_Ok $_Exit"
     Category=$Response
-    if [ $Result = "Exit" ]; then
+    if [ $Result = "$_Exit" ]; then
       break
     else
       ShoppingList
       print_heading
-      PrintOne "Added so far:: ${LuxuriesList}"
-      PrintOne "You can now choose from any of the other lists,"
-      PrintOne "or choose [ Exit ] to finish this part of the setup."
+      PrintOne "$AddedSoFar" ": ${LuxuriesList}"
+      PrintOne "You can now choose from any of the other lists"
+      PrintOne "or choose Exit to finish this part of the setup"
     fi
   done
   if [ -n "${LuxuriesList}" ]; then
@@ -528,8 +630,13 @@ KeepOrDelete() {
   while :
   do
     print_heading
-    Message="$Bagged is already in your shopping list."
-    Buttons "Yes/No" "[ Keep ] [ Delete ]" "Use arrow keys to move. [Enter] to select"
+    Translate "is already in your shopping list"
+    Message="$Bagged $Result"
+    Translate "Keep"
+    K="$Result"
+    Translate "Delete"
+    D="$Result"
+    Buttons "Yes/No" "$K $D" "$_Instructions"
     case $Response in
       1) Temp="$LuxuriesList"
         break
@@ -551,78 +658,136 @@ KeepOrDelete() {
 }
 
 ShoppingList() { # Called by PickLuxuries after a category has been chosen.
-  Passed="Choose your first item"
+  Translate "Choose an item"
+  Passed="$Result"
   while :
   do
     print_heading
-    PrintOne "Added so far: ${LuxuriesList}"
+    PrintOne "$AddedSoFar" ": ${LuxuriesList}"
     Echo
     PrintOne "${Categories[$Category]}" # $Category is number of item in CategoriesList
     # Pass category to listgen2 for user to choose one item;
     local Counter=1
     case $Category in
-       1) for i in ${Accessories}
+       1) OptionsCounter=1
+          for Option in "${LongAccs[@]}"  # Translate all elements
           do
-           LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
-           (( Counter+=1 ))
+            Translate "$Option"
+            LongAccs[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-         listgen2 "$Accessories" "" "" "LongAccs1"
+        for i in ${Accessories}
+        do
+          LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Accessories" "" "$_Ok $_Exit" "LongAccs1"
        ;;
-       2) for i in ${Desktops}
+       2) OptionsCounter=1
+          for Option in "${LongDesk[@]}"  # Translate all elements
           do
-           LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
-           (( Counter+=1 ))
+            Translate "$Option"
+            LongDesk[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-         listgen2 "$Desktops" "" "" "LongDesk1"
+        for i in ${Desktops}
+        do
+          LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Desktops" "" "$_Ok $_Exit" "LongDesk1"
        ;;
-       3) for i in ${Graphical}
+       3) OptionsCounter=1
+          for Option in "${LongGraph[@]}"  # Translate all elements
           do
-            LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
-           (( Counter+=1 ))
+            Translate "$Option"
+            LongGraph[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-           listgen2 "$Graphical" "" "" "LongGraph1"
+        for i in ${Graphical}
+        do
+          LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Graphical" "" "$_Ok $_Exit" "LongGraph1"
        ;;
-       4) for i in ${Internet}
+       4) OptionsCounter=1
+          for Option in "${LongNet[@]}"  # Translate all elements
           do
-           LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
-            (( Counter+=1 ))
-         done
-         listgen2 "$Internet" "${Headline}" "" "LongNet1"
-       ;;
-       5) for i in ${Multimedia}
-          do
-            LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
-            (( Counter+=1 ))
+            Translate "$Option"
+            LongNet[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-          listgen2 "$Multimedia" "" "" "LongMulti1"
+        for i in ${Internet}
+        do
+          LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Internet" "${Headline}" "$_Ok $_Exit" "LongNet1"
        ;;
-       6) for i in ${Office}
+       5) OptionsCounter=1
+          for Option in "${LongMulti[@]}"  # Translate all elements
           do
-            LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
-            (( Counter+=1 ))
+            Translate "$Option"
+            LongMulti[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-          listgen2 "$Office" "" "" "LongOffice1"
+        for i in ${Multimedia}
+        do
+          LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Multimedia" "" "$_Ok $_Exit" "LongMulti1"
        ;;
-       7) for i in ${Programming}
+       6) OptionsCounter=1
+          for Option in "${LongOffice[@]}"  # Translate all elements
           do
-            LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
-            (( Counter+=1 ))
+            Translate "$Option"
+            LongOffice[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-          listgen2 "$Programming" "" "" "LongProg1"
+        for i in ${Office}
+        do
+          LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Office" "" "$_Ok $_Exit" "LongOffice1"
        ;;
-       8) for i in ${WindowManagers}
+       7) OptionsCounter=1
+          for Option in "${LongProg[@]}"  # Translate all elements
           do
-            LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
-            (( Counter+=1 ))
+            Translate "$Option"
+            LongProg[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
           done
-          listgen2 "$WindowManagers" "" "" "LongWMs1"
+        for i in ${Programming}
+        do
+          LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Programming" "" "$_Ok $_Exit" "LongProg1"
+       ;;
+       8) OptionsCounter=1
+          for Option in "${LongWMs[@]}"  # Translate all elements
+          do
+            Translate "$Option"
+            LongWMs[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
+          done
+        for i in ${WindowManagers}
+        do
+          LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$WindowManagers" "" "$_Ok $_Exit" "LongWMs1"
       ;;
       *) break
     esac
-    Passed="Choose your next item" # Loop until user selects "Exit"
-    if [ $Result = "Exit" ]; then
+    Passed="$Result" # Loop until user selects "Exit"
+    if [ $Passed = "$_Exit" ]; then
       break
     fi
+
     AddToList="Y"
     # First check that chosen item is not already on the list
     for lux in $LuxuriesList
@@ -659,12 +824,12 @@ ChooseDM() { # Choose a display manager
       Greeter=""
       DMList="GDM LightDM LXDM sddm SLIM XDM"
       print_heading
-      PrintOne "A display manager provides a graphical login screen."
-      PrintOne "If in doubt, choose LightDM."
+      PrintOne "A display manager provides a graphical login screen"
+      PrintOne "If in doubt, choose LightDM"
       PrintOne "If you do not install a display manager, you will have"
-      PrintOne "to launch your desktop environment manually."
+      PrintOne "to launch your desktop environment manually"
       Echo
-      listgen1 "${DMList}" "" ""
+      listgen1 "${DMList}" "" "$_Ok $_Exit"
       Reply=$Response
       for item in ${DMList}
       do
@@ -694,12 +859,12 @@ ChooseDM() { # Choose a display manager
     ;;
   *) # Warn that DM already set, and offer option to change it
       print_heading
-      PrintOne "Display manager is already set as: $DisplayManager."
+      PrintOne "Display manager is already set as" ":" "" "$DisplayManager."
       PrintOne "Only one display manager can be active"
       Echo
-      PrintOne "Do you wish to change it?: "
+      PrintOne "Do you wish to change it?"
       Echo
-      Buttons "Yes/No" "[ Yes ] [ No ]" "Use arrow keys to move. [Enter] to select"
+      Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
       Echo
       if [ $Response -eq 1 ]; then    # User wishes to change DM
         DisplayManager=""             # Clear DM variable
@@ -711,16 +876,16 @@ ChooseDM() { # Choose a display manager
 
 SetGrubDevice() {
   DEVICE=""
-  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')";
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/' # This is good use of awk
   print_heading
   GrubDevice=""
   local Counter=0
-  PrintOne "Select the device where Grub is to be installed."
+  PrintOne "Select the device where Grub is to be installed"
   PrintOne "Note that if you do not select a device, Grub"
   PrintOne "will not be installed, and you will have to make"
-  PrintOne "alternative arrangements for booting your new system."
+  PrintOne "alternative arrangements for booting your new system"
   Echo
-  listgen1 "${DevicesList}" "" ""
+  listgen1 "${DevicesList}" "" "$_Ok $_Exit"
   Reply=$Response
   for i in ${DevicesList}
   do
@@ -737,102 +902,65 @@ FinalCheck() {
   while :
   do
     print_heading
-    PrintOne "These are the settings you have entered. Please check them ..."
+    PrintOne "These are the settings you have entered. Please check them"
+    PrintOne "before we move on to partitioning your device"
     Echo
-    if [ ${UEFI} -eq 1 ]; then
-      PrintOne "0)  Boot partition ... $EFIPartition             "
-      PrintMany "1)  Root partition ... $RootPartition : $RootType"
-    else
-      PrintOne "1)  Root partition ... $RootPartition : $RootType"
-    fi
-    if [ $SwapPartition ] || [ $SwapFile ]; then
-      PrintMany "2)  Swap partition ... $SwapPartition $SwapFile"
-    else
-      PrintMany "2)  No provision has been made for swap"
-    fi
-    if [ ${#AddPartList[@]} -gt 0 ]; then
-      Counter=0
-      PrintMany "3)  Extra partitions ..."
-      for i in ${AddPartList[@]}
-      do
-        PrintMany "     ${AddPartMount[$Counter]} : ${AddPartList[$Counter]} : ${AddPartType[$Counter]}"
-        Counter=$((Counter+1))
-      done
-    else
-      PrintMany "3)  No additional partitions have been allocated"
-    fi
-    case $Kernel in
-      1) PrintMany "4)  The LTS kernel will be installed"
-      ;;
-      *) PrintMany "4)  The latest kernel will be installed"
-    esac
-    if [ $GrubDevice ]; then
-    PrintMany "5)  Grub will be installed to $GrubDevice"
-    else
-      PrintMany "5)  No provision has been made for Grub"
-    fi
-    PrintMany "6)  Keyboard is $Countrykbd"
-    PrintMany "7)  Locale will be set to $CountryLocale"
-    PrintMany "8)  Zone/subZone will be $ZONE/$SUBZONE"
+    Translate "Zone/subZone will be"
+    PrintMany "1) $Result" "$ZONE/$SUBZONE"
+    Translate "Locale will be set to"
+    PrintMany "2) $Result" "$CountryLocale"
+    Translate "Keyboard is"
+    PrintMany "3) $Result" "$Countrykbd"
     case ${IsInVbox} in
-      "VirtualBox") PrintMany "9)  Virtualbox guest utilities will be installed"
+      "VirtualBox") Translate "Virtualbox guest utilities"
+      PrintMany "4)" "$Result: $_Yes"
       ;;
-      *) PrintMany "9)  Virtualbox guest utilities will not be installed"
+      *) Translate "Virtualbox guest utilities"
+      PrintMany "4)" "$Result: $_No"
     esac
     if [ -z $DisplayManager ]; then
-      PrintMany "10)  No Display Manager selected"
+      Translate "No Display Manager selected"
+      PrintMany "5)" "$Result"
     else
-      PrintMany "10)  Display Manager = $DisplayManager"
+      Translate "Display Manager"
+      PrintMany "5) $Result" " = $DisplayManager"
     fi
-    PrintMany "11)  Root and user settings ..."
-    PrintMany "     Hostname = '$HostName'"
-    PrintMany "     User = '$UserName'"
-    PrintMany "12) The following extras have been selected ..."
-    PrintOne "${LuxuriesList}"
+    Translate "Root and user settings"
+    PrintMany "6) $Result" "..."
+    Translate "Hostname"
+    PrintMany "      $Result" "= '$HostName'"
+    Translate "User Name"
+    PrintMany "      $Result" "= '$UserName'"
+    Translate "The following extras have been selected"
+    PrintMany "7) $Result" "..."
+    PrintOne "${LuxuriesList}" ""
     Echo
-    PrintOne "Press [Enter] to install with these settings, or"
+    PrintOne "Press Enter to install with these settings, or"
     Response=20
-    TPread "enter an item number if you wish to change it: "
+    Translate "Enter number for data to change"
+    TPread "${Result}: "
     Change=$Response
     case $Change in
-      1) ChangeRootPartition
-        AllocateRoot
+      1) SetTimeZone
         continue
       ;;
-      2) ChangeSwapPartition
-        AllocateSwap
+      2) setlocale
         continue
       ;;
-      3) ChangePartitions
-        MorePartitions
+      3) getkeymap
         continue
       ;;
-      4) SetKernel
+      4) ConfirmVbox
         continue
       ;;
-      5) SetGrubDevice
-        continue
-      ;;
-      6) getkeymap
-        continue
-      ;;
-      7) setlocale
-        continue
-      ;;
-      8) SetTimeZone
-        continue
-      ;;
-      9) ConfirmVbox
-        continue
-      ;;
-      10) DisplayManager=""
+      5) DisplayManager=""
         ChooseDM
         continue
       ;;
-      11) ManualSettings
+      6) ManualSettings
         continue
       ;;
-      12) PickLuxuries
+      7) PickLuxuries
         continue
       ;;
       *) break
@@ -844,18 +972,24 @@ ManualSettings() {
   while :
   do
     print_heading
-    PrintOne "Enter number for data to change, or [Enter] to finish:"
+    PrintOne "Enter number for data to change"
+    PrintOne "or ' ' to exit"
     Echo
-    PrintOne "1) Hostname (currently $HostName)"
-    PrintMany "2) Username (currently $UserName)"
+    Translate "Hostname (currently"
+    PrintOne "1) $Result" "${HostName})"
+    Translate "Username (currently"
+    PrintMany "2) $Result" "${UserName})"
     Echo
-    TPread "Enter the number of your selection : "
+    Translate "Please enter the number of your selection"
+    TPread "${Result}: "
     Echo
     case $Response in
-      1) TPread "Enter new Hostname (currently $HostName) : "
+      1) Translate "Enter new Hostname (currently"
+        TPread "${Result} ${HostName}): "
          HostName=$Response
         ;;
-      2) TPread "Enter new username to be created (currently $UserName) : "
+      2) Translate "Enter new username (currently"
+      TPread "${Result} ${UserName}) : "
          UserName=$Response
         ;;
       *) return 0

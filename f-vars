@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th December 2016
+# Revision date: 19th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,9 +21,134 @@
 #                  51 Franklin Street, Fifth Floor
 #                    Boston, MA 02110-1301 USA
 
-# In this module:
+# 1) Global functions
 
-# 1) Declaration of variables and arrays
+print_heading() {   # Always use this function to clear the screen
+  tput sgr0         # Make sure colour inversion is reset
+  clear
+  local T_COLS=$(tput cols)             # Get width of terminal
+  tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
+  printf "%-s\n" "$_Backtitle"           # Display backtitle
+  printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
+  cursor_row=3                          # Save cursor row after heading
+}
+
+PrintOne() {  # Receives up to 2 arguments
+              # If $2 contains anything, don't translate $1
+              # Then print aligned according to content and screen size
+  if [ ! "$2" ]; then
+    Translate "$1"
+    Text="$Result"
+  else
+    Text="$1 $2"
+  fi
+  local width=$(tput cols)
+  EMPTY=" "
+  local stpt=0
+  local lov=${#Text}
+  if [ ${lov} -lt ${width} ]; then
+    stpt=$(( (width - lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  fi
+  Echo "$EMPTY $Text"
+}
+
+PrintMany() { # Receives up to 2 arguments
+              # If $2 contains anything, don't translate $1
+              # Then print aligned according to content and screen size
+  if [ ! "$2" ]; then
+    Translate "$1"
+    Text="$Result"
+  else
+    Text="$1 $2"
+  fi
+  Echo "$EMPTY $Text"
+}
+
+read_timed() { # Timed display - $1 = text to display; $2 = duration
+  local T_COLS=`tput cols`
+  local lov=${#1}
+  local stpt=0
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( ($T_COLS - $lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
+  cursor_row=$((cursor_row+1))
+}
+
+invalid_option() {
+  read_timed "          Invalid entry. Please try again ...                     " 1
+}
+
+SetLanguage() {
+  _Backtitle="Feliz2 - Arch Linux installation script"
+  print_heading
+  PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
+  Echo
+  listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"
+  case $Result in
+  "" | "Exit") LanguageFile=English.lan
+  ;;
+  *) LanguageFile="${Result}.lan"
+  esac
+  # Some common translations
+  Translate "Feliz2 - Arch Linux installation script"
+  _Backtitle="$Result"
+  # listgen1/2 variables
+  Translate "Ok"
+  _Ok="$Result"
+  Translate "Exit"
+  _Exit="$Result"
+  Translate "Use arrow keys to move. Enter to select"
+  _Instructions="${Result}"
+  Translate "Yes"
+  _Yes="$Result"
+  Translate "No"
+  _No="$Result"
+  Translate "or"
+  _or="$Result"
+  # listgenx variables
+  Translate "Please enter the number of your selection"
+  _xNumber="$Result"
+  Translate "or ' ' to exit"
+  _xExit="$Result"
+  Translate "'<' for previous page"
+  _xLeft="$Result"
+  Translate "'>' for next page"
+  _xRight="$Result"
+  # Partitioning
+  Translate "/boot partition"
+  _BootPartition="$Result"
+    Translate "/root partition"
+  _RootPartition="$Result"
+    Translate "/swap partition"
+  _SwapPartition="$Result"
+    Translate "/home partition"
+  _HomePartition="$Result"
+}
+
+Translate() { # Called by ReadOne & ReadMany and by other functions as required
+              # $1 is text to be translated
+  Text="$1"
+  # Get line number of text in English.lan
+  #                      exact match only | restrict to first find | display only number
+  RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
+  case $RecordNumber in
+  "" | 0) Result="$Text"  # If not found, use English
+  ;;
+  *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target file
+  esac
+}
+
+# 2) Declaration of variables and arrays
 
 # Partition variables and arrays
 declare -a AddPartList    # Array of additional partitions eg: /dev/sda5
@@ -70,6 +195,8 @@ CountryLocale=""          # eg: en_GB.UTF-8
 Countrykbd=""             # eg: uk
 ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
+LanguageFile="English.lan" # For translation
+RecordNumber=0            # Used during translation
 
 # Desktop environment, display manager and greeter variables
 DesktopEnvironment=""     # eg: xfce
@@ -81,13 +208,7 @@ HostName=""               # eg: arch-linux
 UserName=""               # eg: archie
 Scope=""                  # Installation scope ... 'Full' or 'Basic'
 
-# Global user input variables
-Response=""
-Result=""
-
 # Miscellaneous
-Backtitle="Feliz2 Arch Linux installation script"
-declare -a Options        # For listgen functions
 PrimaryFile=""
 
 # ---- Partitioning ----
@@ -95,12 +216,12 @@ PartitioningOptions="cfdisk guided auto leave"
 LongPart[1]="Open cfdisk so I can partition manually"
 LongPart[2]="Guided manual partitioning tool"
 LongPart[3]="Allow feliz to partition the whole device"
-LongPart[4]="Leave it as it is"
+LongPart[4]="Choose from existing partitions"
 # EFI
 EFIPartitioningOptions="guided auto leave"
 LongPartE[1]="Guided manual partitioning tool"
 LongPartE[2]="Allow feliz to partition the whole device"
-LongPartE[3]="Leave it as it is"
+LongPartE[3]="Choose from existing partitions"
 
 # ---- Arrays for extra Applications ----
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers"
@@ -113,15 +234,18 @@ Categories[6]="Office"
 Categories[7]="Programming"
 Categories[8]="Window_Managers"
 # Accessories
-Accessories="brasero conky gedit gparted"
+Accessories="brasero conky galculator gparted leafpad lxterminal pcmanfm"
 LongAccs[1]="Disc burning application from Gnome"
 LongAccs[2]="Desktop time and system information"
-LongAccs[3]="The text editor from Gnome"
+LongAccs[3]="Handy desktop calculator"
 LongAccs[4]="Tool to make/delete/resize partitions"
+LongAccs[5]="Handy lightweight text editor from LXDE"
+LongAccs[6]="Lightweight terminal emulator from LXDE"
+LongAccs[7]="The file manager from LXDE"
 # Desktops
 Desktops="Budgie Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Modern desktop focusing on simplicity & elegance"
-LongDesk[2]="Slick DE from the Mint team      "
+LongDesk[2]="Slick DE from the Mint team"
 LongDesk[3]="The Deepin Desktop Environment"
 LongDesk[4]="Full-featured, modern DE"
 LongDesk[5]="Plasma 5 and accessories pack"

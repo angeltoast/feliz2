@@ -1,0 +1,305 @@
+# Polish language file by pavroo (pavroo@onet.eu)
+Feliz2 - skrypt instalacyjny Arch Linux
+Wybierz wersję jądra Linux
+Wybierz element
+Jądro Long-Term-Support (LTS) oferuje stabilność
+podczas gdy najnowsze jądro posiada nowe funkcje
+W razie wątpliwości wybierz LTS
+Zdaje się, że feliz działa w Virtualbox
+Jeśli tak, feliz może zainstalować Virtualbox guest
+utilities dla cibie
+Zainstalować Virtualbox guest utilities?
+Aby ustawić zegar systemowy, proszę w pierwszej kolejności
+wybrać Strefę Świata swojej lokalizacji
+Tak
+Nie
+Trzymaj
+Usuń
+Ok
+Wyjście
+Czy jesteś w którymś z tych stanów?
+Proszę wybrać swoją najbliższą lokalizację
+' ' aby wyjście
+Żaden_z_nich
+'<' aby przejść do poprzedniej strony
+'>' aby przejść do następnej strony
+Nie znaleziono żadnej wersji językowej dla twojej lokalizacji
+Czy chcesz użyć jednej z wyszczególnionych?
+Znaleziono tylko jeden język dla twojej lokalizacji
+Czy ten mam użyć jako twój język?
+Teraz proszę wybrać swój język z listy
+lub Wyjście aby spróbować ponownie
+Znaleziono tylko jedno ustawienie klawiatury dla twojej lokalizacji
+Czy chcesz zakceptować? Wybierz Nie aby wyszukać inną
+Wyszczególnione klawiatury pasują do twojej lokalizacji. Możesz
+wybrać jedną, lub Wyjście aby szukać inną
+Jeśli znasz kod układu swojej klawiatury, proszę wprowadzić
+go teraz. Jeśli nie, spróbuj wprowadzić dwu-literowy kod
+swojego kraju lub języka, aby wyświetlić listę
+Alternatywnie, wybierz 'Wyjście' aby rozpocząć ponownie
+Wybierz swój układ klawiatury lub Wyjście aby spróbować ponownie
+Nie znaleziono klawiatury zawierającej '$Term'
+Proszę spróbować ponownie
+Wpisz nazwę użytkownika dla nowego systemu
+Jeśli nie utworzysz użytkownika teraz, to domyślny użytkownik
+będzie nazwany 'archie'
+i zostanie utworzony automatycznie
+Nazwa komputera jest konieczna. Będzie to unikalna nazwa identyfikująca
+twoje urządzenie w sieci. Jeśli nic nie wpiszesz,
+zostanie użyta jako domyślna nazwa 'arch-linux'
+Wpisz nazwę komputera
+Teraz masz możliwość wybrania dodatkowych pakietów, takich jak przegladaka www
+środowisko graficzne, etc, z poszczególnych kategorii
+Jeśli chcesz zainstalować tylko system bazowy Arch Linux
+wyjdź bez wybierania czegokolwiek
+Możesz wybrać więcej pozycji, lub zaznaczyć pozycje do usunięcia
+Do tej pory wybrano
+Możesz teraz wybrać z każdej, dowolnej listy
+lub wybierz Wyjście aby zakończyć tą część konfiguracji
+Menadżer wyświetlania dostarcza graficzne okno logowania
+W razie wątpliwości wybierz LightDM
+Jeśli nie wybierzesz menadżera wyświetlania, będziesz musiał
+ręcznie uruchamiać swoje środowisko graficzne
+Wybrany menadżer wyświetlania to
+Tylko jeden menadżer wyświetlania będzie aktywny
+Czy chcesz to zmienić?
+Wybierz urządzenie, na którym Grub zostanie zainstalowany
+Jeśli nie wybierzesz żadnego urządzenia, Grub
+nie zostanie zainstalowany i będziesz musiał
+skonfigurować alternatywny program bootujący dla nowego systemu
+To są ustawienia, które wybrałeś. Proszę o sprawdzenie
+Wciśnij Enter aby zainstalować z tymi ustawieniami, lub
+wybierz numer dla danych, które chcesz zmienić
+Nazwa komputera (obecna
+Jeśli nie jesteś pewny parycjonowania, powinieneś zapoznać się z Arch Wiki
+Nie ma żadnych partycji na tym urządzeniu, a przynajmniej
+dwie partycje są wymagane - jedna dla EFI /boot, druga dla /root
+xxx
+xxx
+Możesz również wyjść i użyć innych narzędzi
+Potrzebna jest partycja dla /root
+Możesz użyć 'cfdisk' do utworzenia tablicy partycji
+Feliz może automatycznie utworzyć partycje dla ciebie
+Jeśli nic nie wybierzesz, program zostanie zatrzymany,
+aby ci umożliwić przeprowadzenie własnego partycjonowania
+To jest lista dostępnych partycji
+Dostępna jest opcja ręcznego partycjonowania z przewodnikiem
+Feliz może automatycznie podzielić dysk
+zanim rozpoczniemy partycjonowanie twojego dysku
+!usunie wszystkie istniejące partycje!
+Wybierz 'Zostaw tak jak jest', aby użyć istniejących partycji
+lub
+'cfdisk' jest dostępny dla ciebie, aby ręcznie je edytować
+Teraz musimy znaleźć twoją lokalizację w
+Proszę wpisać pierwszą literę
+wyspy lub grupy twojej lokalizacji
+twoje najbliższe duże miasto
+wpisz ' ' aby zobaczyć listę
+xxx
+To są dostępne urządzenia
+Który chcesz użyć do instalacji?
+(Pamiętaj, jest to automatyczne partycjonowanie i wszystkie dane
+na wybranym urządzeniu zostaną zniszczone)
+Zostaną zniszczone wszystkie dane na
+Jesteś pewny, że chcesz kontynuować?
+Partycjonowanie
+zakończone sukcesem
+Będziesz miał możliwość do przejrzenia tego później
+Wciśnij dowolny klawisz
+Proszę teraz wybrać system plików dla
+Nie jest zalecane aby mieszać system plików btrfs z innymi
+Partycja, którą wybrałeś posiada etykietę
+Jeśli chcesz zachować tę etykietę, wciśnij 1
+Wybierz 1, 2 lub nową etykietę
+Proszę teraz wybrać partycję na główny system plików
+Możesz zostawić to, tak jak jest, lecz musisz wiedzieć,
+że niespartycjonowanie partycji głównej
+może spowodować nieprzewidzianymi konsekwencjami
+Wybrana partycja
+została właśnie sformatowana na
+Formatowanie spowoduje usunięcie wszystkich dany aktualnie się tu znajdujących
+Wybierz partycję wymiany swap z pozostałych,
+lub możesz przydzielić plik swap
+Ostrzeżenie: Btrfs nie posiada wsparcia dla plików swap
+Jeśli pominiesz ten krok, swap nie zostanie skonfigurowany
+jest już sformatowany jako partycja swap
+Formatowanie zmieni numer UUID i jeśli ta partycja swap
+jest używana przez inny system operacyjny, to
+system ten nie będzie miał dostępu do tej partycji
+Czy chcesz ją sformatować teraz?
+Nie ma wolnej partycji dla swap,
+lecz możesz utworzyć plik swap, jeśli chcesz.
+Przydzielenie rozmiaru pliku swap
+Wyszczególnione partycje nie posiadają przydziału
+Jeśli chcesz użyć partycję, wybierz ją z listy
+lub wybierz Wyjście aby zakończyć partycjonowanie
+Możesz zostawić to, tak jak jest, wybierając Wyjście, lecz
+nie formatowanie istniejących partycji może skutkować nieprzewidzianymi konsekwencjami
+Wpisz punkt montowania dla
+Musisz wpisać ważny punkt montowania
+Tutaj można ustawić rozmiar i format partycji
+chcesz utworzyć. Gdy wszystko jest gotowe, Feliz otrze dysku
+i stworzyć nową tablicę partycji z ustawieniami
+Rozpoczynamy od
+Nie ma miejsca dla partycji /swap, lecz możesz
+utworzyć plik swap. Zaleca się, aby umożliwić niektórym swap
+Czy chcesz przydzielić plik swap?
+To są
+dostępne urządzenia
+Twoje urządzenie posiada tylko
+To jest niewystarczające dla instalacji
+To jest wystarczające dla podstawowej instalacji,
+lecz powinieneś wybrać tylko lekkie aplikacje
+i może zabraknąć miejsca podczas instalacji, lub nieco później
+Twoje urządzenie posiada
+To jest wystarczające dla
+Posiadasz
+dostępne na wybranym urządzeniu
+Wszystko czego tutaj potrzebujemy, to rozmiar partycji /boot
+Powinna być nie mniejsza niż 512MiB oraz nie musi być większa niż 1GiB
+więc poprawny rozmiar będzie ustawiony na
+Teraz masz
+Rozmiar
+Możesz użyć całą pozostałą przestrzeń na tym urządzeniu, jeśli chcesz
+chociaż możesz zostawić trochę miejsca na partycję wymiany /swap
+oraz również na partycję domową
+partycja główna nie powinna być mniejsza niż 8GiB
+idealnie większa, do 20GiB
+Proszę wpisać żądany rozmiar
+lub przydzielić całą dostępna przestrzeń, wpisując: 100%
+Jest przestrzeń dla
+Rozmiar swap może być dowolny, począwszy od 512MiB, lecz
+nie jest konieczne aby była większa niż 4GiB
+Możesz zostawić trochę przestrzeni na swoja partycję domową
+Jest jeszcze wolna przestrzeń na
+partycja /boot
+Teraz Feliz utworzy nową tablicę partycji
+i skonfiguruje partycje, które zdefiniowałeś
+Partycjonowanie zakończone sukcesem
+Ten obiekt jest ograniczony do tworzenia /root, /swap i /home
+M = Megabajty, G = Gigabajty
+inny
+Partycja /root jest wymagana
+przydzielone do /root
+partycja główna /root
+generalnie nie mniesze niż 1GiB
+lub przydziel całą dostępną przestrzeń, wpisując: 100%
+Musisz użyć M, G lub %
+całą dostępną przestrzeń przydzieloną do
+Wszystkie przygotowania zostały wykonane
+Partycjonowanie zakończone sukcesem
+To są dostępne partycje
+W pierwszej kolejności powinieneś wybrać jedną dla partycji EFI /boot
+Typ jej musi być vfat, oraz rozmiar około 512MiB
+Sukces!
+Instalacja zakończone w
+minut
+Wpisz hasło dla
+Na końcu musimy skonfigurować hasła
+Pamiętaj, iż nie ma możliwości
+widzieć haseł, które wpisujesz
+Wpisz ponownie hasło dla
+Hasła do siebie nie pasują. Spróbuj ponownie
+Gratulacje, instalacja zakończona
+Wyłącz Uruchom_Ponownie
+partycja /home
+partycja /swap
+Partycja swap nie posiada żadnych ustawień
+Dodatkowe partycje
+Żadne dodatkowe partycje nie zostały przydzielone
+Będzie zainstalowane jądro LTS
+Będzie zainstalowane najnowsze jądro
+Grub będzie zainstalowany w
+Grub nie posiada żadnych ustawień
+Strefa/subStrefa będzie
+Lokalizacja jest ustawiona na
+Układ klawiatury to
+Virtualbox Guest Utilities
+Żaden menadżer wyświetlanie nie został wybrany
+Menadżer Wyświetlania
+Ustawinia root oraz użytkownika
+są na twojej liście
+Nazwa komputera
+Użytkownik
+Wybrane dodatki
+Nazwa użytkownika (obecna
+Jeśli chcech usunąć tę etykietę, wpisz 2
+Jeśli chcesz wpisać nową etykietę, wpisz ją ręcznie
+Proszę wpisać liczbę wyboru
+Użyj klawiszy nawigacyjnych aby ruszyć. Wciśnij Enter aby wybrać
+Proszę wcisnąć Enter aby kontynuować
+Lokalizacja jest ustawiona na
+Otwórz cfdisk aby partycjonować ręcznie
+Narzędzie ręcznego partycjonowania z przewodnikiem
+Pozwól feliz na podzielenie całego dysku
+Wybierz z istniejących partycji
+Akcesoria
+Środowiska_Graficzne
+Grafika
+Internet
+Multimedia
+Biuro
+Programowanie
+Menadżery_Okien
+Aplikacja do wypalania płyt z Gnome
+Informacje o czasie i systemie
+Cyfrowy kalkulator
+Narzędzie do tworzenia/usuwania/zmiany rozmiaru partycji
+Lekki edytor tekstu z LXDE
+Lekki emulator terminala z LXDE
+Menadżer plików z LXDE
+Nowoczesny pulpit skupiony na prostocie & elegancji
+Pulpit od zespołu Mint
+Środowisko graficzne Deepin
+W pełni wyposażony, nowoczesny pulpit
+Plasma 5 i paczka akcesoriów
+Tradycyjne, lekke środowiska graficzne
+Lekki i nowoczesny pulpit, bazujący na Qt
+Tradycyjne środowisko graficzne od zespołu Mint
+Lekki, wysoce konfigurowalny pulpit
+Przeglądarka PDF & i innych dokumentów
+Zaawansowany edytor grafiki
+Edytor grafiki z linii komend
+Przeglądarka grafiki & prosty edytor
+Prosty skaner
+Zaawansowany program do obsługi skanera
+Otwarto źródłowa przeglądarka od Google
+Przeglądarka Gnome WebKitGTK+ (aka Web)
+Szybki & niezawodny klient FTP, FTPS & SFTP
+Przeglądarka www od Mozilla
+Otwarto źródłowy klient BitTorrent
+Bogato wyposażony klient poczty od Mozilla
+Prosty klient BitTorrent
+Prosty edytor wideo
+Bogato wyposażony odtwarzacz muzyki
+Prosty lecz potężny transkoder wideo
+Prosty w obsłudze, nielinearny edytor wideo
+Odtwarzacz wideo
+Program do wypalania płyt CD
+W pełni wyposażony procesor tekstu
+Arkusz kalkulacyjny z GNOME
+Otwarto źródłowy pakiet biurowy
+Kalendarz & menadżer zadań (dostępny z Xfce)
+Program DTP
+GTK+ IDE ze wsparciem dla wtyczek Pythona
+Otwarto źródłowe & wieloplatformowe C/C++ IDE
+Rozszerzalny, konfigurowalny edytor tekstu
+Zaawansowany edytor tesktu & IDE
+Otwarto źródłowy system kontroli wersji
+Zintegrowane środowisko programistyczne (IDE)
+Menadżer okien i toolkit
+Lekki, szybki i wszechstronny menadżer okien
+Lekki, potężny & konfigurowalny stosowy menadżer okien
+Konfigurowalny dock & launcher aplikacji
+Dla otwierania aplikacji & zarządzania oknami
+Panel pulpitu
+Afryka
+Ameryka
+Antarktyda
+Arktyka
+Azja
+Atlantyk
+Australia
+Europa
+Ocean Indyjski
+Pacyfik

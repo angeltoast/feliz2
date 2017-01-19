@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 4th December 2016 ...
+# Revision date: 19th January 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,8 +30,7 @@ source f-vars     # Most variables and arrays are declared here
 source f-set      # Functions to set variables used during installation
 source listgen    # Menuing functions
 source f-part1    # Functions concerned with allocating partitions
-source f-part2    # Guided partitioning for BIOS systems
-source f-part3    # Functions for installation on an EFI system
+source f-part2    # Guided partitioning for BIOS & EFI systems
 source f-run      # Functions called during installation
 
 # ...............................................................................
@@ -41,7 +40,37 @@ source f-run      # Functions called during installation
 StartTime=$(date +%s)
 echo "${StartTime}" >> feliz.log
 
-print_heading
+SetLanguage                            # Use appropriate language file
+
+timedatectl set-ntp true
+
+# Localisation
+SetTimeZone                            # ZONE and SUBZONE eg: Europe/London
+setlocale                              # CountryLocale eg: en_GB.UTF-8
+getkeymap                              # Select keyboard layout eg: uk
+SetHostname
+
+PickLuxuries                           # Add extra applications
+
+if [ $Scope != "Basic" ]; then         # If any extra apps have been added
+
+  if [ -n "$DesktopEnvironment" ]; then
+    ChooseDM
+  fi
+
+  UserName                             # Enter name of primary user
+
+  # Check if running in Virtualbox, and offer to include guest utilities
+  if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
+    ConfirmVbox
+  else
+    IsInVbox=""
+  fi
+
+fi
+
+FinalCheck                             # Allow user to change any variables
+
 TestUEFI                               # Check if on UEFI system
 
 CheckParts                             # Check partition table & offer options
@@ -66,38 +95,13 @@ fi
 SetKernel                              # Select kernel and device for Grub
 
 if [ ${UEFI} -eq 1 ]; then             # If installing in EFI
-  GrubDevice="EFI"                     # Inform grub routine at line #129
-elif [ ${AutoPart} -eq 0 ]; then       # If not auto-artition
+  GrubDevice="EFI"                     # Set variable
+elif [ ${AutoPart} -eq 0 ]; then       # If BIOS and not auto-artition
   SetGrubDevice                        # User chooses grub partition
 fi
 
-getkeymap                              # Select keyboard layout
-
-# Localisation
-SetTimeZone
-setlocale
-SetHostname
-
-PickLuxuries                           # Add extra applications
-
-if [ $Scope != "Basic" ]; then         # If any extra apps have been added
-
-  if [ -n "$DesktopEnvironment" ]; then
-    ChooseDM
-  fi
-
-  UserName                             # Enter name of primary user
-
-  # Check if running in Virtualbox, and offer to include guest utilities
-  if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
-    ConfirmVbox
-  else
-    IsInVbox=""
-  fi
-
-fi
-
-FinalCheck                             # Allow user to change any variables
+print_heading
+PrintOne "Preparations complete. Entering automatic installation phase"
 
 # ...............................................................................
 #          Installation phase - no further user intervention from here          .
@@ -201,5 +205,8 @@ if [ $Scope != "Basic" ]; then
 fi
 
 cp feliz.log ltsgroup.txt /mnt/etc # Copy installation log for reference
-
-Restart     # Function with options to shutdown or eject media and reboot
+print_heading
+Echo
+PrintOne "Congratulations, installation is complete"
+Echo
+Restart     # Function with options to shutdown or reboot
