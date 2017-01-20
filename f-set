@@ -234,8 +234,8 @@ FindCity() {  # Called by SelectSubzone
     if [ $Result = "$_Exit" ] || [ $Result = "" ]; then
       SetTimeZone
     fi
-    SUBZONE="$Result"    
-    break
+    SUBZONE="$Result" 
+    return
   else
     Response="${Response:0:1}"        # In case user enters more than one letter
     Zone2="${Response^^}"             # Convert the first letter to upper case

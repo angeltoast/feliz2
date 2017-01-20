@@ -900,20 +900,6 @@ ActionGuided() { # Final BIOS step - Uses the variables set above to create part
     AddPartMount[0]="/home"           # Mountpoint    | array of
     AddPartType[0]="${HomeType}"      # Filesystem    | additional partitions
   fi
-  ShowPart1="$_RootPartition : `lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}'`" >/dev/null
-  ShowPart2="$_SwapPartition : `lsblk -l | grep "${UseDisk}2" | awk '{print $4, $1}'`" >/dev/null
-  ShowPart3="$_HomePartition : `lsblk -l | grep "${UseDisk}3" | awk '{print $4, $1}'`" >/dev/null
   AutoPart=1 # Treat as auto-partitioned. Set flag to 'on' for mounting
-  print_heading
-  Translate "Partitioning of"
-  _P1="$Result"
-  Translate "successful"
-  PrintOne "$_P1" "${GrubDevice}" "$Result"
-  Echo
-  PrintOne "" "$ShowPart1"
-  PrintMany "" "$ShowPart2"
-  PrintMany "" "$ShowPart3"
-  Echo
-  Translate "Press Enter to continue"
-  Buttons "Yes/No" "$_Ok"
+
 }

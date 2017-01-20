@@ -147,13 +147,10 @@ InstallKernel() {   # Selected kernel and some other core systems
 
   LANG=C            # Temporary addition to overcome bug in Arch
 
-  # Instead of updating the keys, try setting Siglevel to Never
-  # sed -i '/\[options\]/a Siglevel = Never' /etc/pacman.conf
-  # Note: Firts tests of this failed - [option] Siglevel = Never not recognised.
-
+  # And this, to solve keys issue if older iso running after keyring changes
   TPecho "Updating keys"
   pacman-db-upgrade
-  pacman-key --init # And this, trying to solve keys issue
+  pacman-key --init 
   pacman-key --populate archlinux
   pacman-key --refresh-keys
 
