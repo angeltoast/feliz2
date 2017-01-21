@@ -233,7 +233,7 @@ Partitioning() {
       ;;
       3) ChooseDevice
       ;;
-      4) echo "Manual partition allocation" > feliz.log
+      4) echo "Manual partition allocation" >> feliz.log
       ;;
       *) invalid_option
         Proceed=""

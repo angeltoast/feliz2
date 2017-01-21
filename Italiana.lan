@@ -95,7 +95,7 @@ Si prega di inserire la lettera iniziale del
 l'isola o gruppo cui ci si trova
 la grande città più vicina
 scrivere ' ' per vedere una lista
-xxx
+Le password non possono essere vuoti
 Questi sono i dispositivi disponibili
 Quale si desidera utilizzare per questa installazione?
 (Ricordate, questo è auto-partizione e tutti i dati
@@ -199,7 +199,7 @@ Infine abbiamo bisogno di impostare le password
 Si noti che non sarà in grado di
 vedere le password durante la si entra
 Re-immettere una password per
-Le password non corrispondono. Riprova
+Le password non corrispondono
 Congratulazioni, l'installazione è completa
 shutdown Reboot
 Partizione /home

@@ -95,7 +95,7 @@ Proszę wpisać pierwszą literę
 wyspy lub grupy twojej lokalizacji
 twoje najbliższe duże miasto
 wpisz ' ' aby zobaczyć listę
-xxx
+Hasła nie może być pusty
 To są dostępne urządzenia
 Który chcesz użyć do instalacji?
 (Pamiętaj, jest to automatyczne partycjonowanie i wszystkie dane
@@ -199,7 +199,7 @@ Na końcu musimy skonfigurować hasła
 Pamiętaj, iż nie ma możliwości
 widzieć haseł, które wpisujesz
 Wpisz ponownie hasło dla
-Hasła do siebie nie pasują. Spróbuj ponownie
+Hasła do siebie nie pasują
 Gratulacje, instalacja zakończona
 Wyłącz Uruchom_Ponownie
 partycja /home

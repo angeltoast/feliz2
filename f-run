@@ -127,7 +127,7 @@ MountPartitions() {
     if [ "${AddPartType[$Counter]}" = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id} 2>> feliz.log
     elif [ "${AddPartType[$Counter]}" = "btrfs" ]; then
-      mkfs.btrfs -f ${id} 2>> feliz.log &>> feliz.log   # eg: mkfs.btrfs -f /dev/sda2
+      mkfs.btrfs -f ${id} 2>> feliz.log   # eg: mkfs.btrfs -f /dev/sda2
     elif [ "${AddPartType[$Counter]}" = "xfs" ]; then
       mkfs.xfs -f ${id} 2>> feliz.log                   # eg: mkfs.xfs -f /dev/sda2
     elif [ "${AddPartType[$Counter]}" != "" ]; then       # If no type, do not format
@@ -148,11 +148,15 @@ InstallKernel() {   # Selected kernel and some other core systems
   LANG=C            # Temporary addition to overcome bug in Arch
 
   # And this, to solve keys issue if older iso running after keyring changes
+  # If feliz.log exists and the first line created by felizinit is "Begin" (original felizinit)
+  #                or contains a number (new felizinit) less than the date of the latest Arch trust update   
+  if [ -f feliz.log ] && ([ $(head -n 1 feliz.log) = "Begin" ] || [ $(head -n 1 feliz.log) -lt 20170104 ]); then
   TPecho "Updating keys"
   pacman-db-upgrade
   pacman-key --init 
   pacman-key --populate archlinux
   pacman-key --refresh-keys
+  fi
 
   case $Kernel in
   1) TPecho "Installing LTS kernel and core systems"
@@ -375,12 +379,12 @@ SetRootPassword() {
     Translate "Enter a password for"
     read -s -p "               $Result root: " Pass1
     Echo
-    Translate "Re-enter a password for"
+    Translate "Re-enter the password for"
     read -s -p "               $Result root: " Pass2
     Echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
-      Translate "Passwords cannot be blank. Try again"
+      Translate "Passwords cannot be blank"
       read_timed "$Result ..." 1
       continue
     fi
@@ -391,7 +395,7 @@ SetRootPassword() {
      Repeat="N"
     else
       print_heading
-      PrintOne "Passwords don't match. Try again"
+      PrintOne "Passwords don't match"
     fi
   done
 }
@@ -404,12 +408,12 @@ SetUserPassword() {
     Translate "Enter a password for"
     read -s -p "               $Result $UserName: " Pass1
     Echo
-    Translate "Re-enter a password for"
+    Translate "Re-enter the password for"
     read -s -p "               $Result $UserName: " Pass2
     Echo
     if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       print_heading
-      Translate "Passwords cannot be blank. Try again"
+      Translate "Passwords cannot be blank"
       read_timed "$Result ..." 1
       continue
     fi
@@ -420,7 +424,7 @@ SetUserPassword() {
       Repeat="N"
     else
       print_heading
-      PrintOne "Passwords don't match. Try again"
+      PrintOne "Passwords don't match"
       continue
     fi
   done

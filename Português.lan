@@ -95,7 +95,7 @@ Introduza a primeira letra da
 a ilha ou grupo onde você está localizado
 Sua cidade mais próxima
 digite ' ' para ver uma lista
-xxx
+As senhas não podem estar vazias
 Estes são os dispositivos disponíveis
 Qual você deseja usar para esta instalação?
 (Lembre-se, isto é um particionamento automático, e quaisquer
@@ -198,8 +198,8 @@ Digite uma senha para
 Por fim, precisamos definir as senhas
 Note que você não será capaz de
 ver as senhas que você digitar
-As senhas não coincidem. Tente novamente
 Redigite uma senha para
+As senhas não coincidem
 Parabéns! A instalação está completa
 Reinicializar Desligar
 partição de /home

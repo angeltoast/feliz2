@@ -95,7 +95,7 @@ Por favor escriba la primera letra de
 La isla o el grupo en el que se encuentra
 La ciudad principal más cercana
 Escribe ' ' para ver una lista
-xxx
+Las contraseñas no pueden estar vacías
 Estos son los dispositivos disponibles
 ¿Qué desea utilizar para esta instalación?
 (Recuerde, esto es auto-partición, y cualquier dato
@@ -199,7 +199,7 @@ Finalmente necesitamos establecer contraseñas
 Tenga en cuenta que no podrá
 Ver contraseñas al entrar en ellas
 Vuelva a introducir una contraseña para
-Las contraseñas no coinciden. Inténtalo de nuevo
+Las contraseñas no coinciden
 Felicitaciones, la instalación está completa
 Apagar Reiniciar
 partición de /home

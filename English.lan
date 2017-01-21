@@ -95,7 +95,7 @@ Please enter the first letter of
 the island or group where you are located
 your nearest major city
 enter ' ' to see a list
-xxx
+Passwords cannot be empty
 These are the available devices
 Which do you wish to use for this installation?
 (Remember, this is auto-partition, and any data
@@ -198,8 +198,8 @@ Enter a password for
 Finally we need to set passwords
 Note that you will not be able to
 see passwords as you enter them
-Re-enter a password for
-Passwords don't match. Try again
+Re-enter the password for
+Passwords don't match
 Congratulations, installation is complete
 Shutdown Reboot
 /home partition
