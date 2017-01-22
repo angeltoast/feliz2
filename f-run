@@ -90,7 +90,7 @@ MountPartitions() {
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
   # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if /boot partition required
-    mkfs.fat -F32 ${EFIPartition} 2> error.log          # Format EFI boot partition
+    mkfs.fat -F32 ${EFIPartition} 2> feliz.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
   fi
@@ -106,14 +106,6 @@ MountPartitions() {
       mkswap ${Label} ${SwapPartition} 2>> feliz.log    # eg: mkswap -L Arch-Swap /dev/sda2
     fi
     swapon ${SwapPartition} 2>> feliz.log               # eg: swapon /dev/sda2
-  fi
-
-  if [ ${SwapFile} ]; then
-    fallocate -l ${SwapFile} /mnt/swapfile >/dev/null 2>> feliz.log
-    chmod 600 /mnt/swapfile >/dev/null 2>> feliz.log
-    mkswap /mnt/swapfile >/dev/null 2>> feliz.log
-    swapon /mnt/swapfile >/dev/null 2>> feliz.log
-    # echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
   fi
 
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)

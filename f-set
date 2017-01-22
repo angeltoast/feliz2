@@ -504,7 +504,7 @@ getkeymap() {
         Translate "Choose one, or ' ' to search for alternatives"
         listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
       else
-        PrintOne "Choose one or Exit to search for alternatives"
+        PrintOne "Select your keyboard, or Exit to try again"
         listgen1 "$ListKbs" "" "$_Ok $_Exit"
       fi
       case ${Result} in

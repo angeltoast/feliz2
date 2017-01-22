@@ -101,7 +101,10 @@ elif [ ${AutoPart} -eq 0 ]; then       # If BIOS and not auto-artition
 fi
 
 print_heading
-PrintOne "Preparations complete. Entering automatic installation phase"
+TPecho "Preparations complete. Entering automatic installation phase"
+Echo
+PrintOne "sudo make me a sandwich && a cup of coffee"
+Echo
 
 # ...............................................................................
 #          Installation phase - no further user intervention from here          .
@@ -154,14 +157,15 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     echo "Not installing Grub" >> feliz.log
   fi
 
-# Generate fstab
-  genfstab -U -p /mnt > /mnt/etc/fstab 2>> feliz.log
+# Generate fstab and set up swapfile
+  genfstab -p -U /mnt > /mnt/etc/fstab 2>> feliz.log
   if [ ${SwapFile} ]; then
+    fallocate -l ${SwapFile} /mnt/swapfile 2>> feliz.log
+    chmod 600 /mnt/swapfile 2>> feliz.log
+    mkswap /mnt/swapfile 2>> feliz.log
+    swapon /mnt/swapfile 2>> feliz.log
     echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
   fi
-
-# Reconfigure kernel - already done by pacstrap installing kernel, so try without it
- # McInitCPIO
 
 # Set keyboard to selected language at next startup
   echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log

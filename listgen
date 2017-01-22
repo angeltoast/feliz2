@@ -136,6 +136,7 @@ Buttons() {
     Echo "$3"                                 # Print message
   esac
   ActiveMenu "$1"
+  Echo
 }
 
 ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listgen1 or listgen2)

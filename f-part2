@@ -137,6 +137,7 @@ EasyEFI() { # Main EFIfunction - Inform user of purpose, call each step
   if [ ${FreeSpace} -gt 0 ]; then
     EasySwap
   else
+    Echo
     PrintOne "There is no space for a /swap partition, but you can"
     PrintOne "assign a swap-file. It is advised to allow some swap"
     PrintOne "Do you wish to allocate a swapfile?"
