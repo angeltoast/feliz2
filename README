@@ -1,4 +1,4 @@
-The Feliz scripts are designed to make installation of Arch Linux accessible to all. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
+The Feliz scripts are here to make installation of Arch Linux accessible to all. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
 Feliz is designed to be easy to use, with helpful on-screen advice at every stage. It speeds up the installation of Arch Linux, plus a host of extras from the official Arch repos, like desktop environments, web browsers, office software and programming tools. You don't need a new Feliz iso to stay up-to-date, as each time you run Feliz it downloads the latest version of the scripts from Github. Then Feliz helps you to enter such essential data as your location, username, etc, and works with you to set up your partitioning, then the script runs without further intervention to the end.
 

@@ -54,14 +54,14 @@ Instructions="Use arrow keys to move. Enter to select"
 # PrintPage       569    Used by listgenx to display selected page
 # --------------------   ------------------------
 
-Heading() {   # Always use this function to clear the screen
-  tput sgr0                             # Make sure colour inversion is reset
+Heading() { # Always use this function to clear the screen
+  tput sgr0                                   # Make sure colour inversion is reset
   clear
-  T_COLS=$(tput cols)                   # Get width of terminal
-  tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
-  printf "%-s\n" "$_Backtitle"           # Display backtitle
-  printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
-  cursor_row=3                          # Save cursor row after heading
+  T_COLS=$(tput cols)                         # Get width of terminal
+  tput cup 0 $(((T_COLS/2)-20))               # Move the cursor to left of center
+  printf "%-s\n" "$_Backtitle"                # Display backtitle
+  printf "%$(tput cols)s\n"|tr ' ' '-'        # Draw a line across width of terminal
+  cursor_row=3                                # Save cursor row after heading
 }
 
 first_item() { # Aligned text according to screen size
@@ -92,7 +92,8 @@ PrintRev() {  # Receives numeric argument of item number
 
 Buttons() {
   # Receives 3 arguments: 1) Type (Menu, Yes/No); 2) Button string; 3) Message string
-  # Button string should contain one or two words: eg: 'Ok' or 'Ok Exit' (this may be extended to three options after further testing)
+  # Button string should contain one or two words: eg: 'Ok' or 'Ok Exit'
+  # (this may be extended to three options after further testing)
   Echo
   button_row=$cursor_row                      # Save row position of buttons
   button_count=$(echo $2 | wc -w)
@@ -140,18 +141,18 @@ Buttons() {
 }
 
 ActiveMenu() {  # Receives 2 arguments: 1) Type (Menu, Yes/No); 2) Caller (listgen1 or listgen2)
-  tput civis &
+  tput civis &                                # Hide cursor
   local Counter=0
   selected_button=1
-  if [ $1 = "Yes/No" ]; then        # Prevent vertical cursor movement
-    cursor_bottom=0                 # Initialise at unrealistic limits
+  if [ $1 = "Yes/No" ]; then                  # Prevent vertical cursor movement
+    cursor_bottom=0                           # Initialise at unrealistic limits
     cursor_top=100
-    cursor_row=$first_button_start  # Prepare to move cursor to first button
-    tput cup $cursor_row $stpt      # Move cursor to selected position
-  else                              # ie: Not Yes/No
-    cursor_row=$cursor_top          # Prepare to move cursor to top
-    tput cup $cursor_row $stpt      # Move cursor to selected position
-    PrintRev "$Counter"             # Print top item in reverse colour
+    cursor_row=$first_button_start            # Prepare to move cursor to first button
+    tput cup $cursor_row $stpt                # Move cursor to selected position
+  else                                        # ie: Not Yes/No
+    cursor_row=$cursor_top                    # Prepare to move cursor to top
+    tput cup $cursor_row $stpt                # Move cursor to selected position
+    PrintRev "$Counter"                       # Print top item in reverse colour
   fi
   while :
   do
