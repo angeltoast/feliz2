@@ -357,11 +357,7 @@ UserAdd() {
   do
     arch_chroot "mkdir /home/${UserName}/${i}"
     arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
-
-read -p "user directories $(ls /mnt/home/${UserName})"
-    
   done
-
 }
 
 SetRootPassword() {
