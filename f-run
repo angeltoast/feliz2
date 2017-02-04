@@ -154,11 +154,9 @@ InstallKernel() {   # Selected kernel and some other core systems
 
   case $Kernel in
   1) TPecho "Installing LTS kernel and core systems"
-    # This is the full linux group list at 13th October 2016 with linux-lts in place of linux
-    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs libtool gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs s-nail sed shadow sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log
-    # To be replaced by:
-    echo pacman -Qgq base | sed s/^linux\$/linux-lts/g > ltsgroup.txt # base group with linux-lts in place of linux.
-    # pacstrap /mnt "${LTSGroup}"
+    # This is the full linux group list at 28th January 2017 with linux-lts in place of linux
+    # Use the script ArchBaseGroup.sh in 3-FelizWorkshop to regenerate the list periodically
+    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs
   ;;
   *) TPecho "Installing Latest kernel and core systems"
     pacstrap /mnt base base-devel 2>> feliz.log
@@ -183,6 +181,11 @@ AddCodecs() {
 
   TPecho "Installing  opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics
+
+  # TPecho "Installing  CUPS printer services"
+  # pacstrap /mnt -S system-config-printer cups
+  # arch_chroot "systemctl enable org.cups.cupsd.service"
+  
 }
 
 McInitCPIO() {
@@ -350,6 +353,15 @@ UserAdd() {
   else
     TPecho "User already exists"
   fi
+  for i in $(head -n 77 ${LanguageFile} | tail -n 1)
+  do
+    arch_chroot "mkdir /home/${UserName}/${i}"
+    arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
+
+read -p "user directories $(ls /mnt/home/${UserName})"
+    
+  done
+
 }
 
 SetRootPassword() {

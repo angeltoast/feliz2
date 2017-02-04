@@ -473,7 +473,7 @@ AllocateRoot() {  # Manual allocation of an existing partition as /root
       CheckPartition
       if [ ${CurrentType} ]; then
         PrintOne "You can choose to leave it as it is, but should"
-        PrintOne "understand that not reformatting the root"
+        PrintOne "understand that not reformatting the /root"
         PrintOne "partition can have unexpected consequences"
         Echo
       fi

@@ -74,7 +74,7 @@ Hostname (currently
 If you are uncertain about partitioning, you should read the Arch Wiki
 There are no partitions on the device, and at least
 two partitions are needed - one for /boot and one for /root
-xxx 
+Desktop Documents Downloads Music Pictures Public Templates Videos
 xxx
 or you can exit now to use an external tool
 A partition is needed for /root
@@ -127,8 +127,8 @@ Reformatting it will change the UUID, and if this swap
 partition is used by another operating system, that
 system will no longer be unable to access the partition
 Do you wish to reformat it?
-There are no partitions available for swap,
-but you can allocate a swap file, if you wish.
+There are no partitions available for swap
+but you can allocate a swap file, if you wish
 Allocate the size of your swap file
 The following partitions remain unallocated
 If you wish to use one, select it from the list

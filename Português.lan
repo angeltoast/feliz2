@@ -74,7 +74,7 @@ Nome da máquina (atualmente
 Se você não tiver certeza sobre o particionamento, leia a Wiki do Arch 
 Não há partições no dispositivo e pelo menos
 duas partições são necessárias - uma para /boot, e uma para /root
-xxx
+Área_de_Trabalho Documentos Transferências Música As_fotos Público Modelos Vídeos
 xxx
 ou você pode sair agora para usar uma ferramenta externa
 Uma partição é necessária para o diretório /root
