@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 19th January 2017
+# Revision date: 4th Febuary 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -179,7 +179,7 @@ AddCodecs() {
   TPecho "Installing X, Graphics, etc"
   pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm
 
-  TPecho "Installing  opensource video drivers"
+  TPecho "Installing opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics
 
   # TPecho "Installing  CUPS printer services"
@@ -250,7 +250,6 @@ InstallLuxuries()
         ;;
       "Deepin") TPecho "Installing the Deepin desktop Environment"
           pacstrap /mnt deepin 2>> feliz.log
-          TPecho "Installing the Deepin extras package"
           pacstrap /mnt deepin-extras 2>> feliz.log
           # Change the greeter line in lightdm.conf
           if [ -d /mnt/etc/lightdm ]; then
@@ -265,16 +264,14 @@ InstallLuxuries()
         ;;
       "Gnome") TPecho "Installing the Gnome desktop Environment"
           pacstrap /mnt gnome 2>> feliz.log
-          TPecho "Installing the Gnome extras package"
           pacstrap /mnt gnome-extra 2>> feliz.log
         ;;
       "KDE") TPecho "Installing the KDE Plasma meta package"
           pacstrap /mnt plasma-meta 2>> feliz.log
-          TPecho "Installing the KDE applications package"
           pacstrap /mnt kde-applications 2>> feliz.log
         ;;
       "LXDE") TPecho "Installing the LXDE desktop Environment"
-          pacstrap /mnt lxde 2>> feliz.log
+          pacstrap /mnt lxde leafpad 2>> feliz.log
           if [ -d /mnt/etc/lxdm ]; then
             echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
           fi
@@ -285,7 +282,6 @@ InstallLuxuries()
         ;;
       "Mate") TPecho "Installing the Mate desktop Environment"
         pacstrap /mnt mate 2>> feliz.log
-        TPecho "Installing the Mate extras package"
         pacstrap /mnt mate-extra 2>> feliz.log
         ;;
       "Openbox") TPecho "Installing the Openbox window manager"
@@ -293,7 +289,6 @@ InstallLuxuries()
         ;;
       "Xfce") TPecho "Installing the Xfce desktop Environment"
         pacstrap /mnt xfce4 2>> feliz.log
-        TPecho "Installing the Xfce goodies package"
         pacstrap /mnt xfce4-goodies 2>> feliz.log
         ;;
       *) continue # Ignore all others on this pass
@@ -337,7 +332,6 @@ InstallLuxuries()
       esac
     done
   fi
-
 }
 
 UserAdd() {
@@ -350,14 +344,20 @@ UserAdd() {
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
     arch_chroot "chown -R ${UserName}:users /home/${UserName}"
     sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
-  else
-    TPecho "User already exists"
   fi
+  # Create main user folders
   for i in $(head -n 77 ${LanguageFile} | tail -n 1)
   do
     arch_chroot "mkdir /home/${UserName}/${i}"
     arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
   done
+  # Set keyboard at login for user
+  arch_chroot "localectl set-x11-keymap $Countrykbd"
+  case $Countrykbd in
+  "uk") echo "setxkbmap -layout gb" >> /mnt/home/${UserName}/.bashrc
+  ;;
+  *) echo "setxkbmap -layout $Countrykbd" >> /mnt/home/${UserName}/.bashrc
+  esac
 }
 
 SetRootPassword() {
@@ -434,7 +434,7 @@ SetUserPassword() {
 
 Restart() {
   Translate "Shutdown Reboot"
-  listgen1 "$Result" "" "$_Ok $_Exit"
+  listgen1 "$Result" "Ctrl+c $_Exit" "$_Ok"
   case $Response in
   1) shutdown -h now
   ;;
