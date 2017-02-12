@@ -284,6 +284,10 @@ InstallLuxuries()
         pacstrap /mnt mate 2>> feliz.log
         pacstrap /mnt mate-extra 2>> feliz.log
         ;;
+      "MateGTK3") TPecho "Installing the Mate GTK3 desktop Environment"
+        pacstrap /mnt mate-gtk3 2>> feliz.log
+        pacstrap /mnt mate-extra-gtk3 2>> feliz.log
+        ;;
       "Openbox") TPecho "Installing the Openbox window manager"
         pacstrap /mnt openbox 2>> feliz.log
         ;;
@@ -319,7 +323,7 @@ InstallLuxuries()
     for i in ${LuxuriesList}
     do
       case $i in
-      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce") continue # Ignore DEs & WMs on this pass
+      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "MateGTK3" | "Openbox" | "Xfce") continue # Ignore DEs & WMs on this pass
         ;;
       "cairo-dock") TPecho "Installing cairo-dock & cairo-dock-plug-ins"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
