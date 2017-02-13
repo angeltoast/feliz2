@@ -38,7 +38,7 @@ ora. In caso contrario, provare a entrare in un abbreviazione di due lettere
 per il proprio paese o la lingua e un elenco verrà visualizzato
 In alternativa, inserire ' ' per ricominciare
 Selezionare la tastiera, o EXIT per riprovare
-Nessun tastiere trovato contenente '$ termine'
+Nessun tastiere trovato contenente
 Riprova
 Inserire un nome per l'utente principale del nuovo sistema
 Se non si crea un nome utente qui, un utente predefinito
@@ -75,7 +75,7 @@ Se non si è certi di partizionamento, si dovrebbe leggere l'Arco Wiki
 Non ci sono partizioni sul dispositivo, e almeno
 Sono necessari due partizioni - uno per /boot, e uno per la /root
 Desktop Documenti Downloads Musica Immagini Pubblico Modelli Video
-xxx
+secondi
 o si può uscire ora di utilizzare uno strumento esterno
 una partizione è necessario per /root
 È possibile utilizzare 'cfdisk' per creare una tabella delle partizioni
@@ -303,3 +303,18 @@ Australia
 Europa
 indiano
 Pacifico
+La preparazione e il montaggio delle partizioni
+chiavi Aggiornamento
+Installazione di sistemi di kernel e di base
+Installazione di strumenti CLI
+Installazione di strumenti wireless
+Installazione grafica Strumenti
+L'aggiunta di codec
+Esecuzione di mkinitcpio
+Installazione dei driver video opensource
+Generazione mirrorlist
+Aggiunta di utenti e la creazione di gruppi di
+Completare i preparativi
+Entrando fase di installazione automatica
+Preparazione servizi locali
+Installazione

@@ -43,7 +43,7 @@ TestUEFI() { # Called at launch of Feliz script, before all other actions
  dmesg | grep -q "efi: EFI"           # Test for EFI (-q tells grep to be quiet)
  if [ $? -eq 0 ]; then                # check exit code; 0 = EFI, else BIOS
     # Mount efivarfs if it is not already mounted
-    if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+    if [ ! $(mount | grep -q /sys/firmware/efi/efivars) ]; then
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars
     fi
     UEFI=1
@@ -57,7 +57,21 @@ PartitioningEFI() { # THIS TO BE EXPANDED TO INCLUDE LVM
   AutoPart=0                    # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
-    listgen2 "$EFIPartitioningOptions" "" "$_Ok $_Exit" "LongPartE"
+    OptionsLimit=$((OptionsLimit-1))  # There are one fewer options in EFI than BIOS
+    OptionsList=""
+    local Counter=1
+    for Option in "${LongPartE[@]}"
+    do
+      Translate "$Option"
+      LongOption[${Counter}]="$Result"
+      OptionsList="$OptionsList $(echo $EFIPartitioningOptions | cut -d' ' -f${Counter})"
+      Counter=$((Counter+1))
+      if [ $Counter -gt $OptionsLimit ]; then
+        break
+      fi
+    done
+    Echo
+    listgen2 "$OptionsList" "$_Quit" "$_Ok $_Exit" "LongOption"
     Proceed=$Response
     Echo
     case $Proceed in
@@ -74,7 +88,7 @@ PartitioningEFI() { # THIS TO BE EXPANDED TO INCLUDE LVM
       ;;
       3) printf
       ;;
-      *) invalid_option
+      *) not_found
         Proceed=""
         print_heading
     esac
@@ -93,7 +107,8 @@ AllocateEFI() { # Called at start of AllocateRoot, before allocating root partit
 	PrintOne "First you should select one to use for EFI /boot"
 	PrintOne "This must be of type vfat, and may be about 512MiB"
   Echo
-  listgen2 "$PartitionList" "" "$_Ok $_Exit" "PartitionArray"
+  Translate "or Exit to try again"
+  listgen2 "$PartitionList" "$Result" "$_Ok $_Exit" "PartitionArray"
   Reply=$Response               # This will be the selected item in the list
                                 # (not necessarily the partition number)
   if [ $Result != "$_Exit" ]; then
@@ -477,7 +492,7 @@ ActionEasyPart() { # EFI Final step. Uses the variables set above to create GPT 
       "2" | "$_No") UseDisk=""
         CheckParts                  # Go right back to start
         ;;
-        *) invalid_option
+        *) not_found
     esac
   done
 
@@ -566,10 +581,10 @@ ActionEasyPart() { # EFI Final step. Uses the variables set above to create GPT 
     AddPartMount[0]="/home"           # Mountpoint    | array of
     AddPartType[0]="ext4"             # Filesystem    | additional partitions
   fi
-  ShowPart1="$_BootPartition : `lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}'`" >/dev/null
-  ShowPart2="$_RootPartition : `lsblk -l | grep "${UseDisk}2" | awk '{print $4, $1}'`" >/dev/null
-  ShowPart3="$_SwapPartition : `lsblk -l | grep "${UseDisk}3" | awk '{print $4, $1}'`" >/dev/null
-  ShowPart4="$_HomePartition : `lsblk -l | grep "${UseDisk}4" | awk '{print $4, $1}'`" >/dev/null
+  ShowPart1="$_BootPartition : $(lsblk -l | grep "${UseDisk}1" | awk '{print $4, $1}')" >/dev/null
+  ShowPart2="$_RootPartition : $(lsblk -l | grep "${UseDisk}2" | awk '{print $4, $1}')" >/dev/null
+  ShowPart3="$_SwapPartition : $(lsblk -l | grep "${UseDisk}3" | awk '{print $4, $1}')" >/dev/null
+  ShowPart4="$_HomePartition : $(lsblk -l | grep "${UseDisk}4" | awk '{print $4, $1}')" >/dev/null
   AutoPart=1                  # Treat as auto-partitioned. Set flag to 'on' for mounting
   print_heading
   PrintOne "Partitioning of" "${GrubDevice}" "successful"
@@ -827,7 +842,7 @@ ActionGuided() { # Final BIOS step - Uses the variables set above to create part
       "2" | "N" | "n") UseDisk=""
         CheckParts                    # Go right back to start
         ;;
-        *) invalid_option
+        *) not_found
     esac
   done
 

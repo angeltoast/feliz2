@@ -38,7 +38,7 @@ go teraz. Jeśli nie, spróbuj wprowadzić dwu-literowy kod
 swojego kraju lub języka, aby wyświetlić listę
 Alternatywnie, wybierz 'Wyjście' aby rozpocząć ponownie
 Wybierz swój układ klawiatury lub Wyjście aby spróbować ponownie
-Nie znaleziono klawiatury zawierającej '$Term'
+Nie znaleziono klawiatury zawierającej
 Proszę spróbować ponownie
 Wpisz nazwę użytkownika dla nowego systemu
 Jeśli nie utworzysz użytkownika teraz, to domyślny użytkownik
@@ -75,7 +75,7 @@ Jeśli nie jesteś pewny parycjonowania, powinieneś zapoznać się z Arch Wiki
 Nie ma żadnych partycji na tym urządzeniu, a przynajmniej
 dwie partycje są wymagane - jedna dla EFI /boot, druga dla /root
 Pulpit Dokumenty Pobrane Muzyka Obrazy Publiczny Szablony Wideo
-xxx
+sekund
 Możesz również wyjść i użyć innych narzędzi
 Potrzebna jest partycja dla /root
 Możesz użyć 'cfdisk' do utworzenia tablicy partycji
@@ -303,3 +303,18 @@ Australia
 Europa
 Ocean Indyjski
 Pacyfik
+Przygotowywanie i montowanie partycji
+Aktualizacja kluczy
+Instalowanie jądra i systemu bazowego
+Instalowanie narzędzi tekstowych
+Instalowanie narzędzi urządzeń bezprzewodowych
+Instalowanie narzędzi graficznych
+Dodawanie kodeków
+Uruchamianie mkinitcpio
+Instalowanie otwartych sterowników wideo
+Generowanie listy serwerów lustrzanych
+Dodawanie użytkownika i konfiguracja grup
+Przygotowania zakończone
+Wchodzenie w fazę automatycznej instalacji
+Przygotowywanie lokalnych usług
+Instalowanie

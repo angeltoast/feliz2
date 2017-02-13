@@ -101,7 +101,8 @@ elif [ ${AutoPart} -eq 0 ]; then       # If BIOS and not auto-artition
 fi
 
 print_heading
-TPecho "Preparations complete. Entering automatic installation phase"
+TPecho "Preparations complete"
+TPecho "Entering automatic installation phase"
 Echo
 PrintOne "sudo make me a sandwich && a cup of coffee"
 Echo
@@ -138,8 +139,8 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
   fi
 
 # Grub
+  TPecho "Installing Grub" ""
   if [ ${GrubDevice} = "EFI" ]; then               # Installing in UEFI environment
-    TPecho "Installing Grub to /boot partition" ""
     pacstrap /mnt grub efibootmgr
     arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi --bootloader-id=boot"
     if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
@@ -148,7 +149,6 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     arch_chroot "os-prober"
     arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
   elif [ ${GrubDevice} ]; then                     # Installing in BIOS environment
-    TPecho "Installing Grub to $GrubDevice" ""
     pacstrap /mnt grub 2>> feliz.log
     arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
     arch_chroot "os-prober"
@@ -176,16 +176,13 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     AddCodecs # Various bits
 
     if [ ${IsInVbox} = "VirtualBox" ]; then                  # If in Virtualbox
+      TPecho "Installing virtualbox guest modules"
       case $Kernel in
-      1) TPecho "Installing dkms & linux-lts-headers for lts kernel" ""
-          pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
-          TPecho "Installing virtualbox-guest-dkms for LTS kernel" ""
-          pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
+      1) pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
+        pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
       ;;
-      *) TPecho "Installing dkms & linux-headers for latest kernel" ""
-          pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
-          TPecho "Installing virtualbox-guest-modules-arch for latest kernel" ""
-          pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
+      *) pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
+        pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
       esac
       pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
       arch-chroot /mnt systemctl enable vboxservice

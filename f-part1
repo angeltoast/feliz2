@@ -49,6 +49,7 @@ CheckParts() {  # Test for existing partitions
     print_heading
     while [ $PARTITIONS -eq 0 ]
     do
+      OptionsLimit=3                      # This variable limits the options in Partitioning()
       Echo
       PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki"
       Echo
@@ -69,7 +70,7 @@ CheckParts() {  # Test for existing partitions
         Partitioning                      # Partitioning options for BIOS
       fi
                                           # Terminate
-      if [ $Response = "4" ]; then
+      if [ "$Result" = "$_Exit" ]; then
         print_heading
         Echo
         PrintOne "Exiting to allow you to partition the device"
@@ -87,6 +88,7 @@ CheckParts() {  # Test for existing partitions
     done
     BuildPartitionLists                 # Generate an array of partitions - this is a first call
   else                                  # There are existing partitions on the device
+    OptionsLimit=4                      # This variable is set to 3 if there are no partitions
     print_heading
     PrintOne "Here is a list of available partitions"
     BuildPartitionLists                 # Generate an array of partitions - this is a first call
@@ -210,15 +212,20 @@ Partitioning() {
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
+    OptionsList=""
     local Counter=1
     for Option in "${LongPart[@]}"
     do
       Translate "$Option"
-      LongPart[${Counter}]="$Result"
+      LongOption[${Counter}]="$Result"
+      OptionsList="$OptionsList $(echo $PartitioningOptions | cut -d' ' -f${Counter})"
       Counter=$((Counter+1))
+      if [ $Counter -gt $OptionsLimit ]; then
+        break
+      fi
     done
     Echo
-    listgen2 "$PartitioningOptions" "" "$_Ok" "LongPart"
+    listgen2 "$OptionsList" "$_Quit" "$_Ok $_Exit" "LongOption"
     Proceed=$Response
     Echo
     case $Proceed in
@@ -235,7 +242,7 @@ Partitioning() {
       ;;
       4) echo "Manual partition allocation" >> feliz.log
       ;;
-      *) invalid_option
+      *) not_found
         Proceed=""
         print_heading
     esac
@@ -308,7 +315,7 @@ AutoWarning() {
       "2" | "N" | "n") UseDisk=""
         break 2
         ;;
-      *) invalid_option
+      *) not_found
     esac
   done
 }
@@ -401,7 +408,8 @@ select_filesystem() { # User chooses filesystem from list in global variable ${T
   PrintOne "$Result" "${Partition}"
   PrintOne "It is not recommended to mix the btrfs file-system with others"
   Echo
-  listgen1 "${TypeList}" "" "$_Ok $_Exit"
+  Translate "or choose Exit to finish this part of the setup"
+  listgen1 "${TypeList}" "$Result" "$_Ok $_Exit"
   if [ "$Result" = "$_Exit" ]; then
     PartitionType=""
   else
@@ -419,7 +427,7 @@ select_filesystem() { # User chooses filesystem from list in global variable ${T
 
 EditLabel() {
   Label="${Labelled[$1]}"
-  if [ -n ${Label} ]; then
+  if [ -n "${Label}" ]; then
     # Inform the user and accept input
     print_heading
     Echo
@@ -606,6 +614,7 @@ NoPartitions() { # There are no unallocated partitions
   Message="Create a swap file?"
   Echo
   Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
+  Echo
   case $Response in
     "1" | "$_Yes" | "y") SetSwapFile
       SwapPartition=""
@@ -671,7 +680,7 @@ MorePartitions() {
         fi
       elif [ "$Part" != "$_Exit" ]; then   # Part is not selected and not 'Exit'
         Remaining="$Remaining $Part" # Add unused partition to temp list
-        AddedToRemaining=$(($AddedToRemaining+1))
+        AddedToRemaining=$((AddedToRemaining+1))
       fi
     done
     PartitionList=$Remaining  # Replace original PartitionList with temp list

@@ -38,7 +38,7 @@ Es ahora. Si no, intente ingresar una abreviatura de dos letras
 Para su país o idioma y se mostrará una lista
 Alternativamente, ingrese ' ' para comenzar de nuevo
 Seleccione su teclado o Salir para volver a intentarlo
-No se encontraron teclados que contengan '$ Term'
+No se encontraron teclados que contengan
 Por favor, inténtelo de nuevo
 Introduzca un nombre para el usuario principal del nuevo sistema.
 Si no crea un nombre de usuario aquí, un usuario predeterminado
@@ -75,7 +75,7 @@ Si no está seguro acerca de la partición, debe leer el Wiki Arch
 No hay particiones en el dispositivo y al menos
 Se necesitan dos particiones: una para /boot y uno para /root
 Escritorio Documentos Descargas Música Imágenes Público Plantillas Videos
-xxx
+segundos
 O puede salir ahora para utilizar una herramienta externa
 Una partición es necesaria para /root
 Puede utilizar 'cfdisk' para crear una tabla de particiones
@@ -303,3 +303,18 @@ Australia
 Europa
 Indio
 Pacífico
+Preparación y montaje de particiones
+Actualización de claves
+Instalación de núcleos y núcleos
+Instalación de herramientas cli
+Instalación de herramientas inalámbricas
+Instalación de herramientas de gráficos
+Adición de códecs
+Ejecución de mkinitcpio
+Instalación de controladores de vídeo opensource
+Generar lista de réplicas
+Agregar usuarios y configurar grupos
+Preparaciones completas
+Inicio de la fase de instalación automática
+Preparación de servicios locales
+Instalación

@@ -35,7 +35,7 @@ print_heading() {   # Always use this function to clear the screen
 
 PrintOne() {  # Receives up to 2 arguments
               # If $2 contains anything, don't translate $1
-              # Then print aligned according to content and screen size
+              # Prints text centred according to content and screen size
   if [ ! "$2" ]; then
     Translate "$1"
     Text="$Result"
@@ -66,7 +66,7 @@ PrintMany() { # Receives up to 2 arguments
 }
 
 read_timed() { # Timed display - $1 = text to display; $2 = duration
-  local T_COLS=`tput cols`
+  local T_COLS=$(tput cols)
   local lov=${#1}
   local stpt=0
   if [ $2 ]; then
@@ -75,17 +75,13 @@ read_timed() { # Timed display - $1 = text to display; $2 = duration
     tim=2
   fi
   if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 2 ))
+    stpt=$(( (T_COLS - lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
   else
     EMPTY=""
   fi
   read -t ${tim} -p "$EMPTY $1"
   cursor_row=$((cursor_row+1))
-}
-
-invalid_option() {
-  read_timed "          Invalid entry. Please try again ...                     " 1
 }
 
 SetLanguage() {
@@ -107,6 +103,8 @@ SetLanguage() {
   _Ok="$Result"
   Translate "Exit"
   _Exit="$Result"
+  Translate "or choose Exit to finish this part of the setup"
+  _Quit="$Result"
   Translate "Use arrow keys to move. Enter to select"
   _Instructions="${Result}"
   Translate "Yes"

@@ -38,7 +38,7 @@ it now. If not, try entering a two-letter abbreviation
 for your country or language and a list will be displayed
 Alternatively, enter ' ' to start again
 Select your keyboard, or Exit to try again
-No keyboards found containing '$Term'
+No keyboards found containing
 Please try again
 Enter a name for the primary user of the new system
 If you don't create a username here, a default user
@@ -75,7 +75,7 @@ If you are uncertain about partitioning, you should read the Arch Wiki
 There are no partitions on the device, and at least
 two partitions are needed - one for /boot and one for /root
 Desktop Documents Downloads Music Pictures Public Templates Videos
-xxx
+Seconds
 or you can exit now to use an external tool
 A partition is needed for /root
 You can use 'cfdisk' to create a partition table 
@@ -303,3 +303,18 @@ Australia
 Europe
 Indian
 Pacific
+Preparing and mounting partitions
+Updating keys
+Installing kernel and core systems
+Installing cli tools
+Installing Wireless tools
+Installing Graphics tools
+Adding codecs
+Running mkinitcpio
+Installing opensource video drivers
+Generating mirrorlist
+Adding user and setting up groups
+Preparations complete
+Entering automatic installation phase
+Preparing local services
+Installing

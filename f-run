@@ -45,19 +45,8 @@ Parted() {
 
 TPecho() { # For displaying status while running on auto
   echo
-  CurrentTime=$(date +%s)
-  Difference=$(( $CurrentTime-$StartTime ))
-  DIFFMIN=$(( $Difference/60 ))
-  DIFFSEC=$(( $Difference % 60 ))
-  T_COLS=`tput cols`
-  EMPTY="     "
-  lov=${#1}
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( ($T_COLS - $lov) / 3 ))
-    EMPTY="$(printf '%*s' $stpt)"
-  fi
   tput bold
-  echo -e "$EMPTY $1 \n"
+  PrintOne "$1"
   tput sgr0
 }
 
@@ -151,15 +140,13 @@ InstallKernel() {   # Selected kernel and some other core systems
     pacman-key --populate archlinux
     pacman-key --refresh-keys
   fi
-
+  TPecho "Installing kernel and core systems"
   case $Kernel in
-  1) TPecho "Installing LTS kernel and core systems"
-    # This is the full linux group list at 28th January 2017 with linux-lts in place of linux
+  1) # This is the full linux group list at 28th January 2017 with linux-lts in place of linux
     # Use the script ArchBaseGroup.sh in 3-FelizWorkshop to regenerate the list periodically
     pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs
   ;;
-  *) TPecho "Installing Latest kernel and core systems"
-    pacstrap /mnt base base-devel 2>> feliz.log
+  *) pacstrap /mnt base base-devel 2>> feliz.log
   esac
 
   TPecho "Installing cli tools"
@@ -176,7 +163,7 @@ AddCodecs() {
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
   pacstrap /mnt iw wireless_tools wpa_supplicant
 
-  TPecho "Installing X, Graphics, etc"
+  TPecho "Installing Graphics tools"
   pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm
 
   TPecho "Installing opensource video drivers"
@@ -189,12 +176,11 @@ AddCodecs() {
 }
 
 McInitCPIO() {
+  TPecho "Running mkinitcpio"
   case $Kernel in
-  1) TPecho "Running mkinitcpio for lts kernel" 10
-    arch_chroot "mkinitcpio -p linux-lts" 2>> feliz.log
+  1) arch_chroot "mkinitcpio -p linux-lts" 2>> feliz.log
   ;;
-  *) TPecho "Running mkinitcpio for latest kernel" 10
-    arch_chroot "mkinitcpio -p linux" 2>> feliz.log
+  *) arch_chroot "mkinitcpio -p linux" 2>> feliz.log
   esac
 }
 
@@ -228,7 +214,8 @@ InstallDM()
   # Disable any existing display manager
   arch_chroot "systemctl disable display-manager.service" >/dev/null
   # Then install selected display manager
-  TPecho "Installing ${DisplayManager} display manager" 20
+  TPecho "Installing"
+  TPecho "${DisplayManager} ${Greeter}"
   pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
   arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
 }
@@ -242,13 +229,16 @@ InstallLuxuries()
     for i in ${LuxuriesList}
     do
       case $i in
-      "Budgie") TPecho "Installing the Budgie desktop Environment"
+      "Budgie") TPecho "Installing"
+          TPecho "Budgie"
           pacstrap /mnt budgie-desktop 2>> feliz.log
         ;;
-      "Cinnamon") TPecho "Installing the Cinnamon desktop Environment"
+      "Cinnamon") TPecho "Installing"
+          TPecho "Cinnamon"
           pacstrap /mnt cinnamon 2>> feliz.log
         ;;
-      "Deepin") TPecho "Installing the Deepin desktop Environment"
+      "Deepin") TPecho "Installing"
+          TPecho "Deepin"
           pacstrap /mnt deepin 2>> feliz.log
           pacstrap /mnt deepin-extras 2>> feliz.log
           # Change the greeter line in lightdm.conf
@@ -256,42 +246,52 @@ InstallLuxuries()
             sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
           fi
         ;;
-      "Enlightenment") TPecho "Installing the Enlightenment desktop Environment"
+      "Enlightenment") TPecho "Installing"
+          TPecho "Enlightenment"
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log
         ;;
-      "Fluxbox") TPecho "Installing the Fluxbox window manager"
+      "Fluxbox") TPecho "Installing"
+          TPecho "Fluxbox"
           pacstrap /mnt fluxbox 2>> feliz.log
         ;;
-      "Gnome") TPecho "Installing the Gnome desktop Environment"
+      "Gnome") TPecho "Installing"
+          TPecho "Gnome"
           pacstrap /mnt gnome 2>> feliz.log
           pacstrap /mnt gnome-extra 2>> feliz.log
         ;;
-      "KDE") TPecho "Installing the KDE Plasma meta package"
+      "KDE") TPecho "Installing"
+          TPecho "KDE Plasma"
           pacstrap /mnt plasma-meta 2>> feliz.log
           pacstrap /mnt kde-applications 2>> feliz.log
         ;;
-      "LXDE") TPecho "Installing the LXDE desktop Environment"
+      "LXDE") TPecho "Installing"
+          TPecho "LXDE"
           pacstrap /mnt lxde leafpad 2>> feliz.log
           if [ -d /mnt/etc/lxdm ]; then
             echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
           fi
         ;;
-      "LXQt") TPecho "Installing the LXQt desktop Environment"
+      "LXQt") TPecho "Installing"
+          TPecho "LXQt"
           pacstrap /mnt lxqt 2>> feliz.log
           pacstrap /mnt oxygen-icons connman lxappearance xscreensaver
         ;;
-      "Mate") TPecho "Installing the Mate desktop Environment"
+      "Mate") TPecho "Installing"
+        TPecho "Mate"
         pacstrap /mnt mate 2>> feliz.log
         pacstrap /mnt mate-extra 2>> feliz.log
         ;;
-      "MateGTK3") TPecho "Installing the Mate GTK3 desktop Environment"
+      "MateGTK3") TPecho "Installing"
+        TPecho "Mate GTK3"
         pacstrap /mnt mate-gtk3 2>> feliz.log
         pacstrap /mnt mate-extra-gtk3 2>> feliz.log
         ;;
-      "Openbox") TPecho "Installing the Openbox window manager"
+      "Openbox") TPecho "Installing"
+        TPecho "Openbox"
         pacstrap /mnt openbox 2>> feliz.log
         ;;
-      "Xfce") TPecho "Installing the Xfce desktop Environment"
+      "Xfce") TPecho "Installing"
+        TPecho "Xfce"
         pacstrap /mnt xfce4 2>> feliz.log
         pacstrap /mnt xfce4-goodies 2>> feliz.log
         ;;
@@ -300,7 +300,8 @@ InstallLuxuries()
     done
 
     # Install Yaourt
-    TPecho "Installing Yaourt"
+    TPecho "Installing"
+    TPecho "Yaourt"
     arch=$(uname -m)
     if [ ${arch} = "x86_64" ]; then                     # New: Identify 64 bit architecture
       # For installed system
@@ -318,20 +319,22 @@ InstallLuxuries()
     pacman-key --populate archlinux 2>> feliz.log
     pacman -Sy 2>> feliz.log
     pacstrap /mnt yaourt 2>> feliz.log
-
     # Second parse through LuxuriesList - any extras
     for i in ${LuxuriesList}
     do
       case $i in
       "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "MateGTK3" | "Openbox" | "Xfce") continue # Ignore DEs & WMs on this pass
         ;;
-      "cairo-dock") TPecho "Installing cairo-dock & cairo-dock-plug-ins"
+      "cairo-dock") TPecho "Installing"
+        TPecho "Cairo Dock"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
         ;;
-      "conky") TPecho "Installing Conky"
+      "conky")     TPecho "Installing"
+        TPecho "Conky"
         pacstrap /mnt conky 2>> feliz.log
         ;;
-      *) TPecho "Installing $i"
+      *) TPecho "Installing"
+        TPecho "$i"
         pacstrap /mnt "$i" 2>> feliz.log
       esac
     done
@@ -342,7 +345,7 @@ UserAdd() {
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
   if [ -z "${CheckUsers}" ]; then
-    TPecho "Adding user '${UserName}' and setting up groups"
+    TPecho "Adding user and setting up groups"
     arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
     # Set up basic configuration files and permissions for user
     arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
@@ -371,8 +374,10 @@ SetRootPassword() {
   Echo
   Translate "minutes"
   mins="$Result"
+  Translate "seconds"
+  secs="$Result"
   Translate "Finished installing in"
-  PrintOne "$Result" "${DIFFMIN}:${DIFFSEC} $mins"
+  PrintOne "$Result" "${DIFFMIN} $mins ${DIFFSEC} $secs"
   Echo
   PrintOne "Finally we need to set passwords"
   Echo

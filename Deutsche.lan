@@ -38,7 +38,7 @@ Es jetzt, oder versuchen Sie es mit einer Abkürzung von zwei Buchstaben
 Für Ihr Land oder Ihre Sprache und eine Liste wird angezeigt
 Alternativ geben Sie ' ' ein, um erneut zu starten
 Wählen Sie Ihre Tastatur aus, oder beenden Sie, um es erneut zu versuchen
-Keine Tastatur gefunden mit '$ Term'
+Keine Tastatur gefunden mit
 Bitte versuche es erneut
 Geben Sie einen Namen für den primären Benutzer des neuen Systems ein
 Wenn Sie hier keinen Benutzernamen erstellen, ist dies ein Standardbenutzer
@@ -75,7 +75,7 @@ Wenn Sie unsicher sind über Partitionierung, sollten Sie das Arch Wiki lesen
 Es gibt keine Partitionen auf dem Gerät, und mindestens
 Werden zwei Partitionen benötigt - eine für /boot und eine für /root
 Schreibtisch Unterlagen Downloads Musik Bilder Öffentlichkeit Vorlagen Datenschutzerklärung
-xxx
+Sekunden
 Oder Sie können jetzt ein externes Werkzeug verwenden
 Eine Partition für das /root benötigt
 Sie können "cfdisk" verwenden, um eine Partitionstabelle zu erstellen
@@ -303,3 +303,18 @@ Australien
 Europa
 indisch
 Pazifik
+Vorbereitung und Montage von Trennwänden
+Tasten aktualisieren
+Installieren von Kernel- und Core-Systemen
+Installieren von Cli-Tools
+Installieren von Wireless-Tools
+Installieren von Grafikwerkzeugen
+Hinzufügen von Codecs
+Laufen mkinitcpio
+Installieren von opensource-Videotreibern
+Generierung der Spiegelliste
+Benutzer hinzufügen und Gruppen einrichten
+Vorbereitungen abgeschlossen
+Eingabe der automatischen Installationsphase
+Vorbereiten von lokalen Diensten
+Installieren

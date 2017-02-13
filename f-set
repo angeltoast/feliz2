@@ -42,8 +42,8 @@
 
 not_found() {
   Echo
-  Translate "Please try again"
-  read_timed "$Result ..." 1
+  PrintOne "Please try again"
+  Buttons "Yes/No" "$_Ok"
 }
 
 Echo() { # Use in place of 'echo' for basic text print
@@ -95,7 +95,7 @@ ConfirmVbox() {
     case $Response in
       1) IsInVbox="VirtualBox"
       ;;
-      "") invalid_option
+      "") not_found
         continue
       ;;
       *) IsInVbox=""
@@ -253,7 +253,7 @@ FindCity() {  # Called by SelectSubzone
   done
   if [ ${Counter} -eq 0 ]; then       # None found
     not_found
-    continue
+    return
   fi
 
   if [ $Counter -ge $Rows ]; then
@@ -290,7 +290,8 @@ DoCities() { # Specifically for America, which has subgroups
       done
   esac
   PrintOne "Please select a city from this list"
-  listgen1 "$Cities" "" "$_Ok $_Exit"
+  Translate "or Exit to try again"
+  listgen1 "$Cities" "$Result" "$_Ok $_Exit"
   case $Result in
   "$_Exit") SetTimeZone
   ;;
@@ -320,7 +321,8 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
       Echo                                # If none found, offer main languages
       PrintOne "No language has been found for your location"
       PrintOne "Would you like to use one of the following?"
-      listgen1 "English French Spanish" "$_Instructions" "$_Ok $_Exit"
+      Translate "Choose one or Exit to search for alternatives"
+      listgen1 "English French Spanish" "$Result" "$_Ok $_Exit"
       case $Response in
       1) Item="en"
       ;;
@@ -423,8 +425,9 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         done
         localelist="${Newlist}"                         # Ensure that localelist matches choosefrom
         print_heading
-        PrintOne "Now please choose your language from this list" "" "or Exit to try again."
-        listgen1 "${choosefrom}" "" "$_Ok $_Exit"       # Menu if less than one screenful
+        PrintOne "Now please choose your language from this list"
+        Translate "Choose one or Exit to search for alternatives"
+        listgen1 "${choosefrom}" "$Result" "$_Ok $_Exit"       # Menu if less than one screenful
       fi
       case $Result in
       "$_Exit" | "") SetTimeZone
@@ -467,8 +470,8 @@ getkeymap() {
   ;;
   *) Term="${country:3:2}"
   esac
-  ListKbs=$(cat keymaps.list | grep ${Term})
-  Found=$(cat keymaps.list | grep ${Term} | wc -l)  # Count records
+  ListKbs=$(grep ${Term} keymaps.list)
+  Found=$(grep -c ${Term} keymaps.list)  # Count records
   if [ ! $Found ]; then
     Found=0
   fi
@@ -532,7 +535,7 @@ SearchKeyboards() {
       SetTimeZone
     fi
     Echo
-    ListKbs=$(cat keymaps.list | grep ${Term})
+    ListKbs=$(grep ${Term} keymaps.list)
     if [ -n "${ListKbs}" ]; then  # If a match or matches found
       print_heading
       PrintOne "Select your keyboard, or Exit to try again"
@@ -546,8 +549,9 @@ SearchKeyboards() {
     else
       print_heading
       Echo
-      PrintOne "No keyboards found containing" "'$Term'"
-      PrintOne "Please try again"
+      Translate "No keyboards found containing"
+      PrintOne "$Result" "'$Term'"
+      not_found
     fi
   done
 }
@@ -606,7 +610,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   Echo
   while :
   do
-    listgen1 "${CategoriesList}" "" "$_Ok $_Exit"
+    listgen1 "${CategoriesList}" "$_Quit" "$_Ok $_Exit"
     Category=$Response
     if [ $Result = "$_Exit" ]; then
       break
@@ -651,7 +655,7 @@ KeepOrDelete() {
         done
         break
       ;;
-      *) invalid_option
+      *) not_found
     esac
   done
   LuxuriesList="$Temp"
@@ -681,7 +685,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Accessories" "" "$_Ok $_Exit" "LongAccs1"
+        listgen2 "$Accessories" "$_Quit" "$_Ok $_Exit" "LongAccs1"
        ;;
        2) OptionsCounter=1
           for Option in "${LongDesk[@]}"  # Translate all elements
@@ -695,7 +699,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Desktops" "" "$_Ok $_Exit" "LongDesk1"
+        listgen2 "$Desktops" "$_Quit" "$_Ok $_Exit" "LongDesk1"
        ;;
        3) OptionsCounter=1
           for Option in "${LongGraph[@]}"  # Translate all elements
@@ -709,7 +713,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Graphical" "" "$_Ok $_Exit" "LongGraph1"
+        listgen2 "$Graphical" "$_Quit" "$_Ok $_Exit" "LongGraph1"
        ;;
        4) OptionsCounter=1
           for Option in "${LongNet[@]}"  # Translate all elements
@@ -723,7 +727,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Internet" "${Headline}" "$_Ok $_Exit" "LongNet1"
+        listgen2 "$Internet" "$_Quit" "$_Ok $_Exit" "LongNet1"
        ;;
        5) OptionsCounter=1
           for Option in "${LongMulti[@]}"  # Translate all elements
@@ -737,7 +741,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Multimedia" "" "$_Ok $_Exit" "LongMulti1"
+        listgen2 "$Multimedia" "$_Quit" "$_Ok $_Exit" "LongMulti1"
        ;;
        6) OptionsCounter=1
           for Option in "${LongOffice[@]}"  # Translate all elements
@@ -751,7 +755,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Office" "" "$_Ok $_Exit" "LongOffice1"
+        listgen2 "$Office" "$_Quit" "$_Ok $_Exit" "LongOffice1"
        ;;
        7) OptionsCounter=1
           for Option in "${LongProg[@]}"  # Translate all elements
@@ -765,7 +769,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$Programming" "" "$_Ok $_Exit" "LongProg1"
+        listgen2 "$Programming" "$_Quit" "$_Ok $_Exit" "LongProg1"
        ;;
        8) OptionsCounter=1
           for Option in "${LongWMs[@]}"  # Translate all elements
@@ -779,7 +783,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
           LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
           (( Counter+=1 ))
         done
-        listgen2 "$WindowManagers" "" "$_Ok $_Exit" "LongWMs1"
+        listgen2 "$WindowManagers" "$_Quit" "$_Ok $_Exit" "LongWMs1"
       ;;
       *) break
     esac
@@ -829,7 +833,7 @@ ChooseDM() { # Choose a display manager
       PrintOne "If you do not install a display manager, you will have"
       PrintOne "to launch your desktop environment manually"
       Echo
-      listgen1 "${DMList}" "" "$_Ok $_Exit"
+      listgen1 "${DMList}" "$_Quit" "$_Ok $_Exit"
       Reply=$Response
       for item in ${DMList}
       do
@@ -885,7 +889,7 @@ SetGrubDevice() {
   PrintOne "will not be installed, and you will have to make"
   PrintOne "alternative arrangements for booting your new system"
   Echo
-  listgen1 "${DevicesList}" "" "$_Ok $_Exit"
+  listgen1 "${DevicesList}" "$_Quit" "$_Ok $_Exit"
   Reply=$Response
   for i in ${DevicesList}
   do
