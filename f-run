@@ -169,6 +169,9 @@ AddCodecs() {
   TPecho "Installing opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics
 
+  TPecho "Installing fonts"
+  pacstrap /mnt ttf-liberation
+
   # TPecho "Installing  CUPS printer services"
   # pacstrap /mnt -S system-config-printer cups
   # arch_chroot "systemctl enable org.cups.cupsd.service"

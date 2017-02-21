@@ -55,7 +55,7 @@ exit without choosing any extras
 You can add more items, or select items to delete
 Added so far
 You can now choose from any of the other lists
-or choose Exit to finish this part of the setup
+Exit to finish
 A display manager provides a graphical login screen
 If in doubt, choose LightDM
 If you do not install a display manager, you will have
@@ -69,7 +69,7 @@ will not be installed, and you will have to make
 alternative arrangements for booting your new system
 These are the settings you have entered. Please check them
 Press Enter to install with these settings, or
-Enter number for data to change
+enter a number for data to change
 Hostname (currently
 If you are uncertain about partitioning, you should read the Arch Wiki
 There are no partitions on the device, and at least

@@ -103,7 +103,7 @@ SetLanguage() {
   _Ok="$Result"
   Translate "Exit"
   _Exit="$Result"
-  Translate "or choose Exit to finish this part of the setup"
+  Translate "Exit to finish"
   _Quit="$Result"
   Translate "Use arrow keys to move. Enter to select"
   _Instructions="${Result}"
