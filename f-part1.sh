@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 19th January 2017
+# Revision date: 26th February 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -628,6 +628,7 @@ SetSwapFile() {
   LoopRepeat="Y"
   while [ ${LoopRepeat} = "Y" ]
   do
+    Echo
     PrintOne "Allocate the size of your swap file"
     TPread "M = Megabytes, G = Gigabytes [eg: 512M or 2G]: "
     RESPONSE="${Response^^}"

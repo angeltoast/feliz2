@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 19th January 2017
+# Revision date: 26th February 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -640,7 +640,7 @@ KeepOrDelete() {
     K="$Result"
     Translate "Delete"
     D="$Result"
-    Buttons "Yes/No" "$K $D" "$_Instructions"
+    Buttons "Yes/No" "$K $D" "$Message"
     case $Response in
       1) Temp="$LuxuriesList"
         break
@@ -797,7 +797,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     for lux in $LuxuriesList
     do
       if [ ${lux} = ${Result} ]; then
-        KeepOrDelete "$Result" # New function
+        KeepOrDelete "$Result"
         Result=""
         continue
       fi

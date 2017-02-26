@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 4th Febuary 2017
+# Revision date: 26th February 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -126,12 +126,13 @@ MountPartitions() {
 
 InstallKernel() {   # Selected kernel and some other core systems
 
-  LANG=C            # Temporary addition to overcome bug in Arch
+  LANG=C              # Temporary addition to overcome bug in Arch
 
   # And this, to solve keys issue if an older Feliz iso is running after keyring changes
   # If feliz.log exists and the first line created by felizinit is numeric (new felizinit)
-  #                and that number is greater than or equal to the date of the latest Arch trust update   
-  if [ -f feliz.log ] && [ $(head -n 1 feliz.log | grep '[0-9]') ] && [ $(head -n 1 feliz.log) -ge 20170104 ]; then
+  # and that number is greater than or equal to the date of the latest Arch trust update
+  TrustDate=20170104  # Reset this to date of latest Arch Linux trust update
+  if [ -f feliz.log ] && [ $(head -n 1 feliz.log | grep '[0-9]') ] && [ $(head -n 1 feliz.log) -ge $TrustDate ]; then
     echo "pacman-key trust check passed" >> feliz.log
   else             # Default
     TPecho "Updating keys"

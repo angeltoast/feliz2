@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 19th January 2017
+# Revision date: 26th February 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -719,7 +719,6 @@ GuidedSwap() { # BIOS - Set variable: SwapSize
       PrintOne "Swap can be anything from 512MiB upwards but"
       PrintOne "it is not necessary to exceed 4GiB"
       PrintOne "You may want to leave room for a /home partition"
-      Echo
     elif [ ${FreeSpace} -gt 5 ]; then
       Translate "There is space for a"
       PrintOne "$Result" " $_SwapPartition"
@@ -727,15 +726,14 @@ GuidedSwap() { # BIOS - Set variable: SwapSize
       PrintOne "it is not necessary to exceed 4GiB"
       PrintOne "You can use all the remaining space on the device, if you wish"
       PrintOne "You may want to leave room for a /home partition"
-      Echo
     else
       Translate "There is just space for a"
       PrintOne "$Result" " $_SwapPartition"
       PrintOne "Swap can be anything from 512MiB upwards but"
       PrintOne "it is not necessary to exceed 4GiB"
       PrintOne "You can use all the remaining space on the device, if you wish"
-      Echo
     fi
+    Echo
     PrintOne "Please enter the desired size"
     PrintOne "or, to allocate all the remaining space, enter: 100%"
     Echo
@@ -744,7 +742,8 @@ GuidedSwap() { # BIOS - Set variable: SwapSize
     RESPONSE="${Response^^}"
     Echo
     case ${RESPONSE} in
-      '' | 0) PrintOne "Do you wish to allocate a swapfile?"
+      '' | 0) Echo
+          PrintOne "Do you wish to allocate a swapfile?"
           Echo
         Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
         Echo
@@ -822,9 +821,17 @@ ActionGuided() { # Final BIOS step - Uses the variables set above to create part
   do
     # Get user approval
     print_heading
-    PrintOne "$_RootPartition " ": ${RootType} : ${RootSize}"
-    PrintOne "$_SwapPartition " ": ${SwapSize}"
-    PrintOne "$_HomePartition :" "${HomeType} : ${HomeSize}"
+    if [ -n "${RootSize}" ]; then
+      PrintOne "$_RootPartition " ": ${RootType} : ${RootSize}"
+    fi
+    if [ -n "${SwapSize}" ]; then
+      PrintOne "$_SwapPartition " ": ${SwapSize}"
+    elif [ -n "${SwapFile}" ]; then
+      PrintOne "$_SwapFile " ": ${SwapFile}"
+    fi
+    if [ -n "${HomeSize}" ]; then
+      PrintOne "$_HomePartition :" "${HomeType} : ${HomeSize}"
+    fi
     Echo
     PrintOne "That's all the preparation done"
     PrintOne "Feliz will now create a new partition table"
