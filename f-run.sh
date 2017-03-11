@@ -200,7 +200,7 @@ ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirr
 
 LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   # mirrorlist of only the mirrors defined in the CountryCode variable.
-  URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+  URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&protocol=http"
   MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
   # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
   curl -so ${MirrorTemp} ${URL} 2>> feliz.log
