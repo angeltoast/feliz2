@@ -805,8 +805,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     # Then carry out any specific tests and add the item to the list
     SaveResult=$Result # (Because other subroutines return $Result)
     case $SaveResult in
-      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" |  "MateGTK3" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
-
+      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "FelizOB" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" |  "MateGTK3" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
        ;;
       "") continue
        ;;
@@ -822,6 +821,10 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
 }
 
 ChooseDM() { # Choose a display manager
+  if [ $DesktopEnvironment = "FelizOB" ]; then
+    DisplayManager="lxdm"
+    return
+  fi
   case $DisplayManager in
   "") # Only offered if no other display manager has been set
       Counter=0

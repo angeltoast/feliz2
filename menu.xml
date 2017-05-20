@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openbox_menu xmlns="http://openbox.org/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://openbox.org/                 file:///usr/share/openbox/menu.xsd">
+	<menu id="root-menu" label="Openbox 3">
+		<!-- This requires the presence of the 'menu' package to work -->
+		<separator/>
+		<item label="File Manager">
+			<action name="Execute">
+				<execute>pcmanfm</execute>
+			</action>
+		</item>
+		<item label="Terminal">
+			<action name="Execute">
+				<execute>lxterminal</execute>
+			</action>
+		</item>
+		<separator/>
+		<item label="Leafpad">
+			<action name="Execute">
+				<execute>leafpad</execute>
+			</action>
+		</item>
+		<separator/>
+		<menu id="root-menu-655230" label="Openbox Settings">
+			<item label="obmenu">
+				<action name="Execute">
+					<execute>obmenu</execute>
+				</action>
+			</item>
+			<item label="obconf">
+				<action name="Execute">
+					<execute>obconf</execute>
+				</action>
+			</item>
+			<item label="Reconfigure">
+				<action name="Reconfigure"/>
+			</item>
+			<item label="Restart">
+				<action name="Restart"/>
+			</item>
+		</menu>
+		<separator/>
+		<item label="Log Out">
+			<action name="Execute">
+				<execute>openbox --exit</execute>
+			</action>
+		</item>
+		<separator/>
+	</menu>
+</openbox_menu>

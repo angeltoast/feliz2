@@ -1,0 +1,17 @@
+# Programs that will run after Openbox has started
+# This file is in /home/<username>/.config/openbox/
+
+# Composite manager
+compton -b -l 0 -t 0 &
+
+# lxpanel
+lxpanel &
+
+# Desktop
+pcmanfm --desktop &
+
+# Screensaver
+xscreensaver -no-splash &
+
+# Start Conky
+conky &

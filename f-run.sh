@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 26th February 2017
+# Revision date: 19th May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,14 +25,14 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           36       ReflectorMirrorList  205
-# Parted                41       LocalMirrorList      215
-# TPecho                63       InstallDM            230
-#                                InstallLuxuries      240
-# MountPartitions       99       UserAdd              325
-# InstallKernel        162       SetRootPassword      340
-# AddCodecs            180       SetUserPassword      378
-# McInitCPIO           195       Restart
+# arch_chroot           38       ReflectorMirrorList  191
+# Parted                42       LocalMirrorList      201
+# TPecho                46       InstallDM            216
+#                                InstallLuxuries      227
+# MountPartitions       53       UserAdd              348
+# InstallKernel        127       SetRootPassword      374
+# AddCodecs            159       SetUserPassword      418
+# McInitCPIO           182       Restart              448
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
@@ -145,7 +145,7 @@ InstallKernel() {   # Selected kernel and some other core systems
   case $Kernel in
   1) # This is the full linux group list at 28th January 2017 with linux-lts in place of linux
     # Use the script ArchBaseGroup.sh in 3-FelizWorkshop to regenerate the list periodically
-    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs
+    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log
   ;;
   *) pacstrap /mnt base base-devel 2>> feliz.log
   esac
@@ -158,20 +158,20 @@ InstallKernel() {   # Selected kernel and some other core systems
 
 AddCodecs() {
   TPecho "Adding codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pavucontrol pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pavucontrol pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab 2>> feliz.log
 
   TPecho "Installing Wireless Tools"
-  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware
-  pacstrap /mnt iw wireless_tools wpa_supplicant
+  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
+  pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
 
   TPecho "Installing Graphics tools"
-  pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm
+  pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
 
   TPecho "Installing opensource video drivers"
-  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics
+  pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log
 
   TPecho "Installing fonts"
-  pacstrap /mnt ttf-liberation
+  pacstrap /mnt ttf-liberation 2>> feliz.log
 
   # TPecho "Installing  CUPS printer services"
   # pacstrap /mnt -S system-config-printer cups
@@ -218,8 +218,7 @@ InstallDM()
   # Disable any existing display manager
   arch_chroot "systemctl disable display-manager.service" >/dev/null
   # Then install selected display manager
-  TPecho "Installing"
-  TPecho "${DisplayManager} ${Greeter}"
+  TPecho "Installing ${DisplayManager} ${Greeter}"
   pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
   arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
 }
@@ -233,16 +232,13 @@ InstallLuxuries()
     for i in ${LuxuriesList}
     do
       case $i in
-      "Budgie") TPecho "Installing"
-          TPecho "Budgie"
+      "Budgie") TPecho "Installing Budgie"
           pacstrap /mnt budgie-desktop 2>> feliz.log
         ;;
-      "Cinnamon") TPecho "Installing"
-          TPecho "Cinnamon"
+      "Cinnamon") TPecho "Installing Cinnamon"
           pacstrap /mnt cinnamon 2>> feliz.log
         ;;
-      "Deepin") TPecho "Installing"
-          TPecho "Deepin"
+      "Deepin") TPecho "Installing Deepin"
           pacstrap /mnt deepin 2>> feliz.log
           pacstrap /mnt deepin-extras 2>> feliz.log
           # Change the greeter line in lightdm.conf
@@ -250,16 +246,16 @@ InstallLuxuries()
             sed -i s/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/g /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
           fi
         ;;
-      "Enlightenment") TPecho "Installing"
-          TPecho "Enlightenment"
+      "Enlightenment") TPecho "Installing Enlightenment"
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log
         ;;
-      "Fluxbox") TPecho "Installing"
-          TPecho "Fluxbox"
+      "FelizOB") TPecho "Installing FelizOB"
+        pacstrap /mnt openbox obmenu obconf compton conky leafpad lxpanel lxterminal pcmanfm xscreensaver 2>> feliz.log 2>> feliz.log
+        ;;
+      "Fluxbox") TPecho "Installing Fluxbox"
           pacstrap /mnt fluxbox 2>> feliz.log
         ;;
-      "Gnome") TPecho "Installing"
-          TPecho "Gnome"
+      "Gnome") TPecho "Installing Gnome"
           pacstrap /mnt gnome 2>> feliz.log
           pacstrap /mnt gnome-extra 2>> feliz.log
         ;;
@@ -268,34 +264,28 @@ InstallLuxuries()
           pacstrap /mnt plasma-meta 2>> feliz.log
           pacstrap /mnt kde-applications 2>> feliz.log
         ;;
-      "LXDE") TPecho "Installing"
-          TPecho "LXDE"
+      "LXDE") TPecho "Installing LXDE"
           pacstrap /mnt lxde leafpad 2>> feliz.log
           if [ -d /mnt/etc/lxdm ]; then
             echo "session=/usr/bin/startlxde" >> /mnt/etc/lxdm/lxdm.conf 2>> feliz.log
           fi
         ;;
-      "LXQt") TPecho "Installing"
-          TPecho "LXQt"
+      "LXQt") TPecho "Installing LXQt"
           pacstrap /mnt lxqt 2>> feliz.log
-          pacstrap /mnt oxygen-icons connman lxappearance xscreensaver
+          pacstrap /mnt oxygen-icons connman lxappearance xscreensaver 2>> feliz.log
         ;;
-      "Mate") TPecho "Installing"
-        TPecho "Mate"
+      "Mate") TPecho "Installing Mate"
         pacstrap /mnt mate 2>> feliz.log
         pacstrap /mnt mate-extra 2>> feliz.log
         ;;
-      "MateGTK3") TPecho "Installing"
-        TPecho "Mate GTK3"
+      "MateGTK3") TPecho "Installing Mate GTK3"
         pacstrap /mnt mate-gtk3 2>> feliz.log
         pacstrap /mnt mate-extra-gtk3 2>> feliz.log
         ;;
-      "Openbox") TPecho "Installing"
-        TPecho "Openbox"
+      "Openbox") TPecho "Installing Openbox"
         pacstrap /mnt openbox 2>> feliz.log
         ;;
-      "Xfce") TPecho "Installing"
-        TPecho "Xfce"
+      "Xfce") TPecho "Installing Xfce"
         pacstrap /mnt xfce4 2>> feliz.log
         pacstrap /mnt xfce4-goodies 2>> feliz.log
         ;;
@@ -304,8 +294,7 @@ InstallLuxuries()
     done
 
     # Install Yaourt
-    TPecho "Installing"
-    TPecho "Yaourt"
+    TPecho "Installing Yaourt"
     arch=$(uname -m)
     if [ ${arch} = "x86_64" ]; then                     # New: Identify 64 bit architecture
       # For installed system
@@ -327,18 +316,15 @@ InstallLuxuries()
     for i in ${LuxuriesList}
     do
       case $i in
-      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "MateGTK3" | "Openbox" | "Xfce") continue # Ignore DEs & WMs on this pass
+      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "FelizOB" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "MateGTK3" | "Openbox" | "Xfce") continue # Ignore DEs & WMs on this pass
         ;;
-      "cairo-dock") TPecho "Installing"
-        TPecho "Cairo Dock"
+      "cairo-dock") TPecho "Installing Cairo Dock"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
         ;;
-      "conky")     TPecho "Installing"
-        TPecho "Conky"
+      "conky")     TPecho "Installing Conky"
         pacstrap /mnt conky 2>> feliz.log
         ;;
-      *) TPecho "Installing"
-        TPecho "$i"
+      *) TPecho "Installing $i"
         pacstrap /mnt "$i" 2>> feliz.log
       esac
     done
@@ -362,12 +348,31 @@ UserAdd() {
     arch_chroot "mkdir /home/${UserName}/${i}"
     arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
   done
+  if [ $DesktopEnvironment = "FelizOB" ]; then
+    # Set up directories
+    arch_chroot "mkdir -p /home/${UserName}/.config/openbox/"
+    arch_chroot "mkdir -p /home/${UserName}/.config/pcmanfm/default/"
+    arch_chroot "mkdir -p /home/${UserName}/.config/lxpanel/default/panels/"
+    arch_chroot "mkdir /home/${UserName}/Pictures/"
+    # Copy FelizOB files
+    cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log
+    cp face /mnt/home/${UserName}/.face 2>> feliz.log
+    cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log
+    cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log
+    cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log
+    cp lxdm.conf /mnt/etc/lxdm/ 2>> feliz.log
+    cp wallpaper /mnt/usr/share/lxdm/ 2>> feliz.log
+    echo "wallpaper=/home/${UserName}/Pictures/wallpaper" >> desktop-items-0
+    cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log
+    # Set owner
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}/"
+  fi
   # Set keyboard at login for user
   arch_chroot "localectl set-x11-keymap $Countrykbd"
   case $Countrykbd in
-  "uk") echo "setxkbmap -layout gb" >> /mnt/home/${UserName}/.bashrc
+  "uk") echo "setxkbmap -layout gb" >> /mnt/home/${UserName}/.bashrc 2>> feliz.log
   ;;
-  *) echo "setxkbmap -layout $Countrykbd" >> /mnt/home/${UserName}/.bashrc
+  *) echo "setxkbmap -layout $Countrykbd" >> /mnt/home/${UserName}/.bashrc 2>> feliz.log
   esac
 }
 
@@ -456,4 +461,3 @@ Restart() {
   *) exit 1
   esac
 }
-
