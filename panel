@@ -9,7 +9,7 @@ Global {
   width=100
   height=35
   transparent=1
-  tintcolor=#ab4a1c
+  tintcolor=#729FCF
   alpha=123
   setdocktype=1
   setpartialstrut=1

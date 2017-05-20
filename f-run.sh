@@ -362,7 +362,6 @@ UserAdd() {
     cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log
     cp lxdm.conf /mnt/etc/lxdm/ 2>> feliz.log
     cp wallpaper /mnt/usr/share/lxdm/ 2>> feliz.log
-    echo "wallpaper=/home/${UserName}/Pictures/wallpaper" >> desktop-items-0
     cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log
     # Set owner
     arch_chroot "chown -R ${UserName}:users /home/${UserName}/"
