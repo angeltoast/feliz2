@@ -663,7 +663,7 @@ KeepOrDelete() {
 
 ShoppingList() { # Called by PickLuxuries after a category has been chosen.
   Translate "Choose an item"
-  Passed="$Result"
+  # Passed="$Result"
   while :
   do
     print_heading
@@ -787,25 +787,33 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       ;;
       *) break
     esac
-    Passed="$Result" # Loop until user selects "Exit"
-    if [ $Passed = "$_Exit" ]; then
+    
+    SaveResult=$Result                  # Because other subroutines return $Result
+    
+    if [ $SaveResult = "$_Exit" ]; then # Loop until user selects "Exit"
       break
     fi
-
-    AddToList="Y"
-    # First check that chosen item is not already on the list
-    for lux in $LuxuriesList
+    
+    # AddToList="Y"
+    for lux in $LuxuriesList            # Check that chosen item is not already on the list
     do
-      if [ ${lux} = ${Result} ]; then
-        KeepOrDelete "$Result"
+      if [ ${lux} = ${SaveResult} ]; then
+        KeepOrDelete "$SaveResult"
         Result=""
         continue
       fi
     done
-    # Then carry out any specific tests and add the item to the list
-    SaveResult=$Result # (Because other subroutines return $Result)
-    case $SaveResult in
-      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "FelizOB" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" |  "MateGTK3" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
+
+    case $SaveResult in                 # Check all DE & WM entries
+      "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" |  "MateGTK3" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
+        for lux in $LuxuriesList
+        do
+          if [ ${lux} = "FelizOB" ]; then
+            DesktopEnvironment="FelizOB"      # FelizOB is  prioritised over any added DE/WM
+          fi
+        done
+       ;;
+      "FelizOB") DesktopEnvironment="FelizOB" # FelizOB is  prioritised over any added DE/WM
        ;;
       "") continue
        ;;
@@ -817,7 +825,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       LuxuriesList="${LuxuriesList} ${SaveResult}"
     fi
   done
-  Passed=""     # Clear the information variable
+  # Passed=""     # Clear the information variable
 }
 
 ChooseDM() { # Choose a display manager

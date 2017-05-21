@@ -29,9 +29,9 @@ default_color white
 default_shade_color red
 default_outline_color green
 
-alignment top_left
-gap_x 1050
-gap_y 125
+alignment bottom_right
+gap_x 150
+gap_y 150
 no_buffers yes
 uppercase no
 cpu_avg_samples 2
