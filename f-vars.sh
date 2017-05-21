@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 26th February 2017
+# Revision date: 21st May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -95,6 +95,12 @@ SetLanguage() {
   ;;
   *) LanguageFile="${Result}.lan"
   esac
+
+  # Install the translator for situations where no translation is found on file
+  PrintOne "Loading translator"
+  wget -q git.io/trans
+  chmod +x ./trans
+  
   # Some common translations
   Translate "Feliz2 - Arch Linux installation script"
   _Backtitle="$Result"
@@ -140,7 +146,9 @@ Translate() { # Called by ReadOne & ReadMany and by other functions as required
   #                      exact match only | restrict to first find | display only number
   RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
   case $RecordNumber in
-  "" | 0) Result="$Text"  # If not found, use English
+  "" | 0) # No translation found, so translate using Google Translate:
+     ./trans -b en:${CountryLocale:0:2} "$Text" > Result.file 2>/dev/null
+     Result=$(cat Result.file)
   ;;
   *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target file
   esac

@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 19th May 2017
+# Revision date: 21st May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,14 +25,13 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
-# arch_chroot           38       ReflectorMirrorList  191
-# Parted                42       LocalMirrorList      201
-# TPecho                46       InstallDM            216
-#                                InstallLuxuries      227
-# MountPartitions       53       UserAdd              348
-# InstallKernel        127       SetRootPassword      374
-# AddCodecs            159       SetUserPassword      418
-# McInitCPIO           182       Restart              448
+# arch_chroot           37       LocalMirrorList      191
+# Parted                41       InstallDM            206
+# TPecho                45       InstallLuxuries      216
+# MountPartitions       52       UserAdd              324
+# InstallKernel        126       SetRootPassword      368
+# AddCodecs            158       SetUserPassword      412
+# ReflectorMirrorList  181       Restart              442
 # -------------------------      -------------------------
 
 arch_chroot() {  # From Lution AIS
@@ -177,15 +176,6 @@ AddCodecs() {
   # pacstrap /mnt -S system-config-printer cups
   # arch_chroot "systemctl enable org.cups.cupsd.service"
   
-}
-
-McInitCPIO() {
-  TPecho "Running mkinitcpio"
-  case $Kernel in
-  1) arch_chroot "mkinitcpio -p linux-lts" 2>> feliz.log
-  ;;
-  *) arch_chroot "mkinitcpio -p linux" 2>> feliz.log
-  esac
 }
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
