@@ -1,6 +1,10 @@
-The Feliz scripts are here to make installation of Arch Linux accessible to all. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
+The Feliz scripts make installation of Arch Linux quick and easy. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
 
-Feliz is designed to be easy to use, with helpful on-screen advice at every stage. It speeds up the installation of Arch Linux, plus a host of extras from the official Arch repos, like desktop environments, web browsers, office software and programming tools. You don't need a new Feliz iso to stay up-to-date, as each time you run Feliz it downloads the latest version of the scripts from Github. Then Feliz helps you to enter such essential data as your location, username, etc, and works with you to set up your partitioning, then the script runs without further intervention to the end.
+NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer. However, i686 packages will still be supported until November 2017. If you have an Arch iso dated before March 2017, or a Feliz iso dated before April 2017, the i686 option will still work. And just because the i686 software is not supported, doesn't necessarily mean that it will stop workig - it will just not be updated.
+
+Every Feliz iso released from January 2017 will always use the latest scripts each time you run it, because it downloads them from Github at the start of each installation.
+
+Despite being proudly cli-only, Feliz has helpful on-screen advice at every stage, guiding you through the installation of Arch Linux, plus a host of extras from the official Arch repos - like desktop environments, web browsers, office software and programming tools. It now includes a lightweight, configured, Openbox-based desktop called FelizOB. You don't need a new Feliz iso to stay up-to-date, as each time you run Feliz it downloads the latest version of the scripts from Github. Then Feliz helps you to enter such essential data as your location, username, etc, and works with you to set up your partitioning, then the script runs without further intervention to the end.
 
 During the installation phase, all output is displayed on the screen, so that the user can see exactly what the installer is doing - just like a manual installation.
 

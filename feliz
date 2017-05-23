@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 26th February 2017
+# Revision date: 22nd May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +50,8 @@ setlocale                              # CountryLocale eg: en_GB.UTF-8
 getkeymap                              # Select keyboard layout eg: uk
 SetHostname
 
-PickLuxuries                           # Add extra applications
+# PickLuxuries                         # Add extra applications
+Options                                # Added 22 May 2017
 
 if [ $Scope != "Basic" ]; then         # If any extra apps have been added
 
@@ -69,7 +70,9 @@ if [ $Scope != "Basic" ]; then         # If any extra apps have been added
 
 fi
 
-FinalCheck                             # Allow user to change any variables
+if [ $fob != "Y" ]; then               # Not called if FelizOB system
+  FinalCheck                           # Allow user to change any variables
+fi
 
 TestUEFI                               # Check if on UEFI system
 

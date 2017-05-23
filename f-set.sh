@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 26th February 2017
+# Revision date: 23rd May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,24 +20,26 @@
 #                 The Free Software Foundation, Inc.
 #                  51 Franklin Street, Fifth Floor
 #                    Boston, MA 02110-1301 USA
+
 # In this module: functions for setting variables used during installation
 # --------------------   ------------------------
 # Function        Line   Function            Line
 # --------------------   ------------------------
-# not_found         42    SetHostname          570
-# Echo              48    PickLuxuries         587
-# TPread            53    KeepOrDelete         627
-# SetKernel         70    ShoppingList         659
-# ConfirmVbox       82    ChooseDM             819
-# SetTimeZone      106    SetGrubDevice        876
-# SetSubZone       138
-# America          188      --- Review stage ---
-# FindCity         224    FinalCheck           900
-# setlocale        301    ManualSettings       970
-# AllLanguages     445    ChangeRootPartition  999
-# getkeymap        461    ChangeSwapPartition 1007
-# SearchKeyboards  519    ChangePartitions    1015
-# Username         554    AddExtras           1027
+# not_found         44    Username             558
+# Echo              50    SetHostname          574
+# TPread            55    Options              591
+# SetKernel         72    PickLuxuries         614
+# ConfirmVbox       84    KeepOrDelete         654
+# SetTimeZone      108    ShoppingList         686
+# SetSubZone       140    ChooseDM             846
+# SelectSubzone    169    SetGrubDevice        907
+# America          189      --- Review stage ---
+# FindCity         224    FinalCheck           931
+# DoCities         276    ManualSettings      1001
+# setlocale        302    ChangeRootPartition 1030
+# AllLanguages     447    ChangeSwapPartition 1038
+# getkeymap        464    ChangePartitions    1046
+# SearchKeyboards  522    AddExtras           1058
 # --------------------    -----------------------
 
 not_found() {
@@ -134,7 +136,6 @@ SetTimeZone() {
         esac
     esac
   done
-
 }
 
 SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
@@ -255,7 +256,6 @@ FindCity() {  # Called by SelectSubzone
     not_found
     return
   fi
-
   if [ $Counter -ge $Rows ]; then
     echo "$subzones" > temp.file
     Translate "Please choose your nearest location"
@@ -315,7 +315,6 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
     HowMany=$(echo $LocaleList | wc -w)   # Count them
     Rows=$(tput lines)                    # to ensure menu doesn't over-run
     Rows=$((Rows-4))                      # Available (printable) rows
-
     case $HowMany in                      # Offer language options for the selected country
     0) print_heading
       Echo                                # If none found, offer main languages
@@ -589,6 +588,29 @@ SetHostname() {
   esac
 }
 
+Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
+  print_heading
+  PrintOne "Feliz now offers you a choice. You can either ..."
+  Echo
+  PrintOne "Build your own system, by picking the"
+  PrintOne " software you wish to install"
+  PrintOne "... or ..."
+  PrintOne "You can simply choose the new FelizOB desktop, a"
+  PrintOne " complete lightweight system built on Openbox"
+  Echo
+  listgen1 "Build_My_Own FelizOB_desktop" "" "$_Ok"
+  case $Response in
+    1) PickLuxuries
+    ;;
+    2) LuxuriesList="FelizOB"
+      DesktopEnvironment="FelizOB"
+      Scope="Full"
+      fob="Y"
+    ;;
+    *) Options
+  esac
+}
+
 PickLuxuries() { # User selects any combination from a store of extras
   CategoriesList=""
   Translate "Added so far"
@@ -663,7 +685,6 @@ KeepOrDelete() {
 
 ShoppingList() { # Called by PickLuxuries after a category has been chosen.
   Translate "Choose an item"
-  # Passed="$Result"
   while :
   do
     print_heading
@@ -787,14 +808,10 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       ;;
       *) break
     esac
-    
     SaveResult=$Result                  # Because other subroutines return $Result
-    
     if [ $SaveResult = "$_Exit" ]; then # Loop until user selects "Exit"
       break
     fi
-    
-    # AddToList="Y"
     for lux in $LuxuriesList            # Check that chosen item is not already on the list
     do
       if [ ${lux} = ${SaveResult} ]; then
@@ -803,7 +820,6 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
         continue
       fi
     done
-
     case $SaveResult in                 # Check all DE & WM entries
       "Budgie" | "Cinnamon" | "Deepin" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" |  "MateGTK3" | "Openbox" | "Xfce") DesktopEnvironment=$SaveResult
         for lux in $LuxuriesList
@@ -825,7 +841,6 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       LuxuriesList="${LuxuriesList} ${SaveResult}"
     fi
   done
-  # Passed=""     # Clear the information variable
 }
 
 ChooseDM() { # Choose a display manager
@@ -844,7 +859,7 @@ ChooseDM() { # Choose a display manager
       PrintOne "If you do not install a display manager, you will have"
       PrintOne "to launch your desktop environment manually"
       Echo
-      listgen1 "${DMList}" "$_Quit" "$_Ok $_Exit"
+      listgen1 "${DMList}" "" "$_Ok $_None"
       Reply=$Response
       for item in ${DMList}
       do
@@ -900,7 +915,7 @@ SetGrubDevice() {
   PrintOne "will not be installed, and you will have to make"
   PrintOne "alternative arrangements for booting your new system"
   Echo
-  listgen1 "${DevicesList}" "$_Quit" "$_Ok $_Exit"
+  listgen1 "${DevicesList}" "" "$_Ok $_None"
   Reply=$Response
   for i in ${DevicesList}
   do
@@ -1041,8 +1056,8 @@ ChangePartitions() {
 }
 
 AddExtras() {
-  # Ignorelist started and Counter set to next record number by calling
-  # function ChangeSwapPartition or ChangeRootPartition
+  # Ignorelist started and Counter set to next record number by the
+  # calling function ChangeSwapPartition or ChangeRootPartition
   # Add each field (extra partition) from AddPartList into the array:
   for a in ${AddPartList[@]}; do
     Ignorelist[$Counter]=$a

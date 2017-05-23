@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 21st May 2017
+# Revision date: 23rd May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,18 +28,17 @@ print_heading() {   # Always use this function to clear the screen
   clear
   local T_COLS=$(tput cols)             # Get width of terminal
   tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
-  printf "%-s\n" "$_Backtitle"           # Display backtitle
+  printf "%-s\n" "$_Backtitle"          # Display backtitle
   printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
   cursor_row=3                          # Save cursor row after heading
 }
 
-PrintOne() {  # Receives up to 2 arguments
-              # If $2 contains anything, don't translate $1
-              # Prints text centred according to content and screen size
-  if [ ! "$2" ]; then
+PrintOne() {  # Receives up to 2 arguments. Translates and prints text
+              # centred according to content and screen size
+  if [ ! "$2" ]; then  # If $2 is missing
     Translate "$1"
     Text="$Result"
-  else
+  else        # If $2 contains text, don't translate $1 or $2
     Text="$1 $2"
   fi
   local width=$(tput cols)
@@ -53,13 +52,12 @@ PrintOne() {  # Receives up to 2 arguments
   Echo "$EMPTY $Text"
 }
 
-PrintMany() { # Receives up to 2 arguments
-              # If $2 contains anything, don't translate $1
-              # Then print aligned according to content and screen size
-  if [ ! "$2" ]; then
+PrintMany() { # Receives up to 2 arguments. Translates and prints text
+              # aligned to first row according to content and screen size
+  if [ ! "$2" ]; then  # If $2 is missing
     Translate "$1"
     Text="$Result"
-  else
+  else        # If $2 contains text, don't translate $1 or $2
     Text="$1 $2"
   fi
   Echo "$EMPTY $Text"
@@ -97,9 +95,11 @@ SetLanguage() {
   esac
 
   # Install the translator for situations where no translation is found on file
-  PrintOne "Loading translator"
-  wget -q git.io/trans
-  chmod +x ./trans
+  if [ $LanguageFile != "English.lan" ]; then   # Only if not English
+    PrintOne "Loading translator"
+    wget -q git.io/trans
+    chmod +x ./trans
+  fi
   
   # Some common translations
   Translate "Feliz2 - Arch Linux installation script"
@@ -117,6 +117,8 @@ SetLanguage() {
   _Yes="$Result"
   Translate "No"
   _No="$Result"
+  Translate "None"
+  _None="$Result"
   Translate "or"
   _or="$Result"
   # listgenx variables
@@ -131,17 +133,21 @@ SetLanguage() {
   # Partitioning
   Translate "/boot partition"
   _BootPartition="$Result"
-    Translate "/root partition"
+  Translate "/root partition"
   _RootPartition="$Result"
-    Translate "/swap partition"
+  Translate "/swap partition"
   _SwapPartition="$Result"
-    Translate "/home partition"
+  Translate "/home partition"
   _HomePartition="$Result"
 }
 
 Translate() { # Called by ReadOne & ReadMany and by other functions as required
               # $1 is text to be translated
   Text="$1"
+  if [ $LanguageFile = "English.lan" ]; then
+    Result="$Text"
+    return
+  fi
   # Get line number of text in English.lan
   #                      exact match only | restrict to first find | display only number
   RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
@@ -186,7 +192,7 @@ Partition=""              # eg: sda1
 AutoPart=0                # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
-TypeList="ext3 ext4 btrfs xfs" # Partition format types
+TypeList="ext4 ext3 btrfs xfs" # Partition format types
 
 # Grub & kernel variables
 GrubDevice=""             # eg: /dev/sda
@@ -207,6 +213,7 @@ RecordNumber=0            # Used during translation
 DesktopEnvironment=""     # eg: xfce
 DisplayManager=""         # eg: lightdm
 Greeter=""                # eg: lightdm-gtk-greeter (Not required for some DMs)
+fob="N"                   # Y if FelizOB to be installed as system
 
 # Root and user variables
 HostName=""               # eg: arch-linux
@@ -249,31 +256,30 @@ LongAccs[6]="Handy lightweight text editor from LXDE"
 LongAccs[7]="Lightweight terminal emulator from LXDE"
 LongAccs[8]="The file manager from LXDE"
 # Desktops
-Desktops="Budgie Cinnamon Deepin Gnome KDE LXDE LXQt Mate MateGTK3 Xfce"
-LongDesk[1]="Modern desktop focusing on simplicity & elegance"
-LongDesk[2]="Slick DE from the Mint team"
-LongDesk[3]="The Deepin Desktop Environment"
-LongDesk[4]="Full-featured, modern DE"
-LongDesk[5]="Plasma 5 and accessories pack"
-LongDesk[6]="Traditional, lightweight DE"
-LongDesk[7]="Lightweight and modern Qt DE"
-LongDesk[8]="Traditional DE from the Mint team"
-LongDesk[9]="GTK3 version of the Mate DE"
-LongDesk[10]="Lightweight, highly configurable DE"
+Desktops="FelizOB Cinnamon Gnome KDE LXDE LXQt Mate MateGTK3 Xfce"
+LongDesk[1]="Openbox-based desktop with basic tools  "
+LongDesk[2]="Slick, modern desktop from the Mint team"
+LongDesk[3]="Full-featured, modern DE"
+LongDesk[4]="Plasma 5 and accessories pack"
+LongDesk[5]="Traditional, lightweight desktop"
+LongDesk[6]="Lightweight and modern Qt-based DE"
+LongDesk[7]="Traditional desktop from the Mint team"
+LongDesk[8]="GTK3 version of the Mate desktop"
+LongDesk[9]="Lightweight, highly configurable DE"
 # Graphical
 Graphical="avidemux blender gimp handbrake imagemagick inkscape gthumb simple-scan xsane"
-LongGraph[1]="Video editor for simple cutting, filtering and encoding"
-LongGraph[2]="fully integrated 3D graphics creation suite"
+LongGraph[1]="Simple video editor             "
+LongGraph[2]="3D graphics creation suite"
 LongGraph[3]="Advanced image editing suite"
 LongGraph[4]="Simple yet powerful video ripper"
 LongGraph[5]="Command-line image manipulation"
-LongGraph[6]="Vector graphics editor comparable to CorelDraw"
+LongGraph[6]="Vector graphics editor"
 LongGraph[7]="Image viewer & basic editor"
 LongGraph[8]="A simple scanner GUI"
-LongGraph[9]="Full-featured GTK-based sane frontend"
+LongGraph[9]="GTK-based sane frontend"
 # Internet
 Internet="chromium epiphany filezilla firefox midori qbittorrent thunderbird transmission-gtk"
-LongNet[1]="Open source web browser from Google     "
+LongNet[1]="Open source web browser from Google    "
 LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
 LongNet[3]="Fast & reliable FTP, FTPS & SFTP client"
 LongNet[4]="Extensible browser from Mozilla"
@@ -291,30 +297,31 @@ LongMulti[5]="Middleweight video player"
 LongMulti[6]="GUI CD burner"
 # Office
 Office="abiword calibre evince gnumeric libreoffice orage scribus"
-LongOffice[1]="Full-featured word processor            "
+LongOffice[1]="Full-featured word processor           "
 LongOffice[2]="E-book library management application"
 LongOffice[3]="Reader for PDF & other document formats"
 LongOffice[4]="Spreadsheet program from GNOME"
 LongOffice[5]="Open-source office software suite"
-LongOffice[6]="Calendar & task manager (incl with Xfce)"
+LongOffice[6]="Calendar & task manager"
 LongOffice[7]="Desktop publishing program"
 # Programming
 Programming="bluefish codeblocks diffuse emacs geany git lazarus netbeans"
-LongProg[1]="GTK+ IDE with support for Python plugins      "
+LongProg[1]="GTK+ IDE with support for Python plugins"
 LongProg[2]="Open source & cross-platform C/C++ IDE"
 LongProg[3]="Small and simple text merge tool"
 LongProg[4]="Extensible, customizable text editor"
 LongProg[5]="Advanced text editor & IDE"
-LongProg[6]="Open source distributed version control system"
+LongProg[6]="Open source version control system"
 LongProg[7]="Cross-platform IDE for Object Pascal"
 LongProg[8]="Integrated development environment (IDE)"
 # WindowManagers
-WindowManagers="Enlightenment Fluxbox Openbox FelizOB cairo-dock docky fbpanel tint2"
-LongWMs[1]="Window manager and toolkit                       "
-LongWMs[2]="Light, fast and versatile WM"
-LongWMs[3]="Lightweight, powerful & configurable stacking WM"
-LongWMs[4]="Feliz customized Openbox with basic desktop tools"
-LongWMs[5]="Customizable dock & launcher application"
-LongWMs[6]="For opening applications & managing windows"
-LongWMs[7]="Desktop panel"
-LongWMs[8]="Desktop panel"
+WindowManagers="Awesome Enlightenment Fluxbox Openbox Xmonad cairo-dock docky fbpanel tint2"
+LongWMs[1]="Configurable window manager              "
+LongWMs[2]="Window manager and toolkit"
+LongWMs[3]="Light, fast and versatile WM"
+LongWMs[4]="Lightweight & configurable stacking WM"
+LongWMs[5]="Tiling window manager for X"
+LongWMs[6]="Customizable dock & launcher application"
+LongWMs[7]="Full fledged dock application"
+LongWMs[8]="Lightweight NETWM compliant desktop panel"
+LongWMs[9]="Simple and light panel/taskbar"

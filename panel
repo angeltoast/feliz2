@@ -23,15 +23,9 @@ Global {
   iconsize=35
 }
 Plugin {
-  type=space
-  Config {
-    Size=2
-  }
-}
-Plugin {
   type=menu
   Config {
-    image=/usr/share/lxpanel/images/my-computer.png
+    image=/home/archie/.face
     system {
     }
     separator {
@@ -48,10 +42,64 @@ Plugin {
   }
 }
 Plugin {
+  type=space
+  Config {
+  }
+  expand=1
+}
+Plugin {
+  type=separator
+  Config {
+  }
+}
+Plugin {
+  type=space
+  Config {
+  }
+  expand=1
+}
+Plugin {
+  type=dclock
+  Config {
+    ClockFmt=%A %d %B %R
+    TooltipFmt=%A %x
+    BoldFont=0
+    IconOnly=0
+    CenterText=0
+  }
+}
+Plugin {
+  type=space
+  Config {
+    Size=2
+  }
+  expand=1
+}
+Plugin {
+  type=separator
+  Config {
+  }
+}
+Plugin {
+  type=space
+  Config {
+  }
+  expand=1
+}
+Plugin {
   type=launchbar
   Config {
     Button {
+      id=midori.desktop
+    }
+    Button {
       id=pcmanfm.desktop
+    }
+    Button {
+      id=lxterminal.desktop
+    }
+    Button {
+      id=leafpad.desktop
     }
     Button {
       id=gnome-terminal.desktop
@@ -64,32 +112,20 @@ Plugin {
 Plugin {
   type=space
   Config {
-    Size=4
+    Size=43
   }
+  expand=1
 }
 Plugin {
-  type=wincmd
-  Config {
-    Button1=iconify
-    Button2=shade
-  }
-}
-Plugin {
-  type=space
-  Config {
-    Size=4
-  }
-}
-Plugin {
-  type=pager
+  type=separator
   Config {
   }
 }
 Plugin {
   type=space
   Config {
-    Size=4
   }
+  expand=1
 }
 Plugin {
   type=taskbar
@@ -109,6 +145,46 @@ Plugin {
   }
 }
 Plugin {
+  type=space
+  Config {
+  }
+  expand=1
+}
+Plugin {
+  type=separator
+  Config {
+  }
+}
+Plugin {
+  type=space
+  Config {
+  }
+  expand=1
+}
+Plugin {
+  type=pager
+  Config {
+  }
+}
+Plugin {
+  type=space
+  Config {
+    Size=4
+  }
+  expand=1
+}
+Plugin {
+  type=separator
+  Config {
+  }
+}
+Plugin {
+  type=space
+  Config {
+  }
+  expand=1
+}
+Plugin {
   type=cpu
   Config {
   }
@@ -116,15 +192,5 @@ Plugin {
 Plugin {
   type=tray
   Config {
-  }
-}
-Plugin {
-  type=dclock
-  Config {
-    ClockFmt=%R
-    TooltipFmt=%A %x
-    BoldFont=0
-    IconOnly=0
-    CenterText=0
   }
 }

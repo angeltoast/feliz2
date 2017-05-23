@@ -3,6 +3,12 @@
 	<menu id="root-menu" label="Openbox 3">
 		<!-- This requires the presence of the 'menu' package to work -->
 		<separator/>
+		<item label="Web Browser">
+			<action name="Execute">
+				<execute>midori</execute>
+			</action>
+		</item>
+    <separator/>
 		<item label="File Manager">
 			<action name="Execute">
 				<execute>pcmanfm</execute>
@@ -39,9 +45,9 @@
 			</item>
 		</menu>
 		<separator/>
-		<item label="Log Out">
+		<item label="Quit">
 			<action name="Execute">
-				<execute>openbox --exit</execute>
+				<execute>lxsession-logout --prompt "End your Arch Linux session" --banner .face --side left</execute>
 			</action>
 		</item>
 		<separator/>
