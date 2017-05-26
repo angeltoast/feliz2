@@ -429,7 +429,7 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         listgen1 "${choosefrom}" "$Result" "$_Ok $_Exit"       # Menu if less than one screenful
       fi
       case $Result in
-      "$_Exit" | "") SetTimeZone
+      "$_Exit" | "") AllLanguages
       ;;
       *) Language=$(grep $Result languages.list)        # Lookup the result in languages file
         if [ -n "$Language" ]; then
