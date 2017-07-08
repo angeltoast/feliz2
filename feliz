@@ -22,7 +22,8 @@
 #                  51 Franklin Street, Fifth Floor
 #                    Boston, MA 02110-1301 USA
 
-# Main module
+# Main module - this version, without the .sh extension, retained for
+# compatibility with any earlier iso
 
 # Include source files
 #
@@ -50,7 +51,6 @@ setlocale                              # CountryLocale eg: en_GB.UTF-8
 getkeymap                              # Select keyboard layout eg: uk
 SetHostname
 
-# PickLuxuries                         # Add extra applications
 Options                                # Added 22 May 2017
 
 if [ $Scope != "Basic" ]; then         # If any extra apps have been added
@@ -70,9 +70,9 @@ if [ $Scope != "Basic" ]; then         # If any extra apps have been added
 
 fi
 
-if [ $fob != "Y" ]; then               # Not called if FelizOB system
+# if [ $fob != "Y" ]; then             # Omit if FelizOB system?
   FinalCheck                           # Allow user to change any variables
-fi
+# fi
 
 TestUEFI                               # Check if on UEFI system
 
@@ -107,7 +107,7 @@ print_heading
 TPecho "Preparations complete"
 TPecho "Entering automatic installation phase"
 Echo
-PrintOne "sudo make me a sandwich && a cup of coffee"
+PrintOne "sudo pacman -S coffee --break"
 Echo
 
 # ...............................................................................

@@ -186,6 +186,8 @@ FormatSwap="N"            # User selects whether to reuse swap
 MakeSwap="Y"
 SwapFile=""               # eg: 2G
 IsSwap=""                 # Result of lsblk test
+UEFI=0                    # 0 = BIOS; 1 = EFI
+EFIPartition=""           # eg: /dev/sda1
 RootPartition=""          # eg: /dev/sda2
 RootType=""               # eg: ext4
 Partition=""              # eg: sda1

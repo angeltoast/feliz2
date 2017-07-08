@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# The Feliz2 installation scripts for Arch Linux
+# The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 26th February 2017
+# Revision date: 8th July 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,13 +29,12 @@ DualBoot="N"      # For formatting EFI partition
 # -----------------------    ------------------------    -----------------------
 # EFI Functions      Line    EFI Functions       Line    BIOS Functions     Line
 # -----------------------    ------------------------    -----------------------
-# TestUEFI            43     EasyRoot            293     GuidedMBR          594
-# PartitioningEFI     57     EasySwap            338     GuidedRoot         507
-# EasyEFI            121     EasyHome            406     GuidedSwap         545
-# EasyDevice         162     ActionEasyPart      453     GuidedHome         610
-# EasyDiskSize       199     WipeDevice          587     ActionGuided       653
-# EasyRecalc         246
-# EasyBoot           262
+# TestUEFI            41     EasyRecalc          262     WipeDevice         601
+# PartitioningEFI     54     EasyBoot            278     GuidedMBR          608
+# AllocateEFI         97     EasyRoot            309     GuidedRoot         652
+# EasyEFI            136     EasySwap            354     GuidedSwap         701
+# EasyDevice         178     EasyHome            422     GuidedHome         771
+# EasyDiskSize       215     ActionEasyPart      469     ActionGuided       819
 # -----------------------    ------------------------    -----------------------
 
 # 1) Assess environment
@@ -46,13 +45,13 @@ TestUEFI() { # Called at launch of Feliz script, before all other actions
     if [ ! $(mount | grep -q /sys/firmware/efi/efivars) ]; then
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars
     fi
-    UEFI=1
+    UEFI=1                            # Set variable UEFI ON
   else
-    UEFI=0
+    UEFI=0                            # Set variable UEFI OFF
  fi
 }
 
-PartitioningEFI() { # THIS TO BE EXPANDED TO INCLUDE LVM
+PartitioningEFI() {
   local Proceed=""
   AutoPart=0                    # Set flag to 'off' by default
   while [ -z $Proceed ]
@@ -924,5 +923,4 @@ ActionGuided() { # Final BIOS step - Uses the variables set above to create part
     AddPartType[0]="${HomeType}"      # Filesystem    | additional partitions
   fi
   AutoPart=1 # Treat as auto-partitioned. Set flag to 'on' for mounting
-
 }

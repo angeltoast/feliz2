@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# The Feliz2 installation scripts for Arch Linux
+# The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 26th February 2017
+# Revision date: 8th July 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -69,8 +69,7 @@ CheckParts() {  # Test for existing partitions
       else
         Partitioning                      # Partitioning options for BIOS
       fi
-                                          # Terminate
-      if [ "$Result" = "$_Exit" ]; then
+      if [ "$Result" = "$_Exit" ]; then   # Terminate
         print_heading
         Echo
         PrintOne "Exiting to allow you to partition the device"
@@ -102,6 +101,7 @@ CheckParts() {  # Test for existing partitions
       fi
       Counter=$((Counter+1))
     done
+    Echo
     if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
       PartitioningEFI                   # UEFI partitioning options
     else                                # Installing in BIOS environment
@@ -135,7 +135,6 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
       done
       Counter=$((Counter+1))
     done
-
   # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
   ListLabelledIDs=$(blkid /dev/sd* | grep LABEL | cut -d':' -f1 | cut -d'/' -f3)
   # If at least one labelled partition found, get a matching list of labels (remove quotes)
@@ -158,7 +157,6 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
     Counter=$((Counter+1))
   done
   local HowManyLabelled="${#Labelled[@]}"
-
   # 3) Find any partitions flagged as bootable
   ListAll=$(sfdisk -l 2>/dev/null | grep /dev | grep '*' | cut -d' ' -f1 | cut -d'/' -f3)
   declare -a Flagged
@@ -268,7 +266,6 @@ ChooseDevice() {
   until [ ${AutoPart} -gt 0 ]
   do
     DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)
-    UseDisk=$DiskDetails # If more than one, UseDisk will be first
     # Count lines. If more than one disk, ask user which to use
     local Counter=0
     CountDisks=0
@@ -293,6 +290,7 @@ ChooseDevice() {
         AutoWarning
       done
     else
+      UseDisk=$DiskDetails
       AutoWarning
     fi
   done
@@ -328,9 +326,9 @@ partition_maker() { # Called from autopart()
   
   # Set the device to be used to 'set x boot on'
   if [ ${UEFI} -eq 1 ]; then                        # Installing in EFI environment
-    local MountDevice=2                             # Next partition after /boot = [sda]2
+    MountDevice=2                                   # Next partition after /boot = [sda]2
   else
-    local MountDevice=1                             # In BIOS = first partition = [sda]1
+    MountDevice=1                                   # In BIOS = first partition = [sda]1
   fi
  
   Parted "mkpart primary ext4 ${StartPoint} ${2}"   # /root
@@ -355,7 +353,6 @@ partition_maker() { # Called from autopart()
     SwapPartition="${GrubDevice}${MountDevice}"
     MakeSwap="Y"
   fi
-
 }
 
 autopart() { # Consolidated partitioning for BIOS or EFI environment
@@ -438,7 +435,7 @@ EditLabel() {
     PrintMany "If you wish to delete the label, enter 2"
     PrintMany "If you wish to enter a new label, type it at the prompt"
     Echo
-    Translate "Enter 1, 2 or a new label"
+    Translate "Enter 1, 2 or a new label: "
     TPread "$Result" ": "
     # Save to the -A array
     case $Response in

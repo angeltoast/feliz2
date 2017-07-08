@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 23rd May 2017
+# Revision date: 8th July 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ MountPartitions() {
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
   # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if /boot partition required
-    mkfs.fat -F32 ${EFIPartition} 2> feliz.log          # Format EFI boot partition
+    mkfs.fat -F32 ${EFIPartition} 2>> feliz.log          # Format EFI boot partition
     mkdir /mnt/boot                                     # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
   fi
@@ -343,9 +343,11 @@ UserAdd() {
     # Copy FelizOB files
     cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log
     cp face /mnt/home/${UserName}/.face 2>> feliz.log
+    cp face /mnt/etc/ 2>> feliz.log
     cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log
     cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log
     cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log
+    cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log
     cp lxdm.conf /mnt/etc/lxdm/ 2>> feliz.log
     cp wallpaper /mnt/usr/share/lxdm/ 2>> feliz.log
     cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log

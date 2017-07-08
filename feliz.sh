@@ -69,9 +69,9 @@ if [ $Scope != "Basic" ]; then         # If any extra apps have been added
 
 fi
 
-if [ $fob != "Y" ]; then               # Not called if FelizOB system
+# if [ $fob != "Y" ]; then             # Omit if FelizOB system?
   FinalCheck                           # Allow user to change any variables
-fi
+# fi
 
 TestUEFI                               # Check if on UEFI system
 
@@ -106,7 +106,7 @@ print_heading
 TPecho "Preparations complete"
 TPecho "Entering automatic installation phase"
 Echo
-PrintOne "sudo make me a sandwich && a cup of coffee"
+PrintOne "sudo pacman -S coffee --break"
 Echo
 
 # ...............................................................................
