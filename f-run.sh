@@ -232,7 +232,7 @@ InstallLuxuries()
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log
         ;;
       "FelizOB") TPecho "Installing FelizOB"
-        pacstrap /mnt openbox obmenu obconf compton conky leafpad lxpanel lxsession lxterminal midori pcmanfm xscreensaver 2>> feliz.log
+        pacstrap /mnt openbox obmenu obconf compton conky gpicview lxde-icon-theme leafpad lxappearance lxinput lxpanel lxranar lxsession lxtask lxterminal midori pcmanfm xscreensaver 2>> feliz.log
         ;;
       "Fluxbox") TPecho "Installing Fluxbox"
           pacstrap /mnt fluxbox 2>> feliz.log
