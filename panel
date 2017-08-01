@@ -25,7 +25,7 @@ Global {
 Plugin {
   type=menu
   Config {
-    image=/home/archie/.face
+    image=/etc/face
     system {
     }
     separator {

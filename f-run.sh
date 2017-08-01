@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 8th July 2017
+# Revision date: 1st August 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,7 +100,7 @@ MountPartitions() {
   local Counter=0
   for id in ${AddPartList}                              # $id will be in the form /dev/sda2
   do
-    umount ${id} /mnt${AddPartMount[$Counter]} >/dev/null 2>> feliz.log
+    umount ${id} /mnt${AddPartMount[$Counter]} >> feliz.log
     mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs (as with /root)
     CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
@@ -125,46 +125,46 @@ MountPartitions() {
 
 InstallKernel() {   # Selected kernel and some other core systems
 
-  LANG=C              # Temporary addition to overcome bug in Arch
+  LANG=C            # Temporary addition in 2016 to overcome bug in Arch
 
   # And this, to solve keys issue if an older Feliz iso is running after keyring changes
-  # If feliz.log exists and the first line created by felizinit is numeric (new felizinit)
+  # Passes test if feliz.log exists and the first line created by felizinit is numeric
   # and that number is greater than or equal to the date of the latest Arch trust update
   TrustDate=20170104  # Reset this to date of latest Arch Linux trust update
   if [ -f feliz.log ] && [ $(head -n 1 feliz.log | grep '[0-9]') ] && [ $(head -n 1 feliz.log) -ge $TrustDate ]; then
     echo "pacman-key trust check passed" >> feliz.log
-  else             # Default
+  else                # Default
     TPecho "Updating keys"
     pacman-db-upgrade
-    pacman-key --init 
+    pacman-key --init
     pacman-key --populate archlinux
     pacman-key --refresh-keys
   fi
   TPecho "Installing kernel and core systems"
   case $Kernel in
-  1) # This is the full linux group list at 28th January 2017 with linux-lts in place of linux
-    # Use the script ArchBaseGroup.sh in 3-FelizWorkshop to regenerate the list periodically
-    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log
+  1) # This is the full linux group list at 1st August 2017 with linux-lts in place of linux
+    # Use the script ArchBaseGroup.sh in FelizWorkshop to regenerate the list periodically
+    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which which xfsprogs 2>> feliz.log
   ;;
   *) pacstrap /mnt base base-devel 2>> feliz.log
   esac
 
   TPecho "Installing cli tools"
   pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh os-prober screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
-  arch_chroot "systemctl enable sshd.service" >/dev/null
+  arch_chroot "systemctl enable sshd.service" >> feliz.log
 
 }
 
 AddCodecs() {
   TPecho "Adding codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer0.10-plugins pavucontrol pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab 2>> feliz.log
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer gst-plugins-base gst-plugins-good pavucontrol pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab 2>> feliz.log
 
   TPecho "Installing Wireless Tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
   pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
 
   TPecho "Installing Graphics tools"
-  pacstrap /mnt xorg-server xorg-server-utils xorg-xinit xorg-twm 2>> feliz.log
+  pacstrap /mnt xorg xorg-xinit xorg-twm 2>> feliz.log
 
   TPecho "Installing opensource video drivers"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log
@@ -175,7 +175,7 @@ AddCodecs() {
   # TPecho "Installing  CUPS printer services"
   # pacstrap /mnt -S system-config-printer cups
   # arch_chroot "systemctl enable org.cups.cupsd.service"
-  
+
 }
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
@@ -204,19 +204,26 @@ LocalMirrorList() { # In case Reflector fails, generate and save a shortened
 }
 
 InstallDM()
-{ # Display manager
-  # Disable any existing display manager
-  arch_chroot "systemctl disable display-manager.service" >/dev/null
+{ # Disable any existing display manager
+  arch_chroot "systemctl disable display-manager.service" >> feliz.log
   # Then install selected display manager
-  TPecho "Installing ${DisplayManager} ${Greeter}"
-  pacstrap /mnt ${DisplayManager} ${Greeter} 2>> feliz.log
-  arch_chroot "systemctl -f enable ${DisplayManager}.service" >/dev/null
+  TPecho "Installing ${DisplayManager}"
+  case ${DisplayManager} in
+  "lightdm") pacstrap /mnt lightdm lightdm-gtk-greeter 2>> feliz.log
+    arch_chroot "systemctl -f enable lightdm.service" >> feliz.log
+  ;;
+  *)
+    pacstrap /mnt "${DisplayManager}" 2>> feliz.log
+    arch_chroot "systemctl -f enable ${DisplayManager}.service" >> feliz.log
+  esac
 }
 
 InstallLuxuries()
 { # Install desktops and other extras
   # Display manager - runs only once
-  InstallDM                  # Clear any pre-existing DM and install this one
+  if [ -n "${DisplayManager}" ]; then
+    InstallDM                  # Clear any pre-existing DM and install this one
+  fi
   # First parse through LuxuriesList - checking for DEs
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
@@ -232,7 +239,7 @@ InstallLuxuries()
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log
         ;;
       "FelizOB") TPecho "Installing FelizOB"
-        pacstrap /mnt openbox obmenu obconf compton conky gpicview lxde-icon-theme leafpad lxappearance lxinput lxpanel lxranar lxsession lxtask lxterminal midori pcmanfm xscreensaver 2>> feliz.log
+        pacstrap /mnt openbox obmenu obconf compton conky gpicview lxde-icon-theme leafpad lxappearance lxinput lxpanel lxrandar lxsession lxtask lxterminal midori pcmanfm xscreensaver 2>> feliz.log
         ;;
       "Fluxbox") TPecho "Installing Fluxbox"
           pacstrap /mnt fluxbox 2>> feliz.log
@@ -334,6 +341,7 @@ UserAdd() {
     arch_chroot "mkdir /home/${UserName}/${i}"
     arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
   done
+  # FelizOB code retained, but will not be called as all references removed due to ongoing problems
   if [ $DesktopEnvironment = "FelizOB" ]; then
     # Set up directories
     arch_chroot "mkdir -p /home/${UserName}/.config/openbox/"
@@ -342,14 +350,13 @@ UserAdd() {
     arch_chroot "mkdir /home/${UserName}/Pictures/"
     # Copy FelizOB files
     cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log
+    cp compton.conf /mnt/home/${UserName}/.compton.conf 2>> feliz.log
     cp face /mnt/home/${UserName}/.face 2>> feliz.log
     cp face /mnt/etc/ 2>> feliz.log
     cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log
     cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log
     cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log
     cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log
-    cp lxdm.conf /mnt/etc/lxdm/ 2>> feliz.log
-    cp wallpaper /mnt/usr/share/lxdm/ 2>> feliz.log
     cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log
     # Set owner
     arch_chroot "chown -R ${UserName}:users /home/${UserName}/"
@@ -402,7 +409,7 @@ SetRootPassword() {
     fi
     if [ $Pass1 = $Pass2 ]; then
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
-     arch_chroot "passwd root" < /tmp/.passwd >/dev/null
+     arch_chroot "passwd root" < /tmp/.passwd >> feliz.log
      rm /tmp/.passwd 2>> feliz.log
      Repeat="N"
     else
@@ -442,7 +449,7 @@ SetUserPassword() {
     fi
     if [ $Pass1 = $Pass2 ]; then
       echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
-      arch_chroot "passwd ${UserName}" < /tmp/.passwd >/dev/null
+      arch_chroot "passwd ${UserName}" < /tmp/.passwd >> feliz.log
       rm /tmp/.passwd 2>> feliz.log
       Repeat="N"
     else

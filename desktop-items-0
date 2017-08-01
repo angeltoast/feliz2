@@ -1,7 +1,4 @@
 [*]
-wallpaper_mode=stretch
-wallpaper_common=1
-wallpaper=/usr/share/lxdm/wallpaper
 desktop_bg=#000000
 desktop_fg=#ffffff
 desktop_shadow=#000000

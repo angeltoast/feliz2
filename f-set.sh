@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 23rd May 2017
+# Revision date: 1st August 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -235,7 +235,7 @@ FindCity() {  # Called by SelectSubzone
     if [ $Result = "$_Exit" ] || [ $Result = "" ]; then
       SetTimeZone
     fi
-    SUBZONE="$Result" 
+    SUBZONE="$Result"
     return
   else
     Response="${Response:0:1}"        # In case user enters more than one letter
@@ -593,6 +593,8 @@ SetHostname() {
 }
 
 Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
+  # This routine no longer called from feliz.sh or feliz due to ongoing problems with FelizOB
+  # All FelizOB code retained for reference, but is no longer used
   print_heading
   PrintOne "Feliz now offers you a choice. You can either ..."
   Echo
@@ -608,8 +610,9 @@ Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
     ;;
     2) LuxuriesList="FelizOB"
       DesktopEnvironment="FelizOB"
+    #  DisplayManager="lightdm lightdm-gtk-greeter"
+      DisplayManager="lxdm"
       Scope="Full"
-      fob="Y"
     ;;
     *) Options
   esac
@@ -848,14 +851,9 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
 }
 
 ChooseDM() { # Choose a display manager
-  if [ $DesktopEnvironment = "FelizOB" ]; then
-    DisplayManager="lxdm"
-    return
-  fi
-  case $DisplayManager in
+  case "$DisplayManager" in
   "") # Only offered if no other display manager has been set
       Counter=0
-      Greeter=""
       DMList="GDM LightDM LXDM sddm SLIM XDM"
       print_heading
       PrintOne "A display manager provides a graphical login screen"
@@ -875,7 +873,6 @@ ChooseDM() { # Choose a display manager
             "GDM") DisplayManager="gdm"
               ;;
             "LightDM") DisplayManager="lightdm"
-                  Greeter="lightdm-gtk-greeter"
               ;;
             "LXDM") DisplayManager="lxdm"
               ;;
@@ -902,7 +899,6 @@ ChooseDM() { # Choose a display manager
       Echo
       if [ $Response -eq 1 ]; then    # User wishes to change DM
         DisplayManager=""             # Clear DM variable
-        Greeter=""                    # and greeter
         ChooseDM                      # Call this function again
       fi
   esac
@@ -910,7 +906,7 @@ ChooseDM() { # Choose a display manager
 
 SetGrubDevice() {
   DEVICE=""
-  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/' # This is good use of awk
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/'
   print_heading
   GrubDevice=""
   local Counter=0
@@ -952,7 +948,7 @@ FinalCheck() {
       *) Translate "Virtualbox guest utilities"
       PrintMany "4)" "$Result: $_No"
     esac
-    if [ -z $DisplayManager ]; then
+    if [ -z "$DisplayManager" ]; then
       Translate "No Display Manager selected"
       PrintMany "5)" "$Result"
     else

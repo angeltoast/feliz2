@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 22nd May 2017
+# Revision date: 1st August 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,11 +50,12 @@ setlocale                              # CountryLocale eg: en_GB.UTF-8
 getkeymap                              # Select keyboard layout eg: uk
 SetHostname
 
-Options                                # Added 22 May 2017
+# Options                              # Added 22 May 2017 - removed 1 August 2017
+PickLuxuries
 
 if [ $Scope != "Basic" ]; then         # If any extra apps have been added
 
-  if [ -n "$DesktopEnvironment" ]; then
+  if [ -n "$DesktopEnvironment" ] && [ "$DesktopEnvironment" != "FelizOB" ]; then
     ChooseDM
   fi
 
