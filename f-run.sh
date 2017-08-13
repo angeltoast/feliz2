@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 1st August 2017
+# Revision date: 12th August 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -203,8 +203,7 @@ LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
 }
 
-InstallDM()
-{ # Disable any existing display manager
+InstallDM() { # Disable any existing display manager
   arch_chroot "systemctl disable display-manager.service" >> feliz.log
   # Then install selected display manager
   TPecho "Installing ${DisplayManager}"
@@ -218,13 +217,26 @@ InstallDM()
   esac
 }
 
-InstallLuxuries()
-{ # Install desktops and other extras
-  # Display manager - runs only once
+InstallLuxuries() { # Install desktops and other extras
+
+  # FelizOB gets special treatment
+  if [ $DesktopEnvironment = "FelizOB" ]; then
+    TPecho "Installing FelizOB"
+    arch_chroot "systemctl disable display-manager.service" 2>> feliz.log
+    pacstrap /mnt lightdm lightdm-gtk-greeter 2>> feliz.log
+    arch_chroot "systemctl -f enable lightdm.service" >> feliz.log
+    pacstrap /mnt openbox 2>> feliz.log         # First ensure that Openbox gets installed
+    pacstrap /mnt obmenu obconf 2>> feliz.log   # Then Openbox tools
+    pacstrap /mnt lxde-icon-theme leafpad lxappearance lxinput lxpanel lxrandr lxsession lxtask lxterminal pcmanfm 2>> feliz.log                       # Then the LXDE tools
+    pacstrap /mnt compton conky gpicview midori xscreensaver 2>> feliz.log # And finally the extras
+  fi
+
+  # Display manager - runs only once (not used by FelizOB)
   if [ -n "${DisplayManager}" ]; then
     InstallDM                  # Clear any pre-existing DM and install this one
   fi
-  # First parse through LuxuriesList - checking for DEs
+
+  # First parse through LuxuriesList - checking for DEs (not used by FelizOB)
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
@@ -232,14 +244,14 @@ InstallLuxuries()
       "Awesome") TPecho "Installing Awesome"
           pacstrap /mnt awesome 2>> feliz.log
         ;;
+     "Budgie") TPecho "Installing Budgie"
+          pacstrap /mnt budgie-desktop gnome network-manager-applet 2>> feliz.log
+        ;;
       "Cinnamon") TPecho "Installing Cinnamon"
           pacstrap /mnt cinnamon 2>> feliz.log
         ;;
       "Enlightenment") TPecho "Installing Enlightenment"
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log
-        ;;
-      "FelizOB") TPecho "Installing FelizOB"
-        pacstrap /mnt openbox obmenu obconf compton conky gpicview lxde-icon-theme leafpad lxappearance lxinput lxpanel lxrandar lxsession lxtask lxterminal midori pcmanfm xscreensaver 2>> feliz.log
         ;;
       "Fluxbox") TPecho "Installing Fluxbox"
           pacstrap /mnt fluxbox 2>> feliz.log
@@ -264,14 +276,10 @@ InstallLuxuries()
           pacstrap /mnt oxygen-icons connman lxappearance xscreensaver 2>> feliz.log
         ;;
       "Mate") TPecho "Installing Mate"
-        pacstrap /mnt mate 2>> feliz.log
-        pacstrap /mnt mate-extra 2>> feliz.log
+        pacstrap /mnt mate mate-extra 2>> feliz.log
+        pacstrap /mnt mate-applet-dock mate-applet-streamer mate-menu 2>> feliz.log
         ;;
-      "MateGTK3") TPecho "Installing Mate GTK3"
-        pacstrap /mnt mate-gtk3 2>> feliz.log
-        pacstrap /mnt mate-extra-gtk3 2>> feliz.log
-        ;;
-      "Openbox") TPecho "Installing Openbox"
+       "Openbox") TPecho "Installing Openbox"
         pacstrap /mnt openbox 2>> feliz.log
         ;;
       "Xfce") TPecho "Installing Xfce"
@@ -305,11 +313,15 @@ InstallLuxuries()
     pacman-key --populate archlinux 2>> feliz.log
     pacman -Sy 2>> feliz.log
     pacstrap /mnt yaourt 2>> feliz.log
-    # Second parse through LuxuriesList - any extras
+
+    # Second parse through LuxuriesList - any extras (not used by FelizOB)
+    if [ $DesktopEnvironment = "FelizOB" ]; then
+      return 1
+    fi
     for i in ${LuxuriesList}
     do
       case $i in
-      "Awesome" | "Cinnamon" | "Enlightenment" | "FelizOB" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "MateGTK3" | "Openbox" | "Xfce" | "Xmonad") continue # Ignore DEs & WMs on this pass
+      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Xfce" | "Xmonad") continue # Ignore DEs & WMs on this pass
         ;;
       "cairo-dock") TPecho "Installing Cairo Dock"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log

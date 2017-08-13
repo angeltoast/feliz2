@@ -1,18 +1,15 @@
-The Feliz scripts make installation of Arch Linux quick and easy. They are shared in the spirit of the community, subject to the conditions set out in the GNU GENERAL LICENSE.
-
-NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer. However, i686 packages will still be supported until November 2017. If you have an Arch iso dated before March 2017, or a Feliz iso dated before April 2017, the i686 option will still work. And just because the i686 software is not supported, doesn't necessarily mean that it will stop workig - it will just not be updated.
-
-Every Feliz iso released from January 2017 will always use the latest scripts each time you run it, because it downloads them from Github at the start of each installation.
+The Feliz scripts make installation of Arch Linux quick and easy, and every Feliz iso released since January 2017 will always use the latest scripts every time you run it, because it downloads them from Github at the start of each installation.
 
 Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts a live session of Arch Linux, and runs the script. All you have to do is follow the prompts. Installation follows closely the Arch Wiki beginners' guide, and hopefully you will understand something of the process by the time it has finished; you may even like to try a manual installation with the help of the Wiki.
 
-Despite being proudly cli-only, Feliz has helpful on-screen advice at every stage, guiding you through the installation of Arch Linux, plus a host of extras from the official Arch repos - like desktop environments, web browsers, office software and programming tools. It also now includes a lightweight, configured, Openbox-based desktop called FelizOB. Feliz helps you to enter such essential data as your location, username, etc, and works with you to set up your partitioning, then the script runs without further intervention to the end. 
-During the installation phase, all output is displayed on the screen, so that the user can see exactly what the installer is doing - just like a manual installation.
+Despite being proudly cli-only, Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
 
 Find our friendly and lively communities on Facebook:
  https://www.facebook.com/groups/915936978471838/
 ... and Google+:
  https://plus.google.com/u/0/communities/115015910961165526577
+
+NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer. However, i686 packages will still be supported until November 2017. If you have an Arch iso dated before March 2017, or a Feliz iso dated before April 2017, the i686 option will still work. And just because the i686 software is not supported, doesn't necessarily mean that it will stop workig - it will just not be updated.
 
 Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -21,4 +18,4 @@ Feliz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANT
 A copy of the GNU General Public License is available from the Feliz page at http://sourceforge.net/projects/feliz/files or https://github.com/angeltoast/feliz, or write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 Elizabeth Mills
-September 2016
+August 2017

@@ -2,7 +2,7 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 1st August 2017
+# Revision date: 12th August 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -608,10 +608,7 @@ Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
   case $Response in
     1) PickLuxuries
     ;;
-    2) LuxuriesList="FelizOB"
-      DesktopEnvironment="FelizOB"
-    #  DisplayManager="lightdm lightdm-gtk-greeter"
-      DisplayManager="lxdm"
+    2) DesktopEnvironment="FelizOB"
       Scope="Full"
     ;;
     *) Options
