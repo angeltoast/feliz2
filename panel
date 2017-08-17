@@ -39,7 +39,7 @@ Plugin {
       image=gnome-logout
       command=logout
     }
-  image=/usr/share/icons/feliz.jpg
+  image=/usr/share/icons/feliz.png
   }
 }
 Plugin {

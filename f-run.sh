@@ -369,7 +369,7 @@ UserAdd() {
     cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log             # Configure autostart
     cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log              # Configure right-click menu
     cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log  # Configure panel
-    cp face.png /mnt/usr/share/icons/feliz.jpg 2>> feliz.log                      # Icon for panel menu (set in 'panel')
+    cp feliz.png /mnt/usr/share/icons/ 2>> feliz.log                              # Icon for panel menu (set in 'panel')
     cp wallpaper.jpg /mnt/home/${UserName}/Pictures/ 2>> feliz.log                # Wallpaper for user
     cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log              # Configurations for pcmanfm
     cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log
