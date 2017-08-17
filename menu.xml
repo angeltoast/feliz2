@@ -8,7 +8,7 @@
 				<execute>midori</execute>
 			</action>
 		</item>
-    <separator/>
+	    <separator/>
 		<item label="File Manager">
 			<action name="Execute">
 				<execute>pcmanfm</execute>
