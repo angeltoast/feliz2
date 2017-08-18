@@ -19,10 +19,35 @@
 				<execute>lxterminal</execute>
 			</action>
 		</item>
-		<separator/>
 		<item label="Leafpad">
 			<action name="Execute">
 				<execute>leafpad</execute>
+			</action>
+		</item>
+		<separator/>
+		<item label="Appearance">
+			<action name="Execute">
+				<execute>lxappearance</execute>
+			</action>
+		</item>
+		<item label="Desktop Management">
+			<action name="Execute">
+				<execute>pcmanfm --desktop-pref</execute>
+			</action>
+		</item>
+		<item label="Display">
+			<action name="Execute">
+				<execute>lxrandr</execute>
+			</action>
+		</item>
+		<item label="Mouse & Keyboard">
+			<action name="Execute">
+				<execute>lxinput</execute>
+			</action>
+		</item>
+		<item label="Task Manager">
+			<action name="Execute">
+				<execute>lxtask</execute>
 			</action>
 		</item>
 		<separator/>

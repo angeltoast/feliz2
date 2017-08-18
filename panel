@@ -133,11 +133,11 @@ Plugin {
   expand=1
   Config {
     tooltips=1
-    IconsOnly=0
+    IconsOnly=-1
     AcceptSkipPager=1
     ShowIconified=1
     ShowMapped=1
-    ShowAllDesks=0
+    ShowAllDesks=-1
     UseMouseWheel=1
     UseUrgencyHint=1
     FlatButton=0

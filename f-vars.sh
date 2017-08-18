@@ -92,6 +92,21 @@ SetLanguage() {
   "" | "Exit") LanguageFile=English.lan
   ;;
   *) LanguageFile="${Result}.lan"
+    case $LanguageFile in
+    "Deutsche.lan") InstalLanguage="de"
+    ;;
+    "Español.lan") InstalLanguage="es"
+    ;;
+    "Français.lan") InstalLanguage="fr"
+    ;;
+    "Italiana.lan") InstalLanguage="it"
+    ;;
+    "Polski.lan") InstalLanguage="pl"
+    ;;
+    "Português.lan") InstalLanguage="pt"
+    ;;
+    *) InstalLanguage="en"
+    esac
   esac
 
   # Install the translator for situations where no translation is found on file
@@ -145,22 +160,22 @@ SetLanguage() {
   _HomePartition="$Result"
 }
 
-Translate() { # Called by ReadOne & ReadMany and by other functions as required
+Translate() { # Called by PrintOne & PrintMany and by other functions as required
               # $1 is text to be translated
   Text="$1"
   if [ $LanguageFile = "English.lan" ]; then
     Result="$Text"
     return
   fi
-  # Get line number of text in English.lan
+  # Get line number of "$Text" in English.lan
   #                      exact match only | restrict to first find | display only number
   RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
   case $RecordNumber in
-  "" | 0) # No translation found, so translate using Google Translate:
-     ./trans -b en:${CountryLocale:0:2} "$Text" > Result.file 2>/dev/null
+  "" | 0) # No translation found, so translate using Google Translate to temporary file:
+     ./trans -b en:${InstalLanguage} "$Text" > Result.file 2>/dev/null
      Result=$(cat Result.file)
   ;;
-  *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target file
+  *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target language file
   esac
 }
 
