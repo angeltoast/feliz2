@@ -40,7 +40,7 @@
 				<execute>lxrandr</execute>
 			</action>
 		</item>
-		<item label="Mouse & Keyboard">
+		<item label="Mouse and Keyboard">
 			<action name="Execute">
 				<execute>lxinput</execute>
 			</action>
