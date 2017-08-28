@@ -190,7 +190,7 @@ ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirr
 
 LocalMirrorList() { # In case Reflector fails, generate and save a shortened
   # mirrorlist of only the mirrors defined in the CountryCode variable.
-  URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&protocol=http"
+  URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
   MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
   # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
   curl -so ${MirrorTemp} ${URL} 2>> feliz.log
@@ -232,8 +232,8 @@ InstallLuxuries() { # Install desktops and other extras
     InstallYaourt                                                           # And Yaourt
   fi
 
-  # Display manager - runs only once
-  if [ -n "${DisplayManager}" ]; then   # Not triggered by FelizOB
+  # Display manager - runs only once (not used by FelizOB)
+  if [ -n "${DisplayManager}" ]; then
     InstallDM                  # Clear any pre-existing DM and install this one
   fi
 
@@ -297,7 +297,7 @@ InstallLuxuries() { # Install desktops and other extras
 
     InstallYaourt
 
-    # Second parse through LuxuriesList for any extras (not triggered by FelizOB)
+    # Second parse through LuxuriesList for any extras (not used by FelizOB)
     for i in ${LuxuriesList}
     do
       case $i in
@@ -363,35 +363,17 @@ UserAdd() {
     arch_chroot "mkdir /home/${UserName}/Pictures/"
     arch_chroot "mkdir /home/${UserName}/.config/libfm/"
     # Copy FelizOB files
-
-    CheckExisting "/mnt/home/${UserName}/" ".conkyrc"
-    cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log             # Conky configuration file
-
-    CheckExisting "/mnt/home/${UserName}/" ".compton.conf"
-    cp compton.conf /mnt/home/${UserName}/.compton.conf 2>> feliz.log   # Compton configuration file
-
-    CheckExisting "/mnt/home/${UserName}/" ".face"
-    cp face.png /mnt/home/${UserName}/.face 2>> feliz.log               # Image for greeter
-
-    CheckExisting "/mnt/home/${UserName}/.config/openbox/" "autostart"
-    cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log   # Autostart configuration file
-
-    CheckExisting "/mnt/home/${UserName}/.config/openbox/" "menu.xml"
-    cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log    # Openbox right-click menu configuration file
-
-    CheckExisting "/mnt/home/${UserName}/.config/lxpanel/default/panels/" "panel"
-    cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log  # Panel configuration file
-
-    cp feliz.png /mnt/usr/share/icons/ 2>> feliz.log                    # Icon for panel menu
-    cp wallpaper.jpg /mnt/home/${UserName}/Pictures/ 2>> feliz.log      # Wallpaper for user
-
-    CheckExisting "/mnt/home/${UserName}/.config/libfm/" "libfm.conf"
-    cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log    # Configurations for pcmanfm
-
-    CheckExisting "/mnt/home/${UserName}/.config/pcmanfm/default/" "desktop-items-0.conf"
-    cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log # Desktop configurations for pcmanfm
-
-    cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log                      # Wallpaper for desktop (set in desktop-items-0.conf)
+    cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log                       # Configure Conky
+    cp compton.conf /mnt/home/${UserName}/.compton.conf 2>> feliz.log             # Configure Compton
+    cp face.png /mnt/home/${UserName}/.face 2>> feliz.log                         # For greeter
+    cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log             # Configure autostart
+    cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log              # Configure right-click menu
+    cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log  # Configure panel
+    cp feliz.png /mnt/usr/share/icons/ 2>> feliz.log                              # Icon for panel menu (set in 'panel')
+    cp wallpaper.jpg /mnt/home/${UserName}/Pictures/ 2>> feliz.log                # Wallpaper for user
+    cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log              # Configurations for pcmanfm
+    cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log
+    cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log                                # Wallpaper for desktop (set in desktop-items-0.conf)
     # Set owner
     arch_chroot "chown -R ${UserName}:users /home/${UserName}/"
   fi
@@ -402,12 +384,6 @@ UserAdd() {
   ;;
   *) echo "setxkbmap -layout $Countrykbd" >> /mnt/home/${UserName}/.bashrc 2>> feliz.log
   esac
-}
-
-CheckExisting() {             # Test if $1 (path) + $2 (file) already exists
-  if [ -f "$1$2" ]; then      # If path+file already exists
-      mv "$1$2" "$1saved$2"   # Rename it
-  fi
 }
 
 SetRootPassword() {

@@ -1,4 +1,4 @@
-The Feliz scripts make installation of Arch Linux quick and easy. The Feliz iso downloads the latest scripts from Github at the start of each installation, so it is always up-to-date.
+The Feliz scripts make installation of Arch Linux quick and easy, and every Feliz iso released since January 2017 will always use the latest scripts every time you run it, because it downloads them from Github at the start of each installation.
 
 Burn the iso to a CD or USB stick, or run it directly in Virtualbox. It starts a live session of Arch Linux, and runs the script. All you have to do is follow the prompts. Installation follows closely the Arch Wiki beginners' guide, and hopefully you will understand something of the process by the time it has finished; you may even like to try a manual installation with the help of the Wiki.
 
@@ -9,7 +9,7 @@ Find our friendly and lively communities on Facebook:
 ... and Google+:
  https://plus.google.com/u/0/communities/115015910961165526577
 
-NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer. However, i686 packages will still be supported until November 2017. If you have an Arch iso dated before March 2017, or a Feliz iso dated before April 2017, the i686 option will still work. And just because the i686 software is not supported, doesn't necessarily mean that it will stop working - it will just not be updated.
+NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer. However, i686 packages will still be supported until November 2017. If you have an Arch iso dated before March 2017, or a Feliz iso dated before April 2017, the i686 option will still work. And just because the i686 software is not supported, doesn't necessarily mean that it will stop workig - it will just not be updated.
 
 Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
