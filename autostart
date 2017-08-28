@@ -7,6 +7,9 @@ compton -b -l 0 -t 0 &
 # lxpanel
 lxpanel &
 
+# Start Network Manager applet for system tray
+nm-applet &
+
 # Desktop
 pcmanfm --desktop &
 

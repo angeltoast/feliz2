@@ -171,6 +171,7 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Set keyboard to selected language at next startup
   echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
+  echo -e "Section \"InputClass\"\nIdentifier \"system-keyboard\"\nMatchIsKeyboard \"on\"\nOption \"XkbLayout\" \"${Countrykbd}\"\nEndSection" > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf 2>> feliz.log
 
 # Extra processes for desktop installation
   if [ $Scope != "Basic" ]; then

@@ -142,7 +142,7 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Grub
   TPecho "Installing Grub" ""
-  if [ ${GrubDevice} = "EFI" ]; then               # Installing in UEFI environment
+  if [ ${GrubDevice} = "EFI" ]; then               # Installing grub in UEFI environment
     pacstrap /mnt grub efibootmgr
     arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi --bootloader-id=boot"
     if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
@@ -150,7 +150,7 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     fi
     arch_chroot "os-prober"
     arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
-  elif [ ${GrubDevice} ]; then                     # Installing in BIOS environment
+  elif [ -n ${GrubDevice} ]; then                  # Installing grub in BIOS environment
     pacstrap /mnt grub 2>> feliz.log
     arch_chroot "grub-install --target=i386-pc --recheck ${GrubDevice}"
     arch_chroot "os-prober"
@@ -171,6 +171,7 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Set keyboard to selected language at next startup
   echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
+  echo -e "Section \"InputClass\"\nIdentifier \"system-keyboard\"\nMatchIsKeyboard \"on\"\nOption \"XkbLayout\" \"${Countrykbd}\"\nEndSection" > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf 2>> feliz.log
 
 # Extra processes for desktop installation
   if [ $Scope != "Basic" ]; then
