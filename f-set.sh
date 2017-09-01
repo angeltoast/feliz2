@@ -619,7 +619,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   CategoriesList=""
   Translate "Added so far"
   AddedSoFar="$Result"
-  for category in Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers
+  for category in Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers Taskbars
   do
     Translate "$category"
     CategoriesList="$CategoriesList $Result"
@@ -633,7 +633,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   ;;
   *) PrintOne "You can add more items, or select items to delete"
   esac
-  Echo
+  # Echo
   while :
   do
     listgen1 "${CategoriesList}" "$_Quit" "$_Ok $_Exit"
@@ -810,6 +810,20 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
         done
         listgen2 "$WindowManagers" "$_Quit" "$_Ok $_Exit" "LongWMs1"
       ;;
+      9) OptionsCounter=1
+          for Option in "${LongBars[@]}"  # Translate all elements
+          do
+            Translate "$Option"
+            LongBars[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
+          done
+        for i in ${Taskbars}
+        do
+          LongBars1[${Counter}]="$i - ${LongBars[${Counter}]}"
+          (( Counter+=1 ))
+        done
+        listgen2 "$Taskbars" "$_Quit" "$_Ok $_Exit" "LongBars1"
+      ;;
       *) break
     esac
     SaveResult=$Result                  # Because other subroutines return $Result
@@ -825,7 +839,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       fi
     done
     case $SaveResult in                 # Check all DE & WM entries
-      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Xfce" | "Xmonad") DesktopEnvironment=$SaveResult
+      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") DesktopEnvironment=$SaveResult
         for lux in $LuxuriesList
         do
           if [ ${lux} = "FelizOB" ]; then

@@ -53,7 +53,7 @@ TestUEFI() { # Called at launch of Feliz script, before all other actions
 
 PartitioningEFI() {
   local Proceed=""
-  AutoPart=0                    # Set flag to 'off' by default
+  AutoPart=0                          # Set flag to 'off' by default
   while [ -z $Proceed ]
   do
     OptionsLimit=$((OptionsLimit-1))  # There are one fewer options in EFI than BIOS

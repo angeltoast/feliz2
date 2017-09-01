@@ -56,6 +56,7 @@ CheckParts() {  # Test for existing partitions
       PrintOne "There are no partitions on the device, and at least"
       if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
         PrintOne "two partitions are needed - one for EFI /boot, and"
+        PrintOne "one partition is needed for the root directory"
         PrintOne "There is a guided manual partitioning option"
         PrintOne "or you can exit now to use an external tool"
       else                                # Installing in BIOS environment
@@ -194,7 +195,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
     fi
     # Finally get the filesystem type
     ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
-    #          | add space after $part to maintain proper sort order | use fields 1, 4 & 7   
+    #          | add space after $part to maintain proper sort order | use fields 1, 4 & 7
     LongID=$(lsblk -l | grep "${part} " | awk '{print $1 " " $4 " " $7}')
     PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
     Label=""
@@ -205,7 +206,7 @@ BuildPartitionLists() { # First called by CheckParts to generate details of exis
   PARTITIONS=${Counter}
 }
 
-Partitioning() { 
+Partitioning() {
   local Proceed=""
   AutoPart=0 # Set flag to 'off' by default
   while [ -z $Proceed ]
@@ -321,16 +322,16 @@ AutoWarning() {
 partition_maker() { # Called from autopart()
 
 # Change to: $1 = StartPoint; $2 = Root (set boot on for BIOS); $3 (if exists) = Home ; $4 (if exists) = Swap
-  
+
   local StartPoint=$1
-  
+
   # Set the device to be used to 'set x boot on'
   if [ ${UEFI} -eq 1 ]; then                        # Installing in EFI environment
     MountDevice=2                                   # Next partition after /boot = [sda]2
   else
     MountDevice=1                                   # In BIOS = first partition = [sda]1
   fi
- 
+
   Parted "mkpart primary ext4 ${StartPoint} ${2}"   # /root
   Parted "set ${MountDevice} boot on"               # Bootable
   RootPartition="${GrubDevice}${MountDevice}"       # Save
@@ -347,7 +348,7 @@ partition_maker() { # Called from autopart()
     StartPoint=$3                                   # Reset startpoint for /swap
     MountDevice=$((MountDevice+1))                  # Advance partition numbering
   fi
- 
+
   if [ $4 ]; then
     Parted "mkpart primary linux-swap ${StartPoint} ${4}" # /swap
     SwapPartition="${GrubDevice}${MountDevice}"
@@ -464,7 +465,7 @@ AllocateRoot() {  # Manual allocation of an existing partition as /root
   Reply=$Response
   PassPart=${Result:0:4}          # eg: sda4
   MountDevice=${PassPart:3:2}     # Save the device number for 'set x boot on'
- 
+
   SetLabel "$PassPart"
   UpdateArray "$PassPart"         # Remove the selected partition from $PartitionArray[]
   Counter=0
@@ -494,7 +495,7 @@ AllocateRoot() {  # Manual allocation of an existing partition as /root
     fi
   done
   PartitionList=$Remaining                          # Replace original PartitionList with remaining options
-    
+
   if [ ${UEFI} -eq 0 ]; then                        # Installing in BIOS environment
     Parted "set ${MountDevice} boot on"             # Make /root bootable
   fi
