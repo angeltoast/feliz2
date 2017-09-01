@@ -105,9 +105,6 @@ fi
 print_heading
 TPecho "Preparations complete"
 TPecho "Entering automatic installation phase"
-Echo
-PrintOne "sudo pacman -S coffee --break"
-Echo
 
 # ...............................................................................
 #          Installation phase - no further user intervention from here          .
