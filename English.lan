@@ -233,6 +233,8 @@ Open cfdisk so I can partition manually
 Guided manual partitioning tool
 Allow feliz to partition the whole device
 Choose from existing partitions
+Build_My_Own
+FelizOB_Desktop
 Accessories
 Desktop_Environments
 Graphical
@@ -241,6 +243,7 @@ Multimedia
 Office
 Programming
 Window_Managers
+Taskbars
 Disc burning application from Gnome
 Desktop time and system information
 Handy desktop calculator

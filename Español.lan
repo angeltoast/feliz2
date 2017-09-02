@@ -233,6 +233,8 @@ Abrir cfdisk para que pueda particionar manualmente
 Herramienta de partición manual guiada
 Permitir a feliz particionar todo el dispositivo
 Elija entre particiones existentes
+Construir_mi_propio
+FelizOB escritorio
 Accesorios
 Entornos_de_escritorio
 Gráfico
@@ -241,6 +243,7 @@ Multimedia
 Oficina
 Programación
 Gerentes_de_ventanas
+Barras_de_tareas
 Aplicación de grabación de disco desde Gnome
 Tiempo de escritorio e información del sistema
 Calculadora de escritorio práctica

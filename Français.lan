@@ -233,6 +233,8 @@ Ouvrez cfdisk pour que je puisse partitionner manuellement
 Outil de partitionnement manuel guidé
 Autoriser feliz à partitionner l'ensemble du périphérique
 Choisissez parmi les partitions existantes
+Construire_mon_propre
+Bureau_FelizOB
 Accessoires
 Desktop_Environments
 Graphique
@@ -241,6 +243,7 @@ Multimédia
 Bureau
 La_programmation
 Gestionnaire_de_fenêtres
+Barres_de_tâches
 Application de gravure de disque de Gnome
 Temps de bureau et informations système
 Calculatrice de bureau pratique

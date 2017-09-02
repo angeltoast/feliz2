@@ -124,6 +124,9 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 
 # Set up locale, etc
   echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
+  if [ ${CountryLocale} != "en_US.UTF-8" ]; then
+    echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen 2>> feliz.log    # Added for completeness
+  fi
   arch_chroot "locale-gen"
   echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
   export "LANG=${CountryLocale}" 2>> feliz.log                      # eg: LANG=en_US.UTF-8
