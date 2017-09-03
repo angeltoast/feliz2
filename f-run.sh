@@ -241,7 +241,7 @@ InstallLuxuries() { # Install desktops and other extras
     InstallDM                  # Clear any pre-existing DM and install this one
   fi
 
-  # First parse through LuxuriesList checking for DEs (not used by FelizOB)
+  # First parse through LuxuriesList checking for DEs and Window Managers (not used by FelizOB)
   if [ -n "${LuxuriesList}" ]; then
     for i in ${LuxuriesList}
     do
@@ -265,6 +265,12 @@ InstallLuxuries() { # Install desktops and other extras
           pacstrap /mnt gnome 2>> feliz.log
           pacstrap /mnt gnome-extra 2>> feliz.log
         ;;
+      "i3") TPecho "Installing i3 window manager"
+          pacstrap /mnt i3 2>> feliz.log      # i3 group includes i3-wm
+         ;;
+      "Icewm") TPecho "Installing Icewm"
+          pacstrap /mnt icewm 2>> feliz.log
+         ;;
       "KDE") TPecho "Installing"
           TPecho "KDE Plasma"
           pacstrap /mnt plasma-meta 2>> feliz.log
@@ -309,7 +315,7 @@ InstallLuxuries() { # Install desktops and other extras
     for i in ${LuxuriesList}
     do
       case $i in
-      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") continue # Ignore DEs & WMs on this pass
+      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "i3" | "Icewm" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") continue # Ignore DEs & WMs on this pass
         ;;
       "cairo-dock") TPecho "Installing Cairo Dock"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log

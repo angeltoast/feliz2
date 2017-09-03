@@ -604,7 +604,10 @@ Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
   PrintOne "You can simply choose the new FelizOB desktop, a"
   PrintOne " complete lightweight system built on Openbox"
   Echo
-  listgen1 "Build_My_Own FelizOB_desktop" "" "$_Ok"
+  Translate "Build_My_Own"
+  BMO=$Result
+  Translate "FelizOB_desktop"
+  listgen1 "$BMO $Result" "" "$_Ok"
   case $Response in
     1) PickLuxuries
     ;;
@@ -616,13 +619,13 @@ Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
 }
 
 PickLuxuries() { # User selects any combination from a store of extras
-  CategoriesList=""
   Translate "Added so far"
   AddedSoFar="$Result"
-  for category in Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers Taskbars
+  TransCatList=""
+  for category in $CategoriesList
   do
     Translate "$category"
-    CategoriesList="$CategoriesList $Result"
+    TransCatList="$TransCatList $Result"
   done
   print_heading
   case "$LuxuriesList" in
@@ -636,7 +639,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   # Echo
   while :
   do
-    listgen1 "${CategoriesList}" "$_Quit" "$_Ok $_Exit"
+    listgen1 "${TransCatList}" "$_Quit" "$_Ok $_Exit"
     Category=$Response
     if [ $Result = "$_Exit" ]; then
       break
@@ -839,7 +842,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
       fi
     done
     case $SaveResult in                 # Check all DE & WM entries
-      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") DesktopEnvironment=$SaveResult
+      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "i3" | "Icewm" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") DesktopEnvironment=$SaveResult
         for lux in $LuxuriesList
         do
           if [ ${lux} = "FelizOB" ]; then
