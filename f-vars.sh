@@ -90,6 +90,7 @@ SetLanguage() {
   listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"
   case $Result in
   "" | "Exit") LanguageFile=English.lan
+              InstalLanguage="en"
   ;;
   *) LanguageFile="${Result}.lan"
     case $LanguageFile in
@@ -106,6 +107,7 @@ SetLanguage() {
     "Português.lan") InstalLanguage="pt"
     ;;
     *) InstalLanguage="en"
+      LanguageFile=English.lan
     esac
   esac
 

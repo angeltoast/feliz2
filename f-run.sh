@@ -166,6 +166,7 @@ AddCodecs() {
   TPecho "Installing Wireless Tools"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
   pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
+  # Note that networkmanager and network-manager-applet are installed separately by feliz.sh
 
   TPecho "Installing Graphics tools"
   pacstrap /mnt xorg xorg-xinit xorg-twm 2>> feliz.log
@@ -250,7 +251,7 @@ InstallLuxuries() { # Install desktops and other extras
           pacstrap /mnt awesome 2>> feliz.log
         ;;
       "Budgie") TPecho "Installing Budgie"
-          pacstrap /mnt budgie-desktop gnome network-manager-applet 2>> feliz.log
+          pacstrap /mnt budgie-desktop gnome 2>> feliz.log
         ;;
       "Cinnamon") TPecho "Installing Cinnamon"
           pacstrap /mnt cinnamon 2>> feliz.log
