@@ -134,7 +134,7 @@ InstallKernel() {   # Selected kernel and some other core systems
   # And this, to solve keys issue if an older Feliz iso is running after keyring changes
   # Passes test if feliz.log exists and the first line created by felizinit is numeric
   # and that number is greater than or equal to the date of the latest Arch trust update
-  TrustDate=20170104  # Reset this to date of latest Arch Linux trust update
+  TrustDate=20170907  # Reset this to date of latest Arch Linux trust update
   if [ -f feliz.log ] && [ $(head -n 1 feliz.log | grep '[0-9]') ] && [ $(head -n 1 feliz.log) -ge $TrustDate ]; then
     echo "pacman-key trust check passed" >> feliz.log
   else                # Default
