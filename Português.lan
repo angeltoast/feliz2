@@ -67,7 +67,7 @@ Selecione o dispositivo onde o Grub deve ser instalado
 Note que se você não selecionar um dispositivo, o Grub
 não será instalado e você terá que fazer arranjos
 alternativos para iniciar o seu novo sistema
-Estas são as configurações que você digitou. Por favor, verifique-as
+Estas são as configurações que você digitou.
 Pressione Enter para instalar com essas configurações ou
 insira o número para que os dados sejam alterados ou Enter para concluir
 Nome da máquina (atualmente
@@ -85,7 +85,7 @@ encerrar para permitir a partição de alguma outra forma
 Aqui está uma lista das partições disponíveis
 Existe uma opção de particionamento manual guiada
 Feliz pode particionar o dispositivo automaticamente
-antes de passar para o particionamento do dispositivo
+Por favor, verifique-os antes de Feliz começar a instalação
 !Irá destruir todas as partições existentes!
 Escolha 'Deixar como está' para usar as partições existentes
 ou

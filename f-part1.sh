@@ -400,6 +400,21 @@ autopart() { # Consolidated partitioning for BIOS or EFI environment
   AutoPart=1                                        # Set auto-partition flag to 'on'
 }
 
+ChoosePartitions() {
+  if [ $AutoPart -eq 0 ]; then
+    BuildPartitionLists                  # Prepare table of available partitions
+    AllocateRoot                         # Allow user to select root partition
+    if [ -n "${PartitionList}" ]; then   # If there are unallocated partitions
+      AllocateSwap                       # Display display them for user to choose swap
+    else                                 # If there is no partition for swap
+      NoPartitions                       # Inform user and allow swapfile
+    fi
+    if [ -n "${PartitionList}" ]; then   # Check contents of PartitionList again
+      MorePartitions                     # Allow user to allocate any remaining partitions
+    fi
+  fi
+}
+
 select_filesystem() { # User chooses filesystem from list in global variable ${TypeList}
   local Counter=0
   Translate "Please now select the file system for"
@@ -647,15 +662,17 @@ SetSwapFile() {
 MorePartitions() {
   local Elements=0
   AddedToRemaining=0
+  TempPartList=""
   for i in ${PartitionList}
   do
-    Elements=$((Elements+1))
+    Elements=$((Elements+1))   # Count elements in PartitionList
   done
+
   while [ $Elements -gt 0 ]
   do
     print_heading
     Remaining=""
-    PrintOne "The following partitions remain unallocated"
+    PrintOne "The following partitions are available"
     PrintOne "If you wish to use one, select it from the list"
     PrintOne "or choose Exit to finish partitioning"
     Echo
@@ -677,8 +694,8 @@ MorePartitions() {
         if [ -n "${Label}" ]; then
           EditLabel $PassPart
         fi
-      elif [ "$Part" != "$_Exit" ]; then   # Part is not selected and not 'Exit'
-        Remaining="$Remaining $Part" # Add unused partition to temp list
+      elif [ "$Part" != "$_Exit" ]; then    # Part is not selected and not 'Exit'
+        Remaining="$Remaining $Part"        # Add unused partition to temp list
         AddedToRemaining=$((AddedToRemaining+1))
       fi
     done

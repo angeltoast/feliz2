@@ -67,7 +67,7 @@ Select the device where Grub is to be installed
 Note that if you do not select a device, Grub
 will not be installed, and you will have to make
 alternative arrangements for booting your new system
-These are the settings you have entered. Please check them
+These are the settings you have entered.
 Press Enter to install with these settings, or
 enter a number for data to change
 Hostname (currently
@@ -85,7 +85,7 @@ terminate to allow you to partition in some other way
 Here is a list of available partitions
 There is a guided manual partitioning option
 Feliz can partition the device automatically
-before we move on to partitioning your device
+Please check them before Feliz begins the installation
 !will destroy any existing partitions!
 Choose 'Leave it as it is' to use the existing partitions
 or

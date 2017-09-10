@@ -67,7 +67,7 @@ Selezionare il dispositivo in cui Grub viene installato
 Si noti che se non si seleziona un dispositivo, Grub
 non verrà installato, e si dovrà fare
 soluzioni alternative per l'avvio del nuovo sistema
-Queste sono le impostazioni inserite. Si prega di verificare le
+Queste sono le impostazioni inserite.
 Premere Invio da installare con queste impostazioni, o
 Inserire il numero per i dati di cambiare
 Nome host (attualmente
@@ -85,7 +85,7 @@ sospendere per consentire di partizionare in qualche altro modo
 Ecco un elenco delle partizioni disponibili
 C'è un'opzione guidato partizionamento manuale
 Feliz può partizionare il dispositivo automaticamente
-prima di passare al partizionamento del dispositivo
+Si prega di controllarli prima che Feliz avvia l'installazione
 !Distruggerà tutte le partizioni esistenti!
 Scegliere 'Lascia così com'è' di utilizzare le partizioni esistenti
 o

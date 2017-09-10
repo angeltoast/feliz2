@@ -26,7 +26,7 @@
 print_heading() {   # Always use this function to clear the screen
   tput sgr0         # Make sure colour inversion is reset
   clear
-  local T_COLS=$(tput cols)             # Get width of terminal
+  T_COLS=$(tput cols)                   # Get width of terminal
   tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
   printf "%-s\n" "$_Backtitle"          # Display backtitle
   printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
@@ -35,7 +35,7 @@ print_heading() {   # Always use this function to clear the screen
 
 PrintOne() {  # Receives up to 2 arguments. Translates and prints text
               # centred according to content and screen size
-  if [ ! "$2" ]; then  # If $2 is missing
+  if [ ! "$2" ]; then  # If $2 is missing or empty, translate $1
     Translate "$1"
     Text="$Result"
   else        # If $2 contains text, don't translate $1 or $2
@@ -212,6 +212,7 @@ EFIPartition=""           # eg: /dev/sda1
 RootPartition=""          # eg: /dev/sda2
 RootType=""               # eg: ext4
 Partition=""              # eg: sda1
+Ignorelist=""             # Used in review process
 AutoPart=0                # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
@@ -233,7 +234,7 @@ LanguageFile="English.lan" # For translation
 RecordNumber=0            # Used during translation
 
 # Desktop environment, display manager and greeter variables
-DesktopEnvironment=""     # eg: xfce
+DesktopEnvironment=""     # eg: xfce or FelizOB
 DisplayManager=""         # eg: lightdm
 
 # Root and user variables

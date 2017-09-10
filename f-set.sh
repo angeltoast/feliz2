@@ -33,8 +33,9 @@
 # SetTimeZone      108    ShoppingList         686
 # SetSubZone       140    ChooseDM             846
 # SelectSubzone    169    SetGrubDevice        907
+#                         EnterGrubPath        953
 # America          189      --- Review stage ---
-# FindCity         224    FinalCheck           931
+# FindCity         224    FinalCheck           981
 # DoCities         276    ManualSettings      1001
 # setlocale        302    ChangeRootPartition 1030
 # AllLanguages     447    ChangeSwapPartition 1038
@@ -379,7 +380,7 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         do
           grep "$l$" languages.list >> temp.file        # listgenx checks temp.file then renames it
         done
-        Translate "Now please choose your language from this list"
+        Translate "Now please choose your language for the installed system"
         listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
       else                                              # List is short enough for listgen1
         local Counter=0
@@ -592,29 +593,29 @@ SetHostname() {
   esac
 }
 
-Options() { # Added 22 May 2017 - User chooses between FelizOB and self-build
-  # This routine no longer called from feliz.sh or feliz due to ongoing problems with FelizOB
-  # All FelizOB code retained for reference, but is no longer used
+Options() { # User chooses between FelizOB, self-build or basic
   print_heading
-  PrintOne "Feliz now offers you a choice. You can either ..."
+  PrintOne "Feliz now offers you a choice. You can ..."
   Echo
   PrintOne "Build your own system, by picking the"
   PrintOne " software you wish to install"
   PrintOne "... or ..."
-  PrintOne "You can simply choose the new FelizOB desktop, a"
+  PrintOne "You can choose the new FelizOB desktop, a"
   PrintOne " complete lightweight system built on Openbox"
+  PrintOne "... or ..."
+  PrintOne "Just install a basic Arch Linux"
   Echo
   Translate "Build_My_Own"
   BMO=$Result
   Translate "FelizOB_desktop"
-  listgen1 "$BMO $Result" "" "$_Ok"
+  listgen1 "$BMO $Result $_None" "" "$_Ok"
   case $Response in
     1) PickLuxuries
     ;;
     2) DesktopEnvironment="FelizOB"
       Scope="Full"
     ;;
-    *) Options
+    *) Scope="Basic"
   esac
 }
 
@@ -921,6 +922,9 @@ ChooseDM() { # Choose a display manager
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/'
+
+  # Add an option to enter grub device manually
+  DevicesList="$DevicesList Enter_Manually"
   print_heading
   GrubDevice=""
   local Counter=0
@@ -931,23 +935,56 @@ SetGrubDevice() {
   Echo
   listgen1 "${DevicesList}" "" "$_Ok $_None"
   Reply=$Response
-  for i in ${DevicesList}
-  do
-    Item=$i
-    Counter=$((Counter+1))
-    if [ $Counter -eq $Reply ]; then
-      GrubDevice=$Item
-      break
-    fi
-  done
+
+  if [ $Result = "Enter_Manually" ]; then				# Call function to type in a path
+    EnterGrubPath
+  else
+    for i in ${DevicesList}
+    do
+      Item=$i
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]; then
+        GrubDevice=$Item
+        break
+      fi
+    done
+  fi
+}
+
+EnterGrubPath() {
+  Entered=""
+  print_heading
+  Echo
+  PrintOne "You have chosen to manually enter the path for Grub"
+  PrintOne "This should be in the form /dev/sdx or similar"
+  PrintOne "Only enter a device, do not include a partition number"
+  PrintOne "If in doubt, consult https://wiki.archlinux.org/index.php/GRUB"
+  PrintOne "To go back, leave blank"
+  Echo
+  Translate "Enter the path where Grub is to be installed"
+  TPread "${Result}: "
+  Entered=${Response,,}
+  # test input
+  CheckGrubEntry="${Entered:0:5}"
+  if [ -z $Entered ]; then
+    SetGrubDevice
+  elif [ $CheckGrubEntry != "/dev/" ]; then
+    Echo
+    TPecho "$Entered is not in the correct format"
+    not_found
+    EnterGrubPath
+  else
+    GrubDevice="${Entered}"
+    read -t "$GrubDevice"
+  fi
 }
 
 FinalCheck() {
   while :
   do
     print_heading
-    PrintOne "These are the settings you have entered. Please check them"
-    PrintOne "before we move on to partitioning your device"
+    PrintOne "These are the settings you have entered."
+    PrintOne "Please check them before Feliz begins the installation"
     Echo
     Translate "Zone/subZone will be"
     PrintMany "1) $Result" "$ZONE/$SUBZONE"
@@ -977,10 +1014,48 @@ FinalCheck() {
     PrintMany "      $Result" "= '$UserName'"
     Translate "The following extras have been selected"
     PrintMany "7) $Result" "..."
-    PrintOne "${LuxuriesList}" ""
+    SaveStartPoint="$EMPTY" # Save cursor start point
+    if [ $Scope = "Basic" ]; then
+      PrintOne "$_None" ""
+    elif [ $DesktopEnvironment ] && [ $DesktopEnvironment = "FelizOB" ]; then
+      PrintOne "FelizOB" ""
+    elif [ -z $LuxuriesList ]; then
+      PrintOne "$_None" ""
+    else
+      PrintOne "${LuxuriesList}" ""
+    fi
+    EMPTY="$SaveStartPoint" # Reset cursor start point
+    # 8) Kernel
+    Translate "Kernel"
+    if [ $Kernel -eq 1 ]; then
+      PrintMany "8) $Result" "= 'LTS'"
+    else
+      PrintMany "8) $Result" "= 'Latest'"
+    fi
+    # 9) Grub
+    Translate "Grub will be installed on"
+    PrintMany "9) $Result" "= '$GrubDevice'"
+    # 10) Partitions 
+    Translate "The following partitions have been selected"
+    PrintMany "10) $Result" "..."
+    PrintOne "${RootPartition} /root ${RootType}"
+    PrintMany "${SwapPartition} /swap"
+    if [ -n "${AddPartList}" ]; then
+      local Counter=0
+      for Part in ${AddPartList}                    # Iterate through the list of extra partitions
+      do                                            # Display each partition, mountpoint & format type
+        if [ $Counter -ge 1 ]; then                 # Only display the first one
+          PrintMany "Too many to display all"
+          break
+        fi
+        PrintMany "${Part} ${AddPartMount[${Counter}]} ${AddPartType[${Counter}]}"
+        Counter=$((Counter+1))
+
+      done
+    fi
+    Response=20
     Echo
     PrintOne "Press Enter to install with these settings, or"
-    Response=20
     Translate "Enter number for data to change"
     TPread "${Result}: "
     Change=$Response
@@ -1005,6 +1080,21 @@ FinalCheck() {
         continue
       ;;
       7) PickLuxuries
+        continue
+      ;;
+      8) SetKernel
+        continue
+      ;;
+      9) if [ $GrubDevice != "EFI" ]; then  # Can't be changed if EFI
+          SetGrubDevice
+        fi
+        continue
+      ;;
+      10) AddPartList=""   # Empty the lists of extra partitions
+        AddPartMount=""
+        AddPartType=""
+        CheckParts         # Restart partitioning
+        ChoosePartitions
         continue
       ;;
       *) break
@@ -1039,43 +1129,4 @@ ManualSettings() {
       *) return 0
     esac
   done
-}
-
-ChangeRootPartition() {
-# Start array with SwapPartition
-  Ignorelist[0]=${SwapPartition}
-  local Counter=1
-  AddExtras
-  MakePartitionList
-}
-
-ChangeSwapPartition() {
-# Start array with RootPartition
-  Ignorelist[0]=${RootPartition}
-  Counter=1
-  AddExtras
-  MakePartitionList
-}
-
-ChangePartitions() {
-  # Copy RootPartition and SwapPartition into temporary array
-  Ignorelist[0]=${RootPartition}
-  local Counter=1
-  if [ ${SwapPartition} ]; then
-    Ignorelist[1]=${SwapPartition}
-    Counter=2
-  fi
-  Ignores=${#Ignorelist[@]} # Save a count for later
-  MakePartitionList
-}
-
-AddExtras() {
-  # Ignorelist started and Counter set to next record number by the
-  # calling function ChangeSwapPartition or ChangeRootPartition
-  # Add each field (extra partition) from AddPartList into the array:
-  for a in ${AddPartList[@]}; do
-    Ignorelist[$Counter]=$a
-    Counter=$((Counter+1))
-  done
-  Ignores=${#Ignorelist[@]} # Save a count for later
 }

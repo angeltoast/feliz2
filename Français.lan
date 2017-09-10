@@ -67,7 +67,7 @@ Sélectionnez le périphérique dans lequel Grub doit être installé
 Notez que si vous ne sélectionnez pas un périphérique, Grub
 Ne sera pas installé, et vous devrez faire
 Des arrangements alternatifs pour le démarrage de votre nouveau système
-Ce sont les paramètres que vous avez saisis. Veuillez les vérifier
+Ce sont les paramètres que vous avez saisis.
 Appuyez sur Entrée pour installer ces paramètres, ou
 Saisissez le numéro de données à modifier
 Nom d'hôte (actuellement
@@ -85,7 +85,7 @@ Terminer pour vous permettre de partitionner d'une autre manière
 Voici une liste des partitions disponibles
 Il existe une option de partitionnement manuelle guidée
 Feliz peut partitionner le périphérique automatiquement
-avant nous passer au partitionnement de votre appareil
+Veuillez les vérifier avant que Feliz commence l'installation
 !Va détruire toutes les partitions existantes!
 Choisissez 'Laisser tel quel' pour utiliser les partitions existantes
 ou

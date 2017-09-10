@@ -67,7 +67,7 @@ Wybierz urządzenie, na którym Grub zostanie zainstalowany
 Jeśli nie wybierzesz żadnego urządzenia, Grub
 nie zostanie zainstalowany i będziesz musiał
 skonfigurować alternatywny program bootujący dla nowego systemu
-To są ustawienia, które wybrałeś. Proszę o sprawdzenie
+To są ustawienia, które wybrałeś.
 Wciśnij Enter aby zainstalować z tymi ustawieniami, lub
 wybierz numer dla danych, które chcesz zmienić
 Nazwa komputera (obecna
@@ -85,7 +85,7 @@ aby ci umożliwić przeprowadzenie własnego partycjonowania
 To jest lista dostępnych partycji
 Dostępna jest opcja ręcznego partycjonowania z przewodnikiem
 Feliz może automatycznie podzielić dysk
-zanim rozpoczniemy partycjonowanie twojego dysku
+Prosimy o sprawdzenie ich przed rozpoczęciem instalacji przez firmę Feliz
 !usunie wszystkie istniejące partycje!
 Wybierz 'Zostaw tak jak jest', aby użyć istniejących partycji
 lub
