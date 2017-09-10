@@ -40,8 +40,8 @@ override_utf8_locale yes
 use_spacer left
 
 TEXT
-${voffset 20}${color}${font Ubuntu:pixelsize=22}${alignc}Kernel: ${kernel}
-${voffset -8}${offset 20}${font Ubuntu:pixelsize=90}${time %R}${font}${voffset -65}${offset 10}${color #EC0F2D}${font Ubuntu:pixelsize=40}${time %d}${voffset -8}${color} ${font Ubuntu:pixelsize=24}${time %B }${time %Y}${font}${voffset 20}${font Ubuntu:pixelsize=34}${offset -160}${time %A}${font}
-${voffset 10}${font Ubuntu:pixelsize=17}${offset 75}${color}${offset 6}HD${offset 6}${color #FCFCEE}${fs_used /home} / ${fs_size /home}${offset 8}${color}RAM${offset 6}${color #FCFCEE}$mem / $memmax
+${voffset 20}${color}${font LiberationSans-Bold:pixelsize=22}${alignc}Kernel: ${kernel}
+${voffset -8}${offset 20}${font LiberationSans-Bold:pixelsize=90}${time %R}${font}${voffset -65}${offset 10}${color #EC0F2D}${font LiberationSans-Bold:pixelsize=40}${time %d}${voffset -8}${color} ${font LiberationSans-Bold:pixelsize=24}${time %B }${time %Y}${font}${voffset 20}${font LiberationSans-Bold:pixelsize=34}${offset -160}${time %A}${font}
+${voffset 10}${font LiberationSans-Bold:pixelsize=17}${offset 75}${color}${offset 6}HD${offset 6}${color #FCFCEE}${fs_used /home} / ${fs_size /home}${offset 8}${color}RAM${offset 6}${color #FCFCEE}$mem / $memmax
 ${offset 180}${color}CPU:${offset 20}${color #FCFCEE}${cpu cpu0}% ${offset 20}Temp: ${color #FCFCEE} ${acpitemp}c
 ${alignc}${color}Desktop:${color} ${desktop_name}
