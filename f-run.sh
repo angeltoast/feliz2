@@ -135,6 +135,7 @@ InstallKernel() {   # Selected kernel and some other core systems
   # Passes test if feliz.log exists and the first line created by felizinit is numeric
   # and that number is greater than or equal to the date of the latest Arch trust update
   TrustDate=20170907  # Reset this to date of latest Arch Linux trust update
+                      # Next trustdb check 2017-10-20
   if [ -f feliz.log ] && [ $(head -n 1 feliz.log | grep '[0-9]') ] && [ $(head -n 1 feliz.log) -ge $TrustDate ]; then
     echo "pacman-key trust check passed" >> feliz.log
   else                # Default
@@ -403,8 +404,11 @@ UserAdd() {
     CheckExisting "/mnt/home/${UserName}/.config/libfm/" "libfm.conf"
     cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log    # Configurations for pcmanfm
 
+    CheckExisting "/mnt/home/${UserName}/.config/lxpanel/default/" "config"
+    cp config /mnt/home/${UserName}/.config/lxpanel/default/ 2>> feliz.log # Desktop configurations for pcmanfm
+
     CheckExisting "/mnt/home/${UserName}/.config/pcmanfm/default/" "desktop-items-0.conf"
-    cp desktop-items-0 /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log # Desktop configurations for pcmanfm
+    cp desktop-items /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log # Desktop configurations for pcmanfm
 
     cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log                      # Wallpaper for desktop (set in desktop-items-0.conf)
     # Set owner

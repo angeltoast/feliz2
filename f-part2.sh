@@ -391,6 +391,7 @@ EasySwap() { # EFI - Set variable: SwapSize
     PrintOne "or, to allocate all the remaining space, enter: 100%"
     Echo
     Translate "Size"
+    sleep 1               # To prevent keyboard bounce
     TPread "$Result [eg: 2G or 100% or 0]: "
     RESPONSE="${Response^^}"
     Echo

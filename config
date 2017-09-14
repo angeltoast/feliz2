@@ -1,0 +1,2 @@
+[Command]
+Logout=lxsession-logout --prompt "End your Arch Linux Openbox session" --banner .face --side left

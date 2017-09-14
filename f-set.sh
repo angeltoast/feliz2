@@ -39,8 +39,8 @@
 # DoCities         276    ManualSettings      1001
 # setlocale        302    ChangeRootPartition 1030
 # AllLanguages     447    ChangeSwapPartition 1038
-# getkeymap        464    ChangePartitions    1046
-# SearchKeyboards  522    AddExtras           1058
+# getkeymap        469    ChangePartitions    1046
+# SearchKeyboards  527    AddExtras           1058
 # --------------------    -----------------------
 
 not_found() {
@@ -535,7 +535,7 @@ SearchKeyboards() {
     Echo
     TPread "(eg: 'dvorak' or 'us'): "
     local Term="${Response,,}"
-    if [ $Term = "exit" ]; then
+    if [ $Term = "" ] || [ $Term = " " ]; then
       SetTimeZone
     fi
     Echo
@@ -556,6 +556,7 @@ SearchKeyboards() {
       Translate "No keyboards found containing"
       PrintOne "$Result" "'$Term'"
       not_found
+      continue
     fi
   done
 }
