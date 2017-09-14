@@ -33,7 +33,7 @@
 # SetTimeZone      108    ShoppingList         686
 # SetSubZone       140    ChooseDM             846
 # SelectSubzone    169    SetGrubDevice        907
-#                         EnterGrubPath        953
+# UseReflector         EnterGrubPath        953
 # America          189      --- Review stage ---
 # FindCity         224    FinalCheck           981
 # DoCities         276    ManualSettings      1001
@@ -81,6 +81,30 @@ SetKernel() {
   Echo
   listgen1 "LTS Latest" "" "$_Ok"
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
+}
+
+UseReflector() {
+  while :
+  do
+    print_heading
+    PrintOne "Mirrors"
+    PrintOne "'Reflector' can be used to find the fastest mirrors"
+    PrintOne "But can sometimes cause errors. If in doubt, choose 'No'"
+    Echo
+    PrintOne "Use 'Reflector'?"
+    Echo
+    Buttons "Yes/No" "$_Yes $_No" ""
+    Echo
+    case $Response in
+      1) UseReflector=1
+      ;;
+      "") not_found
+        continue
+      ;;
+      *) UseReflector=0
+    esac
+    return 0
+  done
 }
 
 ConfirmVbox() {

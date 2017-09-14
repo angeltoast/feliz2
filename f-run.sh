@@ -186,7 +186,8 @@ AddCodecs() {
 
 ReflectorMirrorList() { # Use reflector (added to archiso) to generate fast mirror list
   TPecho "Generating mirrorlist"
-  reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist 2>> feliz.log
+  cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.safe 2>> feliz.log
+  reflector --verbose --latest 5 --save /etc/pacman.d/mirrorlist 2>> feliz.log
   if [ $? -gt 0 ]; then
     LocalMirrorList
   else

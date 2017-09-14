@@ -232,6 +232,7 @@ ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
 LanguageFile="English.lan" # For translation
 RecordNumber=0            # Used during translation
+UseReflector=1            # Reflector can find fastest mirrors
 
 # Desktop environment, display manager and greeter variables
 DesktopEnvironment=""     # eg: xfce or FelizOB

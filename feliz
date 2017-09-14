@@ -73,9 +73,11 @@ TestUEFI                               # Check if on UEFI system
 
 CheckParts                             # Check partition table & offer options
 
-ChoosePartitions
+ChoosePartitions                       # Assign /root /swap & others
 
 SetKernel                              # Select kernel and device for Grub
+
+UseReflector                           # New routine to overcome errors 
 
 if [ ${UEFI} -eq 1 ]; then             # If installing in EFI
   GrubDevice="EFI"                     # Set variable
@@ -95,7 +97,11 @@ TPecho "Entering automatic installation phase"
 
 MountPartitions
 
-ReflectorMirrorList
+if [ $UseReflector -eq 1 ]; then
+  ReflectorMirrorList
+else
+  LocalMirrorList
+fi
 
 InstallKernel
 
@@ -115,11 +121,11 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
   arch_chroot "hwclock --systohc --utc"
 
 # Networking
-  if [ $Scope != "Basic" ]; then
+  # if [ $Scope != "Basic" ]; then
     arch_chroot "systemctl enable dhcpcd.service"
     pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
     arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
-  fi
+  # fi
 
 # Grub
   TPecho "Installing Grub" ""
