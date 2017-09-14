@@ -274,6 +274,9 @@ InstallLuxuries() { # Install desktops and other extras
       "Icewm") TPecho "Installing Icewm"
           pacstrap /mnt icewm 2>> feliz.log
          ;;
+      "JWM") TPecho "Installing JWM"
+          pacstrap /mnt jwm 2>> feliz.log
+         ;;
       "KDE") TPecho "Installing"
           TPecho "KDE Plasma"
           pacstrap /mnt plasma-meta 2>> feliz.log
@@ -318,7 +321,7 @@ InstallLuxuries() { # Install desktops and other extras
     for i in ${LuxuriesList}
     do
       case $i in
-      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "i3" | "Icewm" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") continue # Ignore DEs & WMs on this pass
+      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "i3" | "Icewm" | "JWM" | "KDE" | "LXDE" | "LXQt" | "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") continue # Ignore DEs & WMs on this pass
         ;;
       "cairo-dock") TPecho "Installing Cairo Dock"
         pacstrap /mnt cairo-dock cairo-dock-plug-ins 2>> feliz.log
