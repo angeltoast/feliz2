@@ -61,20 +61,27 @@ PartitioningEFI() {
     local Counter=1
     for Option in "${LongPartE[@]}"
     do
+      if [ $Counter -eq 1 ] && [ $OptionsLimit -eq 2 ]; then # 'Existing Partitions' option ignored if no partitions
+        Counter=2
+        continue
+      fi
       Translate "$Option"
       LongOption[${Counter}]="$Result"
       OptionsList="$OptionsList $(echo $EFIPartitioningOptions | cut -d' ' -f${Counter})"
       Counter=$((Counter+1))
-      if [ $Counter -gt $OptionsLimit ]; then
-        break
-      fi
     done
     Echo
     listgen2 "$OptionsList" "$_Quit" "$_Ok $_Exit" "LongOption"
-    Proceed=$Response
+    if [ $OptionsLimit -eq 2 ]; then # 'Existing Partitions' option is to be ignored if no partitions exist
+      Proceed=$(( Response +1 ))
+    else
+      Proceed=$Response
+    fi
     Echo
     case $Proceed in
-      1) print_heading
+      1) echo "Manual partition allocation" >> feliz.log
+      ;;
+      2) print_heading
         Echo
         EasyEFI                 # New guided manual partitioning functions
         tput setf 0             # Change foreground colour to black temporarily to hide error message
@@ -83,9 +90,7 @@ PartitioningEFI() {
         tput sgr0               # Reset colour
         ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
       ;;
-      2) ChooseDevice
-      ;;
-      3) printf
+      3) ChooseDevice
       ;;
       *) not_found
         Proceed=""

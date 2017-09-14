@@ -246,16 +246,16 @@ Scope=""                  # Installation scope ... 'Full' or 'Basic'
 PrimaryFile=""
 
 # ---- Partitioning ----
-PartitioningOptions="cfdisk guided auto leave"
-LongPart[1]="Open cfdisk so I can partition manually"
-LongPart[2]="Guided manual partitioning tool"
-LongPart[3]="Allow feliz to partition the whole device"
-LongPart[4]="Choose from existing partitions"
+PartitioningOptions="leave cfdisk guided auto"
+LongPart[1]="Choose from existing partitions"
+LongPart[2]="Open cfdisk so I can partition manually"
+LongPart[3]="Guided manual partitioning tool"
+LongPart[4]="Allow feliz to partition the whole device"
 # EFI
-EFIPartitioningOptions="guided auto leave"
-LongPartE[1]="Guided manual partitioning tool"
-LongPartE[2]="Allow feliz to partition the whole device"
-LongPartE[3]="Choose from existing partitions"
+EFIPartitioningOptions="leave guided auto"
+LongPartE[1]="Choose from existing partitions"
+LongPartE[2]="Guided manual partitioning tool"
+LongPartE[3]="Allow feliz to partition the whole device"
 
 # ---- Arrays for extra Applications ----
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers Taskbars"

@@ -49,7 +49,7 @@ CheckParts() {  # Test for existing partitions
     print_heading
     while [ $PARTITIONS -eq 0 ]
     do
-      OptionsLimit=3                      # This variable limits the options in Partitioning()
+      OptionsLimit=3                      # This variable limits the options displayed in Partitioning()
       Echo
       PrintOne "If you are uncertain about partitioning, you should read the Arch Wiki"
       Echo
@@ -215,31 +215,35 @@ Partitioning() {
     local Counter=1
     for Option in "${LongPart[@]}"
     do
+      if [ $Counter -eq 1 ] && [ $OptionsLimit -eq 3 ]; then # 'Existing Partitions' option ignored if no partitions exist
+        Counter=2
+        continue
+      fi
       Translate "$Option"
       LongOption[${Counter}]="$Result"
       OptionsList="$OptionsList $(echo $PartitioningOptions | cut -d' ' -f${Counter})"
       Counter=$((Counter+1))
-      if [ $Counter -gt $OptionsLimit ]; then
-        break
-      fi
     done
-    Echo
     listgen2 "$OptionsList" "$_Quit" "$_Ok $_Exit" "LongOption"
-    Proceed=$Response
+    if [ $OptionsLimit -eq 3 ]; then # 'Existing Partitions' option is to be ignored if no partitions exist
+      Proceed=$((Response+1))
+    else
+      Proceed=$Response
+    fi
     Echo
     case $Proceed in
-      1) cfdisk 2>> feliz.log
+      1) echo "Manual partition allocation" >> feliz.log  # Existing Partitions option
+      ;;
+      2) cfdisk 2>> feliz.log
         tput setf 0             # Change foreground colour to black temporarily to hide error message
         clear
         partprobe 2>> feliz.log # Inform kernel of changes to partitions
         tput sgr0               # Reset colour
         CheckParts              # Restart partitioning
       ;;
-      2) GuidedMBR
+      3) GuidedMBR
       ;;
-      3) ChooseDevice
-      ;;
-      4) echo "Manual partition allocation" >> feliz.log
+      4) ChooseDevice
       ;;
       *) not_found
         Proceed=""
