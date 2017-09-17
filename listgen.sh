@@ -584,7 +584,8 @@ PrintPage() {
     tput cup $((bottom_row+1)) 0                    # Then back to row below bottom row
     TPread "${Message}: "
     case $Response in
-    '') return 0                                    # Quit without selecting anything
+    '') Result=""
+      return 0                                    # Quit without selecting anything
     ;;
     "<") return 1                                   # Previous page, if valid
     ;;

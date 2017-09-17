@@ -189,11 +189,9 @@ declare -a AddPartMount   # Array of mountpoints for the same partitions eg: /ho
 declare -a AddPartType    # Array of format type for the same partitions eg: ext4
 declare -a PartitionArray # Array of long identifiers
 declare -a NewArray       # For copying any array
-
 declare -a button_start   # Used in listgen
 declare -a button_text    # Used in listgen
 declare -a button_len     # Used in listgen
-
 declare -A LabellingArray # Associative array of user labels for partitions
 declare -A Labelled       # Associative array of labelled partitions
 declare -A FileSystem     # Associative array of filesystem types (ext* swap)
@@ -232,7 +230,7 @@ ZONE=""                   # eg: Europe For time
 SUBZONE=""                # eg: London
 LanguageFile="English.lan" # For translation
 RecordNumber=0            # Used during translation
-UseReflector=1            # Reflector can find fastest mirrors
+declare -a CountryLong    # Array of selected countries to be added to mirrorlist
 
 # Desktop environment, display manager and greeter variables
 DesktopEnvironment=""     # eg: xfce or FelizOB

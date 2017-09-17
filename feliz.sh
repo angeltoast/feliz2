@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With acknowlegements to Carl Duff and Dylan Schacht
-# Revision date: 12th August 2017
+# Revision date: 17th September 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ ChoosePartitions                       # Assign /root /swap & others
 
 SetKernel                              # Select kernel and device for Grub
 
-UseReflector                           # New routine to overcome errors 
+ChooseMirrors                          # Added 2017-09-17
 
 if [ ${UEFI} -eq 1 ]; then             # If installing in EFI
   GrubDevice="EFI"                     # Set variable
@@ -97,11 +97,7 @@ TPecho "Entering automatic installation phase"
 
 MountPartitions
 
-if [ $UseReflector -eq 1 ]; then
-  ReflectorMirrorList
-else
-  LocalMirrorList
-fi
+NewMirrorList
 
 InstallKernel
 
