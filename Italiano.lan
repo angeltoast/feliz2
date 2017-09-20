@@ -1,16 +1,15 @@
-# File di lingua italiana da Google Translate & Elizabeth Audrey Mills (elizabeth@itsliz.net)
+# File di lingua italiana da Carlo Benedetti (eclipsimamans@protonmail@.com) & Elizabeth Audrey Mills (elizabeth@itsliz.net)
 Feliz2 - script di installazione di Arch Linux
 Scegli il tuo kernel
 Scegliere una voce
-Il kernel Long-Term-Support (LTS) offre stabilty
+Il kernel Long-Term-Support (LTS) offre stabilità
 mentre l'ultimo kernel ha tutte le nuove funzionalità
 In caso di dubbio, scegliere LTS
 Sembra che feliz è in esecuzione in VirtualBox
-Se lo è, feliz può installare ospite Virtualbox
+Se lo è, feliz può installare le funzionalità ospite Virtualbox
 utilità e le impostazioni appropriate per voi
 Installare VirtualBox utilità?
-Per impostare l'orologio di sistema, per favore prima
-selezionare la zona Mondiale della posizione
+Per impostare l'orologio di sistema, per favore seleziona prima la tua posizione nel mondo; (Europa, America). 
 sì
 No
 Tenere
@@ -18,23 +17,23 @@ cancellare
 Ok
 Uscita
 Sei in uno di questi stati?
-Scegliere la posizione più vicino
+Scegliere la posizione più vicina
 ' ' per uscire
 Nessuna di queste
 '<' per la pagina precedente
 '>' per la pagina successiva
-Nessuna lingua è stato trovato per la vostra posizione
-Volete utilizzare uno dei seguenti?
-Una sola lingua trovato per la vostra posizione
+Nessuna lingua è stato trovata per la vostra posizione
+Volete utilizzare una delle seguenti?
+Una sola lingua trovata per la vostra posizione
 Dobbiamo usare questo come la vostra lingua?
 Ora per favore scegliere la lingua da questa lista
 o Esci per riprovare
 Solo una tastiera corrispondente ai criteri di posizione
-Volete accettare questo? Selezionare No per la ricerca di alternative
-Scegliere uno, o ' ' a cercare alternative
-Scegliere uno, o uscire a cercare alternative
-Se si conosce il codice per il layout di tastiera, inserisci
-ora. In caso contrario, provare a entrare in un abbreviazione di due lettere
+Volete selezionare questo? Selezionare No per la ricerca di alternative
+Scegliere uno, o ' ' per cercare alternative
+Scegliere uno, o uscire per cercare alternative
+Se si conosce il codice per il layout di tastiera,  lo si inserisca
+ora. In caso contrario, provare a entrare  una abbreviazione di due lettere
 per il proprio paese o la lingua e un elenco verrà visualizzato
 In alternativa, inserire ' ' per ricominciare
 Selezionare la tastiera, o EXIT per riprovare
@@ -42,15 +41,14 @@ Nessun tastiere trovato contenente
 Riprova
 Inserire un nome per l'utente principale del nuovo sistema
 Se non si crea un nome utente qui, un utente predefinito
-chiamato 'archie' sarà allestito
-verrà creato
-È necessario un nome host. Questo sarà un nome univoco per identificare
-il dispositivo su una rete. Se non si immette uno, il
-predefinita hostname del 'arch-linux' verrà utilizzato
+chiamato 'archie' sarà creato.
+È necessario un hostname. Questo sarà un nome univoco per identificare
+il dispositivo su una rete. 
+Se non se ne immette uno, l' hostname 'arch-linux' verrà utilizzato.
 Inserisci un hostname per il computer
-Ora avete la possibilità di aggiungere extra, come ad esempio un browser web
+Ora avete la possibilità di aggiungere extra, come ad esempio un web browser
 ambiente desktop, ecc, dalle seguenti categorie
-Se si desidera solo una installazione di base Arch
+Se si desidera solo una installazione basilare di Arch
 uscire senza scegliere alcun extra
 È possibile aggiungere altri elementi, o selezionare gli elementi da eliminare
 Aggiunto finora
@@ -58,48 +56,48 @@ Aggiunto finora
 Esci per terminare
 Un display manager fornisce una schermata di login grafico
 In caso di dubbio, scegliere LightDM
-Se non si installa un display manager, si avrà
-per lanciare l'ambiente desktop manualmente
+Se non si installa un display manager, si dovrà
+ lanciare l'ambiente desktop manualmente
 Display Manager è già impostato come
 Solo un display manager può essere attivo
 Volete cambiare?
-Selezionare il dispositivo in cui Grub viene installato
+Selezionare il dispositivo su cui Grub verrà installato
 Si noti che se non si seleziona un dispositivo, Grub
-non verrà installato, e si dovrà fare
-soluzioni alternative per l'avvio del nuovo sistema
+non verrà installato, e si dovrà usare
+soluzioni alternative e manuali per l'avvio del nuovo sistema
 Queste sono le impostazioni inserite.
-Premere Invio da installare con queste impostazioni, o
-Inserire il numero per i dati di cambiare
+Premere Invio per installare con queste impostazioni, o
+Inserire il numero per i dati da cambiare
 Nome host (attualmente
-Se non si è certi di partizionamento, si dovrebbe leggere l'Arco Wiki
-Non ci sono partizioni sul dispositivo, e almeno
-Sono necessari due partizioni - uno per /boot, e uno per la /root
+Se non si è certi di partizionamento, si dovrebbe leggere l'Arch Wiki
+Non ci sono partizioni sul dispositivo, e sono  necessarie almeno
+due partizioni - uno per /boot, e uno per la /root
 Desktop Documenti Downloads Musica Immagini Pubblico Modelli Video
 secondi
 o si può uscire ora di utilizzare uno strumento esterno
 una partizione è necessario per /root
 È possibile utilizzare 'cfdisk' per creare una tabella delle partizioni
 Feliz può creare automaticamente le partizioni per voi
-Se si sceglie di fare nulla ora, lo script
-sospendere per consentire di partizionare in qualche altro modo
+Se si sceglie di fare nulla ora, lo script verrà
+terminato per consentire di partizionare in qualche altro modo
 Ecco un elenco delle partizioni disponibili
-C'è un'opzione guidato partizionamento manuale
+E' possibile scegliere il partizionamento automatico guidato
 Feliz può partizionare il dispositivo automaticamente
 Si prega di controllarli prima che Feliz avvia l'installazione
 !Distruggerà tutte le partizioni esistenti!
 Scegliere 'Lascia così com'è' di utilizzare le partizioni esistenti
 o
-'cfdisk' è disponibile per modificare manualmente
+'cfdisk' è disponibile per modificare manualmente le partizioni
 Ora dobbiamo trovare dove ci si trova in
 Si prega di inserire la lettera iniziale del
 l'isola o gruppo cui ci si trova
 la grande città più vicina
 scrivere ' ' per vedere una lista
-Le password non possono essere vuoti
+Le password non possono essere vuote
 Questi sono i dispositivi disponibili
 Quale si desidera utilizzare per questa installazione?
-(Ricordate, questo è auto-partizione e tutti i dati
-sul dispositivo scelto sarà distrutta)
+(Ricordate, questo è un auto-partizione e tutti i dati
+sul dispositivo scelto saranno distrutti)
 Questo cancellerà tutti i dati su
 Sei sicuro di voler continuare?
 partizionamento di
@@ -107,39 +105,39 @@ riuscito
 Avrete l'opportunità di rivedere questi più tardi
 premere un tasto qualsiasi
 Si prega ora selezionare il file system per
-Si raccomanda di non mescolare il file system btrfs con gli altri
+Si raccomanda di non mescolare il file system btrfs con altri fllesystem
 La partizione che avete scelto è etichettato
 Se si desidera mantenere questa etichetta, digitare 1
 Immettere 1, 2 o una nuova etichetta
 Si prega ora selezionare una partizione da utilizzare per root
-È possibile scegliere di lasciare così com'è, ma deve
-capire che non riformattazione la radice
-partizione può avere conseguenze inaspettate
+È possibile scegliere di lasciare la partizione cosi come è
+Attenzione però, perchè non riformattare la  partizione root
+ può avere conseguenze inaspettate
 La partizione selezionata
 è attualmente formattata
-La riformattazione rimuoverà tutti i dati attualmente su di esso
-Selezionare una partizione per lo swap da quelli che
+La riformattazione rimuoverà tutti i dati attualmente esistenti sul dispositivo scelto
+Selezionare una partizione per lo swap da quelle che
 rimangono, oppure si può assegnare un file di /swap
 Attenzione: Btrfs non supporta i file di swap
-Se si salta questo passaggio, non di swap saranno assegnati
+Se si salta questo passaggio, di assegnazione swap, nessuna partzione swap verrà generata
 è già formattato come partizione di swap
-La riformattazione cambierà l'UUID, e se questo /swap
-partizione viene utilizzato da un altro sistema operativo, che
+La riformattazione cambierà l'UUID, e se questa partizione /swap
+viene utilizzata da un altro sistema operativo, quel
 sistema non sarà più in grado di accedere alla partizione
 Vuoi riformattarlo?
 Non ci sono partizioni disponibili per lo /swap,
-ma è possibile assegnare un file di swap, se lo si desidera.
+ma è possibile assegnare un file di swap, se si desidera.
 Allocare la dimensione del file di swap
-Le seguenti partizioni rimangono non allocato
+Le seguenti partizioni rimangono non allocate
 Se si desidera utilizzare uno, selezionarlo dalla lista
 oppure scegliere Esci per terminare il partizionamento
 È possibile scegliere di lasciare così com'è, selezionando Exit, ma non
 riformattare una partizione esistente può avere conseguenze inaspettate
 Inserire un punto di montaggio per
-È necessario inserire un punto di montaggio valida
+È necessario inserire un punto di montaggio valido
 Qui è possibile impostare le dimensioni e il formato delle partizioni
-si desidera creare. Quando si è pronti, Feliz asciugherà il disco
-e creare una nuova tabella delle partizioni con le impostazioni
+si desidera creare. Quando si è pronti, Feliz formatterà il disco
+e crearà una nuova tabella delle partizioni con le impostazioni selezionate
 Iniziamo con la
 Non c'è spazio per una partizione /swap, ma è possibile
 assegnare un swap-file. Si consiglia di consentire ad alcuni di /swap
@@ -148,8 +146,8 @@ Ci sono
 dispositivi disponibili
 Il dispositivo ha solo
 Questo non è sufficiente per un'installazione
-Questo è sufficiente per una base
-installazione, ma si dovrebbe scegliere solo applicazioni leggere
+Questo è sufficiente solo per una installazione base
+ ma si dovrebbe scegliere solo applicazioni leggere
 e si può esaurire lo spazio durante l'installazione o in un secondo momento
 Il dispositivo è dotato
 Questo è sufficiente per
@@ -173,8 +171,8 @@ non è necessario superare 4GiB
 Si consiglia di lasciare un certo spazio per una partizione /home
 C'è solo spazio per una
 partizione di /boot
-Feliz ora creare una nuova tabella delle partizioni
-e impostare le partizioni che avete definito
+Feliz  genererà ora una nuova tabella delle partizioni
+e imposterà le partizioni che avete definito
 partizionamento successo
 Questa funzione è limitata a creare /root, /swap e /home
 M = Megabytes, G = Gigabytes
@@ -186,7 +184,7 @@ in genere non meno di 1GiB
 o, per allocare tutto lo spazio rimanente, immettere: 100%
 È necessario includere M, G o%
 di rimanere spazio allocato a
-Questo è tutta la preparazione fatta
+Questo è tutto la preparazione è completa
 partizionato con successo
 Qui ci sono le partizioni che sono disponibili
 In primo luogo è necessario selezionare quella da utilizzare per EFI / boot
@@ -197,7 +195,7 @@ minuti
 Inserire una password per
 Infine abbiamo bisogno di impostare le password
 Si noti che non sarà in grado di
-vedere le password durante la si entra
+vedere le password durante mentre la si immette
 Re-immettere una password per
 Le password non corrispondono
 Congratulazioni, l'installazione è completa
@@ -208,9 +206,9 @@ Non è stato previsto per lo /swap
 partizioni extra
 Nessun partizioni sono stati assegnati
 Il kernel LTS sarà installato
-L'ultimo kernel sarà installato
+Il kernel più recente sarà installato
 Grub verrà installato
-Non è stato previsto per Grub
+Nessuna impostazione è stata selezionata per grub
 Zone / Subzone sarà
 Locale sarà impostato
 tastiera è
@@ -231,9 +229,9 @@ Si prega di premere Invio per continuare
 Locale è impostato su
 Aprire cfdisk modo che io possa partizionare manualmente
 Guidato tool di partizionamento manuale
-Lasciare feliz per partizionare l'intero dispositivo
+Lasciare  che feliz partizioni l'intero dispositivo
 Scegliere tra le partizioni esistenti
-Costruisci_il_mio
+Fai da te
 FelizOB_desktop
 Accessori
 Desktop_Environments
@@ -252,7 +250,7 @@ editor di testo leggero Pratico da LXDE
 emulatore di terminale leggero da LXDE
 Il file manager di LXDE
 desktop moderno incentrato sulla semplicità e l'eleganza
-Slick DE dal team Mint
+DE intuitivo e moderno dal team Mint
 Il Deepin Desktop Environment
 Full-optional, DE moderno
 Plasma 5 e accessori pacchetto
@@ -272,14 +270,14 @@ FTP veloce ed affidabile, FTPS e SFTP client
 del browser estensibile da Mozilla
 Open source client BitTorrent
 client di posta elettronica ricco di funzionalità da Mozilla
-Facile da usare per BitTorrent
-Facile da usare editor video
+Facile da usare per scaricare Torrent
+Video editor facile da usare 
 lettore audio ricco di funzionalità
-ma potente video transcoder semplice
-Facile da usare editor video non lineare
-riproduttore video medi
+ Potente video transcoder 
+ Video editor non lineare facile da usare 
+Riproduttore di vari media 
 masterizzatore CD GUI
-word processor full-optional
+videoscrittura full-optional
 foglio di calcolo da GNOME
 Open-source suite di software per ufficio
 Calendario & task manager (incluso con Xfce)
@@ -291,8 +289,8 @@ editor di testo avanzato & IDE
 Open source sistema di controllo versione distribuito
 ambiente di sviluppo integrato (IDE)
 window manager e toolkit
-Luce, veloce e versatile WM
-Leggero, potente e configurabile WM impilamento
+leggero, veloce e versatile WM
+Leggero, potente e configurabile WM con funzione di "stacking" 
 dock personalizzabile e avvio delle applicazioni
 Per l'apertura di applicazioni e gestione delle finestre
 pannello del desktop
@@ -301,23 +299,23 @@ America
 Antartide
 artico
 Asia
-atlantico
+Atlantico
 Australia
 Europa
-indiano
+Indiano
 Pacifico
-La preparazione e il montaggio delle partizioni
-chiavi Aggiornamento
-Installazione di sistemi di kernel e di base
-Installazione di strumenti CLI
-Installazione di strumenti wireless
-Installazione grafica Strumenti
-L'aggiunta di codec
-Esecuzione di mkinitcpio
+Preparo e monto le partizioni
+Aggiorno le chiavi
+Installo i sistemi di kernel e di base
+Installo gli strumenti della linea di comando
+Installo gli strumenti wireless
+Installo i strumenti grafici
+Aggiungo i codec
+Eseguo di mkinitcpio
 Installazione dei driver video opensource
-Generazione mirrorlist
+Genero la  mirrorlist
 Aggiunta di utenti e la creazione di gruppi di
-Completare i preparativi
-Entrando fase di installazione automatica
-Preparazione servizi locali
+Completo i preparativi
+Entro nella fase di installazione automatica
+Preparo i servizi locali
 Installazione
