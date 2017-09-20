@@ -677,10 +677,9 @@ PickLuxuries() { # User selects any combination from a store of extras
   done
   print_heading
   case "$LuxuriesList" in
-  '') PrintOne "Now you have the option to add extras, such as a web browser"
+  '') Echo
+      PrintOne "Now you have the option to add extras, such as a web browser"
     PrintOne "desktop environment, etc, from the following categories"
-    PrintOne "If you want only a base Arch installation"
-    PrintOne "exit without choosing any extras"
   ;;
   *) PrintOne "You can add more items, or select items to delete"
   esac

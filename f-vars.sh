@@ -87,7 +87,7 @@ SetLanguage() {
   print_heading
   PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
   Echo
-  listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"
+  listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"  # List language files after removing file extension
   case $Result in
   "" | "Exit") LanguageFile=English.lan
               InstalLanguage="en"
@@ -120,11 +120,15 @@ SetLanguage() {
 
   # Some common translations
   if [ -f "TESTING" ]; then
-    Translate "Feliz2 - Testing"
+    Translate "Feliz - Testing"
   else
-    Translate "Feliz2 - Arch Linux installation script"
+    Translate "Feliz - Arch Linux installation script"
   fi
   _Backtitle="$Result"
+  Translate "Loading"
+  _Loading="$Result"
+  Translate "Installing"
+  _Installing="$Result"
   # listgen1/2 variables
   Translate "Ok"
   _Ok="$Result"
@@ -288,16 +292,14 @@ LongDesk[6]="Lightweight and modern Qt-based DE"
 LongDesk[7]="Traditional desktop from the Mint team"
 LongDesk[8]="Lightweight, highly configurable DE"
 # Graphical
-Graphical="avidemux blender gimp handbrake imagemagick inkscape gthumb simple-scan xsane"
-LongGraph[1]="Simple video editor             "
-LongGraph[2]="3D graphics creation suite"
-LongGraph[3]="Advanced image editing suite"
-LongGraph[4]="Simple yet powerful video ripper"
-LongGraph[5]="Command-line image manipulation"
-LongGraph[6]="Vector graphics editor"
-LongGraph[7]="Image viewer & basic editor"
-LongGraph[8]="A simple scanner GUI"
-LongGraph[9]="GTK-based sane frontend"
+Graphical="blender gimp imagemagick inkscape gthumb simple-scan xsane"
+LongGraph[1]="3D graphics creation suite"
+LongGraph[2]="Advanced image editing suite"
+LongGraph[3]="Command-line image manipulation"
+LongGraph[4]="Vector graphics editor"
+LongGraph[5]="Image viewer & basic editor"
+LongGraph[6]="A simple scanner GUI"
+LongGraph[7]="GTK-based sane frontend"
 # Internet
 Internet="chromium epiphany filezilla firefox midori qbittorrent thunderbird transmission-gtk"
 LongNet[1]="Open source web browser from Google    "

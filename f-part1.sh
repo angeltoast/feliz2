@@ -421,11 +421,11 @@ ChoosePartitions() {
 
 select_filesystem() { # User chooses filesystem from list in global variable ${TypeList}
   local Counter=0
-  Translate "Please now select the file system for"
+  Translate "Please select the file system for"
   PrintOne "$Result" "${Partition}"
   PrintOne "It is not recommended to mix the btrfs file-system with others"
   Echo
-  Translate "or choose Exit to finish this part of the setup"
+  Translate "or choose Exit to leave it as it is"
   listgen1 "${TypeList}" "$Result" "$_Ok $_Exit"
   if [ "$Result" = "$_Exit" ]; then
     PartitionType=""
