@@ -128,19 +128,24 @@ InstallKernel() {   # Selected kernel and some other core systems
 
   LANG=C            # Set the locale for all processes run from the current shell 
 
-  # And this, to solve keys issue if an older Feliz iso is running after keyring changes
-  # Passes test if feliz.log exists and the first line created by felizinit is numeric
-  # and that number is greater than or equal to the date of the latest Arch trust update
-  TrustDate=20170907  # Reset this to date of latest Arch Linux trust update
-                      # Next trustdb check 2017-10-20
-  if [ -f feliz.log ] && [ $(head -n 1 feliz.log | grep '[0-9]') ] && [ $(head -n 1 feliz.log) -ge $TrustDate ]; then
-    echo "pacman-key trust check passed" >> feliz.log
-  else                # Default
-    TPecho "Updating keys"
-    pacman-db-upgrade
-    pacman-key --init
-    pacman-key --populate archlinux
-    pacman-key --refresh-keys
+  # And this, to solve keys issue if an older Feliz or Arch iso is running after keyring changes
+  # Passes test if the date of the running iso is more recent than the date of the latest Arch trust update
+
+  # Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
+  RunningDate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
+
+  TrustDate=201709  # Reset this to date of latest Arch Linux trust update
+                    # Next trustdb check 2017-10-20
+  
+  if [ $RunningDate -ge $TrustDate ]; then              # If the running iso is more recent than
+    echo "pacman-key trust check passed" >> feliz.log   # the last trust update, no action is taken
+  else                                                  # But if the iso is older than the last trust update
+    TPecho "Updating keys"                              # Then the keys must be updated
+   # pacman-db-upgrade
+   # pacman-key --init
+   # pacman-key --populate archlinux
+   # pacman-key --refresh-keys
+    pacman -Sy --noconfirm archlinux-keyring            # This is an experimental alternative to the above
   fi
   Translate "kernel and core systems"
   TPecho "Installing " "$Result"
