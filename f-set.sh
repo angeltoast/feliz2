@@ -2,7 +2,8 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 17th September 2017
+# With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
+# Revision date: 1st October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,52 +23,25 @@
 #                    Boston, MA 02110-1301 USA
 
 # In this module: functions for setting variables used during installation
-# --------------------   ------------------------
-# Function        Line   Function            Line
-# --------------------   ------------------------
-# not_found         46    getkeymap            517 
-# Echo              52    SearchKeyboards      575 
-# TPread            57    Username             612
-# SetKernel         74    SetHostname          628
-# ChooseMirrors     86    Options              645
-# ConfirmVbox      134    PickLuxuries         671
-# SetTimeZone      158    KeepOrDelete         711
-# SetSubZone       190    ShoppingList         743
-# SelectSubzone    219    ChooseDM             917
-# America          239    SetGrubDevice        971
-# FindCity         274    EnterGrubPath       1003
-# DoCities         325      --- Review stage ---
-# setlocale        351    FinalCheck          1031
-# AllLanguages     500    ManualSettings      1154
-# --------------------    -----------------------
+# --------------------   -----------------------
+# Function        Line   Function           Line
+# --------------------   -----------------------
+# SetKernel         43   Username            588  
+# ChooseMirrors     56   SetHostname         604  
+# ConfirmVbox      107   Options             621  
+# SetTimeZone      131   PickLuxuries        647 
+# SetSubZone       165   
+# SelectSubzone    194   ShoppingList        692
+# America          214   ChooseDM            724
+# FindCity         249   SetGrubDevice      1008 
+# DoCities         299   EnterGrubPath      1062 
+# setlocale        325     --- Review stage --- 
+# AllLanguages     476   FinalCheck         1095
+# getkeymap        493   ManualSettings     1123
+# SearchKeyboards  551
+# --------------------   -----------------------
 
-not_found() {
-  Echo
-  PrintOne "Please try again"
-  Buttons "Yes/No" "$_Ok"
-}
-
-Echo() { # Use in place of 'echo' for basic text print
-  printf "%-s\n" "$1"
-  cursor_row=$((cursor_row+1))
-}
-
-TPread() { # Aligned prompt for user-entry
-  # $1 = prompt ... Returns result through $Response
-  local T_COLS=$(tput cols)
-  local lov=${#1}
-  local stpt=0
-  if [ ${lov} -lt ${T_COLS} ]; then
-    stpt=$(( (T_COLS - lov) / 2 ))
-  elif [ ${lov} -gt ${T_COLS} ]; then
-    stpt=0
-  else
-    stpt=$(( (T_COLS - 10) / 2 ))
-  fi
-  EMPTY="$(printf '%*s' $stpt)"
-  read -p "$EMPTY $1" Response
-  cursor_row=$((cursor_row+1))
-}
+# read -p "DEBUG f-set $LINENO"   # Basic debugging - copy and paste wherever a break is needed
 
 SetKernel() {
   print_heading
@@ -75,7 +49,8 @@ SetKernel() {
   PrintOne "Choose your kernel"
   PrintOne "The Long-Term-Support kernel (LTS) offers stabilty"
   PrintOne "while the Latest kernel has all the new features"
-  PrintOne "If in doubt, choose LTS"
+  Translate "If in doubt, choose"
+  PrintOne "$Result " "LTS"
   Echo
   listgen1 "LTS Latest" "" "$_Ok"
   Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
@@ -106,27 +81,29 @@ ChooseMirrors() { # User selects one or more countries with Arch Linux mirrors
   PrintOne "have Arch Linux mirrors. It is possible to select more than"
   PrintOne "one, but adding too many will slow down your installation"
   Echo
-
   PrintOne "Please press any key to continue"
   read -n1
   # User-selection of countries starts here:
   Counter=0
   Translate "Please choose a country"
+  Instruction="$Result"
   while true
   do
     # Save a copy of the countries list without spaces to temp.file used (and deleted) by listgenx
     cat countries.list | tr ' ' '_' > temp.file 
     # Display the list for user-selection
-    listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
-    if [ -z $Result ]; then
+    listgenx "$Instruction" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+    if [ -z $Result ]; then       # User does not want to add any more mirrors
       break
-    elif [ "$Result" = "BosniaHerzegov" ]; then
+    elif [ "$Result" = "BosniaHerzegov" ]; then # Previously shortened to fit screen
       Result="Bosnia_and_Herzegovina"
     fi
     # Replace any underscores in selection with spaces and add to array for use during installation
     CountryLong[${Counter}]="$(echo "$Result" | tr '_' ' ')"    # CountryLong is declared in f-vars.sh
     Counter=$((Counter+1))
-    Translate "$Result added. Choose another country, or ' '"
+    Chosen="$Result"
+    Translate "added. Choose another country, or ' '"
+    Instruction="$Chosen $Result"
   done
 }
 
@@ -150,6 +127,9 @@ ConfirmVbox() {
       ;;
       *) IsInVbox=""
     esac
+
+# read -p "DEBUG f-set $LINENO"   # Basic debugging - copy and paste wherever a break is needed
+
     return 0
   done
 }
@@ -164,16 +144,18 @@ SetTimeZone() {
     Zones=$(timedatectl list-timezones | cut -d'/' -f1 | uniq) # Ten world zones
     Echo
     zones=""
-    for x in ${Zones}                      # Convert to space-separated list
+    for x in ${Zones}                         # Convert to space-separated list
     do
       Translate "$x"                          # Translate
       zones="$zones $Result"
     done
-    listgen1 "${zones}" "" "$_Ok"         # Allow user to select one
-    # Because the list is translated, we need to get the system version of the selected item
-    ZONE=$(echo "$Zones" | head -n $Response | tail -n 1)
+    listgen1 "${zones}" "" "$_Ok"             # Allow user to select one
+    CheckResult="$Result"
+    ZONE=$(echo "$Zones" | head -n $Response | tail -n 1)   # System zone name of the selected item number
+    Translate "$ZONE"
+    NativeZONE="$Result"                      # Save ZONE in native language, for display  
     Echo
-    case $Result in
+    case $CheckResult in
       "") continue
       ;;
       *) SetSubZone                           # Call subzone function
@@ -228,7 +210,7 @@ SelectSubzone() {
   *) Translate "your nearest major city"
     _P3="$Result"
   esac
-  PrintOne "$_P1" "$ZONE"
+  PrintOne "$_P1" "$NativeZONE"
   PrintOne "" "$_P2"
   PrintOne "" "$_P3"
   Echo
@@ -238,7 +220,7 @@ SelectSubzone() {
 America() {
   SUBZONE=""      # Make sure this variable is empty
   print_heading
-  PrintOne "Are you in any of these states?"
+  PrintOne "Are you in any of these States?"
   SubList=""      # Start an empty list
   Previous=""     # Prepare to save previous record
   local Toggle="First"
@@ -274,7 +256,7 @@ FindCity() {  # Called by SelectSubzone
   Translate "enter ' ' to see a list"
   TPread "$_or $Result: "
   Echo
-  if [ -z ${Response} ]; then               # User has entered ' '
+  if [ -z ${Response} ]; then             # User has entered ' '
     # Prepare file to use listgenx
     timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > temp.file
     Translate "Please choose your nearest location"
@@ -396,8 +378,10 @@ setlocale() { # Uses country-code in cities.list to match ZONE/SUBZONE to countr
         Language=$Item                                          # Use the abbreviation
       fi
       Echo
+      Translate "$Language"
+      _Language="$Result"
       Translate "Only one language found for your location"
-      PrintOne "$Result" ": $Language"
+      PrintOne "$Result" ": $_Language"
       PrintOne "Shall we install with this language?"    # Allow user to confirm
       Buttons "Yes/No" "$_Yes $_No" ""
       if [ $Result = "$_No" ]; then                       # User declines offered language
@@ -645,11 +629,11 @@ Options() { # User chooses between FelizOB, self-build or basic
   PrintOne "Feliz now offers you a choice. You can ..."
   Echo
   PrintOne "Build your own system, by picking the"
-  PrintOne " software you wish to install"
-  PrintOne "... or ..."
+  PrintOne "software you wish to install"
+  PrintOne "..." "$_or ..."
   PrintOne "You can choose the new FelizOB desktop, a"
-  PrintOne " complete lightweight system built on Openbox"
-  PrintOne "... or ..."
+  PrintOne "complete lightweight system built on Openbox"
+  PrintOne "..." "$_or ..."
   PrintOne "Just install a basic Arch Linux"
   Echo
   Translate "Build_My_Own"
@@ -670,6 +654,12 @@ PickLuxuries() { # User selects any combination from a store of extras
   Translate "Added so far"
   AddedSoFar="$Result"
   TransCatList=""
+  
+  for x in {1..9}         # Prepare array that records if a category
+  do                      # has already been translated
+    BeenThere[${x}]="N"   # Set each element to 'N'
+  done
+  
   for category in $CategoriesList
   do
     Translate "$category"
@@ -683,7 +673,7 @@ PickLuxuries() { # User selects any combination from a store of extras
   ;;
   *) PrintOne "You can add more items, or select items to delete"
   esac
-  # Echo
+  #
   while true
   do
     listgen1 "${TransCatList}" "$_Quit" "$_Ok $_Exit"
@@ -705,174 +695,252 @@ PickLuxuries() { # User selects any combination from a store of extras
   fi
 }
 
-KeepOrDelete() {
-  Bagged="$1"
-  while true
-  do
-    print_heading
-    Translate "is already in your shopping list"
-    Message="$Bagged $Result"
-    Translate "Keep"
-    K="$Result"
-    Translate "Delete"
-    D="$Result"
-    Buttons "Yes/No" "$K $D" "$Message"
-    case $Response in
-      1) Temp="$LuxuriesList"
-        break
-      ;;
-      2) Validated="Y"
-        Temp=""
-        for lux in $LuxuriesList
-        do
-          if [ ${lux} != ${Bagged} ]; then
-            Temp="$Temp $lux"
-          fi
-        done
-        break
-      ;;
-      *) not_found
-    esac
-  done
-  LuxuriesList="$Temp"
-}
-
 ShoppingList() { # Called by PickLuxuries after a category has been chosen.
   Translate "Choose an item"
   while true
   do
     print_heading
     PrintOne "$AddedSoFar" ": ${LuxuriesList}"
+    PrintOne "You can add more items, or select items to delete"
     Echo
     PrintOne "${Categories[$Category]}" # $Category is number of item in CategoriesList
-    # Pass category to listgen2 for user to choose one item;
+    # Translate items in selected category and pass to listgen2 for user to choose one item;
     local Counter=1
+    MaxLen=0
     case $Category in
-       1) OptionsCounter=1
-          for Option in "${LongAccs[@]}"  # Translate all elements
+     1) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+          OptionsCounter=1
+          for Option in "${LongAccs[@]}"              # First translate all elements
           do
             Translate "$Option"
-            LongAccs[${OptionsCounter}]="$Result"
+            LongAccs[${OptionsCounter}]="$Result"     # Replace element with translation
             (( OptionsCounter+=1 ))
           done
-        for i in ${Accessories}
-        do
-          LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
-          (( Counter+=1 ))
-        done
+
+          for i in ${Accessories}
+          do
+            CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+            LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
+            (( Counter+=1 ))
+          done
+
+          # Compare length of first item in array with length of longest item
+          FirstElement="${LongAccs1[1]}"
+          if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+            PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+            LongAccs1[1]="$Result"                  # and add result as first element in LongAccs
+          fi
+        fi
         listgen2 "$Accessories" "$_Quit" "$_Ok $_Exit" "LongAccs1"
+        BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       2) OptionsCounter=1
-          for Option in "${LongDesk[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongDesk[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${Desktops}
-        do
-          LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Desktops" "$_Quit" "$_Ok $_Exit" "LongDesk1"
+       2) if [ ${BeenThere[${Category}]} = "N" ]; then   # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongDesk[@]}"          # Translate all elements
+            do
+              Translate "$Option"
+              LongDesk[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+          
+            for i in ${Desktops}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongDesk1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongDesk1[1]="$Result"                  # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Desktops" "$_Quit" "$_Ok $_Exit" "LongDesk1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       3) OptionsCounter=1
-          for Option in "${LongGraph[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongGraph[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${Graphical}
-        do
-          LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Graphical" "$_Quit" "$_Ok $_Exit" "LongGraph1"
+       3) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongGraph[@]}"           # Translate all elements
+            do
+              Translate "$Option"
+              LongGraph[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Graphical}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongGraph1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongGraph1[1]="$Result"                 # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Graphical" "$_Quit" "$_Ok $_Exit" "LongGraph1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       4) OptionsCounter=1
-          for Option in "${LongNet[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongNet[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${Internet}
-        do
-          LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Internet" "$_Quit" "$_Ok $_Exit" "LongNet1"
+       4) if [ ${BeenThere[${Category}]} = "N" ]; then   # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongNet[@]}"             # Translate all elements
+            do
+              Translate "$Option"
+              LongNet[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Internet}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongNet1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongNet1[1]="$Result"                   # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Internet" "$_Quit" "$_Ok $_Exit" "LongNet1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       5) OptionsCounter=1
-          for Option in "${LongMulti[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongMulti[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${Multimedia}
-        do
-          LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Multimedia" "$_Quit" "$_Ok $_Exit" "LongMulti1"
+       5) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongMulti[@]}"           # Translate all elements
+            do
+              Translate "$Option"
+              LongMulti[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Multimedia}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
+              (( Counter+=1 ))
+            done
+  
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongMulti1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongMulti1[1]="$Result"                 # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Multimedia" "$_Quit" "$_Ok $_Exit" "LongMulti1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       6) OptionsCounter=1
-          for Option in "${LongOffice[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongOffice[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${Office}
-        do
-          LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Office" "$_Quit" "$_Ok $_Exit" "LongOffice1"
+       6) if [ ${BeenThere[${Category}]} = "N" ]; then   # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongOffice[@]}"          # Translate all elements
+            do
+              Translate "$Option"
+              LongOffice[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Office}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
+              (( Counter+=1 ))
+            done
+  
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongOffice1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongOffice1[1]="$Result"                # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Office" "$_Quit" "$_Ok $_Exit" "LongOffice1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       7) OptionsCounter=1
-          for Option in "${LongProg[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongProg[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${Programming}
-        do
-          LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
-          (( Counter+=1 ))
-        done
-        listgen2 "$Programming" "$_Quit" "$_Ok $_Exit" "LongProg1"
+       7) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongProg[@]}"            # Translate all elements
+            do
+              Translate "$Option"
+              LongProg[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+
+            for i in ${Programming}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongProg1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongProg1[1]="$Result"                  # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Programming" "$_Quit" "$_Ok $_Exit" "LongProg1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
        ;;
-       8) OptionsCounter=1
-          for Option in "${LongWMs[@]}"  # Translate all elements
-          do
-            Translate "$Option"
-            LongWMs[${OptionsCounter}]="$Result"
-            (( OptionsCounter+=1 ))
-          done
-        for i in ${WindowManagers}
-        do
-          LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
-          (( Counter+=1 ))
-        done
+       8) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongWMs[@]}"             # Translate all elements
+            do
+              Translate "$Option"
+              LongWMs[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${WindowManagers}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
+              (( Counter+=1 ))
+            done
+  
+          # Compare length of first item in array with length of longest item
+          FirstElement="${LongWMs1[1]}"
+          if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+            PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+            LongWMs1[1]="$Result"                   # and add result as first element in LongAccs
+          fi
+        fi
         listgen2 "$WindowManagers" "$_Quit" "$_Ok $_Exit" "LongWMs1"
+        BeenThere[${Category}]="Y"                  # Prevent retranslation
       ;;
-      9) OptionsCounter=1
-          for Option in "${LongBars[@]}"  # Translate all elements
+      9) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+          OptionsCounter=1
+          for Option in "${LongBars[@]}"            # Translate all elements
           do
             Translate "$Option"
             LongBars[${OptionsCounter}]="$Result"
             (( OptionsCounter+=1 ))
           done
-        for i in ${Taskbars}
-        do
-          LongBars1[${Counter}]="$i - ${LongBars[${Counter}]}"
-          (( Counter+=1 ))
-        done
+
+          for i in ${Taskbars}
+          do
+            CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+            LongBars1[${Counter}]="$i - ${LongBars[${Counter}]}"
+            (( Counter+=1 ))
+          done
+ 
+          # Compare length of first item in array with length of longest item
+          FirstElement="${LongBars1[1]}"
+          if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+            PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+            LongBars1[1]="$Result"                  # and add result as first element in LongAccs
+          fi
+        fi
         listgen2 "$Taskbars" "$_Quit" "$_Ok $_Exit" "LongBars1"
+        BeenThere[${Category}]="Y"                  # Prevent retranslation
       ;;
       *) break
     esac
@@ -880,15 +948,21 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
     if [ $SaveResult = "$_Exit" ]; then # Loop until user selects "Exit"
       break
     fi
-    for lux in $LuxuriesList            # Check that chosen item is not already on the list
+    Removed="N"                         # Prepare temporary variables
+    TempList=""
+    for lux in $LuxuriesList            # Check LuxuriesList
     do
-      if [ ${lux} = ${SaveResult} ]; then
-        KeepOrDelete "$SaveResult"
-        Result=""
-        continue
+      if [ ${lux} = ${SaveResult} ]; then # If already on list, it will be removed
+        Removed="Y"
+      else
+        TempList="$TempList ${lux}"       # If not already on LuxuriesList, add to TempList
       fi
     done
-    case $SaveResult in                 # Check all DE & WM entries
+    LuxuriesList="$TempList"
+    if [ $Removed = "Y" ]; then        # If selected item was removed
+      continue                         # Don't process it any further
+    fi
+    case $SaveResult in                # Check all DE & WM entries
       "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "i3" | "Icewm" | "JWM" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") DesktopEnvironment=$SaveResult
         for lux in $LuxuriesList
         do
@@ -918,7 +992,8 @@ ChooseDM() { # Choose a display manager
       DMList="GDM LightDM LXDM sddm SLIM XDM"
       print_heading
       PrintOne "A display manager provides a graphical login screen"
-      PrintOne "If in doubt, choose LightDM"
+      Translate "If in doubt, choose"
+      PrintOne "$Result " "LightDM"
       PrintOne "If you do not install a display manager, you will have"
       PrintOne "to launch your desktop environment manually"
       Echo
@@ -969,7 +1044,8 @@ SetGrubDevice() {
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/'
 
   # Add an option to enter grub device manually
-  DevicesList="$DevicesList Enter_Manually"
+  Translate "Enter_Manually"
+  DevicesList="$DevicesList $Result"
   print_heading
   GrubDevice=""
   local Counter=0
@@ -1038,10 +1114,10 @@ FinalCheck() {
     Translate "Keyboard is"
     PrintMany "3) $Result" "$Countrykbd"
     case ${IsInVbox} in
-      "VirtualBox") Translate "Virtualbox guest utilities"
+      "VirtualBox") Translate "virtualbox guest modules"
       PrintMany "4)" "$Result: $_Yes"
       ;;
-      *) Translate "Virtualbox guest utilities"
+      *) Translate "virtualbox guest modules"
       PrintMany "4)" "$Result: $_No"
     esac
     if [ -z "$DisplayManager" ]; then
@@ -1064,10 +1140,12 @@ FinalCheck() {
       PrintOne "$_None" ""
     elif [ $DesktopEnvironment ] && [ $DesktopEnvironment = "FelizOB" ]; then
       PrintOne "FelizOB" ""
-    elif [ -z $LuxuriesList ]; then
+    elif [ -z "$LuxuriesList" ]; then
       PrintOne "$_None" ""
     else
+      Translate="N"
       PrintOne "${LuxuriesList}" ""
+      Translate="Y"
     fi
     EMPTY="$SaveStartPoint" # Reset cursor start point
     # 8) Kernel
@@ -1083,6 +1161,7 @@ FinalCheck() {
     # 10) Partitions 
     Translate "The following partitions have been selected"
     PrintMany "10) $Result" "..."
+    Translate="N"
     PrintOne "${RootPartition} /root ${RootType}"
     PrintMany "${SwapPartition} /swap"
     if [ -n "${AddPartList}" ]; then
@@ -1098,6 +1177,7 @@ FinalCheck() {
 
       done
     fi
+    Translate="Y"
     Response=20
     Echo
     PrintOne "Press Enter to install with these settings, or"

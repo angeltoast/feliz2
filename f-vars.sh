@@ -2,7 +2,8 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 12th August 2017
+# With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
+# Revision date: 1st October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,13 +22,55 @@
 #                  51 Franklin Street, Fifth Floor
 #                    Boston, MA 02110-1301 USA
 
-# 1) Global functions
+# In this module: Some global functions, and declaration of various arrays and variables
+# --------------------   ----------------------
+# Function        Line   Function          Line
+# --------------------   ----------------------
+# not_found         33   read_timed         109
+# Echo              39   CompareLength      128
+# TPread            44   PaddLength         136
+# print_heading     62   SetLanguage        145
+# PrintOne          74   Translate          226
+# PrintMany         96   Arrays & Variables 247
+# --------------------   ----------------------
+
+# read -p "DEBUG f-vars $LINENO"   # Basic debugging - copy and paste wherever a break is needed
+
+not_found() {
+  Echo
+  PrintOne "Please try again"
+  Buttons "Yes/No" "$_Ok"
+}
+
+Echo() { # Use in place of 'echo' for basic text print
+  printf "%-s\n" "$1"
+  cursor_row=$((cursor_row+1))
+}
+
+TPread() { # Aligned prompt for user-entry
+  # $1 = prompt ... Returns result through $Response
+  local T_COLS=$(tput cols)
+  local lov=${#1}
+  local stpt=0
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( (T_COLS - lov) / 2 ))
+  elif [ ${lov} -gt ${T_COLS} ]; then
+    stpt=0
+  else
+    stpt=$(( (T_COLS - 10) / 2 ))
+  fi
+  EMPTY="$(printf '%*s' $stpt)"
+  read -p "$EMPTY $1" Response
+  cursor_row=$((cursor_row+1))
+}
 
 print_heading() {   # Always use this function to clear the screen
   tput sgr0         # Make sure colour inversion is reset
   clear
   T_COLS=$(tput cols)                   # Get width of terminal
-  tput cup 0 $(((T_COLS/2)-20))         # Move the cursor to left of center
+  LenBT=${#_Backtitle}
+  HalfBT=$((LenBT/2))
+  tput cup 0 $(((T_COLS/2)-HalfBT))     # Move the cursor to left of center
   printf "%-s\n" "$_Backtitle"          # Display backtitle
   printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
   cursor_row=3                          # Save cursor row after heading
@@ -38,8 +81,10 @@ PrintOne() {  # Receives up to 2 arguments. Translates and prints text
   if [ ! "$2" ]; then  # If $2 is missing or empty, translate $1
     Translate "$1"
     Text="$Result"
-  else        # If $2 contains text, don't translate $1 or $2
-    Text="$1 $2"
+  elif [ $Translate = "N" ]; then  # If Translate variable unset, don't translate any
+    Text="$1 $2 $3"
+  else                             # If $2 contains text, don't translate any
+    Text="$1 $2 $3"
   fi
   local width=$(tput cols)
   EMPTY=" "
@@ -57,6 +102,8 @@ PrintMany() { # Receives up to 2 arguments. Translates and prints text
   if [ ! "$2" ]; then  # If $2 is missing
     Translate "$1"
     Text="$Result"
+  elif [ $Translate = "N" ]; then  # If Translate variable unset, don't translate any
+    Text="$1 $2 $3"
   else        # If $2 contains text, don't translate $1 or $2
     Text="$1 $2"
   fi
@@ -82,39 +129,71 @@ read_timed() { # Timed display - $1 = text to display; $2 = duration
   cursor_row=$((cursor_row+1))
 }
 
+CompareLength() {
+  # If length of translation is greater than previous, save it
+  Text="$1"
+    if [ ${#Text} -gt $MaxLen ]; then
+      MaxLen=${#Text}
+    fi
+}
+
+PaddLength() {  # If $1 is shorter than MaxLen, padd with spaces
+  Text="$1"
+  until [ ${#Text} -eq $MaxLen ]
+  do
+    Text="$Text "
+  done
+  Result="$Text"
+}
+
 SetLanguage() {
   _Backtitle="Feliz2 - Arch Linux installation script"
   print_heading
+  setfont LatGrkCyr-8x16 -m 8859-2                         # To display wide range of characters
   PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
   Echo
-  listgen1 "$(ls *.lan | cut -d'.' -f1)" "" "Ok"  # List language files after removing file extension
-  case $Result in
-  "" | "Exit") LanguageFile=English.lan
-              InstalLanguage="en"
-  ;;
-  *) LanguageFile="${Result}.lan"
-    case $LanguageFile in
-    "Deutsche.lan") InstalLanguage="de"
+
+  listgen1 "English Deutsche Ελληνικά Español Française Italiano Nederlands Polski Português-PT Português-BR" "" "Ok"  # Available languages
+  case $Response in
+    2) InstalLanguage="de"
+      LanguageFile="German.lan"
     ;;
-    "Español.lan") InstalLanguage="es"
+    3) InstalLanguage="el"
+      LanguageFile="Greek.lan"
     ;;
-    "Français.lan") InstalLanguage="fr"
+    4) InstalLanguage="es"
+      LanguageFile="Spanish.lan"
     ;;
-    "Italiana.lan") InstalLanguage="it"
+    5) InstalLanguage="fr"
+      LanguageFile="French.lan"
     ;;
-    "Polski.lan") InstalLanguage="pl"
+    6) InstalLanguage="it"
+      LanguageFile="Italian.lan"
     ;;
-    "Português.lan") InstalLanguage="pt"
+    7) InstalLanguage="nl"
+      LanguageFile="Dutch.lan"
+    ;;
+    8) InstalLanguage="pl"
+      LanguageFile="Polish.lan"
+    ;;
+    9) InstalLanguage="pt-PT"
+      LanguageFile="Portuguese-PT.lan"
+    ;;
+    10) InstalLanguage="pt-BR"
+      LanguageFile="Portuguese-BR.lan"
     ;;
     *) InstalLanguage="en"
-      LanguageFile=English.lan
-    esac
+      LanguageFile="English.lan"
   esac
 
+  # Get the selected language file
+  wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
+
+  
   # Install the translator for situations where no translation is found on file
-  if [ $LanguageFile != "English.lan" ]; then   # Only if not English
+  if [ $LanguageFile != "English.lan" ]; then   # Only if not English and not already loaded
     PrintOne "Loading translator"
-    wget -q git.io/trans
+    wget -q git.io/trans 2>> feliz.log
     chmod +x ./trans
   fi
 
@@ -167,9 +246,9 @@ SetLanguage() {
 }
 
 Translate() { # Called by PrintOne & PrintMany and by other functions as required
-              # $1 is text to be translated
-  Text="$1"
-  if [ $LanguageFile = "English.lan" ]; then
+                # $1 is text to be translated
+  Text="${1%% }"   # Ensure no trailing spaces
+  if [ $LanguageFile = "English.lan" ] || [ $Translate = "N" ]; then
     Result="$Text"
     return
   fi
@@ -177,15 +256,14 @@ Translate() { # Called by PrintOne & PrintMany and by other functions as require
   #                      exact match only | restrict to first find | display only number
   RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
   case $RecordNumber in
-  "" | 0) # No translation found, so translate using Google Translate to temporary file:
-     ./trans -b en:${InstalLanguage} "$Text" > Result.file 2>/dev/null
-     Result=$(cat Result.file)
+  "" | 0) # No match found in English.lan, so translate using Google Translate to temporary file:
+    # ./trans -b en:${InstalLanguage} "$Text" > Result.file 2>/dev/null
+    # Result=$(cat Result.file)
+      Result="$Text"
   ;;
   *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target language file
   esac
 }
-
-# 2) Declaration of variables and arrays
 
 # Partition variables and arrays
 declare -a AddPartList    # Array of additional partitions eg: /dev/sda5
@@ -246,7 +324,9 @@ UserName=""               # eg: archie
 Scope=""                  # Installation scope ... 'Full' or 'Basic'
 
 # Miscellaneous
+declare -a BeenThere      # Restrict translations to first pass
 PrimaryFile=""
+Translate="Y"             # May be set to N to stifle translation
 
 # ---- Partitioning ----
 PartitioningOptions="leave cfdisk guided auto"
@@ -262,7 +342,7 @@ LongPartE[3]="Allow feliz to partition the whole device"
 
 # ---- Arrays for extra Applications ----
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers Taskbars"
-Categories[1]="Accessories         "
+Categories[1]="Accessories"
 Categories[2]="Desktop_Environments"
 Categories[3]="Graphical"
 Categories[4]="Internet"
@@ -273,7 +353,7 @@ Categories[8]="Window_Managers"
 Categories[9]="Taskbars"
 # Accessories
 Accessories="brasero conky galculator gparted hardinfo leafpad lxterminal pcmanfm"
-LongAccs[1]="Disc burning application from Gnome            "
+LongAccs[1]="Disc burning application from Gnome"
 LongAccs[2]="Desktop time and system information"
 LongAccs[3]="Handy desktop calculator"
 LongAccs[4]="Tool to make/delete/resize partitions"
@@ -302,7 +382,7 @@ LongGraph[6]="A simple scanner GUI"
 LongGraph[7]="GTK-based sane frontend"
 # Internet
 Internet="chromium epiphany filezilla firefox midori qbittorrent thunderbird transmission-gtk"
-LongNet[1]="Open source web browser from Google    "
+LongNet[1]="Open source web browser from Google"
 LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
 LongNet[3]="Fast & reliable FTP, FTPS & SFTP client"
 LongNet[4]="Extensible browser from Mozilla"
@@ -312,7 +392,7 @@ LongNet[7]="Feature-rich email client from Mozilla"
 LongNet[8]="Easy-to-use BitTorrent client"
 # Multimedia
 Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
-LongMulti[1]="Easy-to-use video editor            "
+LongMulti[1]="Easy-to-use video editor"
 LongMulti[2]="Feature-rich audio player"
 LongMulti[3]="Simple yet powerful video transcoder"
 LongMulti[4]="Easy-to-use non-linear video editor"
@@ -320,7 +400,7 @@ LongMulti[5]="Middleweight video player"
 LongMulti[6]="GUI CD burner"
 # Office
 Office="abiword calibre evince gnumeric libreoffice orage scribus"
-LongOffice[1]="Full-featured word processor           "
+LongOffice[1]="Full-featured word processor"
 LongOffice[2]="E-book library management application"
 LongOffice[3]="Reader for PDF & other document formats"
 LongOffice[4]="Spreadsheet program from GNOME"
@@ -339,7 +419,7 @@ LongProg[7]="Cross-platform IDE for Object Pascal"
 LongProg[8]="Integrated development environment (IDE)"
 # WindowManagers
 WindowManagers="Awesome Enlightenment Fluxbox i3 IceWM JWM Openbox Windowmaker Xmonad"
-LongWMs[1]="Highly configurable, dynamic window manager              "
+LongWMs[1]="Highly configurable, dynamic window manager"
 LongWMs[2]="Stacking window manager & libraries to manage desktop"
 LongWMs[3]="Light, fast and versatile WM"
 LongWMs[4]="Tiling window manager, completely written from scratch"
@@ -350,8 +430,8 @@ LongWMs[8]="Window manager that emulates the NeXT user interface"
 LongWMs[9]="Dynamic tiling window manager (requires Haskell compiler)"
 # Taskbars (Docks & Panels)
 Taskbars="cairo-dock docky dmenu fbpanel lxpanel plank tint2"
-LongBars[1]="Customizable dock & launcher application                "
-LongBars[2]="Full fledged dock application"
+LongBars[1]="Customizable dock & launcher application"
+LongBars[2]="Fully fledged dock application"
 LongBars[3]="Fast and lightweight dynamic menu for X"
 LongBars[4]="Lightweight, NETWM compliant desktop panel"
 LongBars[5]="Lightweight X11 desktop panel (part of the LXDE desktop)"

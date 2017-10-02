@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Developed by Elizabeth Mills
-# Revision date: 8th July 2017
+# With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
+# Revision date: 1st October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,6 +55,8 @@ Instructions="Use arrow keys to move. Enter to select"
 # PrintPage       569    Used by listgenx to display selected page
 # --------------------   ------------------------
 
+# read -p "DEBUG listgen $LINENO"   # Basic debugging - copy and paste wherever a break is needed
+
 Heading() { # Always use this function to clear the screen
   tput sgr0                                   # Make sure colour inversion is reset
   clear
@@ -64,20 +67,36 @@ Heading() { # Always use this function to clear the screen
   cursor_row=3                                # Save cursor row after heading
 }
 
-first_item() { # Aligned text according to screen size
-  local width=$(tput cols)
-  local lov=$MaxLen                           # Maximum length of Variable
-  if [ ${lov} -lt ${width} ]; then
-    stpt=$(( (width - lov) / 2 ))
+first_item() {                        # Aligned text according to screen size
+  local Width                         # Use only local variables
+  Width=$(tput cols)
+  local Length
+  local Limit
+  local Text
+  Text="$1"
+  if [ ${#Text} -ge $Width ]; then    # Limit text to width - 2 characters
+    Limit=$((Width-2))
+    Text="${Text:0:$Limit}"
   fi
-  tput cup $cursor_row $stpt                  # Move cursor to startpoint
-  printf "%-s\v" "$1"
+  
+  if [ $2 ]; then                           # If second argument is passed, it will be length of $1
+    if [ $2 -ge $Width ]; then                # Check to see if it exceeds console width
+      Length=$((Width-2))                     # If it does, set length variable to 2 characters less than console width
+    else
+      Length=$2                               # If not, set length variable to the value passed as $2
+    fi
+  else                                      # If $2 is not passed
+    Length=$MaxLen                            # Set length to maximum length of list items
+  fi
+  stpt=$(( (Width - Length) / 2 ))          # Horizontal startpoint
+  tput cup $cursor_row $stpt                # Move cursor to startpoint
+  printf "%-s\v" "$Text"
   cursor_row=$((cursor_row+1))
 }
 
-subsequent_item() { # Subsequent item(s) in an aligned list
-  tput cup $cursor_row $stpt                  # Move cursor to startpoint
-  printf "%-s\n" "$1"
+subsequent_item() {                         # Subsequent item(s) in an aligned list
+  tput cup $cursor_row $stpt                # Move cursor to startpoint
+  printf "%-s\n" "$1"                       # Print with a following newline
   cursor_row=$((cursor_row+1))
 }
 
@@ -320,6 +339,7 @@ listgen2() { # Advanced menuing function with extended descriptions
   esac
   Padding=" "
   MaxLen=2
+  Boundary=$((T_COLS-2))
   while :
   do
     Result=""
@@ -330,6 +350,13 @@ listgen2() { # Advanced menuing function with extended descriptions
     Max=$(echo $PrimaryFile | wc -w)
     for (( i=0; i < $Max; ++i ))
     do
+      # ----------------
+      if [ ${#LongDescription[${i}]} -ge $Boundary ]; then
+        UnTrimmed="${LongDescription[${i}]}"
+        Trimmed="${UnTrimmed:0:$Boundary}"
+        LongDescription[${i}]="$Trimmed"
+      fi
+      # ---------------
       if [ $i -eq 0 ]; then
         MaxLen=${#LongDescription[${i}]}
       else
@@ -548,7 +575,7 @@ SelectPage() {
 PrintPage() {
   Heading
   if [ "$Headline" ]; then
-    PrintOne "${Headline}"
+    first_item "${Headline}" "${#Headline}"
   fi
   ThisPage="${Pages[${PageNumber}]}"            # String of column numbers for this page
   PageWidth=${PageWidths[${PageNumber}]}        # Full width of this page
@@ -593,7 +620,7 @@ PrintPage() {
     ;;
     *[!0-9]*) Heading
       if [ "$Headline" ]; then
-        PrintOne "${Headline}"
+        first_item "${Headline}"
       fi
       ThisPage="${Pages[${PageNumber}]}"            # String of column numbers for this page
       PageWidth=${PageWidths[${PageNumber}]}        # Full width of this page

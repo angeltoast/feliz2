@@ -2,7 +2,8 @@
 
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 8th July 2017
+# With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
+# Revision date: 1st October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,6 +38,8 @@
 # EditLabel           437       SetLabel            792
 # -----------------------      ------------------------
 
+# read -p "DEBUG f-part1 $LINENO"   # Basic debugging - copy and paste wherever a break is needed
+            
 CheckParts() {  # Test for existing partitions
   ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   local Counter=0
@@ -65,11 +68,7 @@ CheckParts() {  # Test for existing partitions
       PrintOne "If you choose to do nothing now, the script will"
       PrintOne "terminate to allow you to partition in some other way"
       Echo
-      if [ ${UEFI} -eq 1 ]; then
-        PartitioningEFI                   # Partitioning options for EFI
-      else
-        Partitioning                      # Partitioning options for BIOS
-      fi
+      Partitioning                      # Partitioning options
       if [ "$Result" = "$_Exit" ]; then   # Terminate
         print_heading
         Echo
@@ -103,12 +102,8 @@ CheckParts() {  # Test for existing partitions
       Counter=$((Counter+1))
     done
     Echo
-    if [ ${UEFI} -eq 1 ]; then          # Installing in UEFI environment
-      PartitioningEFI                   # UEFI partitioning options
-    else                                # Installing in BIOS environment
-      Partitioning                      # BIOS partitioning options
-    fi
-    MakePartitionList                   # Regenerate the array of partitions
+    Partitioning                      # partitioning options
+    MakePartitionList                 # Regenerate the array of partitions
   fi
 }
 
@@ -224,6 +219,7 @@ Partitioning() {
       OptionsList="$OptionsList $(echo $PartitioningOptions | cut -d' ' -f${Counter})"
       Counter=$((Counter+1))
     done
+
     listgen2 "$OptionsList" "$_Quit" "$_Ok $_Exit" "LongOption"
     if [ $OptionsLimit -eq 3 ]; then # 'Existing Partitions' option is to be ignored if no partitions exist
       Proceed=$((Response+1))
@@ -241,7 +237,22 @@ Partitioning() {
         tput sgr0               # Reset colour
         CheckParts              # Restart partitioning
       ;;
-      3) GuidedMBR
+      3) if [ ${UEFI} -eq 1 ]; then
+          print_heading
+          Echo
+          EasyEFI                 # New guided manual partitioning functions
+          tput setf 0             # Change foreground colour to black temporarily to hide error message
+          print_heading
+          partprobe 2>> feliz.log #Inform kernel of changes to partitions
+          tput sgr0               # Reset colour
+          ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
+        else
+          GuidedMBR
+          tput setf 0             # Change foreground colour to black temporarily to hide error message
+          clear
+          partprobe 2>> feliz.log # Inform kernel of changes to partitions
+          tput sgr0               # Reset colour
+        fi
       ;;
       4) ChooseDevice
       ;;
@@ -323,29 +334,34 @@ AutoWarning() {
   done
 }
 
-partition_maker() { # Called from autopart()
+partition_maker() { # Called from autopart() for both EFI and BIOS systems
+                    # Receives up to 4 arguments
+                    # $1 is the starting point of the first partition
+                    # $2 is size of root partition
+                    # $3 if passed is size of home partition
+                    # $4 if passed is size of swap partition
+                    # Note that an appropriate partition table has already been created in autopart()
+                    #   If EFI the /boot partition has also been created at /dev/sda1 and set as bootable
+                    #   and the startpoint has been set to follow /boot
+                    
+  local StartPoint=$1                               # Local variable 
 
-# Change to: $1 = StartPoint; $2 = Root (set boot on for BIOS); $3 (if exists) = Home ; $4 (if exists) = Swap
-
-  local StartPoint=$1
-
-  # Set the device to be used to 'set x boot on'
-  if [ ${UEFI} -eq 1 ]; then                        # Installing in EFI environment
+  # Set the device to be used to 'set x boot on'    # $MountDevice is numerical - eg: 1 in sda1
+  MountDevice=1                                     # Start with first partition = [sda]1
+                                                    # Make /boot at startpoint
+  Parted "mkpart primary ext4 ${StartPoint} ${2}"   # eg: parted /dev/sda mkpart primary ext4 1MiB 12GiB
+  Parted "set ${MountDevice} boot on"               # eg: parted /dev/sda set 1 boot on
+  if [ ${UEFI} -eq 1 ]; then                        # Reset if installing in EFI environment
     MountDevice=2                                   # Next partition after /boot = [sda]2
-  else
-    MountDevice=1                                   # In BIOS = first partition = [sda]1
   fi
-
-  Parted "mkpart primary ext4 ${StartPoint} ${2}"   # /root
-  Parted "set ${MountDevice} boot on"               # Bootable
-  RootPartition="${GrubDevice}${MountDevice}"       # Save
+  RootPartition="${GrubDevice}${MountDevice}"       # eg: /dev/sda1
   RootType="ext4"
-  StartPoint=$2                                     # Reset startpoint for /home or /swap
-  MountDevice=$((MountDevice+1))                    # Advance partition numbering
+  StartPoint=$2                                     # Increment startpoint for /home or /swap
+  MountDevice=$((MountDevice+1))                    # Advance partition numbering for next step
 
   if [ $3 ]; then
-    Parted "mkpart primary ext4 ${StartPoint} ${3}" # /home
-    AddPartList[0]="${GrubDevice}${MountDevice}"    # /dev/sda3      | add to
+    Parted "mkpart primary ext4 ${StartPoint} ${3}" # eg: parted /dev/sda mkpart primary ext4 12GiB 19GiB
+    AddPartList[0]="${GrubDevice}${MountDevice}"    # eg: /dev/sda3  | add to
     AddPartMount[0]="/home"                         # Mountpoint     | array of
     AddPartType[0]="ext4"                           # Filesystem     | additional partitions
     Home="Y"
@@ -354,7 +370,7 @@ partition_maker() { # Called from autopart()
   fi
 
   if [ $4 ]; then
-    Parted "mkpart primary linux-swap ${StartPoint} ${4}" # /swap
+    Parted "mkpart primary linux-swap ${StartPoint} ${4}" # eg: parted /dev/sda mkpart primary linux-swap 31GiB 100%
     SwapPartition="${GrubDevice}${MountDevice}"
     MakeSwap="Y"
   fi
@@ -372,8 +388,8 @@ autopart() { # Consolidated partitioning for BIOS or EFI environment
     sgdisk --zap-all ${GrubDevice} &>> feliz.log    # Remove all existing filesystems
     wipefs -a ${GrubDevice} &>> feliz.log           # from the drive
     Parted "mklabel gpt"                            # Create new filesystem
-    Parted "mkpart ESP fat32 1MiB 513MiB"           # EFI boot partition
-    Parted "set 1 boot on"
+    Parted "mkpart primary fat32 1MiB 513MiB"       # EFI boot partition
+   # Parted "set 1 boot on"     # This is done in partition_maker
     StartPoint="513MiB"                             # For next partition
   else                                              # Installing in BIOS environment
     dd if=/dev/zero of=${GrubDevice} bs=512 count=1 # Remove any existing partition table
@@ -383,16 +399,16 @@ autopart() { # Consolidated partitioning for BIOS or EFI environment
 
   # Decide partition sizes
   if [ $DiskSize -ge 40 ]; then                     # ------ /root /home /swap partitions ------
-    HomeSize=$((DiskSize-19-4))
-    partition_maker "${StartPoint}" "19GiB" "${HomeSize}GiB" "100%"
+    HomeSize=$((DiskSize-15-4))                     # /root 15 GiB, /swap 4GiB, /home from 18GiB
+    partition_maker "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
   elif [ $DiskSize -ge 30 ]; then                   # ------ /root /home /swap partitions ------
-    HomeSize=$((DiskSize-15-3))
+    HomeSize=$((DiskSize-15-3))                     # /root 15 GiB, /swap 3GiB, /home 12 to 22GiB
     partition_maker "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
   elif [ $DiskSize -ge 18 ]; then                   # ------ /root & /swap partitions only ------
-    RootSize=$((DiskSize-2))
+    RootSize=$((DiskSize-2))                        # /root 16 to 28GiB, /swap 2GiB
     partition_maker "${StartPoint}" "${RootSize}GiB" "" "100%"
   elif [ $DiskSize -gt 10 ]; then                   # ------ /root & /swap partitions only ------
-    RootSize=$((DiskSize-1))
+    RootSize=$((DiskSize-1))                        # /root 9 to 17GiB, /swap 1GiB
     partition_maker "${StartPoint}" "${RootSize}GiB" "" "100%"
   else                                              # ------ Swap file and /root partition only -----
     partition_maker "${StartPoint}" "100%" "" ""
@@ -585,7 +601,7 @@ AllocateSwap() {
             PrintOne "$i " "$Result"
             PrintOne "Reformatting it will change the UUID, and if this swap"
             PrintOne "partition is used by another operating system, that"
-            PrintOne "system will no longer be unable to access the partition"
+            PrintOne "system will no longer be able to access the partition"
             PrintOne "Do you wish to reformat it?"
             Echo
             Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
@@ -610,13 +626,10 @@ AllocateSwap() {
       fi
     fi
   done
-  print_heading
-  if [ $SwapPartition ]; then
-    Translate "Swap partition"
-    read_timed "$Result = $SwapPartition" 1
-  elif [ $SwapFile ]; then
+  Echo
+  if [ $SwapFile ]; then
     read_timed "Swap file = ${SwapFile}" 1
-  else
+  elif [ $SwapPartition = "" ]; then
     Translate "No provision has been made for swap"
     read_timed "$Result" 1
   fi
@@ -791,7 +804,7 @@ UpdateArray() { # Remove the selected partition from $PartitionArray[]
   do
     First=${p:0:4}          # Characters 1 to 5 of ${p}
     if [ $First ]; then
-      if [ ${PassPart} != ${First} ]; then
+      if [ ${PassPart} ] && [ ${PassPart} != ${First} ]; then
         NewArray[${Counter}]="$p"
         (( Counter+=1 ))
       fi

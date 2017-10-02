@@ -2,7 +2,8 @@
 
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
-# Revision date: 17th September 2017
+# With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
+# Revision date: 1st October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +35,8 @@
 # NewMirrorList        187       Restart              442
 # -------------------------      -------------------------
 
+# read -p "DEBUG f-run $LINENO"   # Basic debugging - copy and paste wherever a break is needed
+
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
 }
@@ -54,6 +57,7 @@ MountPartitions() {
   TPecho "Preparing and mounting partitions" ""
   # First unmount any mounted partitions
   umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
+  
   # 1) Root partition
   case $RootType in
   "") echo "Not formatting root partition" >> feliz.log # If /root filetype not set - do nothing
@@ -76,13 +80,16 @@ MountPartitions() {
       mkfs.${RootType} ${Label} ${RootPartition} &>> feliz.log
     fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
+  
   mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
+  
   # 2) EFI (if required)
   if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if /boot partition required
-    mkfs.fat -F32 ${EFIPartition} 2>> feliz.log         # Format EFI boot partition
-    mkdir /mnt/boot                                     # Make mountpoint
+    mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log        # Format EFI boot partition
+    mkdir -p /mnt/boot                                  # Make mountpoint
     mount ${EFIPartition} /mnt/boot                     # Mount it
   fi
+
   # 3) Swap
   if [ ${SwapPartition} ]; then
     swapoff -a 2>> feliz.log                            # Make sure any existing swap cleared
@@ -148,7 +155,7 @@ InstallKernel() {   # Selected kernel and some other core systems
     pacman -Sy --noconfirm archlinux-keyring            # This is an experimental alternative to the above
   fi
   Translate "kernel and core systems"
-  TPecho "Installing " "$Result"
+  TPecho "$_Installing " "$Result"
   case $Kernel in
   1) # This is the full linux group list at 1st August 2017 with linux-lts in place of linux
     # Use the script ArchBaseGroup.sh in FelizWorkshop to regenerate the list periodically
@@ -157,10 +164,9 @@ InstallKernel() {   # Selected kernel and some other core systems
   *) pacstrap /mnt base base-devel 2>> feliz.log
   esac
   Translate "cli tools"
-  TPecho "Installing " "$Result"
+  TPecho "$_Installing " "$Result"
   pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh os-prober screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
   arch_chroot "systemctl enable sshd.service" >> feliz.log
-
 }
 
 AddCodecs() {
@@ -193,31 +199,47 @@ NewMirrorList() { # Use rankmirrors (script in /usr/bin/ from Arch) to generate 
   # Now the mirrors associated with each of those countries must be extracted from the array
   TPecho "Generating mirrorlist"
   cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.safe 2>> feliz.log
-  # Prepare file of mirrors to be used
-  for Country in "${CountryLong[@]}"
-  do
-    # Get line number of $Country in $CountryLong in allmirrors.list
-    #                      exact match only | restrict to first find | display only number
-    CountryLine=$(grep -n "${Country}" allmirrors.list | head -n 1 | cut -d':' -f1)
-    # Read each line until empty line encountered
-    while true
+
+  if [ ${#CountryLong[@]} -eq 0 ]; then   # If no mirrors were cosen by user,
+    # generate and save a shortened mirrorlist of only the mirrors defined in the CountryCode variable.
+    URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
+    MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
+    # Use curl to get list of mirrors from the Arch mirrorlist ${URL} to ${MirrorTemp}
+    curl -so ${MirrorTemp} ${URL} 2>> feliz.log
+    # Use sed to filter entries
+    sed -i 's/^#Server/Server/g' ${MirrorTemp} 2>> feliz.log
+    # Make a safe copy of existing mirrorlist
+    mv -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig 2>> feliz.log
+    # Replace existing mirrorlist with new local mirrorlist
+    mv -f ${MirrorTemp} /etc/pacman.d/mirrorlist 2>> feliz.log
+    chmod +r /etc/pacman.d/mirrorlist 2>> feliz.log
+  else
+    # Prepare file of mirrors to be used
+    for Country in "${CountryLong[@]}"
     do
-      CountryLine=$((CountryLine+1))                                                    # Next line
-      MirrorURL="$(head -n ${CountryLine} allmirrors.list | tail -n 1 | cut -d'#' -f2)" # Read next item in source file
-      echo "$MirrorURL" >> usemirrors.list                                              # Save it to usemirrors.list file
-      if [ -z "$MirrorURL" ]; then
-        break
-      else
-        TPecho "$_Loading " "$Country $MirrorURL"
-      fi
+      # Get line number of $Country in $CountryLong in allmirrors.list
+      #                      exact match only | restrict to first find | display only number
+      CountryLine=$(grep -n "${Country}" allmirrors.list | head -n 1 | cut -d':' -f1)
+      # Read each line until empty line encountered
+      while true
+      do
+        CountryLine=$((CountryLine+1))                                                    # Next line
+        MirrorURL="$(head -n ${CountryLine} allmirrors.list | tail -n 1 | cut -d'#' -f2)" # Read next item in source file
+        echo "$MirrorURL" >> usemirrors.list                                              # Save it to usemirrors.list file
+        if [ -z "$MirrorURL" ]; then
+          break
+        else
+          echo "$_Loading " "$Country $MirrorURL"
+        fi
+      done
     done
-  done
-  TPecho "Ranking mirrors - please wait ..."
-  Date=$(date)
-  echo -e "# Ranked mirrors /etc/pacman.d/mirrorlist \n# $Date \n# Generated by Feliz and rankmirrors\n#" > /etc/pacman.d/mirrorlist
-  rankmirrors -n 5 usemirrors.list | grep '^Server' >> /etc/pacman.d/mirrorlist
-  cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
-  rm usemirrors.list countries.list allmirrors.list   # Delete working files
+    TPecho "Ranking mirrors - please wait ..."
+    Date=$(date)
+    echo -e "# Ranked mirrors /etc/pacman.d/mirrorlist \n# $Date \n# Generated by Feliz and rankmirrors\n#" > /etc/pacman.d/mirrorlist
+    rankmirrors -n 5 usemirrors.list | grep '^Server' >> /etc/pacman.d/mirrorlist
+    rm usemirrors.list allmirrors.list    # Delete working files
+  fi
+  rm countries.list                       # Delete working files
 }
 
 InstallDM() { # Disable any existing display manager
@@ -391,10 +413,12 @@ UserAdd() {
     arch_chroot "mkdir -p /home/${UserName}/.config/openbox/"
     arch_chroot "mkdir -p /home/${UserName}/.config/pcmanfm/default/"
     arch_chroot "mkdir -p /home/${UserName}/.config/lxpanel/default/panels/"
-    # arch_chroot "mkdir /home/${UserName}/Pictures/"
+    arch_chroot "mkdir /home/${UserName}/Pictures/"
     arch_chroot "mkdir /home/${UserName}/.config/libfm/"
     # Copy FelizOB files
 
+    cp -r themes /mnt/home/${UserName}/.themes 2>> feliz.log            # Copy egtk theme
+    
     CheckExisting "/mnt/home/${UserName}/" ".conkyrc"
     cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log             # Conky configuration file
 
@@ -409,6 +433,9 @@ UserAdd() {
 
     CheckExisting "/mnt/home/${UserName}/.config/openbox/" "menu.xml"
     cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log    # Openbox right-click menu configuration file
+
+    CheckExisting "/mnt/home/${UserName}/.config/openbox/" "rc.xml"
+    cp rc.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log      # Openbox configuration file
 
     CheckExisting "/mnt/home/${UserName}/.config/lxpanel/default/panels/" "panel"
     cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log  # Panel configuration file
@@ -541,7 +568,8 @@ SetUserPassword() {
 
 Restart() {
   Translate "Shutdown Reboot"
-  listgen1 "$Result" "Ctrl+c $_Exit" "$_Ok"
+  listgen1 "$Result" "" "$_Ok"
+  umount /mnt -R
   case $Response in
   1) shutdown -h now
   ;;
