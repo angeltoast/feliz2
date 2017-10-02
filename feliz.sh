@@ -119,19 +119,27 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
   arch_chroot "hwclock --systohc --utc"
 
 # Networking
-  # if [ $Scope != "Basic" ]; then
-    arch_chroot "systemctl enable dhcpcd.service"
-    pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
-    arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
-  # fi
+  arch_chroot "systemctl enable dhcpcd.service"
+  pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
+  arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
+
+# Generate fstab and set up swapfile
+  genfstab -p -U /mnt > /mnt/etc/fstab 2>> feliz.log
+  if [ ${SwapFile} ]; then
+    fallocate -l ${SwapFile} /mnt/swapfile 2>> feliz.log
+    chmod 600 /mnt/swapfile 2>> feliz.log
+    mkswap /mnt/swapfile 2>> feliz.log
+    swapon /mnt/swapfile 2>> feliz.log
+    echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
+  fi
 
 # Grub
   TPecho "$_Installing " "Grub"
   if [ ${GrubDevice} = "EFI" ]; then               # Installing grub in UEFI environment
-    pacstrap /mnt grub efibootmgr                  # Install grub and efibootmgr
-    arch_chroot "grub-install ${GrubDevice} --efi-directory=/boot --target=x86_64-efi"
+    pacstrap /mnt grub efibootmgr
+    arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi --bootloader-id=boot ${GrubDevice}"
     if [ ${IsInVbox} = "VirtualBox" ]; then        # If in Virtualbox
-      mv /mnt/boot/grubx64.efi /mnt/boot/BOOTX64.EFI
+      mv /mnt/boot/EFI/boot/grubx64.efi /mnt/boot/EFI/boot/bootx64.efi 2>> feliz.log
     fi
     arch_chroot "os-prober"
     arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -142,16 +150,6 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
   else                                             # No grub device selected
     echo "Not installing Grub" >> feliz.log
-  fi
-
-# Generate fstab and set up swapfile
-  genfstab -p -U /mnt > /mnt/etc/fstab 2>> feliz.log
-  if [ ${SwapFile} ]; then
-    fallocate -l ${SwapFile} /mnt/swapfile 2>> feliz.log
-    chmod 600 /mnt/swapfile 2>> feliz.log
-    mkswap /mnt/swapfile 2>> feliz.log
-    swapon /mnt/swapfile 2>> feliz.log
-    echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
   fi
 
 # Set keyboard to selected language at next startup
