@@ -202,6 +202,7 @@ SetLanguage() {
     Translate "Feliz - Arch Linux installation script"
   fi
   _Backtitle="$Result"
+  _Savetitle="$_Backtitle"
   Translate "Loading"
   _Loading="$Result"
   Translate "Installing"

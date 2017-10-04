@@ -52,6 +52,7 @@ TPecho() { # For displaying status while running on auto
 }
 
 MountPartitions() {
+  print_heading
   TPecho "Preparing and mounting partitions" ""
   # First unmount any mounted partitions
   umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
@@ -141,17 +142,18 @@ InstallKernel() {   # Selected kernel and some other core systems
 
   TrustDate=201709  # Reset this to date of latest Arch Linux trust update
                     # Next trustdb check 2017-10-20
-  
+  print_heading
   if [ $RunningDate -ge $TrustDate ]; then              # If the running iso is more recent than
     echo "pacman-key trust check passed" >> feliz.log   # the last trust update, no action is taken
   else                                                  # But if the iso is older than the last trust update
     TPecho "Updating keys"                              # Then the keys must be updated
-   # pacman-db-upgrade
-   # pacman-key --init
-   # pacman-key --populate archlinux
-   # pacman-key --refresh-keys
+    pacman-db-upgrade
+    pacman-key --init
+    pacman-key --populate archlinux
+    pacman-key --refresh-keys
     pacman -Sy --noconfirm archlinux-keyring            # This is an experimental alternative to the above
   fi
+  print_heading
   Translate "kernel and core systems"
   TPecho "$_Installing " "$Result"
   case $Kernel in
@@ -168,19 +170,24 @@ InstallKernel() {   # Selected kernel and some other core systems
 }
 
 AddCodecs() {
+  print_heading
   TPecho "$_Installing " "codecs"
   pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora libvorbis libxv wavpack x264 gstreamer gst-plugins-base gst-plugins-good pavucontrol pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab 2>> feliz.log
+  print_heading
   Translate "Wireless Tools"
   TPecho "$_Installing " "$Result"
   pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
   pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
   # Note that networkmanager and network-manager-applet are installed separately by feliz.sh
+  print_heading
   Translate "Graphics tools"
   TPecho "$_Installing " "$Result"
   pacstrap /mnt xorg xorg-xinit xorg-twm 2>> feliz.log
+  print_heading
   Translate "opensource video drivers"
   TPecho "$_Installing " "$Result"
   pacstrap /mnt xf86-video-vesa xf86-video-nouveau xf86-input-synaptics 2>> feliz.log
+  print_heading
   Translate "fonts"
   TPecho "$_Installing " "$Result"
   pacstrap /mnt ttf-liberation 2>> feliz.log
@@ -195,6 +202,7 @@ NewMirrorList() { # Use rankmirrors (script in /usr/bin/ from Arch) to generate 
   # In f-set.sh/ChooseMirrors the user has selected one or more countries with Arch Linux mirrors
   # These have been stored in the array CountryLong[@] declared in f-vars.sh
   # Now the mirrors associated with each of those countries must be extracted from the array
+  print_heading
   TPecho "Generating mirrorlist"
   cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.safe 2>> feliz.log
 
@@ -241,6 +249,7 @@ NewMirrorList() { # Use rankmirrors (script in /usr/bin/ from Arch) to generate 
 }
 
 InstallDM() { # Disable any existing display manager
+  print_heading
   arch_chroot "systemctl disable display-manager.service" >> feliz.log
   # Then install selected display manager
   TPecho "$_Installing " "${DisplayManager}"
@@ -255,7 +264,7 @@ InstallDM() { # Disable any existing display manager
 }
 
 InstallLuxuries() { # Install desktops and other extras
-
+  print_heading
   # FelizOB (note that $LuxuriesList and $DisplayManager are empty, so their routines will not be called)
   if [ $DesktopEnvironment = "FelizOB" ]; then
     TPecho "$_Installing " "FelizOB"
@@ -368,6 +377,7 @@ InstallLuxuries() { # Install desktops and other extras
 }
 
 InstallYaourt() {
+  print_heading
   TPecho "$_Installing " "Yaourt"
   arch=$(uname -m)
   if [ ${arch} = "x86_64" ]; then                     # Identify 64 bit architecture
@@ -389,6 +399,7 @@ InstallYaourt() {
 }
 
 UserAdd() {
+  print_heading
   CheckUsers=`cat /mnt/etc/passwd | grep ${UserName}`
   # If not already exist, create user
   if [ -z "${CheckUsers}" ]; then
@@ -525,6 +536,7 @@ SetRootPassword() {
 }
 
 SetUserPassword() {
+  print_heading
   Echo
   Repeat="Y"
   while [ $Repeat = "Y" ]
@@ -565,6 +577,7 @@ SetUserPassword() {
 }
 
 Restart() {
+  print_heading
   Translate "Shutdown Reboot"
   listgen1 "$Result" "" "$_Ok"
   umount /mnt -R

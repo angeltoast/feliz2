@@ -54,6 +54,7 @@ TestUEFI() { # Called at launch of Feliz script, before all other actions
 }
 
 AllocateEFI() { # Called at start of AllocateRoot, before allocating root partition
+  _Backtitle="https://wiki.archlinux.org/index.php/Unified_Extensible_Firmware_Interface"
   # Uses list of available partitions in PartitionList created in ManagePartitions
   print_heading
 	Remaining=""
@@ -94,6 +95,7 @@ AllocateEFI() { # Called at start of AllocateRoot, before allocating root partit
 }
 
 EasyEFI() { # Main EFIfunction - Inform user of purpose, call each step
+  _Backtitle="https://wiki.archlinux.org/index.php/Unified_Extensible_Firmware_Interface"
   EasyDevice              # Get details of device to use
   EasyDiskSize            # Get available space in MiB
   print_heading

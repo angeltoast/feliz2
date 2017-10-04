@@ -39,6 +39,7 @@
 # -----------------------      ------------------------
 
 CheckParts() {  # Test for existing partitions
+  _Backtitle="https://wiki.archlinux.org/index.php/Partitioning"
   ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   local Counter=0
   for i in $ShowPartitions

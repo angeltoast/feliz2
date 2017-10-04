@@ -41,6 +41,7 @@
 # --------------------   -----------------------
 
 SetKernel() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Kernels"
   print_heading
   Echo
   PrintOne "Choose your kernel"
@@ -54,8 +55,8 @@ SetKernel() {
 }
 
 ChooseMirrors() { # User selects one or more countries with Arch Linux mirrors
-
-  # Prepare files of official Arch Linux mirrors
+    _Backtitle="https://wiki.archlinux.org/index.php/Mirrors"
+    # Prepare files of official Arch Linux mirrors
     # 1) Download latest list of Arch Mirrors to temporary file
     curl -s https://www.archlinux.org/mirrorlist/all/http/ > archmirrors.list
     # 2) Get line number of first country
@@ -270,7 +271,9 @@ setlocale() {
   CountryLocale=""
   while [ -z "$CountryLocale" ]
   do
+    _Backtitle="https://wiki.archlinux.org/index.php/Time#Time_zone"
     SetTimeZone # First get ZONE/SUBZONE
+    _Backtitle="https://wiki.archlinux.org/index.php/Locale"
     ZoneID="${ZONE}/${SUBZONE}"  # Use a copy (eg: Europe/London) to find in cities.list (field $2 is the country code, eg: GB)
     SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)
     SEARCHTERM=${SEARCHTERM// }             # Ensure no leading spaces
@@ -291,7 +294,6 @@ setlocale() {
       not_found
       Result=""
     else
-      _Backtitle="https://wiki.archlinux.org/index.php/Locale" ""
       print_heading
       PrintOne "Please choose the locale for the installed system"
       Translate "Choose one or Exit to search for alternatives"
@@ -306,6 +308,7 @@ setlocale() {
 }
 
 getkeymap() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Keyboard_configuration_in_console"
   Countrykbd=""
   country="${CountryLocale,,}"
   case ${country:3:2} in
@@ -401,6 +404,7 @@ SearchKeyboards() {
 }
 
 UserName() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Users_and_groups"
   print_heading
   PrintOne "Enter a name for the primary user of the new system"
   PrintOne "If you don't create a username here, a default user"
@@ -417,6 +421,7 @@ UserName() {
 }
 
 SetHostname() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Network_configuration#Set_the_hostname"
   Entered="arch-linux"
   print_heading
   PrintOne "A hostname is needed. This will be a unique name to identify"
@@ -434,6 +439,7 @@ SetHostname() {
 }
 
 Options() { # User chooses between FelizOB, self-build or basic
+  _Backtitle="https://wiki.archlinux.org/index.php/List_of_applications"
   print_heading
   PrintOne "Feliz now offers you a choice. You can ..."
   Echo
@@ -795,6 +801,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
 }
 
 ChooseDM() { # Choose a display manager
+  _Backtitle="https://wiki.archlinux.org/index.php/Display_manager"
   case "$DisplayManager" in
   "") # Only offered if no other display manager has been set
       Counter=0
@@ -851,7 +858,7 @@ ChooseDM() { # Choose a display manager
 SetGrubDevice() {
   DEVICE=""
   DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/'
-
+  _Backtitle="https://wiki.archlinux.org/index.php/GRUB"
   # Add an option to enter grub device manually
   Translate "Enter_Manually"
   DevicesList="$DevicesList $Result"

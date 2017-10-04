@@ -84,8 +84,9 @@ else							                     # If BIOS
   SetGrubDevice                        # User chooses grub partition
 fi
 
-FinalCheck                             # Moved to end. Allow user to change any variables
+FinalCheck                             # Allow user to change any variables
 
+_Backtitle="$_Savetitle"
 print_heading
 TPecho "Preparations complete"
 TPecho "Entering automatic installation phase"
@@ -93,19 +94,17 @@ TPecho "Entering automatic installation phase"
 # ...............................................................................
 #          Installation phase - no further user intervention from here          .
 # ...............................................................................
-
+print_heading
 MountPartitions
-
+print_heading
 NewMirrorList
-
+print_heading
 InstallKernel
-
+print_heading
 TPecho "Preparing local services" ""
-
 echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
 sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
 sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
-
 # Set up locale, etc
   echo "${CountryLocale} UTF-8" > /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
   echo "en_US.UTF-8 UTF-8" >> /mnt/etc/locale.gen 2>> feliz.log    # Added for completeness
@@ -114,12 +113,10 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
   export "LANG=${CountryLocale}" 2>> feliz.log                      # eg: LANG=en_US.UTF-8
   arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
   arch_chroot "hwclock --systohc --utc"
-
 # Networking
   arch_chroot "systemctl enable dhcpcd.service"
   pacstrap /mnt networkmanager network-manager-applet rp-pppoe 2>> feliz.log
   arch_chroot "systemctl enable NetworkManager.service && systemctl enable NetworkManager-dispatcher.service"
-
 # Generate fstab and set up swapfile
   genfstab -p -U /mnt > /mnt/etc/fstab 2>> feliz.log
   if [ ${SwapFile} ]; then
@@ -129,7 +126,7 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     swapon /mnt/swapfile 2>> feliz.log
     echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
   fi
-
+print_heading
 # Grub
   TPecho "$_Installing " "Grub"
   if [ ${GrubDevice} = "EFI" ]; then               # Installing grub in UEFI environment
@@ -148,16 +145,13 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
   else                                             # No grub device selected
     echo "Not installing Grub" >> feliz.log
   fi
-
 # Set keyboard to selected language at next startup
   echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
   echo -e "Section \"InputClass\"\nIdentifier \"system-keyboard\"\nMatchIsKeyboard \"on\"\nOption \"XkbLayout\" \"${Countrykbd}\"\nEndSection" > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf 2>> feliz.log
-
+print_heading
 # Extra processes for desktop installation
   if [ $Scope != "Basic" ]; then
-
     AddCodecs # Various bits
-
     if [ ${IsInVbox} = "VirtualBox" ]; then                  # If in Virtualbox
       Translate="N"
       TPecho "$_Installing " "Virtualbox guest modules"
@@ -172,11 +166,8 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
       pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
       arch-chroot /mnt systemctl enable vboxservice
     fi
-
     InstallLuxuries # Install DEs, WMs and DMs
-
     UserAdd
-
   fi
 
 EndTime=$(date +%s)
