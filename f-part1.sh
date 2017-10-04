@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 1st October 2017
+# Revision date: 4th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,8 +38,6 @@
 # EditLabel           437       SetLabel            792
 # -----------------------      ------------------------
 
-# read -p "DEBUG f-part1 $LINENO"   # Basic debugging - copy and paste wherever a break is needed
-            
 CheckParts() {  # Test for existing partitions
   ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
   local Counter=0

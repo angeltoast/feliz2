@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 1st October 2017
+# Revision date: 4th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,8 +33,6 @@ source f-part1.sh    # Functions concerned with allocating partitions
 source f-part2.sh    # Guided partitioning for BIOS & EFI systems
 source f-run.sh      # Functions called during installation
 
-# read -p "DEBUG feliz $LINENO"   # Basic debugging - copy and paste wherever a break is needed
-
 # ...............................................................................
 #                                   Settings phase                              .
 # ...............................................................................
@@ -47,7 +45,6 @@ SetLanguage                            # Use appropriate language file
 timedatectl set-ntp true
 
 # Localisation
-SetTimeZone                            # ZONE and SUBZONE eg: Europe/London
 setlocale                              # CountryLocale eg: en_GB.UTF-8
 getkeymap                              # Select keyboard layout eg: uk
 SetHostname

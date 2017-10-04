@@ -2,7 +2,7 @@
 
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 1st October 2017
+# Revision date: 4th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@
 
 # In this module:
 
-# All variables used by listgen initialised here
-declare -a Options        # For listgen functions
+# All variables used by listgen are initialised here
+declare -a Options
 Response=""
 Result=""
 Backtitle="Feliz2 - Arch Linux installation script"

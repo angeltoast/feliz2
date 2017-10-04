@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 1st October 2017
+# Revision date: 4th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,8 +37,6 @@ DualBoot="N"      # For formatting EFI partition
 # EasyDevice         178     EasyHome            422     GuidedHome         771
 # EasyDiskSize       215     ActionEasyPart      469     ActionGuided       819
 # -----------------------    ------------------------    -----------------------
-
-# read -p "DEBUG f-part2 $LINENO"   # Basic debugging - copy and paste wherever a break is needed
 
 TestUEFI() { # Called at launch of Feliz script, before all other actions
   tput setf 0             # Change foreground colour to black temporarily to hide error messages

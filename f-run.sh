@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 1st October 2017
+# Revision date: 4th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,8 +34,6 @@
 # AddCodecs            158       SetUserPassword      412
 # NewMirrorList        187       Restart              442
 # -------------------------      -------------------------
-
-# read -p "DEBUG f-run $LINENO"   # Basic debugging - copy and paste wherever a break is needed
 
 arch_chroot() {  # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
