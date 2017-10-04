@@ -33,7 +33,7 @@
 declare -a Options
 Response=""
 Result=""
-Backtitle="Feliz2 - Arch Linux installation script"
+# Backtitle="Feliz2 - Arch Linux installation script"
 Ok="Ok"
 Exit="Exit"
 Instructions="Use arrow keys to move. Enter to select"

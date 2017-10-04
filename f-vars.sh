@@ -187,14 +187,12 @@ SetLanguage() {
 
   # Get the required language files
   # PrintOne "Loading translator"
-  tput setf 0             # Change foreground colour to black temporarily to hide error message
   wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
   if [ $LanguageFile != "English.lan" ]; then   # Only if not English
     wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
     # Install the translator for situations where no translation is found on file
     # wget -q git.io/trans 2>> feliz.log
     # chmod +x ./trans
-    tput sgr0               # Reset colour
   fi
 
   # Some common translations

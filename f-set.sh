@@ -26,18 +26,18 @@
 # --------------------   -----------------------
 # Function        Line   Function           Line
 # --------------------   -----------------------
-# SetKernel         43   SearchKeyboards     444
-# ChooseMirrors     56   Username            481
-# ConfirmVbox      107   SetHostname         497
-# SetTimeZone      135   Options             514
-# SetSubZone       169   PickLuxuries        540
-# SelectSubzone    198   ShoppingList        585
-# America          218   ChooseDM            875
-#                        SetGrubDevice       929
-# DoCities         303   EnterGrubPath       962
-# setlocale        329     --- Review stage --- 
-#                        FinalCheck          990
-# getkeymap        386   ManualSettings     1117
+# SetKernel         43   SearchKeyboards     364
+# ChooseMirrors     56   Username            401
+# ConfirmVbox      107   SetHostname         417
+# SetTimeZone      135   Options             434
+# SetSubZone       169   PickLuxuries        460
+# SelectSubzone    198   ShoppingList        505
+# America          208   ChooseDM            805
+#                        SetGrubDevice       849
+# DoCities         243   EnterGrubPath       882
+# setlocale        269     --- Review stage --- 
+#                        FinalCheck          910
+# getkeymap        306   ManualSettings     1037
 # --------------------   -----------------------
 
 SetKernel() {
@@ -194,13 +194,10 @@ SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
 SelectSubzone() {
   print_heading
   Echo
-  PrintOne "To set the system clock, please"
   Translate "now select your location in"
   _P1="$Result"
-  PrintOne "$_P1" "$NativeZONE"
   timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > temp.file  # Prepare file to use listgenx
-  Translate "Please choose your nearest location"
-  listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+  listgenx "$_P1 $_P2 $NativeZONE" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
   if [ $Result = "$_Exit" ] || [ $Result = "" ]; then
     SUBZONE=""
   else
@@ -273,13 +270,14 @@ setlocale() {
   CountryLocale=""
   while [ -z "$CountryLocale" ]
   do
-    SetTimeZone # First get ZONE/SUBZONE 
+    SetTimeZone # First get ZONE/SUBZONE
     ZoneID="${ZONE}/${SUBZONE}"  # Use a copy (eg: Europe/London) to find in cities.list (field $2 is the country code, eg: GB)
     SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)
     SEARCHTERM=${SEARCHTERM// }             # Ensure no leading spaces
     SEARCHTERM=${SEARCHTERM%% }             # Ensure no trailing spaces
     # Find all matching entries in locale.gen - This will be a table of valid locales in the form: en_GB.UTF-8
-    LocaleList=$(grep "${SEARCHTERM}\.UTF-8" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f2 | grep -v "^UTF")
+    EXTSEARCHTERM="${SEARCHTERM}.UTF-8"
+    LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f1)
     HowMany=$(echo $LocaleList | wc -w)     # Count them
     Rows=$(tput lines)                      # to ensure menu doesn't over-run
     Rows=$((Rows-4))                        # Available (printable) rows
@@ -288,12 +286,13 @@ setlocale() {
     do
       choosefrom="$choosefrom $l"           # Add each item to file for handling
     done
-    if [ -z "$choosefrom" ]; then           # If none found, start again
+    if [ -z "${choosefrom}" ]; then         # If none found, start again
+      print_heading
       not_found
       Result=""
     else
+      _Backtitle="https://wiki.archlinux.org/index.php/Locale" ""
       print_heading
-      PrintOne "https://wiki.archlinux.org/index.php/Locale" ""
       PrintOne "Please choose the locale for the installed system"
       Translate "Choose one or Exit to search for alternatives"
       listgen1 "${choosefrom}" "$Result" "$_Ok $_Exit"    # User is offered list of valid codes for location
