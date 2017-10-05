@@ -36,6 +36,64 @@
 
 # read -p "DEBUG: ${BASH_SOURCE[0]}/${FUNCNAME[0]}/${LINENO} called from ${BASH_SOURCE[1]}/${FUNCNAME[1]}/${BASH_LINENO[0]}"
 
+SetLanguage() {
+  _Backtitle="Feliz2 - Arch Linux installation script"
+  print_heading
+  setfont LatGrkCyr-8x16 -m 8859-2                         # To display wide range of characters
+  PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
+  Echo
+  listgen1 "English Deutsche Ελληνικά Español Français Italiano Nederlands Polski Português-PT Português-BR Vietnamese" "" "Ok"  # Available languages
+  case $Response in
+    2) InstalLanguage="de"
+      LanguageFile="German.lan"
+    ;;
+    3) InstalLanguage="el"
+      LanguageFile="Greek.lan"
+      setfont LatGrkCyr-8x16 -m 8859-2 
+    ;;
+    4) InstalLanguage="es"
+      LanguageFile="Spanish.lan"
+    ;;
+    5) InstalLanguage="fr"
+      LanguageFile="French.lan"
+    ;;
+    6) InstalLanguage="it"
+      LanguageFile="Italian.lan"
+    ;;
+    7) InstalLanguage="nl"
+      LanguageFile="Dutch.lan"
+    ;;
+    8) InstalLanguage="pl"
+      LanguageFile="Polish.lan"
+    ;;
+    9) InstalLanguage="pt-PT"
+      LanguageFile="Portuguese-PT.lan"
+    ;;
+    10) InstalLanguage="pt-BR"
+      LanguageFile="Portuguese-BR.lan"
+    ;;
+    11) InstalLanguage="vi"
+      LanguageFile="Vietnamese.lan"
+      setfont viscii10-8x16 -m 8859-2
+    ;;
+    *) InstalLanguage="en"
+      LanguageFile="English.lan"
+  esac
+
+  # Get the required language files
+  # PrintOne "Loading translator"
+  wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
+  if [ $LanguageFile != "English.lan" ]; then   # Only if not English
+    wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
+    # Install the translator for situations where no translation is found on file
+    # wget -q git.io/trans 2>> feliz.log
+    # chmod +x ./trans
+  fi
+
+  Common
+  
+}
+
 not_found() {
   Echo
   PrintOne "Please try again"
@@ -146,55 +204,7 @@ PaddLength() {  # If $1 is shorter than MaxLen, padd with spaces
   Result="$Text"
 }
 
-SetLanguage() {
-  _Backtitle="Feliz2 - Arch Linux installation script"
-  print_heading
-  setfont LatGrkCyr-8x16 -m 8859-2                         # To display wide range of characters
-  PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
-  Echo
-  listgen1 "English Deutsche Ελληνικά Español Français Italiano Nederlands Polski Português-PT Português-BR" "" "Ok"  # Available languages
-  case $Response in
-    2) InstalLanguage="de"
-      LanguageFile="German.lan"
-    ;;
-    3) InstalLanguage="el"
-      LanguageFile="Greek.lan"
-    ;;
-    4) InstalLanguage="es"
-      LanguageFile="Spanish.lan"
-    ;;
-    5) InstalLanguage="fr"
-      LanguageFile="French.lan"
-    ;;
-    6) InstalLanguage="it"
-      LanguageFile="Italian.lan"
-    ;;
-    7) InstalLanguage="nl"
-      LanguageFile="Dutch.lan"
-    ;;
-    8) InstalLanguage="pl"
-      LanguageFile="Polish.lan"
-    ;;
-    9) InstalLanguage="pt-PT"
-      LanguageFile="Portuguese-PT.lan"
-    ;;
-    10) InstalLanguage="pt-BR"
-      LanguageFile="Portuguese-BR.lan"
-    ;;
-    *) InstalLanguage="en"
-      LanguageFile="English.lan"
-  esac
-
-  # Get the required language files
-  # PrintOne "Loading translator"
-  wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
-  if [ $LanguageFile != "English.lan" ]; then   # Only if not English
-    wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
-    # Install the translator for situations where no translation is found on file
-    # wget -q git.io/trans 2>> feliz.log
-    # chmod +x ./trans
-  fi
-
+Common() {
   # Some common translations
   if [ -f "TESTING" ]; then
     Translate "Feliz - Testing"

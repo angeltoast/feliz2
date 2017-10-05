@@ -195,7 +195,7 @@ SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
 SelectSubzone() {
   print_heading
   Echo
-  Translate "now select your location in"
+  Translate "Now select your location in"
   _P1="$Result"
   timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > temp.file  # Prepare file to use listgenx
   listgenx "$_P1 $_P2 $NativeZONE" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
