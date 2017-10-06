@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th October 2017
+# Revision date: 6th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,23 +94,30 @@ TPecho "Entering automatic installation phase"
 # ...............................................................................
 #          Installation phase - no further user intervention from here          .
 # ...............................................................................
-print_heading
+
 MountPartitions
-print_heading
+
 NewMirrorList
-print_heading
+
 InstallKernel
-print_heading
+
 TPecho "Preparing local services" ""
-echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
-sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
-sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
-# Set up locale, etc
-  echo "${CountryLocale} UTF-8" >> /mnt/etc/locale.gen 2>> feliz.log # eg: en_US.UTF-8 UTF-8
-  echo "en_US.UTF-8 UTF-8" >> /mnt/etc/locale.gen 2>> feliz.log    # Added for completeness
+  echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
+  sed -i "/127.0.0.1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
+  sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
+# Set up locale, etc               The local copy of locale.gen may have been manually edited in f-set.sh, so ...
+  GrepTest=$(grep "^${CountryLocale}" /etc/locale.gen)                # Check main locale not already set
+  if [ -z $GrepTest ]; then                                           # If not, add it at bottom
+    echo "${CountryLocale} UTF-8" >> /etc/locale.gen 2>> feliz.log    # eg: en_GB.UTF-8 UTF-8
+  fi
+  GrepTest=$(grep "^en_US.UTF-8" /etc/locale.gen)                     # Check secondary locale not already set
+  if [ -z $GrepTest ] && [ "${CountryLocale:0:2}" != "en" ]; then     # and main is not English, add it at bottom
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen 2>> feliz.log         # Added for completeness
+  fi
+  cp -f /etc/locale.gen /mnt/etc/                                     # Copy to installed system
   arch_chroot "locale-gen"
-  echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log # eg: LANG=en_US.UTF-8
-  export "LANG=${CountryLocale}" 2>> feliz.log                      # eg: LANG=en_US.UTF-8
+  echo "LANG=${CountryLocale}" > /mnt/etc/locale.conf 2>> feliz.log   # eg: LANG=en_US.UTF-8
+  export "LANG=${CountryLocale}" 2>> feliz.log                        # eg: LANG=en_US.UTF-8
   arch_chroot "ln -sf /usr/share/zoneinfo/${ZONE}/${SUBZONE} /etc/localtime"
   arch_chroot "hwclock --systohc --utc"
 # Networking
@@ -126,8 +133,8 @@ sed -i "/::1/s/$/ ${HostName}/" /mnt/etc/hosts 2>> feliz.log
     swapon /mnt/swapfile 2>> feliz.log
     echo "/swapfile none  swap  defaults  0 0" >> /mnt/etc/fstab 2>> feliz.log
   fi
-print_heading
 # Grub
+  print_heading
   TPecho "$_Installing " "Grub"
   if [ ${GrubDevice} = "EFI" ]; then               # Installing grub in UEFI environment
     pacstrap /mnt grub efibootmgr
@@ -148,25 +155,25 @@ print_heading
 # Set keyboard to selected language at next startup
   echo KEYMAP=${Countrykbd} > /mnt/etc/vconsole.conf 2>> feliz.log
   echo -e "Section \"InputClass\"\nIdentifier \"system-keyboard\"\nMatchIsKeyboard \"on\"\nOption \"XkbLayout\" \"${Countrykbd}\"\nEndSection" > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf 2>> feliz.log
-print_heading
 # Extra processes for desktop installation
+  print_heading
   if [ $Scope != "Basic" ]; then
     AddCodecs # Various bits
-    if [ ${IsInVbox} = "VirtualBox" ]; then                  # If in Virtualbox
+    if [ ${IsInVbox} = "VirtualBox" ]; then                   # If in Virtualbox
       Translate="N"
       TPecho "$_Installing " "Virtualbox guest modules"
       Translate="Y"
       case $Kernel in
-      1) pacstrap /mnt dkms linux-lts-headers 2>> feliz.log # LTS kernel
+      1) pacstrap /mnt dkms linux-lts-headers 2>> feliz.log   # LTS kernel
         pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
       ;;
-      *) pacstrap /mnt dkms linux-headers 2>> feliz.log     # Latest kernel
+      *) pacstrap /mnt dkms linux-headers 2>> feliz.log       # Latest kernel
         pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
       esac
       pacstrap /mnt virtualbox-guest-utils 2>> feliz.log
       arch-chroot /mnt systemctl enable vboxservice
     fi
-    InstallLuxuries # Install DEs, WMs and DMs
+    InstallLuxuries                                           # Install DEs, WMs and DMs
     UserAdd
   fi
 
@@ -181,9 +188,9 @@ if [ $Scope != "Basic" ]; then
   SetUserPassword
 fi
 
-cp feliz.log ltsgroup.txt /mnt/etc # Copy installation log for reference
+cp feliz.log ltsgroup.txt /mnt/etc                            # Copy installation log for reference
 print_heading
 Echo
 PrintOne "Congratulations, installation is complete"
 Echo
-Restart     # Function with options to shutdown or reboot
+Restart                                                       # Options to shutdown or reboot

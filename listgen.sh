@@ -2,7 +2,7 @@
 
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th October 2017
+# Revision date: 6th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 declare -a Options
 Response=""
 Result=""
-# Backtitle="Feliz2 - Arch Linux installation script"
 Ok="Ok"
 Exit="Exit"
 Instructions="Use arrow keys to move. Enter to select"
@@ -58,12 +57,13 @@ Instructions="Use arrow keys to move. Enter to select"
 # read -p "DEBUG listgen $LINENO"   # Basic debugging - copy and paste wherever a break is needed
 
 Heading() { # Always use this function to clear the screen
-  tput sgr0                                   # Make sure colour inversion is reset
   clear
   T_COLS=$(tput cols)                         # Get width of terminal
   tput cup 0 $(((T_COLS/2)-20))               # Move the cursor to left of center
+  tput bold
   printf "%-s\n" "$_Backtitle"                # Display backtitle
-  printf "%$(tput cols)s\n"|tr ' ' '-'        # Draw a line across width of terminal
+  tput sgr0                                   # Make sure colour inversion is reset
+ # printf "%$(tput cols)s\n"|tr ' ' '-'       # Draw a line across width of terminal
   cursor_row=3                                # Save cursor row after heading
 }
 

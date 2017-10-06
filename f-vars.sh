@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th October 2017
+# Revision date: 6th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,15 +34,13 @@
 # PrintMany         96   Arrays & Variables 247
 # --------------------   ----------------------
 
-# read -p "DEBUG: ${BASH_SOURCE[0]}/${FUNCNAME[0]}/${LINENO} called from ${BASH_SOURCE[1]}/${FUNCNAME[1]}/${BASH_LINENO[0]}"
-
 SetLanguage() {
-  _Backtitle="Feliz2 - Arch Linux installation script"
+  _Backtitle="Feliz - Arch Linux installation script"
   print_heading
-  setfont LatGrkCyr-8x16 -m 8859-2                         # To display wide range of characters
+  # setfont LatGrkCyr-8x16 -m 8859-2                         # To display wide range of characters
   PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
   Echo
-  listgen1 "English Deutsche Ελληνικά Español Français Italiano Nederlands Polski Português-PT Português-BR Vietnamese" "" "Ok"  # Available languages
+  listgen1 "English Deutsche Ellinika Español Français Italiano Nederlands Polski Português-PT Português-BR Vietnamese" "" "Ok"  # Available languages
   case $Response in
     2) InstalLanguage="de"
       LanguageFile="German.lan"
@@ -79,7 +77,6 @@ SetLanguage() {
     *) InstalLanguage="en"
       LanguageFile="English.lan"
   esac
-
   # Get the required language files
   # PrintOne "Loading translator"
   wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
@@ -89,9 +86,7 @@ SetLanguage() {
     # wget -q git.io/trans 2>> feliz.log
     # chmod +x ./trans
   fi
-
-  Common
-  
+  Common # Set common translations
 }
 
 not_found() {
@@ -109,7 +104,7 @@ TPread() { # Aligned prompt for user-entry
   # $1 = prompt ... Returns result through $Response
   local T_COLS=$(tput cols)
   local lov=${#1}
-  local stpt=0
+  stpt=0
   if [ ${lov} -lt ${T_COLS} ]; then
     stpt=$(( (T_COLS - lov) / 2 ))
   elif [ ${lov} -gt ${T_COLS} ]; then
@@ -123,14 +118,15 @@ TPread() { # Aligned prompt for user-entry
 }
 
 print_heading() {   # Always use this function to clear the screen
-  tput sgr0         # Make sure colour inversion is reset
   clear
   T_COLS=$(tput cols)                   # Get width of terminal
-  LenBT=${#_Backtitle}
+  LenBT=${#_Backtitle}                  # Length of backtitle
   HalfBT=$((LenBT/2))
   tput cup 0 $(((T_COLS/2)-HalfBT))     # Move the cursor to left of center
+  tput bold
   printf "%-s\n" "$_Backtitle"          # Display backtitle
-  printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
+  tput sgr0
+  # printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
   cursor_row=3                          # Save cursor row after heading
 }
 
@@ -146,7 +142,7 @@ PrintOne() {  # Receives up to 2 arguments. Translates and prints text
   fi
   local width=$(tput cols)
   EMPTY=" "
-  local stpt=0
+  stpt=0
   local lov=${#Text}
   if [ ${lov} -lt ${width} ]; then
     stpt=$(( (width - lov) / 2 ))
@@ -171,7 +167,7 @@ PrintMany() { # Receives up to 2 arguments. Translates and prints text
 read_timed() { # Timed display - $1 = text to display; $2 = duration
   local T_COLS=$(tput cols)
   local lov=${#1}
-  local stpt=0
+  stpt=0
   if [ $2 ]; then
     tim=$2
   else
@@ -204,12 +200,11 @@ PaddLength() {  # If $1 is shorter than MaxLen, padd with spaces
   Result="$Text"
 }
 
-Common() {
-  # Some common translations
+Common() {  # Some common translations
   if [ -f "TESTING" ]; then
     Translate "Feliz - Testing"
   else
-    Translate "Feliz - Arch Linux installation script"
+    Translate "$_Backtitle"
   fi
   _Backtitle="$Result"
   _Savetitle="$_Backtitle"

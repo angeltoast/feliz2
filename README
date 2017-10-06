@@ -1,6 +1,7 @@
 The Feliz scripts make installation of Arch Linux quick and easy.
 
 Feliz can be run from an iso available at ... https://sourceforge.net/projects/feliz
+  and ... https://github.com/angeltoast/feliz/releases
   Burn the iso to a CD or USB stick, or run it directly in Virtualbox.
   It starts a live session of Arch Linux, and runs the script.
   All you have to do is follow the prompts.

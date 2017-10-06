@@ -26,18 +26,18 @@
 # --------------------   -----------------------
 # Function        Line   Function           Line
 # --------------------   -----------------------
-# SetKernel         43   SearchKeyboards     364
-# ChooseMirrors     56   Username            401
-# ConfirmVbox      107   SetHostname         417
-# SetTimeZone      135   Options             434
-# SetSubZone       169   PickLuxuries        460
-# SelectSubzone    198   ShoppingList        505
-# America          208   ChooseDM            805
-#                        SetGrubDevice       849
-# DoCities         243   EnterGrubPath       882
-# setlocale        269     --- Review stage --- 
-#                        FinalCheck          910
-# getkeymap        306   ManualSettings     1037
+# SetKernel         43   SearchKeyboards     410
+# ChooseMirrors     57   Username            447
+# ConfirmVbox      108   SetHostname         464
+# SetTimeZone      132   Options             482
+# SetSubZone       166   PickLuxuries        460
+# SelectSubzone    195   ShoppingList        505
+# America          209   ChooseDM            805
+# DoCities         244   SetGrubDevice       849
+# setlocale        270   EnterGrubPath       882
+# Mano             333     --- Review stage --- 
+# getkeymap        351   FinalCheck          910
+#                        ManualSettings     1037
 # --------------------   -----------------------
 
 SetKernel() {
@@ -74,6 +74,7 @@ ChooseMirrors() { # User selects one or more countries with Arch Linux mirrors
 
   # Display instructions
   print_heading
+  Echo
   PrintOne "Next we will select mirrors for downloading your system."
   PrintOne "You will be able to choose from a list of countries which"
   PrintOne "have Arch Linux mirrors. It is possible to select more than"
@@ -109,6 +110,7 @@ ConfirmVbox() {
   while true
   do
     print_heading
+    Echo
     PrintOne "It appears that feliz is running in Virtualbox"
     PrintOne "If it is, feliz can install Virtualbox guest"
     PrintOne "utilities and make appropriate settings for you"
@@ -134,10 +136,10 @@ SetTimeZone() {
   until [ $SUBZONE ]
   do
     print_heading
+    Echo
     PrintOne "To set the system clock, please"
     PrintOne "choose the World Zone of your location"
     Zones=$(timedatectl list-timezones | cut -d'/' -f1 | uniq) # Ten world zones
-    Echo
     zones=""
     for x in ${Zones}                         # Convert to space-separated list
     do
@@ -280,7 +282,8 @@ setlocale() {
     SEARCHTERM=${SEARCHTERM%% }             # Ensure no trailing spaces
     # Find all matching entries in locale.gen - This will be a table of valid locales in the form: en_GB.UTF-8
     EXTSEARCHTERM="${SEARCHTERM}.UTF-8"
-    LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f1)
+    LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f1)                # Arch
+    # LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f2 | grep -v '^UTF') # Debian
     HowMany=$(echo $LocaleList | wc -w)     # Count them
     Rows=$(tput lines)                      # to ensure menu doesn't over-run
     Rows=$((Rows-4))                        # Available (printable) rows
@@ -295,15 +298,53 @@ setlocale() {
       Result=""
     else
       print_heading
-      PrintOne "Please choose the locale for the installed system"
-      Translate "Choose one or Exit to search for alternatives"
-      listgen1 "${choosefrom}" "$Result" "$_Ok $_Exit"    # User is offered list of valid codes for location
-      if [ $Response -eq 0 ]; then                        # If user rejects all options
-        Result=""                                         # Start again
+      PrintOne "Choose the main locale for your system"
+      Translate "Choose one or Exit to retry"
+      choosefrom="$choosefrom Edit_locale.gen"                    # Add manual edit option to menu
+      listgen1 "${choosefrom}" "$Result" "$_Ok $_Exit"            # Offer list of valid codes for location
+      if [ $Response -eq 0 ]; then                                # If user rejects all options
+        CountryLocale=""                                          # Start again
+        continue
+      elif [ "$Result" == "Edit_locale.gen" ]; then               # User chooses manual edit
+        Mano                                                      # Use Nano to edit locale.gen
+        clear
+        if [ $Response -eq 1 ]; then                              # If Nano was used
+          LocaleGen="$(grep -v '#' /etc/locale.gen | grep ' ' | cut -d' ' -f1)"  # Save list of entries that are
+          HowMany=$(echo "$LocaleGen" | wc -l)                    # uncommented in locale.gen & count them
+          case ${HowMany} in
+          0) continue                                             # No uncommented lines found
+          ;;                                                      # so restart
+          1) Result="$(echo $LocaleGen | cut -d' ' -f1)"          # One uncommented line found
+          ;;                                                      # so set it as locale
+          *) print_heading                                        # Many uncommented lines found
+            Translate "Choose the main locale for your system"    # Ask user to pick one as main locale
+            listgen1 "${LocaleGen}" "$Result" "$_Ok"              # Display them for one to be selected
+          esac
+        else                                                      # Nano was not used
+          continue                                                # Start again
+        fi
       fi
     fi
-    CountryLocale="$Result"                               # Save selection
+    CountryLocale="$Result"                                       # Save selection
     CountryCode=${CountryLocale:3:2}
+  done
+}
+
+Mano() {  # Use Nano to edit locale.gen
+  while true
+  do
+    print_heading
+    Echo
+    PrintOne "Start Nano so you can manually uncomment locales?" # New text for line 201 English.lan
+    Buttons "Yes/No" "Yes No" "$_Instructions"
+    case $Response in
+      "1" | "Y" | "y") nano /etc/locale.gen
+        return 1
+        ;;
+      "2" | "N" | "n") return
+        ;;
+      *) not_found
+    esac
   done
 }
 
@@ -370,6 +411,7 @@ SearchKeyboards() {
   while [ -z "$Countrykbd" ]
   do
     print_heading
+    Echo
     PrintOne "If you know the code for your keyboard layout, please enter"
     PrintOne "it now. If not, try entering a two-letter abbreviation"
     PrintOne "for your country or language and a list will be displayed"
@@ -406,6 +448,7 @@ SearchKeyboards() {
 UserName() {
   _Backtitle="https://wiki.archlinux.org/index.php/Users_and_groups"
   print_heading
+  Echo
   PrintOne "Enter a name for the primary user of the new system"
   PrintOne "If you don't create a username here, a default user"
   PrintOne "called 'archie' will be set up"
@@ -424,6 +467,7 @@ SetHostname() {
   _Backtitle="https://wiki.archlinux.org/index.php/Network_configuration#Set_the_hostname"
   Entered="arch-linux"
   print_heading
+  Echo
   PrintOne "A hostname is needed. This will be a unique name to identify"
   PrintOne "your device on a network. If you do not enter one, the"
   PrintOne "default hostname of 'arch-linux' will be used"
@@ -441,6 +485,7 @@ SetHostname() {
 Options() { # User chooses between FelizOB, self-build or basic
   _Backtitle="https://wiki.archlinux.org/index.php/List_of_applications"
   print_heading
+  Echo
   PrintOne "Feliz now offers you a choice. You can ..."
   Echo
   PrintOne "Build your own system, by picking the"
@@ -450,7 +495,6 @@ Options() { # User chooses between FelizOB, self-build or basic
   PrintOne "complete lightweight system built on Openbox"
   PrintOne "..." "$_or ..."
   PrintOne "Just install a basic Arch Linux"
-  Echo
   Translate "Build_My_Own"
   BMO=$Result
   Translate "FelizOB_desktop"
@@ -498,6 +542,7 @@ PickLuxuries() { # User selects any combination from a store of extras
     else
       ShoppingList
       print_heading
+      Echo
       PrintOne "$AddedSoFar" ": ${LuxuriesList}"
       PrintOne "You can now choose from any of the other lists"
       PrintOne "or choose Exit to finish this part of the setup"
@@ -515,6 +560,7 @@ ShoppingList() { # Called by PickLuxuries after a category has been chosen.
   while true
   do
     print_heading
+    Echo
     PrintOne "$AddedSoFar" ": ${LuxuriesList}"
     PrintOne "You can add more items, or select items to delete"
     Echo
@@ -807,12 +853,12 @@ ChooseDM() { # Choose a display manager
       Counter=0
       DMList="GDM LightDM LXDM sddm SLIM XDM"
       print_heading
+      Echo
       PrintOne "A display manager provides a graphical login screen"
       Translate "If in doubt, choose"
       PrintOne "$Result " "LightDM"
       PrintOne "If you do not install a display manager, you will have"
       PrintOne "to launch your desktop environment manually"
-      Echo
       listgen1 "${DMList}" "" "$_Ok $_None"
       Reply=$Response
       for item in ${DMList}
@@ -863,6 +909,7 @@ SetGrubDevice() {
   Translate "Enter_Manually"
   DevicesList="$DevicesList $Result"
   print_heading
+  Echo
   GrubDevice=""
   local Counter=0
   PrintOne "Select the device where Grub is to be installed"
