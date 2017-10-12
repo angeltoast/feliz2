@@ -26,9 +26,9 @@ Here's how to do it:
   4) Next enter:
 	wget https://raw.githubusercontent.com/angeltoast/feliz-init/master/felizinit-stable
 
-  5) Now enter: chmod +x felizinit
+  5) Now enter: chmod +x felizinit-stable
 
-  6) Then start Feliz by entering: ./felizinit
+  6) Then start Feliz by entering: ./felizinit-stable
 
 Despite being proudly cli-only, Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
 
