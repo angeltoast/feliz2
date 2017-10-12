@@ -24,7 +24,7 @@ Here's how to do it:
 	pacman -Sy unzip
 
   4) Next enter:
-	wget https://raw.githubusercontent.com/angeltoast/feliz-init/master/felizinit
+	wget https://raw.githubusercontent.com/angeltoast/feliz-init/master/felizinit-stable
 
   5) Now enter: chmod +x felizinit
 
