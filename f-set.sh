@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz2 installation scripts for Arch Linux
-# Developed by Elizabeth Mills
+# Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
 # Revision date: 4th October 2017
 
@@ -59,6 +59,13 @@ ChooseMirrors() { # User selects one or more countries with Arch Linux mirrors
     # Prepare files of official Arch Linux mirrors
     # 1) Download latest list of Arch Mirrors to temporary file
     curl -s https://www.archlinux.org/mirrorlist/all/http/ > archmirrors.list
+    if [ $? -ne 0 ]; then
+      PrintOne "Unable to fetch list of mirrors from Arch Linux"
+      PrintOne "Using the list supplied with the Arch iso"
+      Echo
+      PrintOne "Please press any key to continue"
+      cp /etc/pacman.d/mirrorlist > archmirrors.list
+    fi
     # 2) Get line number of first country
     FirstLine=$(grep -n "Australia" archmirrors.list | head -n 1 | cut -d':' -f1)
     # 3) Remove header and save in new file
