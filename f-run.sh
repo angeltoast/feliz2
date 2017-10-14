@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The Feliz2 installation scripts for Arch Linux
-# Developed by Elizabeth Mills  liz@feliz.one
+# Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
 # Revision date: 6th October 2017
 
@@ -26,6 +26,7 @@
 # -------------------------      -------------------------
 # Functions           Line       Functions           Line
 # -------------------------      -------------------------
+# arch_chroot           37
 # Parted                41       InstallDM            206
 # TPecho                45       InstallLuxuries      216
 # MountPartitions       52       UserAdd              324
@@ -33,6 +34,10 @@
 # AddCodecs            158       SetUserPassword      412
 # NewMirrorList        187       Restart              442
 # -------------------------      -------------------------
+
+arch_chroot() {  # From Lution AIS
+  arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
+}
 
 Parted() {
   parted --script /dev/${UseDisk} "$1" 2>> feliz.log
@@ -161,7 +166,7 @@ InstallKernel() {   # Selected kernel and some other core systems
   Translate "cli tools"
   TPecho "$_Installing " "$Result"
   pacstrap /mnt btrfs-progs gamin gksu gvfs ntp wget openssh os-prober screenfetch unrar unzip vim xarchiver xorg-xedit xterm 2>> feliz.log
-  arch-chroot /mnt /bin/bash -c systemctl enable sshd.service >> feliz.log
+  arch_chroot "systemctl enable sshd.service" >> feliz.log
 }
 
 AddCodecs() {
@@ -189,7 +194,7 @@ AddCodecs() {
 
   # TPecho "Installing  CUPS printer services"
   # pacstrap /mnt -S system-config-printer cups
-  # arch-chroot /mnt /bin/bash -c systemctl enable org.cups.cupsd.service
+  # arch_chroot "systemctl enable org.cups.cupsd.service"
 
 }
 
@@ -245,16 +250,16 @@ NewMirrorList() { # Use rankmirrors (script in /usr/bin/ from Arch) to generate 
 
 InstallDM() { # Disable any existing display manager
   print_heading
-  arch-chroot /mnt /bin/bash -c systemctl disable display-manager.service >> feliz.log
+  arch_chroot "systemctl disable display-manager.service" >> feliz.log
   # Then install selected display manager
   TPecho "$_Installing " "${DisplayManager}"
   case ${DisplayManager} in
   "lightdm") pacstrap /mnt lightdm lightdm-gtk-greeter 2>> feliz.log
-    arch-chroot /mnt /bin/bash -c systemctl -f enable lightdm.service >> feliz.log
+    arch_chroot "systemctl -f enable lightdm.service" >> feliz.log
   ;;
   *)
     pacstrap /mnt "${DisplayManager}" 2>> feliz.log
-    arch-chroot /mnt /bin/bash -c systemctl -f enable ${DisplayManager}.service >> feliz.log
+    arch_chroot "systemctl -f enable ${DisplayManager}.service" >> feliz.log
   esac
 }
 
@@ -263,9 +268,9 @@ InstallLuxuries() { # Install desktops and other extras
   # FelizOB (note that $LuxuriesList and $DisplayManager are empty, so their routines will not be called)
   if [ $DesktopEnvironment = "FelizOB" ]; then
     TPecho "$_Installing " "FelizOB"
-    arch-chroot /mnt /bin/bash -c systemctl disable display-manager.service 2>> feliz.log
+    arch_chroot "systemctl disable display-manager.service" 2>> feliz.log
     pacstrap /mnt lxdm 2>> feliz.log
-    arch-chroot /mnt /bin/bash -c systemctl -f enable lxdm.service >> feliz.log
+    arch_chroot "systemctl -f enable lxdm.service" >> feliz.log
     pacstrap /mnt openbox 2>> feliz.log                                               # First ensure that Openbox gets installed
     pacstrap /mnt obmenu obconf 2>> feliz.log                                         # Then Openbox tools
     pacstrap /mnt lxde-icon-theme leafpad lxappearance lxinput lxpanel 2>> feliz.log  # Then LXDE tools
@@ -399,26 +404,26 @@ UserAdd() {
   # If not already exist, create user
   if [ -z "${CheckUsers}" ]; then
     TPecho "Adding user and setting up groups"
-    arch-chroot /mnt /bin/bash -c useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash
+    arch_chroot "useradd ${UserName} -m -g users -G wheel,storage,power,network,video,audio,lp -s /bin/bash"
     # Set up basic configuration files and permissions for user
-    arch-chroot /mnt /bin/bash -c cp /etc/skel/.bashrc /home/${UserName}
-    arch-chroot /mnt /bin/bash -c chown -R ${UserName}:users /home/${UserName}S
+    arch_chroot "cp /etc/skel/.bashrc /home/${UserName}"
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}"
     sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
   fi
   # Create main user folders
   for i in $(head -n 77 ${LanguageFile} | tail -n 1)
   do
-    arch-chroot /mnt /bin/bash -c mkdir /home/${UserName}/${i}
-    arch-chroot /mnt /bin/bash -c chown -R ${UserName}: /home/${UserName}/${i}
+    arch_chroot "mkdir /home/${UserName}/${i}"
+    arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
   done
   # FelizOB
   if [ $DesktopEnvironment = "FelizOB" ]; then
     # Set up directories
-    arch-chroot /mnt /bin/bash -c mkdir -p /home/${UserName}/.config/openbox/
-    arch-chroot /mnt /bin/bash -c mkdir -p /home/${UserName}/.config/pcmanfm/default/
-    arch-chroot /mnt /bin/bash -c mkdir -p /home/${UserName}/.config/lxpanel/default/panels/
-    arch-chroot /mnt /bin/bash -c mkdir /home/${UserName}/Pictures/
-    arch-chroot /mnt /bin/bash -c mkdir /home/${UserName}/.config/libfm/
+    arch_chroot "mkdir -p /home/${UserName}/.config/openbox/"
+    arch_chroot "mkdir -p /home/${UserName}/.config/pcmanfm/default/"
+    arch_chroot "mkdir -p /home/${UserName}/.config/lxpanel/default/panels/"
+    arch_chroot "mkdir /home/${UserName}/Pictures/"
+    arch_chroot "mkdir /home/${UserName}/.config/libfm/"
     # Copy FelizOB files
 
     cp -r themes /mnt/home/${UserName}/.themes 2>> feliz.log            # Copy egtk theme
@@ -458,10 +463,10 @@ UserAdd() {
 
     cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log                      # Wallpaper for desktop (set in desktop-items-0.conf)
     # Set owner
-    arch-chroot /mnt /bin/bash -c chown -R ${UserName}:users /home/${UserName}/
+    arch_chroot "chown -R ${UserName}:users /home/${UserName}/"
   fi
   # Set keyboard at login for user
-  arch-chroot /mnt /bin/bash -c localectl set-x11-keymap $Countrykbd
+  arch_chroot "localectl set-x11-keymap $Countrykbd"
   case $Countrykbd in
   "uk") echo "setxkbmap -layout gb" >> /mnt/home/${UserName}/.bashrc 2>> feliz.log
   ;;
@@ -514,7 +519,7 @@ SetRootPassword() {
     fi
     if [ $Pass1 = $Pass2 ]; then
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
-     arch-chroot /mnt /bin/bash -c passwd root < /tmp/.passwd >> feliz.log
+     arch_chroot "passwd root" < /tmp/.passwd >> feliz.log
      rm /tmp/.passwd 2>> feliz.log
      Repeat="N"
     else
@@ -555,7 +560,7 @@ SetUserPassword() {
     fi
     if [ $Pass1 = $Pass2 ]; then
       echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
-      arch-chroot /mnt /bin/bash -c passwd ${UserName} < /tmp/.passwd >> feliz.log
+      arch_chroot "passwd ${UserName}" < /tmp/.passwd >> feliz.log
       rm /tmp/.passwd 2>> feliz.log
       Repeat="N"
     else
