@@ -409,7 +409,8 @@ UserAdd() {
     sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
   fi
   # Create main user folders
-  for i in $(head -n 212 ${LanguageFile} | tail -n 1)
+  Translate "Desktop Documents Downloads Music Pictures Public Templates Videos"
+  for i in ${Result}
   do
     arch_chroot "mkdir /home/${UserName}/${i}"
     arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
