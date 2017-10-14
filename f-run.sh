@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 6th October 2017
+# Revision date: 14th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 # NewMirrorList        187       Restart              442
 # -------------------------      -------------------------
 
-arch_chroot() {  # From Lution AIS
+arch_chroot() { # From Lution AIS
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
 }
 
@@ -52,87 +52,86 @@ TPecho() { # For displaying status while running on auto
 }
 
 MountPartitions() {
-  print_heading
   TPecho "Preparing and mounting partitions" ""
   # First unmount any mounted partitions
-  umount ${RootPartition} /mnt 2>> feliz.log            # eg: umount /dev/sda1
+  umount ${RootPartition} /mnt 2>> feliz.log                          # eg: umount /dev/sda1
   
   # 1) Root partition
   case $RootType in
-  "") echo "Not formatting root partition" >> feliz.log # If /root filetype not set - do nothing
+  "") echo "Not formatting root partition" >> feliz.log               # If /root filetype not set - do nothing
   ;;
   *) # Otherwise, check if replacing existing ext3/4 /root partition with btrfs
     CurrentType=$(file -sL ${RootPartition} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
     # Check if /root type or existing partition are btrfs ...
     if [ ${CurrentType} ] && [ $RootType = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
-      btrfs-convert ${RootPartition} 2>> feliz.log      # Convert existing partition to btrfs
-    elif [ $RootType = "btrfs" ]; then                  # Otherwise, for btrfs /root
-      mkfs.btrfs -f ${RootPartition} 2>> feliz.log      # eg: mkfs.btrfs -f /dev/sda2
-    elif [ $RootType = "xfs" ]; then                    # Otherwise, for xfs /root
-      mkfs.xfs -f ${RootPartition} 2>> feliz.log        # eg: mkfs.xfs -f /dev/sda2
-    else                                                # /root is not btrfs
-      Partition=${RootPartition: -4}                    # Last 4 characters (eg: sda1)
-      Label="${LabellingArray[${Partition}]}"           # Check to see if it has a label
-      if [ -n "${Label}" ]; then                        # If it has a label ...
-        Label="-L ${Label}"                             # ... prepare to use it
+      btrfs-convert ${RootPartition} 2>> feliz.log                    # Convert existing partition to btrfs
+    elif [ $RootType = "btrfs" ]; then                                # Otherwise, for btrfs /root
+      mkfs.btrfs -f ${RootPartition} 2>> feliz.log                    # eg: mkfs.btrfs -f /dev/sda2
+    elif [ $RootType = "xfs" ]; then                                  # Otherwise, for xfs /root
+      mkfs.xfs -f ${RootPartition} 2>> feliz.log                      # eg: mkfs.xfs -f /dev/sda2
+    else                                                              # /root is not btrfs
+      Partition=${RootPartition: -4}                                  # Last 4 characters (eg: sda1)
+      Label="${LabellingArray[${Partition}]}"                         # Check to see if it has a label
+      if [ -n "${Label}" ]; then                                      # If it has a label ...
+        Label="-L ${Label}"                                           # ... prepare to use it
       fi
       mkfs.${RootType} ${Label} ${RootPartition} &>> feliz.log
-    fi                                                  # eg: mkfs.ext4 -L Arch-Root /dev/sda1
+    fi                                                                # eg: mkfs.ext4 -L Arch-Root /dev/sda1
   esac
   
-  mount ${RootPartition} /mnt 2>> feliz.log             # eg: mount /dev/sda1 /mnt
+  mount ${RootPartition} /mnt 2>> feliz.log                           # eg: mount /dev/sda1 /mnt
   
   # 2) EFI (if required)
-  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then   # Check if /boot partition required
-    mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log        # Format EFI boot partition
-    mkdir -p /mnt/boot                                  # Make mountpoint
-    mount ${EFIPartition} /mnt/boot                     # Mount it
+  if [ ${UEFI} -eq 1 ] && [ ${DualBoot} = "N" ]; then                 # Check if /boot partition required
+    mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log                      # Format EFI boot partition
+    mkdir -p /mnt/boot                                                # Make mountpoint
+    mount ${EFIPartition} /mnt/boot                                   # Mount it
   fi
 
   # 3) Swap
   if [ ${SwapPartition} ]; then
-    swapoff -a 2>> feliz.log                            # Make sure any existing swap cleared
+    swapoff -a 2>> feliz.log                                          # Make sure any existing swap cleared
     if [ $MakeSwap = "Y" ]; then
-      Partition=${SwapPartition: -4}                    # Last 4 characters (eg: sda2)
-      Label="${LabellingArray[${Partition}]}"           # Check for label
+      Partition=${SwapPartition: -4}                                  # Last 4 characters (eg: sda2)
+      Label="${LabellingArray[${Partition}]}"                         # Check for label
       if [ -n "${Label}" ]; then
-        Label="-L ${Label}"                             # Prepare label
+        Label="-L ${Label}"                                           # Prepare label
       fi
-      mkswap ${Label} ${SwapPartition} 2>> feliz.log    # eg: mkswap -L Arch-Swap /dev/sda2
+      mkswap ${Label} ${SwapPartition} 2>> feliz.log                  # eg: mkswap -L Arch-Swap /dev/sda2
     fi
-    swapon ${SwapPartition} 2>> feliz.log               # eg: swapon /dev/sda2
+    swapon ${SwapPartition} 2>> feliz.log                             # eg: swapon /dev/sda2
   fi
 
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)
   local Counter=0
-  for id in ${AddPartList}                              # $id will be in the form /dev/sda2
+  for id in ${AddPartList}                                            # $id will be in the form /dev/sda2
   do
     umount ${id} /mnt${AddPartMount[$Counter]} >> feliz.log
-    mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log  # eg: mkdir -p /mnt/home
+    mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log              # eg: mkdir -p /mnt/home
     # Check if replacing existing ext3/4 partition with btrfs (as with /root)
     CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
     if [ "${AddPartType[$Counter]}" = "btrfs" ] && [ ${CurrentType} != "btrfs" ]; then
       btrfs-convert ${id} 2>> feliz.log
     elif [ "${AddPartType[$Counter]}" = "btrfs" ]; then
-      mkfs.btrfs -f ${id} 2>> feliz.log   # eg: mkfs.btrfs -f /dev/sda2
+      mkfs.btrfs -f ${id} 2>> feliz.log                               # eg: mkfs.btrfs -f /dev/sda2
     elif [ "${AddPartType[$Counter]}" = "xfs" ]; then
-      mkfs.xfs -f ${id} 2>> feliz.log                   # eg: mkfs.xfs -f /dev/sda2
-    elif [ "${AddPartType[$Counter]}" != "" ]; then     # If no type, do not format
-      Partition=${id: -4}                               # Last 4 characters of ${id}
+      mkfs.xfs -f ${id} 2>> feliz.log                                 # eg: mkfs.xfs -f /dev/sda2
+    elif [ "${AddPartType[$Counter]}" != "" ]; then                   # If no type, do not format
+      Partition=${id: -4}                                             # Last 4 characters of ${id}
       Label="${LabellingArray[${Partition}]}"
       if [ -n "${Label}" ]; then
-        Label="-L ${Label}"                             # Prepare label
+        Label="-L ${Label}"                                           # Prepare label
       fi
-      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log  # eg: mkfs.ext4 -L Arch-Home /dev/sda3
+      mkfs.${AddPartType[$Counter]} ${Label} ${id} &>> feliz.log      # eg: mkfs.ext4 -L Arch-Home /dev/sda3
     fi
-    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log       # eg: mount /dev/sda3 /mnt/home
+    mount ${id} /mnt${AddPartMount[$Counter]} &>> feliz.log           # eg: mount /dev/sda3 /mnt/home
     Counter=$((Counter+1))
   done
 }
 
-InstallKernel() {   # Selected kernel and some other core systems
+InstallKernel() { # Selected kernel and some other core systems
 
-  LANG=C            # Set the locale for all processes run from the current shell 
+  LANG=C                                                              # Set the locale for all processes run from the current shell 
 
   # And this, to solve keys issue if an older Feliz or Arch iso is running after keyring changes
   # Passes test if the date of the running iso is more recent than the date of the latest Arch trust update
@@ -140,18 +139,18 @@ InstallKernel() {   # Selected kernel and some other core systems
   # Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
   RunningDate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
 
-  TrustDate=201709  # Reset this to date of latest Arch Linux trust update
-                    # Next trustdb check 2017-10-20
+  TrustDate=201709                                                    # Reset this to date of latest Arch Linux trust update
+                                                                      # Next trustdb check 2017-10-20
   print_heading
-  if [ $RunningDate -ge $TrustDate ]; then              # If the running iso is more recent than
-    echo "pacman-key trust check passed" >> feliz.log   # the last trust update, no action is taken
-  else                                                  # But if the iso is older than the last trust update
-    TPecho "Updating keys"                              # Then the keys must be updated
+  if [ $RunningDate -ge $TrustDate ]; then                            # If the running iso is more recent than
+    echo "pacman-key trust check passed" >> feliz.log                 # the last trust update, no action is taken
+  else                                                                # But if the iso is older than the last trust update
+    TPecho "Updating keys"                                            # Then the keys are updated
     pacman-db-upgrade
     pacman-key --init
     pacman-key --populate archlinux
     pacman-key --refresh-keys
-    pacman -Sy --noconfirm archlinux-keyring            # This is an experimental alternative to the above
+    pacman -Sy --noconfirm archlinux-keyring                          # This is an experimental alternative to the above
   fi
   print_heading
   Translate "kernel and core systems"
@@ -202,11 +201,10 @@ NewMirrorList() { # Use rankmirrors (script in /usr/bin/ from Arch) to generate 
   # In f-set.sh/ChooseMirrors the user has selected one or more countries with Arch Linux mirrors
   # These have been stored in the array CountryLong[@] declared in f-vars.sh
   # Now the mirrors associated with each of those countries must be extracted from the array
-  print_heading
   TPecho "Generating mirrorlist"
   cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.safe 2>> feliz.log
 
-  if [ ${#CountryLong[@]} -eq 0 ]; then   # If no mirrors were cosen by user,
+  if [ ${#CountryLong[@]} -eq 0 ]; then                               # If no mirrors were cosen by user,
     # generate and save a shortened mirrorlist of only the mirrors defined in the CountryCode variable.
     URL="https://www.archlinux.org/mirrorlist/?country=${CountryCode}&use_mirror_status=on"
     MirrorTemp=$(mktemp --suffix=-mirrorlist) 2>> feliz.log
@@ -243,9 +241,9 @@ NewMirrorList() { # Use rankmirrors (script in /usr/bin/ from Arch) to generate 
     Date=$(date)
     echo -e "# Ranked mirrors /etc/pacman.d/mirrorlist \n# $Date \n# Generated by Feliz and rankmirrors\n#" > /etc/pacman.d/mirrorlist
     rankmirrors -n 5 usemirrors.list | grep '^Server' >> /etc/pacman.d/mirrorlist
-    rm usemirrors.list allmirrors.list    # Delete working files
+    rm usemirrors.list allmirrors.list                                # Delete working files
   fi
-  rm countries.list                       # Delete working files
+  rm countries.list                                                   # Delete working files
 }
 
 InstallDM() { # Disable any existing display manager
@@ -281,8 +279,8 @@ InstallLuxuries() { # Install desktops and other extras
   fi
 
   # Display manager - runs only once
-  if [ -n "${DisplayManager}" ]; then   # Not triggered by FelizOB
-    InstallDM                  # Clear any pre-existing DM and install this one
+  if [ -n "${DisplayManager}" ]; then                                 # Not triggered by FelizOB
+    InstallDM                                                         # Clear any pre-existing DM and install this one
   fi
 
   # First parse through LuxuriesList checking for DEs and Window Managers (not used by FelizOB)
@@ -310,7 +308,7 @@ InstallLuxuries() { # Install desktops and other extras
           pacstrap /mnt gnome-extra 2>> feliz.log
         ;;
       "i3") TPecho "$_Installing " "i3 window manager"
-          pacstrap /mnt i3 2>> feliz.log      # i3 group includes i3-wm
+          pacstrap /mnt i3 2>> feliz.log                              # i3 group includes i3-wm
          ;;
       "Icewm") TPecho "$_Installing " "Icewm"
           pacstrap /mnt icewm 2>> feliz.log
@@ -351,7 +349,7 @@ InstallLuxuries() { # Install desktops and other extras
         pacstrap /mnt xmonad 2>> feliz.log
         pacstrap /mnt xmonad-contrib 2>> feliz.log
         ;;
-      *) continue # Ignore all others on this pass
+      *) continue                                                     # Ignore all others on this pass
       esac
     done
 
@@ -380,7 +378,7 @@ InstallYaourt() {
   print_heading
   TPecho "$_Installing " "Yaourt"
   arch=$(uname -m)
-  if [ ${arch} = "x86_64" ]; then                     # Identify 64 bit architecture
+  if [ ${arch} = "x86_64" ]; then                                     # Identify 64 bit architecture
     # For installed system
     echo -e "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /mnt/etc/pacman.conf 2>> feliz.log
     # For installer
@@ -411,7 +409,7 @@ UserAdd() {
     sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers 2>> feliz.log
   fi
   # Create main user folders
-  for i in $(head -n 77 ${LanguageFile} | tail -n 1)
+  for i in $(head -n 212 ${LanguageFile} | tail -n 1)
   do
     arch_chroot "mkdir /home/${UserName}/${i}"
     arch_chroot "chown -R ${UserName}: /home/${UserName}/${i}"
@@ -424,36 +422,36 @@ UserAdd() {
     arch_chroot "mkdir -p /home/${UserName}/.config/lxpanel/default/panels/"
     arch_chroot "mkdir /home/${UserName}/Pictures/"
     arch_chroot "mkdir /home/${UserName}/.config/libfm/"
-    # Copy FelizOB files
 
-    cp -r themes /mnt/home/${UserName}/.themes 2>> feliz.log            # Copy egtk theme
-    
+    # Copy FelizOB files
+    cp -r themes /mnt/home/${UserName}/.themes 2>> feliz.log          # Copy egtk theme
+
     CheckExisting "/mnt/home/${UserName}/" ".conkyrc"
-    cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log             # Conky configuration file
+    cp conkyrc /mnt/home/${UserName}/.conkyrc 2>> feliz.log           # Conky configuration file
 
     CheckExisting "/mnt/home/${UserName}/" ".compton.conf"
-    cp compton.conf /mnt/home/${UserName}/.compton.conf 2>> feliz.log   # Compton configuration file
+    cp compton.conf /mnt/home/${UserName}/.compton.conf 2>> feliz.log # Compton configuration file
 
     CheckExisting "/mnt/home/${UserName}/" ".face"
-    cp face.png /mnt/home/${UserName}/.face 2>> feliz.log               # Image for greeter
+    cp face.png /mnt/home/${UserName}/.face 2>> feliz.log             # Image for greeter
 
     CheckExisting "/mnt/home/${UserName}/.config/openbox/" "autostart"
-    cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log   # Autostart configuration file
+    cp autostart /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log # Autostart configuration file
 
     CheckExisting "/mnt/home/${UserName}/.config/openbox/" "menu.xml"
-    cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log    # Openbox right-click menu configuration file
+    cp menu.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log  # Openbox right-click menu configuration file
 
     CheckExisting "/mnt/home/${UserName}/.config/openbox/" "rc.xml"
-    cp rc.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log      # Openbox configuration file
+    cp rc.xml /mnt/home/${UserName}/.config/openbox/ 2>> feliz.log    # Openbox configuration file
 
     CheckExisting "/mnt/home/${UserName}/.config/lxpanel/default/panels/" "panel"
     cp panel /mnt/home/${UserName}/.config/lxpanel/default/panels/ 2>> feliz.log  # Panel configuration file
 
-    cp feliz.png /mnt/usr/share/icons/ 2>> feliz.log                    # Icon for panel menu
-    cp wallpaper.jpg /mnt/home/${UserName}/Pictures/ 2>> feliz.log      # Wallpaper for user
+    cp feliz.png /mnt/usr/share/icons/ 2>> feliz.log                  # Icon for panel menu
+    cp wallpaper.jpg /mnt/home/${UserName}/Pictures/ 2>> feliz.log    # Wallpaper for user
 
     CheckExisting "/mnt/home/${UserName}/.config/libfm/" "libfm.conf"
-    cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log    # Configurations for pcmanfm
+    cp libfm.conf /mnt/home/${UserName}/.config/libfm/ 2>> feliz.log  # Configurations for pcmanfm
 
     CheckExisting "/mnt/home/${UserName}/.config/lxpanel/default/" "config"
     cp config /mnt/home/${UserName}/.config/lxpanel/default/ 2>> feliz.log # Desktop configurations for pcmanfm
@@ -461,9 +459,10 @@ UserAdd() {
     CheckExisting "/mnt/home/${UserName}/.config/pcmanfm/default/" "desktop-items-0.conf"
     cp desktop-items /mnt/home/${UserName}/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log # Desktop configurations for pcmanfm
 
-    cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log                      # Wallpaper for desktop (set in desktop-items-0.conf)
+    cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log                    # Wallpaper for desktop (set in desktop-items-0.conf)
     # Set owner
     arch_chroot "chown -R ${UserName}:users /home/${UserName}/"
+
   fi
   # Set keyboard at login for user
   arch_chroot "localectl set-x11-keymap $Countrykbd"
@@ -474,9 +473,9 @@ UserAdd() {
   esac
 }
 
-CheckExisting() {             # Test if $1 (path) + $2 (file) already exists
-  if [ -f "$1$2" ]; then      # If path+file already exists
-      mv "$1$2" "$1saved$2"   # Rename it
+CheckExisting() {                                                     # Test if $1 (path) + $2 (file) already exists
+  if [ -f "$1$2" ]; then                                              # If path+file already exists
+      mv "$1$2" "$1saved$2"                                           # Rename it
   fi
 }
 
