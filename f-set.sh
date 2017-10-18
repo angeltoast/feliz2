@@ -137,7 +137,7 @@ SetTimeZone() {
   do
     print_heading
     Echo
-    PrintOne "To set the system clock, please"
+    PrintOne "To set the system clock, please first"
     PrintOne "choose the World Zone of your location"
     Zones=$(timedatectl list-timezones | cut -d'/' -f1 | uniq) # Ten world zones
     zones=""
