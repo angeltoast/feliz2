@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # The Feliz installation scripts for Arch Linux
-# Developed by Elizabeth Mills
+# Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th October 2017
+# Revision date: 14th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -106,97 +106,94 @@ CheckParts() {  # Test for existing partitions
   fi
 }
 
-BuildPartitionLists() { # First called by CheckParts to generate details of existing partitions for display
-                        # Then to prepare partition arrays for selection for root, swap and others
-  # 1) Prepare two arrays from attached devices using blkid (installed with Feliz)
-    # First an array of all partitions up to sd*99
-    #                           |includes TYPE | select 1st field | ignore /dev/
-    ListTypeIDs=$(blkid /dev/sd* | grep ' TYPE' | cut -d':' -f1 | cut -d'/' -f3) #2>/dev/null
-    # Then a matching array of types
-    #                          |includes TYPE |  select last field   | remove TYPE & quotes
-    ListTypes=$(blkid /dev/sd* | grep ' TYPE' | awk '{print $(NF-1)}' | cut -d'"' -f2) #2>/dev/null
+function BuildPartitionLists()  # First called by CheckParts to generate details of existing partitions for display
+{                               # Then to prepare partition arrays for selection for root, swap and others
+  # 1) Prepare two lists from attached devices using blkid (installed with Feliz)
+  
+    # Following reported problems with labels, this block has been rewritten, and should work correctly now
+    # So far it only selected parts of code have been tested in isolation
+  
+    # First a list of all partitions up to sd*99
+    #                           |includes keyword " TYPE=" | select 1st field | ignore /dev/
+    ListTypeIDs=$(blkid /dev/sd* | grep /dev/sd.[0-9] | grep ' TYPE=' | cut -d':' -f1 | cut -d'/' -f3) # eg: sdb1
+
     # Add records from those two indexed arrays into the associative array
     local Counter=0
     for i in ${ListTypeIDs}
     do
-      x=0
-      for l in ${ListTypes}
+      # Find the format type for that ID
+      #                    | just the text after TYPE= | select text inside double quotations
+      Type=$(blkid /dev/$i | sed -n -e 's/^.*TYPE=//p' | cut -d'"' -f2) # eg: ext4
+      FileSystem[$i]=$Type # ... and save it to the associative array
+    done
+  # 2) Find all partitions with text "LABEL=" | select 1st field | remove /dev/ | remove colon
+    ListLabelledIDs=$(blkid /dev/sd* | grep /dev/sd.[0-9] | grep LABEL= | cut -d':' -f1 | cut -d'/' -f3)
+  
+    # Following reported problems with labels, this block has also been rewritten, and should work correctly now
+  
+    # If at least one labelled partition found, get a matching associative array of labels (remove quotes)
+    for item in $ListLabelledIDs
+    do      
+      Labelled[$item]=$(sudo blkid /dev/sd* | grep /dev/$item | sed -n -e 's/^.*LABEL=//p' | cut -d'"' -f2)
+    done
+    
+    local HowManyLabelled="${#Labelled[@]}"
+    
+      # Test results
+      #  echo "$HowManyLabelled $ListLabelledIDs"
+      #  for item in "${Labelled[@]}"
+      #  do      
+      #    echo ${!Labelled[@]} $item
+      #  done
+  # 3) Find any partitions flagged as bootable
+  
+    # This block has not yet been checked
+  
+    ListAll=$(sfdisk -l 2>/dev/null | grep /dev | grep '*' | cut -d' ' -f1 | cut -d'/' -f3)
+    declare -a Flagged
+    Counter=0
+    for i in $ListAll
+    do
+      Flagged[${Counter}]="$i"
+      Counter=$((Counter+1))
+    done
+    local HowManyFlagged="${#Flagged[@]}"
+  # 4) Prepare list of short identifiers (sda1 sda2 ...)
+    PartitionList=""
+    ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
+  # 5) Run through short identifiers, checking the three arrays for a match
+    Counter=0 # For count of partitions
+    Label=""
+    for part in ${ShowPartitions}
+    do
+    # First test Flagged
+      local x=0
+      until [ ${x} -eq ${HowManyFlagged} ]
       do
-        if [ $x -eq $Counter ]; then
-          FileSystem[$i]=$l # ... get the matching type
+        if [ $part = "${Flagged[$x]}" ]; then
+          Bootable="(Bootable)"
           break
+        else
+          Bootable=""
         fi
         x=$((x+1))
       done
-      Counter=$((Counter+1))
-    done
-  # 2) Find all up to sd*99 with LABEL | select 1st field | remove /dev/ | remove colon
-  ListLabelledIDs=$(blkid /dev/sd* | grep LABEL | cut -d':' -f1 | cut -d'/' -f3)
-  # If at least one labelled partition found, get a matching list of labels (remove quotes)
-  if [ -n "$ListLabelledIDs" ]; then
-    ListLabelledLabels=$(blkid /dev/sd* | grep LABEL | cut -d':' -f2 | cut -d'"' -f2)
-  fi
-  # Add records from those two indexed arrays into associative array
-  Counter=0
-  for i in ${ListLabelledIDs}
-  do
-    x=0
-    for l in ${ListLabelledLabels}
-    do
-      if [ $x -eq $Counter ]; then
-        Labelled[$i]=$l # ... get the matching label
-        break
+      # Next test Labelled
+      ThisPart=${Labelled[${part}]} # Find the record in Labelled that matches the current iteration
+      if [ -n "${ThisPart}" ]; then
+        Label="${ThisPart}"
       fi
-      x=$((x+1))
+      # Finally get the filesystem type
+      ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
+      #          | add space after $part to maintain proper sort order | use fields 1, 4 & 7
+      LongID=$(lsblk -l | grep "${part} " | awk '{print $1 " " $4 " " $7}') # eg: sda5 7.5G [SWAP]
+      # and save the complex result of the above steps in PartitionArray, which was declared in f-vars.sh
+      PartitionArray[${Counter}]="$LongID $ThisPart ${Labelled[$part]} ${Bootable}" # Counter starts at 0
+      Label=""
+      # Save the short ID for later functions
+      PartitionList="${PartitionList} ${part}"
+      (( Counter+=1 ))
     done
-    Counter=$((Counter+1))
-  done
-  local HowManyLabelled="${#Labelled[@]}"
-  # 3) Find any partitions flagged as bootable
-  ListAll=$(sfdisk -l 2>/dev/null | grep /dev | grep '*' | cut -d' ' -f1 | cut -d'/' -f3)
-  declare -a Flagged
-  Counter=0
-  for i in $ListAll
-  do
-    Flagged[${Counter}]="$i"
-    Counter=$((Counter+1))
-  done
-  local HowManyFlagged="${#Flagged[@]}"
-  # 4) Prepare list of short identifiers (sda1 sda2 ...)
-  PartitionList=""
-  ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)
-  # 5) Run through short identifiers, checking the three arrays for a match
-  Counter=0 # For count of partitions
-  Label=""
-  for part in ${ShowPartitions}
-  do
-  # First test Flagged
-    local x=0
-    until [ ${x} -eq ${HowManyFlagged} ]
-    do
-      if [ $part = "${Flagged[$x]}" ]; then
-        Bootable="(Bootable)"
-        break
-      else
-        Bootable=""
-      fi
-      x=$((x+1))
-    done
-    # Next test Labelled
-    ThisPart=${Labelled[${part}]} # Find the record in Labelled that matches the current iteration
-    if [ -n "${ThisPart}" ]; then
-      Label="${ThisPart}"
-    fi
-    # Finally get the filesystem type
-    ThisPart=${FileSystem[${part}]} # Find the record in FileSystem that matches the current iteration
-    #          | add space after $part to maintain proper sort order | use fields 1, 4 & 7
-    LongID=$(lsblk -l | grep "${part} " | awk '{print $1 " " $4 " " $7}')
-    PartitionArray[${Counter}]="$LongID $ThisPart ${Label} ${Bootable}"
-    Label=""
-    # Save the short ID for later functions
-    PartitionList="${PartitionList} ${part}"
-    (( Counter+=1 ))
-  done
   PARTITIONS=${Counter}
 }
 
