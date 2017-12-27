@@ -30,7 +30,7 @@ Here's how to do it:
 
   6) Then start Feliz by entering: ./felizinit-stable
 
-Despite being proudly cli-only, Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
+Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
 
 Find our friendly and lively communities on Facebook:
 	https://www.facebook.com/groups/915936978471838/
@@ -45,7 +45,7 @@ Feliz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANT
 
 A copy of the GNU General Public License is available from the Feliz page at http://sourceforge.net/projects/feliz/files or https://github.com/angeltoast/feliz, or write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-And, finally, a fond farewell to you all from the creator of Feliz. I am retiring. I hope that someone will clone Feliz and keep the dream alive. Goodbye, and thanks for all the good times.
+And, finally, an anouncement from the creator of Feliz. I am not sure how much longer I will be able to maintain Feliz, so I hope that many people will clone Feliz and release their own versions to keep the dream alive.
 
 Elizabeth Mills
-16th October 2017
+27th December 2017
