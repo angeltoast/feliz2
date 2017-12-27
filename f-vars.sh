@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # The Feliz2 installation scripts for Arch Linux
-# Developed by Elizabeth Mills  liz@feliz.one
+# Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 20th December 2017
+# Revision date: 6th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,170 +23,247 @@
 #                    Boston, MA 02110-1301 USA
 
 # In this module: Some global functions, and declaration of various arrays and variables
-# ----------------------    ------------------------
-# Function          Line    Function            Line
-# ----------------------    ------------------------
-# set_language        38    print_subsequent     127
-# not_found           97    common_translations  197
-# dialog_inputbox    107    translate            246
-# message_first_line 127    
-# message_subsequent 148    Arrays & Variables   266
-# print_first_line   127       ... and onwards
-# ----------------------    ------------------------
+# --------------------   ----------------------
+# Function        Line   Function          Line
+# --------------------   ----------------------
+# not_found         33   read_timed         109
+# Echo              39   CompareLength      128
+# TPread            44   PaddLength         136
+# print_heading     62   SetLanguage        145
+# PrintOne          74   Translate          226
+# PrintMany         96   Arrays & Variables 247
+# --------------------   ----------------------
 
-function set_language
-{
-  setfont LatGrkCyr-8x16 -m 8859-2    # To display wide range of characters
-  
-  # First load English file
-  if [ ! -f English.lan ]; then
-    wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
-  fi
-  
-  dialog --backtitle "$Backtitle" \
-    --title " Idioma/Język/Language/Langue/Limba/Língua/Sprache " --no-tags --menu \
-    "\n       You can use the UP/DOWN arrow keys, or\n \
-    the first letter of your choice as a hot key.\n \
-           Please choose your language" 21 60 11 \
-      en "English" \
-      de "Deutsche" \
-      el "Ελληνικά" \
-      es "Español" \
-      fr "Français" \
-      it "Italiano" \
-      nl "Nederlands" \
-      pl "Polski" \
-      pt-BR "Português" \
-      vi "Vietnamese" 2>output.file
-    retval=$?
-    if [ $retval -ne 0 ]; then exit; fi
-    InstalLanguage=$(cat output.file)
-
-  case "$InstalLanguage" in
-    de) LanguageFile="German.lan"
+SetLanguage() {
+  _Backtitle="Feliz - Arch Linux installation script"
+  print_heading
+  # setfont LatGrkCyr-8x16 -m 8859-2                         # To display wide range of characters
+  PrintOne "" "Idioma/Język/Language/Langue/Limba/Língua/Sprache"
+  Echo
+  listgen1 "English Deutsche Ellinika Español Français Italiano Nederlands Polski Português-PT Português-BR Vietnamese" "" "Ok"  # Available languages
+  case $Response in
+    2) InstalLanguage="de"
+      LanguageFile="German.lan"
     ;;
-    el) setfont LatGrkCyr-8x16 -m 8859-2
+    3) InstalLanguage="el"
       LanguageFile="Greek.lan"
+      setfont LatGrkCyr-8x16 -m 8859-2 
     ;;
-    es) LanguageFile="Spanish.lan"
+    4) InstalLanguage="es"
+      LanguageFile="Spanish.lan"
     ;;
-    fr) LanguageFile="French.lan"
+    5) InstalLanguage="fr"
+      LanguageFile="French.lan"
     ;;
-    it) LanguageFile="Italian.lan"
+    6) InstalLanguage="it"
+      LanguageFile="Italian.lan"
     ;;
-    nl) LanguageFile="Dutch.lan"
+    7) InstalLanguage="nl"
+      LanguageFile="Dutch.lan"
     ;;
-    pl) LanguageFile="Polish.lan"
+    8) InstalLanguage="pl"
+      LanguageFile="Polish.lan"
     ;;
-    pt-PT) LanguageFile="Portuguese-PT.lan"
+    9) InstalLanguage="pt-PT"
+      LanguageFile="Portuguese-PT.lan"
     ;;
-    pt-BR) LanguageFile="Portuguese-BR.lan"
+    10) InstalLanguage="pt-BR"
+      LanguageFile="Portuguese-BR.lan"
     ;;
-    vi) LanguageFile="Vietnamese.lan"
+    11) InstalLanguage="vi"
+      LanguageFile="Vietnamese.lan"
       setfont viscii10-8x16 -m 8859-2
     ;;
-    *) LanguageFile="English.lan"
-      InstalLanguage="en"
+    *) InstalLanguage="en"
+      LanguageFile="English.lan"
   esac
-  
   # Get the required language files
-  if [ $LanguageFile != "English.lan" ]; then   # If English is not the user language, get the translation file
-    if [ ! -f ${LanguageFile} ]; then
-      wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
-    fi
-
-    if [ ! -f trans ]; then               # If Google translate hasn't already been installed, get it
-      wget -q git.io/trans 2>> feliz.log  # (for situations where no translation is found in language files)
-      chmod +x ./trans
-    fi
+  # PrintOne "Loading translator"
+  wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
+  if [ $LanguageFile != "English.lan" ]; then   # Only if not English
+    wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
+    # Install the translator for situations where no translation is found on file
+    # wget -q git.io/trans 2>> feliz.log
+    # chmod +x ./trans
   fi
-
-  translate "Back"
-  Back="$Result"
-  translate "Cancel"
-  Cancel="$Result"
-  translate "Done"
-  Done="$Result"
-  translate "Exit"
-  Exit="$Result"
-  translate "No"
-  No="$Result"
-  translate "Ok"
-  Ok="$Result"
-  translate "Yes"
-  Yes="$Result"
+  Common # Set common translations
 }
 
-function not_found                # Optional arguments $1 & $2 for box size
-{
-  if [ $1 ] && [ -n $1 ]; then
-    Height="$1"
+not_found() {
+  Echo
+  PrintOne "Please try again"
+  Buttons "Yes/No" "$_Ok"
+}
+
+Echo() { # Use in place of 'echo' for basic text print
+  printf "%-s\n" "$1"
+  cursor_row=$((cursor_row+1))
+}
+
+TPread() { # Aligned prompt for user-entry
+  # $1 = prompt ... Returns result through $Response
+  local T_COLS=$(tput cols)
+  local lov=${#1}
+  stpt=0
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( (T_COLS - lov) / 2 ))
+  elif [ ${lov} -gt ${T_COLS} ]; then
+    stpt=0
   else
-    Height=7
+    stpt=$(( (T_COLS - 10) / 2 ))
   fi
-  if [ $2 ] && [ -n $2 ]; then
-    Length="$2"
-  else
-    Length=25
+  EMPTY="$(printf '%*s' $stpt)"
+  read -p "$EMPTY $1" Response
+  cursor_row=$((cursor_row+1))
+}
+
+print_heading() {   # Always use this function to clear the screen
+  clear
+  T_COLS=$(tput cols)                   # Get width of terminal
+  LenBT=${#_Backtitle}                  # Length of backtitle
+  HalfBT=$((LenBT/2))
+  tput cup 0 $(((T_COLS/2)-HalfBT))     # Move the cursor to left of center
+  tput bold
+  printf "%-s\n" "$_Backtitle"          # Display backtitle
+  tput sgr0
+  # printf "%$(tput cols)s\n"|tr ' ' '-'  # Draw a line across width of terminal
+  cursor_row=3                          # Save cursor row after heading
+}
+
+PrintOne() {  # Receives up to 2 arguments. Translates and prints text
+              # centred according to content and screen size
+  if [ ! "$2" ]; then  # If $2 is missing or empty, translate $1
+    Translate "$1"
+    Text="$Result"
+  elif [ $Translate = "N" ]; then  # If Translate variable unset, don't translate any
+    Text="$1 $2 $3"
+  else                             # If $2 contains text, don't translate any
+    Text="$1 $2 $3"
   fi
-  dialog --backtitle "$Backtitle" --title " Not Found " --ok-label "$Ok" --msgbox "\n$Message $3" $Height $Length
-}
-
-function dialog_inputbox          # General-purpose input box ... $1 & $2 are box size
-{
-  dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" \
-    --inputbox "\n$Message\n" $1 $2 2>output.file
-  retval=$?
-  Result=$(cat output.file)
-}
-
-function message_first_line       # translates $1 and starts a Message with it
-{
-  translate "$1"
-  Message="$Result"
-}
-
-function message_subsequent       # translates $1 and continues a Message with it
-{
-  translate "$1"
-  Message="${Message}\n${Result}"
-}
-
-function print_first_line         # Called by FinalCheck to display all user-defined variables
-{                                 # Prints argument(s) centred according to content and screen size
-  text="$1 $2 $3"
   local width=$(tput cols)
   EMPTY=" "
   stpt=0
-  local lov=${#text}
+  local lov=${#Text}
   if [ ${lov} -lt ${width} ]; then
     stpt=$(( (width - lov) / 2 ))
     EMPTY="$(printf '%*s' $stpt)"
   fi
-  echo "$EMPTY $text"
+  Echo "$EMPTY $Text"
 }
 
-function print_subsequent() # Called by FinalCheck to display all user-defined variables
-{ # Prints argument(s) aligned to print_first_line according to content and screen size
-  text="$1 $2 $3"
-  echo "$EMPTY $text"
-}
-
-function translate()  # Called by message_first_line & message_subsequent and by other functions as required
-{                     # $1 is text to be translated
-  text="${1%% }"      # Remove any trailing spaces
-  if [ $LanguageFile = "English.lan" ] || [ $translate = "N" ]; then
-    Result="$text"
-    return 0
+PrintMany() { # Receives up to 2 arguments. Translates and prints text
+              # aligned to first row according to content and screen size
+  if [ ! "$2" ]; then  # If $2 is missing
+    Translate "$1"
+    Text="$Result"
+  elif [ $Translate = "N" ]; then  # If Translate variable unset, don't translate any
+    Text="$1 $2 $3"
+  else        # If $2 contains text, don't translate $1 or $2
+    Text="$1 $2"
   fi
-  # Get line number of "$text" in English.lan
+  Echo "$EMPTY $Text"
+}
+
+read_timed() { # Timed display - $1 = text to display; $2 = duration
+  local T_COLS=$(tput cols)
+  local lov=${#1}
+  stpt=0
+  if [ $2 ]; then
+    tim=$2
+  else
+    tim=2
+  fi
+  if [ ${lov} -lt ${T_COLS} ]; then
+    stpt=$(( (T_COLS - lov) / 2 ))
+    EMPTY="$(printf '%*s' $stpt)"
+  else
+    EMPTY=""
+  fi
+  read -t ${tim} -p "$EMPTY $1"
+  cursor_row=$((cursor_row+1))
+}
+
+CompareLength() {
+  # If length of translation is greater than previous, save it
+  Text="$1"
+    if [ ${#Text} -gt $MaxLen ]; then
+      MaxLen=${#Text}
+    fi
+}
+
+PaddLength() {  # If $1 is shorter than MaxLen, padd with spaces
+  Text="$1"
+  until [ ${#Text} -eq $MaxLen ]
+  do
+    Text="$Text "
+  done
+  Result="$Text"
+}
+
+Common() {  # Some common translations
+  if [ -f "TESTING" ]; then
+    Translate "Feliz - Testing"
+  else
+    Translate "$_Backtitle"
+  fi
+  _Backtitle="$Result"
+  _Savetitle="$_Backtitle"
+  Translate "Loading"
+  _Loading="$Result"
+  Translate "Installing"
+  _Installing="$Result"
+  # listgen1/2 variables
+  Translate "Ok"
+  _Ok="$Result"
+  Translate "Exit"
+  _Exit="$Result"
+  Translate "Exit to finish"
+  _Quit="$Result"
+  Translate "Use arrow keys to move. Enter to select"
+  _Instructions="${Result}"
+  Translate "Yes"
+  _Yes="$Result"
+  Translate "No"
+  _No="$Result"
+  Translate "None"
+  _None="$Result"
+  Translate "or"
+  _or="$Result"
+  # listgenx variables
+  Translate "Please enter the number of your selection"
+  _xNumber="$Result"
+  Translate "or ' ' to exit"
+  _xExit="$Result"
+  Translate "'<' for previous page"
+  _xLeft="$Result"
+  Translate "'>' for next page"
+  _xRight="$Result"
+  # Partitioning
+  Translate "/boot partition"
+  _BootPartition="$Result"
+  Translate "/root partition"
+  _RootPartition="$Result"
+  Translate "/swap partition"
+  _SwapPartition="$Result"
+  Translate "/home partition"
+  _HomePartition="$Result"
+}
+
+Translate() { # Called by PrintOne & PrintMany and by other functions as required
+                # $1 is text to be translated
+  Text="${1%% }"   # Ensure no trailing spaces
+  if [ $LanguageFile = "English.lan" ] || [ $Translate = "N" ]; then
+    Result="$Text"
+    return
+  fi
+  # Get line number of "$Text" in English.lan
   #                      exact match only | restrict to first find | display only number
-  RecordNumber=$(grep -n "^${text}$" English.lan | head -n 1 | cut -d':' -f1)
+  RecordNumber=$(grep -n "^${Text}$" English.lan | head -n 1 | cut -d':' -f1)
   case $RecordNumber in
-  "" | 0) # No match found in English.lan, so use Google translate
-     ./trans -b en:${InstalLanguage} "$text" > output.file 2>/dev/null
-     Result=$(cat output.file)
-read -p "Translated by Google: $text"
+  "" | 0) # No match found in English.lan, so translate using Google Translate to temporary file:
+    # ./trans -b en:${InstalLanguage} "$Text" > Result.file 2>/dev/null
+    # Result=$(cat Result.file)
+      Result="$Text"
   ;;
   *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target language file
   esac
@@ -196,14 +273,19 @@ read -p "Translated by Google: $text"
 declare -a AddPartList    # Array of additional partitions eg: /dev/sda5
 declare -a AddPartMount   # Array of mountpoints for the same partitions eg: /home
 declare -a AddPartType    # Array of format type for the same partitions eg: ext4
-declare -A PartitionArray # Associative array of partition details
+declare -a PartitionArray # Array of long identifiers
 declare -a NewArray       # For copying any array
+declare -a button_start   # Used in listgen
+declare -a button_text    # Used in listgen
+declare -a button_len     # Used in listgen
+declare -A LabellingArray # Associative array of user labels for partitions
 declare -A Labelled       # Associative array of labelled partitions
-BootSize=""               # Boot variable
-RootSize=""               # Root variable
-SwapSize=""               # Swap variable
-HomeSize=""               # Home variable
-HomeType=""               # Home variable
+declare -A FileSystem     # Associative array of filesystem types (ext* swap)
+BootSize=""               # Boot variable for EasyEFI
+RootSize=""               # Root variable for EasyEFI
+SwapSize=""               # Swap variable for EasyEFI
+HomeSize=""               # Home variable for EasyEFI
+HomeType=""               # Home variable for EasyEFI
 SwapPartition=""          # eg: /dev/sda3
 FormatSwap="N"            # User selects whether to reuse swap
 MakeSwap="Y"
@@ -215,9 +297,10 @@ RootPartition=""          # eg: /dev/sda2
 RootType=""               # eg: ext4
 Partition=""              # eg: sda1
 Ignorelist=""             # Used in review process
-AutoPart="OFF"            # Flag - changes to 1 if auto-partition is chosen
+AutoPart=0                # Flag - changes to 1 if auto-partition is chosen
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
+TypeList="ext4 ext3 btrfs xfs" # Partition format types
 
 # Grub & kernel variables
 GrubDevice=""             # eg: /dev/sda
@@ -241,13 +324,25 @@ DisplayManager=""         # eg: lightdm
 
 # Root and user variables
 HostName=""               # eg: arch-linux
-user_name=""              # eg: archie
+UserName=""               # eg: archie
 Scope=""                  # Installation scope ... 'Full' or 'Basic'
 
 # Miscellaneous
 declare -a BeenThere      # Restrict translations to first pass
 PrimaryFile=""
-translate="Y"             # May be set to N to stifle translation
+Translate="Y"             # May be set to N to stifle translation
+
+# ---- Partitioning ----
+PartitioningOptions="leave cfdisk guided auto"
+LongPart[1]="Choose from existing partitions"
+LongPart[2]="Open cfdisk so I can partition manually"
+LongPart[3]="Guided manual partitioning tool"
+LongPart[4]="Allow feliz to partition the whole device"
+# EFI
+EFIPartitioningOptions="leave guided auto"
+LongPartE[1]="Choose from existing partitions"
+LongPartE[2]="Guided manual partitioning tool"
+LongPartE[3]="Allow feliz to partition the whole device"
 
 # ---- Arrays for extra Applications ----
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers Taskbars"
@@ -308,7 +403,7 @@ LongMulti[4]="Easy-to-use non-linear video editor"
 LongMulti[5]="Middleweight video player"
 LongMulti[6]="GUI CD burner"
 # Office
-Office="abiword calibre evince gnumeric libreoffice-fresh orage scribus"
+Office="abiword calibre evince gnumeric libreoffice orage scribus"
 LongOffice[1]="Full-featured word processor"
 LongOffice[2]="E-book library management application"
 LongOffice[3]="Reader for PDF & other document formats"

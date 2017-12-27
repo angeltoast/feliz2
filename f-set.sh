@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # The Feliz2 installation scripts for Arch Linux
-# Developed by Elizabeth Mills  liz@feliz.one
+# Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 20th December 2017
+# Revision date: 4th October 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,262 +23,267 @@
 #                    Boston, MA 02110-1301 USA
 
 # In this module: functions for setting variables used during installation
-# --------------------------  ---------------------------
-# Function             Line   Function               Line
-# --------------------------  ---------------------------
-# menu_dialog            44   type_of_installation    515
-# localisation_settings  74   pick_category           554
-# desktop_settings       90   choose_extras           633
-# set_timezone          102   display_extras          692
-# set_subzone           154   choose_display_manager  752
-# america               199   select_grub_device      776
-# america_subgroups     250   enter_grub_path         804
-# setlocale             273   select_kernel           828
-# edit_locale           349   choose_mirrors          852
-# get_keymap            369   edit_mirrors            923
-# search_keyboards      431   confirm_virtualbox      949
-# set_username          477   final_check             968
-# set_hostname          496   manual_settings        1098
-# -------------------------   ---------------------------
+# --------------------   -----------------------
+# Function        Line   Function           Line
+# --------------------   -----------------------
+# SetKernel         43   SearchKeyboards     410
+# ChooseMirrors     57   Username            447
+# ConfirmVbox      108   SetHostname         464
+# SetTimeZone      132   Options             482
+# SetSubZone       166   PickLuxuries        460
+# SelectSubzone    195   ShoppingList        505
+# America          209   ChooseDM            805
+# DoCities         244   SetGrubDevice       849
+# setlocale        270   EnterGrubPath       882
+# Mano             333     --- Review stage --- 
+# getkeymap        351   FinalCheck          910
+#                        ManualSettings     1037
+# --------------------   -----------------------
 
-function menu_dialog()
-{ # Display a simple menu from $menu_dialogVariable and return selection as $Result
-  # $1 and $2 are dialog box size;
-  # $3 is optional: can be the text for --cancel-label
-    
-  if [ $3 ]; then
-    cancel="$3"
-  else
-    cancel="Cancel"
-  fi
-  
-  # Prepare array for display
-  declare -a ItemList=()                                    # Array will hold entire list
-  Items=0
-  for Item in $menu_dialogVariable                          # Read items from the variable
-  do                                                        # and copy each one to the array
-    Items=$((Items+1))
-    ItemList[${Items}]="${Item}"                            # First element is tag
-    Items=$((Items+1))
-    ItemList[${Items}]="${Item}"                            # Second element is required
-  done
-   
-  # Display the list for user-selection
-  dialog --backtitle "$Backtitle" --title " $title " \
-    --no-tags --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" \
-      $1 $2 ${Items} "${ItemList[@]}" 2>output.file
-  retval=$?
-  Result=$(cat output.file)
+SetKernel() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Kernels"
+  print_heading
+  Echo
+  PrintOne "Choose your kernel"
+  PrintOne "The Long-Term-Support kernel (LTS) offers stabilty"
+  PrintOne "while the Latest kernel has all the new features"
+  Translate "If in doubt, choose"
+  PrintOne "$Result " "LTS"
+  Echo
+  listgen1 "LTS Latest" "" "$_Ok"
+  Kernel=${Response} # Set the Kernel variable (1 = LTS; 2 = Latest)
 }
 
-function localisation_settings()              # Locale, keyboard & hostname
-{
-  localisation=1
-  until [ $localisation -eq 0 ]
-  do
-    setlocale                                 # CountryLocale eg: en_GB.UTF-8
-    if [ $? -ne 0 ]; then return 1; fi
-    get_keymap                                # Select keyboard layout eg: uk
-    if [ $? -ne 0 ]; then return 1; fi
-    set_hostname
-    localisation=$?
-  done
-  return 0
-}
+ChooseMirrors() { # User selects one or more countries with Arch Linux mirrors
+    _Backtitle="https://wiki.archlinux.org/index.php/Mirrors"
+    # Prepare files of official Arch Linux mirrors
+    # 1) Download latest list of Arch Mirrors to temporary file
+    curl -s https://www.archlinux.org/mirrorlist/all/http/ > archmirrors.list
+    # 2) Get line number of first country
+    FirstLine=$(grep -n "Australia" archmirrors.list | head -n 1 | cut -d':' -f1)
+    # 3) Remove header and save in new file
+    tail -n +${FirstLine} archmirrors.list > allmirrors.list
+    # 4) Delete temporary file
+    rm archmirrors.list
+    # 5) Create countries.list from allmirrors.list, using '##' to identify
+    #                        then removing the '##' and leading spaces
+    #                                       and finally save to new file for later reference
+    grep "## " allmirrors.list | tr -d "##" | sed "s/^[ \t]*//" > countries.list
+    # Shorten Bosnia and Herzegovina to BosniaHerzegov
+    sed -i 's/Bosnia and Herzegovina/BosniaHerzegov/g' countries.list
 
-function desktop_settings()
-{
-  environment=1
-  until [ $environment -eq 0 ]                # Each function must return 0 before next function can be called
-  do
-    DesktopEnvironment=""
-    type_of_installation                      # Basic or Full - use chooses Build, FeliOB or Basic
-    environment=$?
-  done
-  return $environment 
-}
-
-function set_timezone()
-{
-  SUBZONE=""
+  # Display instructions
+  print_heading
+  Echo
+  PrintOne "Next we will select mirrors for downloading your system."
+  PrintOne "You will be able to choose from a list of countries which"
+  PrintOne "have Arch Linux mirrors. It is possible to select more than"
+  PrintOne "one, but adding too many will slow down your installation"
+  Echo
+  PrintOne "Please press any key to continue"
+  read -n1
+  # User-selection of countries starts here:
+  Counter=0
+  Translate "Please choose a country"
+  Instruction="$Result"
   while true
   do
-    message_first_line "To set the system clock, please first"
-    message_subsequent "choose the World Zone of your location"
-    timedatectl list-timezones | cut -d'/' -f1 | uniq > zones.file # Ten world zones
-  
-    declare -a ItemList=()                                    # Array will hold entire menu list
-    Items=0
-    Counter=0
-    while read -r Item                                        # Read items from the zones file
-    do                                                        # for display in menu
-      Counter=$((Counter+1)) 
-      translate "$Item"                                       # Translate each one for display
-      Item="$Result"
-      Items=$((Items+1))
-      ItemList[${Items}]="${Counter}"                         # First column (tag) is the item number
-      Items=$((Items+1))
-      ItemList[${Items}]="${Item}"                            # Second column is the item
-    done < zones.file
-  
-    dialog --backtitle "$Backtitle" --no-tags --ok-label "$Ok" --cancel-label "$Cancel" --menu \
-        "\n      $Message\n" 20 55 $Counter "${ItemList[@]}" 2>output.file
-    retval=$?
-    if [ $retval -ne 0 ]; then return 1; fi
-    Response=$(cat output.file)
-    Item=$((Response*2))
-    NativeZONE="${ItemList[${Item}]}"                        # Recover item from list (in user's language)  
-
-    ZONE="$(head -n ${Response} zones.file | tail -n 1)"     # Recover English version of Item
-
-    # We now have a zone! eg: Europe
-    set_subzone                             # Call subzone function
-    if [ "$SUBZONE" != "" ]; then           # If non-empty, Check "${ZONE}/$SUBZONE" against 
-                                            # "timedatectl list-timezones"
-      timedatectl list-timezones | grep "${ZONE}/$SUBZONE" > /dev/null
-      if [ $? -eq 0 ]; then return 0; fi    # If "${ZONE}/$SUBZONE" found, return to caller
+    # Save a copy of the countries list without spaces to temp.file used (and deleted) by listgenx
+    cat countries.list | tr ' ' '_' > temp.file 
+    # Display the list for user-selection
+    listgenx "$Instruction" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+    if [ -z $Result ]; then       # User does not want to add any more mirrors
+      break
+    elif [ "$Result" = "BosniaHerzegov" ]; then # Previously shortened to fit screen
+      Result="Bosnia_and_Herzegovina"
     fi
+    # Replace any underscores in selection with spaces and add to array for use during installation
+    CountryLong[${Counter}]="$(echo "$Result" | tr '_' ' ')"    # CountryLong is declared in f-vars.sh
+    Counter=$((Counter+1))
+    Chosen="$Result"
+    Translate "added. Choose another country, or ' '"
+    Instruction="$Chosen $Result"
   done
 }
 
-function set_subzone() # Called from set_timezone
-{  # Use ZONE set in set_timezone to prepare list of available subzones
+ConfirmVbox() {
   while true
   do
-    SubZones=$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')
-    Ocean=0
-    SUBZONE=""
-  
-    case $ZONE in
-    "Arctic") SUBZONE="Longyearbyen"
-      return
-    ;;
-    "Atlantic") Ocean=1
-    ;;
-    "Indian") Ocean=1
-    ;;
-    "Pacific") Ocean=1
-    ;;
-    "america") america
-      return
+    print_heading
+    Echo
+    PrintOne "It appears that feliz is running in Virtualbox"
+    PrintOne "If it is, feliz can install Virtualbox guest"
+    PrintOne "utilities and make appropriate settings for you"
+    Echo
+    PrintOne "Install Virtualbox guest utilities?"
+    Echo
+    Buttons "Yes/No" "$_Yes $_No" ""
+    Echo
+    case $Response in
+      1) IsInVbox="VirtualBox"
+      ;;
+      "") not_found
+        continue
+      ;;
+      *) IsInVbox=""
     esac
-  
-    # User-selection of subzone starts here:
-    menu_dialogVariable=$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)
-  
-    translate "Now select your location in"
-    Message="$Result $NativeZONE"
-    Cancel="$Back"
-    title="Subzone"
-    
-    menu_dialog  30 60 # Function (arguments are dialog size) displays a menu and return selection as $Result
-    if [ $retval -eq 0 ]; then
-      SUBZONE="$Result"
-    else
-      SUBZONE=""
-      return 1
-    fi
     return 0
   done
 }
 
-function america() # Called from set_subzone
-{ # Necessary because some zones in the americas have a middle zone (eg: america/Argentina/Buenes_Aries)
-  
+SetTimeZone() {
+  SUBZONE=""
+  until [ $SUBZONE ]
+  do
+    print_heading
+    Echo
+    PrintOne "To set the system clock, please first"
+    PrintOne "choose the World Zone of your location"
+    Zones=$(timedatectl list-timezones | cut -d'/' -f1 | uniq) # Ten world zones
+    zones=""
+    for x in ${Zones}                         # Convert to space-separated list
+    do
+      Translate "$x"                          # Translate
+      zones="$zones $Result"
+    done
+    listgen1 "${zones}" "" "$_Ok"             # Allow user to select one
+    CheckResult="$Result"
+    ZONE=$(echo "$Zones" | head -n $Response | tail -n 1)   # System zone name of the selected item number
+    Translate "$ZONE"
+    NativeZONE="$Result"                      # Save ZONE in native language, for display  
+    Echo
+    case $CheckResult in
+      "") continue
+      ;;
+      *) SetSubZone                           # Call subzone function
+        case $Result in                       # If user quits
+        "$_Exit" | "") SUBZONE=
+        ;;
+        *) SUBZONE="$Result"
+        esac
+    esac
+  done
+}
+
+SetSubZone() {  # Use ZONE set in SetTimeZone to list available subzones
+  SubZones=$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')
+  Ocean=0
+  SUBZONE=""
+  while [ -z $SUBZONE ]
+  do
+    case $ZONE in
+    "Antarctica") SelectSubzone
+    ;;
+    "Arctic") SUBZONE="Longyearbyen"
+    ;;
+    "Atlantic") Ocean=1
+      SelectSubzone
+    ;;
+    "Australia") SelectSubzone
+    ;;
+    "Indian") Ocean=1
+      SelectSubzone
+    ;;
+    "Pacific") Ocean=1
+      SelectSubzone
+    ;;
+    "America") America
+     ;;
+    *)  SelectSubzone
+    esac
+  done
+}
+
+SelectSubzone() {
+  print_heading
+  Echo
+  Translate "Now select your location in"
+  _P1="$Result"
+  timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2 > temp.file  # Prepare file to use listgenx
+  listgenx "$_P1 $_P2 $NativeZONE" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+  if [ $Result = "$_Exit" ] || [ $Result = "" ]; then
+    SUBZONE=""
+  else
+    SUBZONE="$Result"
+  fi
+}
+
+America() {
   SUBZONE=""      # Make sure this variable is empty
+  print_heading
+  PrintOne "Are you in any of these States?"
   SubList=""      # Start an empty list
   Previous=""     # Prepare to save previous record
-  local toggle="First"
+  local Toggle="First"
   for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}')
   do
-    if [ $Previous ] && [ $i = $Previous ] && [ $toggle = "First" ]; then # First reccurance
+    if [ $Previous ] && [ $i = $Previous ] && [ $Toggle = "First" ]; then # First reccurance
       SubList="$SubList $i"
       Toggle="Second"
-    elif [ $Previous ] && [ $i != $Previous ] && [ $toggle = "Second" ]; then # 1st occ after prev group
+    elif [ $Previous ] && [ $i != $Previous ] && [ $Toggle = "Second" ]; then # 1st occ after prev group
       Toggle="First"
       Previous=$i
     else                                                                  # Subsequent occurances
       Previous=$i
     fi
   done
-  
   SubGroup=""
-  translate "Are you in any of these States?"
-  title="$Result"
-  translate "None_of_these"
-  Cancel="$Result"
-  menu_dialogVariable="$SubList"
-  Message=" "
-  
-  menu_dialog  15 40 # (arguments are dialog size) displays a menu and returns $retval and $Result
-  
-  if [ $retval -eq 1 ]; then              # "None of These" - check normal subzones
-    translate "Now select your location in"
-    Message="$Result $NativeZONE"
-    menu_dialogVariable=$(timedatectl list-timezones | grep ${ZONE}/ | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2)  # Prepare variable
-    Cancel="$Back"
-    title="Subzone"
-    
-    menu_dialog  25 50 # Display menu (arguments are dialog size) and return selection as $Result
-    if [ $retval -eq 0 ]; then    
-      SUBZONE="$Result"
-      america_subgroups
-    else
-      SUBZONE=""
-    fi
-  else                                    # This is for 2-part zones
-    SubGroup=$Result                      # Save subgroup for next function
+  Translate "None_of_these"
+  _None="$Result"
+  SubList="$SubList $_None"        # Add a decline option
+  listgen1 "$SubList" "" "$_Ok"
+  case $Result in
+  "$_None") SelectSubzone          # No subgroup, call general city function
+  ;;
+  "$_Exit") SetTimeZone
+  ;;
+  *) SubGroup=$Result                     # Save subgroup for next function
     ZONE="${ZONE}/$SubGroup"              # Add subgroup to ZONE
-    america_subgroups                              # City function for subgroups
-  fi
+    DoCities                              # City function for subgroups
+  esac
 }
 
-function america_subgroups()  # Called from america
-{ # Specifically for america, which has subgroups
-  # This function receives either 1-part or 2-part ZONE from america
+DoCities() { # Specifically for America, which has subgroups
+  print_heading
+  Cities=""
   case $SubGroup in
   "") # No subgroup selected. Here we are working on the second field - cities without a subgroup
-      menu_dialogVariable=$(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}')
+      for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}')
+      do
+        Cities="$Cities $i"
+      done
   ;;
   *) # Here we are working on the third field - cities within the chosen subgroup
-      menu_dialogVariable=$(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $3}')
-   esac
-  translate "Please select a city from this list"
-  Message="$Result"
-  Cancel="$Back"
-  title="Subzone"
-  
-  menu_dialog  25 44 # New function (arguments are dialog size) to display a menu and return $Result
-  if [ $retval -eq 0 ]; then
-    SUBZONE="$Result"
-  else
-    SUBZONE=""
-  fi
+      for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $3}')
+      do
+        Cities="$Cities $i"
+      done
+  esac
+  PrintOne "Please select a city from this list"
+  Translate "or Exit to try again"
+  listgen1 "$Cities" "$Result" "$_Ok $_Exit"
+  case $Result in
+  "$_Exit") SetTimeZone
+  ;;
+  *) SUBZONE=$Result
+  esac
 }
 
-function setlocale()
-{ CountryLocale=""
+setlocale() { 
+  CountryLocale=""
   while [ -z "$CountryLocale" ]
   do
-    set_timezone # First get a validated ZONE/SUBZONE
-    retval=$?
-    if [ $retval -ne 0 ]; then return 1; fi
-    ZoneID="${ZONE}/${SUBZONE}"   # Use a copy (eg: Europe/London) to find in cities.list
-                                  # (field 2 in cities.list is the country code (eg: GB)
+    _Backtitle="https://wiki.archlinux.org/index.php/Time#Time_zone"
+    SetTimeZone # First get ZONE/SUBZONE
+    _Backtitle="https://wiki.archlinux.org/index.php/Locale"
+    ZoneID="${ZONE}/${SUBZONE}"  # Use a copy (eg: Europe/London) to find in cities.list (field $2 is the country code, eg: GB)
     SEARCHTERM=$(grep "$ZoneID" cities.list | cut -d':' -f2)
     SEARCHTERM=${SEARCHTERM// }             # Ensure no leading spaces
     SEARCHTERM=${SEARCHTERM%% }             # Ensure no trailing spaces
     # Find all matching entries in locale.gen - This will be a table of valid locales in the form: en_GB.UTF-8
     EXTSEARCHTERM="${SEARCHTERM}.UTF-8"
-    
-    if [ $(grep "^NAME" /etc/*-release | cut -d'"' -f2 | cut -d' ' -f1) = "Debian" ]; then
-      # In case testing in Debian
-      LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f2 | grep -v '^UTF')
-    else
-      # Normal Arch setting
-      LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f1)
-    fi
-    
+    LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f1)                # Arch
+    # LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f2 | grep -v '^UTF') # Debian
     HowMany=$(echo $LocaleList | wc -w)     # Count them
     Rows=$(tput lines)                      # to ensure menu doesn't over-run
     Rows=$((Rows-4))                        # Available (printable) rows
@@ -288,249 +293,214 @@ function setlocale()
       choosefrom="$choosefrom $l"           # Add each item to file for handling
     done
     if [ -z "${choosefrom}" ]; then         # If none found, start again
-      not_found 10 30 "Locale not found"
+      print_heading
+      not_found
       Result=""
     else
-      title="Locale"
-      message_first_line "Choose the main locale for your system"
-      message_subsequent "Choose one or Exit to retry"
-      menu_dialogVariable="$choosefrom Edit_locale.gen"             # Add manual edit option to menu
-      Cancel="$Exit"
-  
-      menu_dialog 17 50 # Arguments are dialog size. To display a menu and return $Result & $retval
-      if [ $retval -ne 0 ]; then return 1; fi
-      Response="$retval"
-      if [ $Response -eq 1 ]; then                                  # If user chooses <Exit>
-        CountryLocale=""                                            # Start again
+      print_heading
+      PrintOne "Choose the main locale for your system"
+      Translate "Choose one or Exit to retry"
+      choosefrom="$choosefrom Edit_locale.gen"                    # Add manual edit option to menu
+      listgen1 "${choosefrom}" "$Result" "$_Ok $_Exit"            # Offer list of valid codes for location
+      if [ $Response -eq 0 ]; then                                # If user rejects all options
+        CountryLocale=""                                          # Start again
         continue
-      elif [ "$Result" == "Edit_locale.gen" ]; then                 # User chooses manual edit
-        edit_locale                                                 # Use Nano to edit locale.gen
-        retval=$?
-        if [ $retval -eq 0 ]; then  # If Nano was used, get list of uncommented entries
-          grep -v '#' /etc/locale.gen | grep ' ' | cut -d' ' -f1 > list.file 
-          HowMany=$(wc -l list.file | cut -d' ' -f1)                # Count them
+      elif [ "$Result" == "Edit_locale.gen" ]; then               # User chooses manual edit
+        Mano                                                      # Use Nano to edit locale.gen
+        clear
+        if [ $Response -eq 1 ]; then                              # If Nano was used
+          LocaleGen="$(grep -v '#' /etc/locale.gen | grep ' ' | cut -d' ' -f1)"  # Save list of entries that are
+          HowMany=$(echo "$LocaleGen" | wc -l)                    # uncommented in locale.gen & count them
           case ${HowMany} in
-          0) continue                                               # No uncommented lines found, so restart
-          ;;
-          1) Result="$(cat list.file)"                              # One uncommented line found, so set it as locale
-          ;;
-          *) translate "Choose the main locale for your system"     # If many uncommented lines found
-            Message="$Result"
-            # Prepare list for display
-            menu_dialogVariable="$(cat list.file)"
-
-            menu_dialog 20 60                                       # Display in menu
+          0) continue                                             # No uncommented lines found
+          ;;                                                      # so restart
+          1) Result="$(echo $LocaleGen | cut -d' ' -f1)"          # One uncommented line found
+          ;;                                                      # so set it as locale
+          *) print_heading                                        # Many uncommented lines found
+            Translate "Choose the main locale for your system"    # Ask user to pick one as main locale
+            listgen1 "${LocaleGen}" "$Result" "$_Ok"              # Display them for one to be selected
           esac
-        else                                                        # Nano was not used
-          continue                                                  # Start again
+        else                                                      # Nano was not used
+          continue                                                # Start again
         fi
       fi
     fi
-    CountryLocale="$Result"                                         # Save selection eg: en_GB.UTF-8
-    CountryCode=${CountryLocale:3:2}                                # eg: GB
+    CountryLocale="$Result"                                       # Save selection
+    CountryCode=${CountryLocale:3:2}
   done
-  return 0
 }
 
-edit_locale() {  # Use Nano to edit locale.gen
+Mano() {  # Use Nano to edit locale.gen
   while true
   do
-    translate "Start Nano so you can manually uncomment locales?" # New text for line 201 English.lan
-    Message="$Result"
-    title=""
-    dialog --backtitle "$Backtitle" --title " $title " \
-      --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 6 55 2>output.file
-    retval=$?
-    case $retval in
-      0) nano /etc/locale.gen
-        return 0
+    print_heading
+    Echo
+    PrintOne "Start Nano so you can manually uncomment locales?" # New text for line 201 English.lan
+    Buttons "Yes/No" "Yes No" "$_Instructions"
+    case $Response in
+      "1" | "Y" | "y") nano /etc/locale.gen
+        return 1
         ;;
-      1) return 1
+      "2" | "N" | "n") return
         ;;
-      *) not_found 10 50 "Error reported at function $FUNCNAME line $LINENO in $SOURCE0 called from $SOURCE1"
-        return 2
+      *) not_found
     esac
   done
 }
 
-function get_keymap() # Display list of locale-appropriate keyboards for user to choose
-{ 
-  country="${CountryLocale,,}"                                          # From SetLocale - eg: en_gb.utf-8
-  case ${country:3:2} in                                                # eg: gb
+getkeymap() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Keyboard_configuration_in_console"
+  Countrykbd=""
+  country="${CountryLocale,,}"
+  case ${country:3:2} in
   "gb") Term="uk"
   ;;
   *) Term="${country:3:2}"
   esac
-  
   ListKbs=$(grep ${Term} keymaps.list)
   Found=$(grep -c ${Term} keymaps.list)  # Count records
   if [ ! $Found ]; then
     Found=0
   fi
-
-  title="$(echo $Result | cut -d' ' -f1)"
-  Countrykbd=""
   while [ -z "$Countrykbd" ]
   do
+    print_heading
+    Echo
     case $Found in
     0)  # If the search found no matches
-      message_first_line "Sorry, no keyboards found based on your location"
-      translate "Keyboard is"
-      dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "$Message"
-      search_keyboards
+      Translate "Sorry, no keyboards found based on your location"
+      read_timed "$Result" 2
+      SearchKeyboards
     ;;
     1)  # If the search found one match
-      message_first_line "Only one keyboard found based on your location"
-      message_subsequent "Do you wish to accept this? Select No to search for alternatives"
-      
-      dialog --backtitle "$Backtitle" --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 55 2>output.file
-      retval=$?
-      Result="$(cat output.file)"
-      case ${retval} in
-        0) Countrykbd="${Result}"
-        ;;
-        1) search_keyboards                   # User can enter search criteria to find a keyboard layout 
-        ;;
-        *) return 1
+      PrintOne "Only one keyboard found based on your location"
+      PrintOne "Do you wish to accept this? Select No to search for alternatives"
+      Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
+      case ${Result} in
+      "$_No") SearchKeyboards
+      ;;
+      *) Countrykbd="${Result}"
       esac
       loadkeys ${Countrykbd} 2>> feliz.log
     ;;
-    *) # If the search found multiple matches
-      title="Keyboards"
-      message_first_line "Select your keyboard, or Exit to try again"
-      menu_dialogVariable="$ListKbs"
-      message_first_line "Please choose one"
-      translate "None_of_these"
-      menu_dialog 15 40 "$Result"
-      case ${retval} in
-        0) Countrykbd="${Result}"
-        ;;
-        1) search_keyboards                   # User can enter search criteria to find a keyboard layout
-        ;;
-        *) return 1
+    *) # If the search found multiple matches, check to ensure menu doesn't over-run
+      Rows=$(tput lines)
+      Rows=$((Rows-7))    # Available (printable) rows
+      if [ $Found -ge $Rows ]; then
+        for i in $ListKbs
+        do
+          echo $i >> temp.file
+        done
+        Translate "Choose one, or ' ' to search for alternatives"
+        listgenx "$Result" "$_xNumber" "$_xExit" "$_xLeft" "$_xRight"
+      else
+        PrintOne "Select your keyboard, or Exit to try again"
+        listgen1 "$ListKbs" "" "$_Ok $_Exit"
+      fi
+      case ${Result} in
+      "$_Exit"|"") SearchKeyboards
+      ;;
+      *) Countrykbd="${Result}"
       esac
       loadkeys ${Countrykbd} 2>> feliz.log
     esac
   done
-  return 0
 }
 
-function search_keyboards() # Called by get_keymap when all other options failed 
-{ # User can enter search criteria to find a keyboard layout 
-  Countrykbd=""
+SearchKeyboards() {
   while [ -z "$Countrykbd" ]
   do
-    message_first_line "If you know the code for your keyboard layout, please enter"
-    message_subsequent "it now. If not, try entering a two-letter abbreviation"
-    message_subsequent "for your country or language and a list will be displayed"
-    message_subsequent "eg: 'dvorak' or 'us'"
-    
-    dialog --backtitle "$Backtitle" --ok-label "$Ok" --inputbox "$Message" 14 70 2>output.file
-    retval=$?
-    Result="$(cat output.file)"
-    if [ $retval -eq 1 ] || [ $Result = "" ]; then
-      Countrykbd=""
-      return 1
+    print_heading
+    Echo
+    PrintOne "If you know the code for your keyboard layout, please enter"
+    PrintOne "it now. If not, try entering a two-letter abbreviation"
+    PrintOne "for your country or language and a list will be displayed"
+    PrintOne "Alternatively, enter ' ' to start again"
+    Echo
+    TPread "(eg: 'dvorak' or 'us'): "
+    local Term="${Response,,}"
+    if [ $Term = "" ] || [ $Term = " " ]; then
+      SetTimeZone
     fi
-    local term="${Result,,}"
+    Echo
     ListKbs=$(grep ${Term} keymaps.list)
     if [ -n "${ListKbs}" ]; then  # If a match or matches found
-      menu_dialogVariable="$ListKbs"
-      message_first_line "Please choose one"
-
-      menu_dialog 15 40
-      if [ ${retval} -eq 1 ]; then    # Try again
-        Countrykbd=""
+      print_heading
+      PrintOne "Select your keyboard, or Exit to try again"
+      listgen1 "$ListKbs" "" "$_Ok $_Exit"
+      if [ "${Result}" = "$_Exit" ]; then
         continue
       else
-        ListKbs=$(grep ${Result} keymaps.list)    # Check if valid
-        if [ -n "${ListKbs}" ]; then  # If a match or matches found
-          Countrykbd="${Result}"
-        else
-          translate "No keyboards found containing"
-          not_found 8 40 "${Result}\n '$term'"
-          continue
-        fi
+        Countrykbd="${Result}"
       fi
       loadkeys ${Countrykbd} 2>> feliz.log
-      return 0
     else
-      translate "No keyboards found containing"
-      not_found 8 40 "${Result}\n '$term'"
+      print_heading
+      Echo
+      Translate "No keyboards found containing"
+      PrintOne "$Result" "'$Term'"
+      not_found
+      continue
     fi
   done
 }
 
-function set_username()
-{ 
-  message_first_line "Enter a name for the primary user of the new system"
-  message_subsequent "If you don't create a username here, a default user"
-  message_subsequent "called 'archie' will be set up"
-  translate "User Name"
-  title="${Result}"
-  
-  dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" --inputbox "$Message" 12 70 2>output.file
-  retval=$?
-  Result="$(cat output.file)"
-
-  if [ -z $Result ]; then
-    user_name="archie"
-  else
-    user_name=${Result,,}
-  fi
+UserName() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Users_and_groups"
+  print_heading
+  Echo
+  PrintOne "Enter a name for the primary user of the new system"
+  PrintOne "If you don't create a username here, a default user"
+  PrintOne "called 'archie' will be set up"
+  Echo
+  Translate "User Name"
+  TPread "${Result}: "
+  Entered=${Response,,}
+  case $Entered in
+    "") UserName="archie"
+    ;;
+    *) UserName=${Entered}
+  esac
 }
 
-function set_hostname()
-{
-  message_first_line "A hostname is needed. This will be a unique name to identify"
-  message_subsequent "your device on a network. If you do not enter one, the"
-  message_subsequent "default hostname of 'arch-linux' will be used"
-  translate "Enter a hostname for your computer"
-  title="${Result}: "
-
-  dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" --inputbox "$Message" 12 70 2>output.file
-  retval=$?
-  Result="$(cat output.file)"
-
-  if [ -z $Result ]; then
-    HostName="arch-linux"
-  else
-    HostName=${Result,,}
-  fi
+SetHostname() {
+  _Backtitle="https://wiki.archlinux.org/index.php/Network_configuration#Set_the_hostname"
+  Entered="arch-linux"
+  print_heading
+  Echo
+  PrintOne "A hostname is needed. This will be a unique name to identify"
+  PrintOne "your device on a network. If you do not enter one, the"
+  PrintOne "default hostname of 'arch-linux' will be used"
+  Echo
+  Translate "Enter a hostname for your computer"
+  TPread "${Result}: "
+  Entered=${Response,,}
+  case $Entered in
+    "") HostName="arch-linux"
+    ;;
+    *) HostName=${Entered}
+  esac
 }
 
-function type_of_installation() # User chooses between FelizOB, self-build or basic
-{ 
-  message_first_line "Feliz now offers you a choice. You can ..."
-  translate "Build your own system, by picking the"
-  Message="${Message}\n\n1) ${Result}"
-  translate "software you wish to install"
-  Message="${Message}\n${Result}\n\n               ... ${Tor} ...\n"
-  translate "You can choose the new FelizOB desktop, a"
-  Message="${Message}\n2) ${Result}"
-  translate "complete lightweight system built on Openbox"
-  Message="${Message}\n${Result}\n\n               ... ${Tor} ...\n"
-  translate "Just install a basic Arch Linux"
-  Message="${Message}\n3) ${Result}\n"
-  
-  translate "Build_My_Own"
-  BMO="$Result"
-  translate "FelizOB_desktop"
-  FOB="$Result"
-  translate "Basic_Arch_Linux"
-  BAL="$Result"
-  
-  dialog --backtitle "$Backtitle" --title " type_of_installation " \
-    --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" \
-      24 70 3 \
-      1 "$BMO" \
-      2 "$FOB" \
-      3  "$BAL" 2>output.file
-  retval=$?
-  Result=$(cat output.file)
-
-  case $Result in
-    1) pick_category
+Options() { # User chooses between FelizOB, self-build or basic
+  _Backtitle="https://wiki.archlinux.org/index.php/List_of_applications"
+  print_heading
+  Echo
+  PrintOne "Feliz now offers you a choice. You can ..."
+  Echo
+  PrintOne "Build your own system, by picking the"
+  PrintOne "software you wish to install"
+  PrintOne "..." "$_or ..."
+  PrintOne "You can choose the new FelizOB desktop, a"
+  PrintOne "complete lightweight system built on Openbox"
+  PrintOne "..." "$_or ..."
+  PrintOne "Just install a basic Arch Linux"
+  Translate "Build_My_Own"
+  BMO=$Result
+  Translate "FelizOB_desktop"
+  listgen1 "$BMO $Result $_None" "" "$_Ok"
+  case $Response in
+    1) PickLuxuries
     ;;
     2) DesktopEnvironment="FelizOB"
       Scope="Full"
@@ -539,614 +509,610 @@ function type_of_installation() # User chooses between FelizOB, self-build or ba
   esac
 }
 
-function pick_category()  # menu_dialog of categories of selected items from the Arch repos
-{ translate "Added so far"
+PickLuxuries() { # User selects any combination from a store of extras
+  Translate "Added so far"
   AddedSoFar="$Result"
-  translate "Done"
-  Done="$Result"
-  # translate the categories
   TransCatList=""
+  
+  for x in {1..9}         # Prepare array that records if a category
+  do                      # has already been translated
+    BeenThere[${x}]="N"   # Set each element to 'N'
+  done
+  
   for category in $CategoriesList
   do
-    translate "$category"
+    Translate "$category"
     TransCatList="$TransCatList $Result"
   done
-  # Display categories, adding more items until user exits by <Done>
-  LuxuriesList=""
+  print_heading
+  case "$LuxuriesList" in
+  '') Echo
+      PrintOne "Now you have the option to add extras, such as a web browser"
+    PrintOne "desktop environment, etc, from the following categories"
+  ;;
+  *) PrintOne "You can add more items, or select items to delete"
+  esac
+  #
   while true
   do
-    # Prepare information messages
-    if [ -z "$LuxuriesList" ]; then
-      message_first_line "Now you have the option to add extras, such as a web browser"
-      Message="\n${Message}"
-      message_subsequent "desktop environment, etc, from the following categories"
-    fi
-    # Display categories as numbered list
-    title="Arch Linux"
-    menu_dialogVariable="${TransCatList}"
-
-    # Prepare array for display
-    declare -a ItemList=()                                    # Array will hold entire list
-    Items=0
-    Counter=1
-    for Item in $menu_dialogVariable                                 # Read items from the variable
-    do 
-      Items=$((Items+1))
-      ItemList[${Items}]="${Counter}"                         # and copy each one to the array
-      Counter=$((Counter+1))
-      Items=$((Items+1))
-      ItemList[${Items}]="${Item}"                            # Second element is required
-    done
-     
-    # Display the list for user-selection
-    dialog --backtitle "$Backtitle" --title " $title " --no-tags --ok-label "$Ok" --cancel-label "$Done" --menu \
-        "$Message" \
-        20 70 ${Items} "${ItemList[@]}" 2>output.file
-    retval=$?
-    Result=$(cat output.file)
-    
-    # Process exit variables
-    if [ $retval -ne 0 ]; then
-      if [ -n "${LuxuriesList}" ]; then
-        Scope="Full"
-      else
-        Scope="Basic"
-      fi
+    listgen1 "${TransCatList}" "$_Quit" "$_Ok $_Exit"
+    Category=$Response
+    if [ $Result = "$_Exit" ]; then
       break
     else
-      Category=$Result
-      choose_extras                        # Function to add items to LuxuriesList
-      if [ -n "$LuxuriesList" ]; then
-        translate "Added so far"
-        Message="$Result: ${LuxuriesList}\n"
-        message_subsequent "You can now choose from any of the other lists"
-      fi
+      ShoppingList
+      print_heading
+      Echo
+      PrintOne "$AddedSoFar" ": ${LuxuriesList}"
+      PrintOne "You can now choose from any of the other lists"
+      PrintOne "or choose Exit to finish this part of the setup"
     fi
   done
-
-  for i in $LuxuriesList                              # Run through list
-  do
-    Check="$(echo $Desktops | grep $i)"               # Test if a DE
-    if [ -n "$Check" ]; then                          # This is just to set a primary DE variable
-      DesktopEnvironment="$i"                         # Add as DE
-      if [ "$DesktopEnvironment" = "Gnome" ]; then    # Gnome installs own DM, so break after adding
-        DisplayManager=""
-        break
-      fi
-    fi
-  done
-
-}
-
-function choose_extras() # Called by pick_category after a category has been chosen.
-{ # Prepares to call 'display_extras' function with copy data
-  translate "Added so far"
-  Message="$Result: ${LuxuriesList}\n"
-  message_subsequent "You can add more items, or select items to delete"
-  title="${Categories[$Category]}" # $Category is number of item in CategoriesList
-  
-  local Counter=1
-  MaxLen=0
-  case $Category in
-   1) # Create a copy of the list of items in the category
-      Copycat="${Accessories}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongAccs"
-    ;;
-   2) # Create a copy of the list of items in the category
-      Copycat="${Desktops}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongDesk"
-    ;;
-   3) # Create a copy of the list of items in the category
-      Copycat="${Graphical}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongGraph"
-    ;;
-   4) # Create a copy of the list of items in the category
-      Copycat="${Internet}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongNet"
-     ;;
-   5) # Create a copy of the list of items in the category
-      Copycat="${Multimedia}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongMulti"
-    ;;
-   6) # Create a copy of the list of items in the category
-      Copycat="${Office}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongOffice"
-    ;;
-   7) # Create a copy of the list of items in the category
-      Copycat="${Programming}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongProg"
-    ;;
-   8) # Create a copy of the list of items in the category
-      Copycat="${WindowManagers}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongWMs"
-    ;;
-   9) # Create a copy of the list of items in the category
-      Copycat="${Taskbars}"
-      # Pass the name of the relevant array to the translate_category function
-      display_extras "LongBars"
-    ;;
-    *) return
-  esac
-}
-
-function display_extras() # Called by choose_extras
-{ # translates descriptions of items in the selected category
-  # Then displays them for user to select multiple items
-  # Note1: The name of the array to be processed has been passed as $1
-  # Note2: A copy of the list of items in the category has been created
-  # by the calling function as 'Copycat'
-  
-  # Get the array passed by name ...
-    local name=$1[@]
-    local CopyArray=("${!name}")    # eg: LongAccs or LongDesk, etc
-  # Prepare temporary array for translated item descriptions
-    declare -a TempArray=()
-  # translate all elements
-    type_of_installationCounter=0
-    for Option in "${CopyArray[@]}"
-    do
-      (( type_of_installationCounter+=1 ))
-      translate "$Option"
-      CopyArray[${type_of_installationCounter}]="$Result"    # Replace element with translation
-    done
-    # Then build the temporary array for the checklist dialog
-    local Counter=0
-    local CopyCounter=0
-    for i in ${Copycat}
-    do
-      (( Counter+=1 ))
-      TempArray[${Counter}]="$i"
-      (( Counter+=1 ))
-      (( CopyCounter+=1 ))
-      TempArray[${Counter}]="${CopyArray[${CopyCounter}]}"
-      (( Counter+=1 ))
-      TempArray[${Counter}]="OFF"
-      for a in ${LuxuriesList}                  # Check against LuxuriesList - if on list, mark ON
-      do
-        if [ "$a" = "$i" ]; then
-          TempArray[${Counter}]="ON"
-        fi
-      done
-    done
-    # Remove all items in this group from LuxuriesList (selected items will be added back)
-    if [ -n "$LuxuriesList" ]; then
-      for i in ${Copycat}
-      do
-      #  LuxuriesList=$(echo "$LuxuriesList" | sed "s/$i//")
-        LuxuriesList="${LuxuriesList//${i} }"
-      done
-    fi
-    # Display the contents of the temporary array in a Dialog menu
-    Items=$(( Counter/3 ))
-    
-    dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" --no-cancel --checklist \
-      "$Message" 20 79 $Items "${TempArray[@]}" 2>output.file
-    retval=$?
-    Result=$(cat output.file)
-    # Add selected items to LuxuriesList
-    LuxuriesList="$LuxuriesList $Result"
-    LuxuriesList=$( echo $LuxuriesList | sed "s/^ *//")        # Remove any leading spaces caused by deletions
-}
-
-function choose_display_manager()
-{ # Choose a display manager
-  Counter=0
-  translate "Display Manager"
-  title="$Result"
-  message_first_line "A display manager provides a graphical login screen"
-  message_subsequent "If in doubt, choose"
-  Message="$Message LightDM"
-  message_subsequent "If you do not install a display manager, you will have"
-  message_subsequent "to launch your desktop environment manually"
-  
-  dialog --backtitle "$Backtitle" --title " $title " \
-    --ok-label "$Ok" --cancel-label "$Cancel" --no-tags --menu "\n$Message" 20 60 6 \
-    "gdm" "GDM" \
-    "lightdm" "LightDM" \
-    "lxdm" "LXDM" \
-    "sddm" "SDDM" \
-    "slim" "SLIM" \
-    "xdm" "XDM" 2> output.file
-  retval=$?
-  if [ $retval -ne 0 ]; then return; fi
-  DisplayManager="$(cat output.file)"
-}
-
-function select_grub_device()
-{ # Set path for grub to be installed
-  GrubDevice=""
-  while [ -z $GrubDevice ]
-  do
-    DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/'
-    # Add an option to enter grub device manually
-    translate "Enter_Manually"
-    Enter_Manually="$Result"
-    menu_dialogVariable="$DevicesList $Result"
-    title="Grub"
-    GrubDevice=""
-    local Counter=0
-    message_first_line "Select the device where Grub is to be installed"
-    message_subsequent "Note that if you do not select a device, Grub"
-    message_subsequent "will not be installed, and you will have to make"
-    message_subsequent "alternative arrangements for booting your new system"
-
-    menu_dialog  20 60 # (arguments are dialog size) displays a menu and returns $retval and $Result
-    if [ $Result = "$Enter_Manually" ]; then				# Call function to type in a path
-      enter_grub_path
-      GrubDevice="$Result"
-    else
-      GrubDevice="$Result"
-    fi
-  done
-}
-
-function enter_grub_path() # Manual input
-{ GrubDevice=""
-  while [ -z "$GrubDevice" ]
-  do
-    message_first_line "You have chosen to manually enter the path for Grub"
-    message_subsequent "This should be in the form /dev/sdx or similar"
-    message_subsequent "Only enter a device, do not include a partition number"
-    message_subsequent "If in doubt, consult https://wiki.archlinux.org/index.php/GRUB"
-    
-    dialog_inputbox 15 60    # text input dialog
-    if [ $retval -eq 0 ]; then return; fi
-    Entered=${Result,,}
-    # test input
-    CheckGrubEntry="${Entered:0:5}"
-    if [ -z $Entered ]; then
-      return
-    elif [ $CheckGrubEntry != "/dev/" ]; then
-      not_found "$Entered is not in the correct format"
-    else
-      GrubDevice="${Entered}"
-    fi
-  done
-}
-
-function select_kernel()
-{
-  Kernel="0"
-  until [ "$Kernel" != "0" ]
-  do
-    translate "Choose your kernel"
-    title="$Result"
-    translate "The Long-Term-Support kernel (LTS) offers stabilty"
-    LTS="$Result"
-    translate "The Latest kernel has all the new features"
-    Latest="$Result"
-    translate "If in doubt, choose"
-    Default="${Result} LTS"
-  
-    dialog --backtitle "$Backtitle" --title "$title" \
-      --ok-label "$Ok" --cancel-label "$Cancel" --no-tags --menu "\n  $Default" 10 70 2 \
-      "1" "$LTS" \
-      "2" "$Latest" 2>output.file
-    if [ $? -ne 0 ]; then Result="1"; fi
-    Result=$(cat output.file)
-    Kernel=${Result} # Set the Kernel variable (1 = LTS; 2 = Latest)
-  done
-  return 0
-}
-
-function choose_mirrors() # User selects one or more countries with Arch Linux mirrors
-{
-  Country=""
-  while [ -z "$Country" ]
-  do
-    # 1) Prepare files of official Arch Linux mirrors
-
-      # Download latest list of Arch Mirrors to temporary file
-      curl -s https://www.archlinux.org/mirrorlist/all/http/ > archmirrors.list
-      if [ $? -ne 0 ]; then
-        message_first_line "Unable to fetch list of mirrors from Arch Linux"
-        message_subsequent "Using the list supplied with the Arch iso"
-        dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n${Message}\n" 8 75
-        cp /etc/pacman.d/mirrorlist > archmirrors.list
-      fi
-      # Get line number of first country
-      FirstLine=$(grep -n "Australia" archmirrors.list | head -n 1 | cut -d':' -f1)
-      # Remove text prior to FirstLine and save in new file
-      tail -n +${FirstLine} archmirrors.list > allmirrors.list
-      rm archmirrors.list
-      # Create list of countries from allmirrors.list, using '##' to identify
-      #                        then removing the '##' and leading spaces
-      #                                       and finally save to new file for reference by dialog
-      grep "## " allmirrors.list | tr -d "##" | sed "s/^[ \t]*//" > list.file
-      
-    # 2) Display instructions and user selects from list of countries
-      title="Mirrors"
-      message_first_line "Next we will select mirrors for downloading your system."
-      message_subsequent "You will be able to choose from a list of countries which"
-      message_subsequent "have Arch Linux mirrors."
-      
-      dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n${Message}\n" 10 75
-  
-      message_first_line "Please choose a country"
-
-      declare -a ItemList=()                              # Array will hold entire list
-      Items=0
-      while read -r Item                                  # Read items from the file
-      do                                                  # and copy each one to the array
-        Items=$((Items+1))
-        ItemList[${Items}]="${Item}"                      # First element is tag
-        Items=$((Items+1))
-        ItemList[${Items}]="${Item}"                      # Second element is required
-      done < list.file
-
-      dialog --backtitle "$Backtitle" --title " $title " \
-        --ok-label "$Ok" --cancel-label "$Cancel" --no-tags --menu "$Message" \
-        25 60 ${Items} "${ItemList[@]}" 2>output.file
-      retval=$?
-      Result=$(cat output.file)                           # eg: United Kingdom
-      rm list.file
-      Country="$Result"
-      if [ "$Country" = "" ]; then
-        edit_mirrors
-        retval=$?
-        if [ $retval -eq 2 ]; then
-          break
-        else
-          Country=""
-        fi 
-      else   
-        # Add to array for use during installation
-        Counter=0
-        for Item in $(cat output.file)                            # Read items from the output.file
-        do                                                        # and copy each one to the array
-          Counter=$((Counter+1))
-          CountryLong[${Counter}]="$Item"                         # CountryLong is declared in f-vars.sh
-        done
-        if [ $Counter -lt 1 ]; then Country=""; fi
-      fi
-  done
-}
-
-function edit_mirrors()
-{  # Use Nano to edit mirrors.list
-
-  message_first_line "Feliz needs at least one mirror from which to"
-  message_subsequent "download the Arch Linux system and applications"
-  message_subsequent "If you do not wish to use one from the Arch list"
-  message_subsequent "you can enter the address of a mirror manually, or"
-  message_subsequent "you can use one of the worldwide Arch Linux mirrors"
-  message_subsequent "although this may be slower than a local mirror"
-  translate "Mirrors"
-  title="$Result"
-  translate "I want to type in an address"
-  Menu1="$Result"
-  translate "Use a worldwide mirror"
-  Menu2="$Result"
-  translate "Return to the list"
-  Menu3="$Result"
-  
-  dialog --backtitle "$Backtitle" --title " $title " \
-    --ok-label "$Ok" --cancel-label "$Cancel" --no-tags --no-cancel --menu "$Message" \
-      18 65 ${Items} \
-      "Manual" "$Menu1" \
-      "Worldwide" "$Menu2" \
-      "Standard" "$Menu3" 2>output.file
-  retval=$?
-  Result=$(cat output.file)
-  case $Result in
-    "Manual") echo "# eg: Server = http://mirror.transip.net/archlinux/" > mirrors.list
-    #  nano mirrors.list
-    dialog --exit-label "$Done" \
-      --textbox "# eg: Server = http://mirror.transip.net/archlinux/" mirrors.list 18 65
-      return 2
-      ;;
-    "Worldwide") echo "# eg: Server = http://mirror.transip.net/archlinux/" > mirrors.list
-      echo "Server = http://mirrors.evowise.com/archlinux/$repo/os/$arch" >> mirrors.list
-      return 2
-      ;;
-    *) return 1
-  esac
-}
-
-function confirm_virtualbox()
-{ 
-  message_first_line  "It appears that feliz is running in Virtualbox"
-  message_subsequent  "If it is, feliz can install Virtualbox guest"
-  message_subsequent  "utilities and make appropriate settings for you"
-  translate "Install Virtualbox guest utilities?"
-  title="$Result"
-    
-  dialog --backtitle "$Backtitle" --title " $title " \
-    --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 60 2>output.file
-  retval=$?
-
-  if [ $retval -eq 0 ]  # Yes
-  then
-    IsInVbox="VirtualBox"
-  else                  # No
-    IsInVbox=""
+  if [ -n "${LuxuriesList}" ]; then
+    Scope="Full"
+  else
+    Scope="Basic"
   fi
 }
 
-function final_check()
-{ # Display all user settings before starting installation
+ShoppingList() { # Called by PickLuxuries after a category has been chosen.
+  Translate "Choose an item"
   while true
   do
-    clear
-    echo
-    message_first_line "These are the settings you have entered."
-    message_subsequent "Please check them before Feliz begins the installation"
-    print_first_line "$Message"
-    echo
-    translate "Zone/subZone will be"
-    print_subsequent "1) $Result" "$ZONE/$SUBZONE"
-    translate "Locale will be set to"
-    print_subsequent "2) $Result" "$CountryLocale"
-    translate "Keyboard is"
-    print_subsequent "3) $Result" "$Countrykbd"
-    case ${IsInVbox} in
-      "VirtualBox") translate "Yes"
-      print_subsequent "4)" "Virtualbox Guest Modules: $Result"
+    print_heading
+    Echo
+    PrintOne "$AddedSoFar" ": ${LuxuriesList}"
+    PrintOne "You can add more items, or select items to delete"
+    Echo
+    PrintOne "${Categories[$Category]}" # $Category is number of item in CategoriesList
+    # Translate items in selected category and pass to listgen2 for user to choose one item;
+    local Counter=1
+    MaxLen=0
+    case $Category in
+     1) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+          OptionsCounter=1
+          for Option in "${LongAccs[@]}"              # First translate all elements
+          do
+            Translate "$Option"
+            LongAccs[${OptionsCounter}]="$Result"     # Replace element with translation
+            (( OptionsCounter+=1 ))
+          done
+
+          for i in ${Accessories}
+          do
+            CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+            LongAccs1[${Counter}]="$i - ${LongAccs[${Counter}]}"
+            (( Counter+=1 ))
+          done
+
+          # Compare length of first item in array with length of longest item
+          FirstElement="${LongAccs1[1]}"
+          if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+            PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+            LongAccs1[1]="$Result"                  # and add result as first element in LongAccs
+          fi
+        fi
+        listgen2 "$Accessories" "$_Quit" "$_Ok $_Exit" "LongAccs1"
+        BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       2) if [ ${BeenThere[${Category}]} = "N" ]; then   # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongDesk[@]}"          # Translate all elements
+            do
+              Translate "$Option"
+              LongDesk[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+          
+            for i in ${Desktops}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongDesk1[${Counter}]="$i - ${LongDesk[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongDesk1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongDesk1[1]="$Result"                  # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Desktops" "$_Quit" "$_Ok $_Exit" "LongDesk1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       3) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongGraph[@]}"           # Translate all elements
+            do
+              Translate "$Option"
+              LongGraph[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Graphical}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongGraph1[${Counter}]="$i - ${LongGraph[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongGraph1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongGraph1[1]="$Result"                 # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Graphical" "$_Quit" "$_Ok $_Exit" "LongGraph1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       4) if [ ${BeenThere[${Category}]} = "N" ]; then   # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongNet[@]}"             # Translate all elements
+            do
+              Translate "$Option"
+              LongNet[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Internet}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongNet1[${Counter}]="$i - ${LongNet[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongNet1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongNet1[1]="$Result"                   # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Internet" "$_Quit" "$_Ok $_Exit" "LongNet1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       5) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongMulti[@]}"           # Translate all elements
+            do
+              Translate "$Option"
+              LongMulti[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Multimedia}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongMulti1[${Counter}]="$i - ${LongMulti[${Counter}]}"
+              (( Counter+=1 ))
+            done
+  
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongMulti1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongMulti1[1]="$Result"                 # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Multimedia" "$_Quit" "$_Ok $_Exit" "LongMulti1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       6) if [ ${BeenThere[${Category}]} = "N" ]; then   # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongOffice[@]}"          # Translate all elements
+            do
+              Translate "$Option"
+              LongOffice[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${Office}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongOffice1[${Counter}]="$i - ${LongOffice[${Counter}]}"
+              (( Counter+=1 ))
+            done
+  
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongOffice1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongOffice1[1]="$Result"                # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Office" "$_Quit" "$_Ok $_Exit" "LongOffice1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       7) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongProg[@]}"            # Translate all elements
+            do
+              Translate "$Option"
+              LongProg[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+
+            for i in ${Programming}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongProg1[${Counter}]="$i - ${LongProg[${Counter}]}"
+              (( Counter+=1 ))
+            done
+
+            # Compare length of first item in array with length of longest item
+            FirstElement="${LongProg1[1]}"
+            if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+              PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+              LongProg1[1]="$Result"                  # and add result as first element in LongAccs
+            fi
+          fi
+          listgen2 "$Programming" "$_Quit" "$_Ok $_Exit" "LongProg1"
+          BeenThere[${Category}]="Y"                  # Prevent retranslation
+       ;;
+       8) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+            OptionsCounter=1
+            for Option in "${LongWMs[@]}"             # Translate all elements
+            do
+              Translate "$Option"
+              LongWMs[${OptionsCounter}]="$Result"
+              (( OptionsCounter+=1 ))
+            done
+  
+            for i in ${WindowManagers}
+            do
+              CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+              LongWMs1[${Counter}]="$i - ${LongWMs[${Counter}]}"
+              (( Counter+=1 ))
+            done
+  
+          # Compare length of first item in array with length of longest item
+          FirstElement="${LongWMs1[1]}"
+          if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+            PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+            LongWMs1[1]="$Result"                   # and add result as first element in LongAccs
+          fi
+        fi
+        listgen2 "$WindowManagers" "$_Quit" "$_Ok $_Exit" "LongWMs1"
+        BeenThere[${Category}]="Y"                  # Prevent retranslation
       ;;
-      *) translate "No"
-      print_subsequent "4)" "Virtualbox Guest Modules: $Result"
+      9) if [ ${BeenThere[${Category}]} = "N" ]; then  # Do not translate if already done
+          OptionsCounter=1
+          for Option in "${LongBars[@]}"            # Translate all elements
+          do
+            Translate "$Option"
+            LongBars[${OptionsCounter}]="$Result"
+            (( OptionsCounter+=1 ))
+          done
+
+          for i in ${Taskbars}
+          do
+            CompareLength "$i - ${LongAccs[${Counter}]}"  # If total length is greater than previous, save it
+            LongBars1[${Counter}]="$i - ${LongBars[${Counter}]}"
+            (( Counter+=1 ))
+          done
+ 
+          # Compare length of first item in array with length of longest item
+          FirstElement="${LongBars1[1]}"
+          if [ ${#FirstElement} -lt $MaxLen ]; then # If shorter
+            PaddLength "$FirstElement"              # Use PaddLength function to extend with spaces
+            LongBars1[1]="$Result"                  # and add result as first element in LongAccs
+          fi
+        fi
+        listgen2 "$Taskbars" "$_Quit" "$_Ok $_Exit" "LongBars1"
+        BeenThere[${Category}]="Y"                  # Prevent retranslation
+      ;;
+      *) break
+    esac
+    SaveResult=$Result                  # Because other subroutines return $Result
+    if [ $SaveResult = "$_Exit" ]; then # Loop until user selects "Exit"
+      break
+    fi
+    Removed="N"                         # Prepare temporary variables
+    TempList=""
+    for lux in $LuxuriesList            # Check LuxuriesList
+    do
+      if [ ${lux} = ${SaveResult} ]; then # If already on list, it will be removed
+        Removed="Y"
+      else
+        TempList="$TempList ${lux}"       # If not already on LuxuriesList, add to TempList
+      fi
+    done
+    LuxuriesList="$TempList"
+    if [ $Removed = "Y" ]; then        # If selected item was removed
+      continue                         # Don't process it any further
+    fi
+    case $SaveResult in                # Check all DE & WM entries
+      "Awesome" | "Budgie" | "Cinnamon" | "Enlightenment" | "Fluxbox" | "Gnome" | "i3" | "Icewm" | "JWM" | "KDE" | "LXDE" | "LXQt" |  "Mate" | "Openbox" | "Windowmaker" | "Xfce" | "Xmonad") DesktopEnvironment=$SaveResult
+        for lux in $LuxuriesList
+        do
+          if [ ${lux} = "FelizOB" ]; then
+            DesktopEnvironment="FelizOB"      # FelizOB is  prioritised over any added DE/WM
+          fi
+        done
+       ;;
+      "FelizOB") DesktopEnvironment="FelizOB" # FelizOB is  prioritised over any added DE/WM
+       ;;
+      "") continue
+       ;;
+      *) Echo
+    esac
+    if [ ${SaveResult} = "libreoffice" ]; then
+      LuxuriesList="${LuxuriesList} libreoffice-fresh"
+    else
+      LuxuriesList="${LuxuriesList} ${SaveResult}"
+    fi
+  done
+}
+
+ChooseDM() { # Choose a display manager
+  _Backtitle="https://wiki.archlinux.org/index.php/Display_manager"
+  case "$DisplayManager" in
+  "") # Only offered if no other display manager has been set
+      Counter=0
+      DMList="GDM LightDM LXDM sddm SLIM XDM"
+      print_heading
+      Echo
+      PrintOne "A display manager provides a graphical login screen"
+      Translate "If in doubt, choose"
+      PrintOne "$Result " "LightDM"
+      PrintOne "If you do not install a display manager, you will have"
+      PrintOne "to launch your desktop environment manually"
+      listgen1 "${DMList}" "" "$_Ok $_None"
+      Reply=$Response
+      for item in ${DMList}
+      do
+        Counter=$((Counter+1))
+        if [ $Counter -eq $Reply ]; then
+          SelectedDM=$item
+          case $SelectedDM in
+            "GDM") DisplayManager="gdm"
+              ;;
+            "LightDM") DisplayManager="lightdm"
+              ;;
+            "LXDM") DisplayManager="lxdm"
+              ;;
+            "sddm") DisplayManager="sddm"
+              ;;
+            "SLIM") DisplayManager="slim"
+              ;;
+            "XDM") DisplayManager="xdm"
+              ;;
+            *) DisplayManager=""
+          esac
+          break
+        fi
+      done
+    ;;
+  *) # Warn that DM already set, and offer option to change it
+      print_heading
+      PrintOne "Display manager is already set as" ":" "" "$DisplayManager."
+      PrintOne "Only one display manager can be active"
+      Echo
+      PrintOne "Do you wish to change it?"
+      Echo
+      Buttons "Yes/No" "$_Yes $_No" "$_Instructions"
+      Echo
+      if [ $Response -eq 1 ]; then    # User wishes to change DM
+        DisplayManager=""             # Clear DM variable
+        ChooseDM                      # Call this function again
+      fi
+  esac
+}
+
+SetGrubDevice() {
+  DEVICE=""
+  DevicesList="$(lsblk -d | awk '{print "/dev/" $1}' | grep 'sd\|hd\|vd')"  # Preceed field 1 with '/dev/'
+  _Backtitle="https://wiki.archlinux.org/index.php/GRUB"
+  # Add an option to enter grub device manually
+  Translate "Enter_Manually"
+  DevicesList="$DevicesList $Result"
+  print_heading
+  Echo
+  GrubDevice=""
+  local Counter=0
+  PrintOne "Select the device where Grub is to be installed"
+  PrintOne "Note that if you do not select a device, Grub"
+  PrintOne "will not be installed, and you will have to make"
+  PrintOne "alternative arrangements for booting your new system"
+  Echo
+  listgen1 "${DevicesList}" "" "$_Ok $_None"
+  Reply=$Response
+
+  if [ $Result = "Enter_Manually" ]; then				# Call function to type in a path
+    EnterGrubPath
+  else
+    for i in ${DevicesList}
+    do
+      Item=$i
+      Counter=$((Counter+1))
+      if [ $Counter -eq $Reply ]; then
+        GrubDevice=$Item
+        break
+      fi
+    done
+  fi
+}
+
+EnterGrubPath() {
+  Entered=""
+  print_heading
+  Echo
+  PrintOne "You have chosen to manually enter the path for Grub"
+  PrintOne "This should be in the form /dev/sdx or similar"
+  PrintOne "Only enter a device, do not include a partition number"
+  PrintOne "If in doubt, consult https://wiki.archlinux.org/index.php/GRUB"
+  PrintOne "To go back, leave blank"
+  Echo
+  Translate "Enter the path where Grub is to be installed"
+  TPread "${Result}: "
+  Entered=${Response,,}
+  # test input
+  CheckGrubEntry="${Entered:0:5}"
+  if [ -z $Entered ]; then
+    SetGrubDevice
+  elif [ $CheckGrubEntry != "/dev/" ]; then
+    Echo
+    TPecho "$Entered is not in the correct format"
+    not_found
+    EnterGrubPath
+  else
+    GrubDevice="${Entered}"
+    read -t "$GrubDevice"
+  fi
+}
+
+FinalCheck() {
+  while true
+  do
+    print_heading
+    PrintOne "These are the settings you have entered."
+    PrintOne "Please check them before Feliz begins the installation"
+    Echo
+    Translate "Zone/subZone will be"
+    PrintMany "1) $Result" "$ZONE/$SUBZONE"
+    Translate "Locale will be set to"
+    PrintMany "2) $Result" "$CountryLocale"
+    Translate "Keyboard is"
+    PrintMany "3) $Result" "$Countrykbd"
+    case ${IsInVbox} in
+      "VirtualBox") Translate "virtualbox guest modules"
+      PrintMany "4)" "$Result: $_Yes"
+      ;;
+      *) Translate "virtualbox guest modules"
+      PrintMany "4)" "$Result: $_No"
     esac
     if [ -z "$DisplayManager" ]; then
-      translate "No Display Manager selected"
-      print_subsequent "5)" "$Result"
+      Translate "No Display Manager selected"
+      PrintMany "5)" "$Result"
     else
-      translate "Display Manager"
-      print_subsequent "5) $Result" " = $DisplayManager"
+      Translate "Display Manager"
+      PrintMany "5) $Result" " = $DisplayManager"
     fi
-    translate "Root and user settings"
-    print_subsequent "6) $Result" "..."
-    translate "Hostname"
-    print_subsequent "      $Result" "= '$HostName'"
-    translate "User Name"
-    print_subsequent "      $Result" "= '$user_name'"
-    translate "The following extras have been selected"
-    print_subsequent "7) $Result" "..."
+    Translate "Root and user settings"
+    PrintMany "6) $Result" "..."
+    Translate "Hostname"
+    PrintMany "      $Result" "= '$HostName'"
+    Translate "User Name"
+    PrintMany "      $Result" "= '$UserName'"
+    Translate "The following extras have been selected"
+    PrintMany "7) $Result" "..."
     SaveStartPoint="$EMPTY" # Save cursor start point
     if [ $Scope = "Basic" ]; then
-      translate "None"
-      print_first_line "$Result" ""
+      PrintOne "$_None" ""
     elif [ $DesktopEnvironment ] && [ $DesktopEnvironment = "FelizOB" ]; then
-      print_first_line "FelizOB" ""
+      PrintOne "FelizOB" ""
     elif [ -z "$LuxuriesList" ]; then
-      translate "None"
-      print_first_line "$Result" ""
+      PrintOne "$_None" ""
     else
-      translate="N"
-      print_first_line "${LuxuriesList}" ""
-      translate="Y"
+      Translate="N"
+      PrintOne "${LuxuriesList}" ""
+      Translate="Y"
     fi
     EMPTY="$SaveStartPoint" # Reset cursor start point
     # 8) Kernel
-    translate "Kernel"
+    Translate "Kernel"
     if [ $Kernel -eq 1 ]; then
-      print_subsequent "8) $Result" "= 'LTS'"
+      PrintMany "8) $Result" "= 'LTS'"
     else
-      print_subsequent "8) $Result" "= 'Latest'"
+      PrintMany "8) $Result" "= 'Latest'"
     fi
     # 9) Grub
-    translate "Grub will be installed on"
-    print_subsequent "9) $Result" "= '$GrubDevice'"
+    Translate "Grub will be installed on"
+    PrintMany "9) $Result" "= '$GrubDevice'"
     # 10) Partitions 
-    translate "The following partitions have been selected"
-    print_subsequent "10) $Result" "..."
-    translate="N"
-    print_first_line "${RootPartition} /root ${RootType}"
-    print_subsequent "${SwapPartition} /swap"
+    Translate "The following partitions have been selected"
+    PrintMany "10) $Result" "..."
+    Translate="N"
+    PrintOne "${RootPartition} /root ${RootType}"
+    PrintMany "${SwapPartition} /swap"
     if [ -n "${AddPartList}" ]; then
       local Counter=0
       for Part in ${AddPartList}                    # Iterate through the list of extra partitions
       do                                            # Display each partition, mountpoint & format type
         if [ $Counter -ge 1 ]; then                 # Only display the first one
-          translate "Too many to display all"
-          print_subsequent "$Result"
+          PrintMany "Too many to display all"
           break
         fi
-        print_subsequent "${Part} ${AddPartMount[${Counter}]} ${AddPartType[${Counter}]}"
+        PrintMany "${Part} ${AddPartMount[${Counter}]} ${AddPartType[${Counter}]}"
         Counter=$((Counter+1))
+
       done
     fi
-    translate="Y"
+    Translate="Y"
     Response=20
-    translate "Press Enter to install with these settings, or"
-    print_first_line "$Result"
-    translate "Enter number for data to change"
-    # Prompt user for a number
-    local T_COLS=$(tput cols)
-    local lov=${#Result}
-    stpt=0
-    if [ ${lov} -lt ${T_COLS} ]; then
-      stpt=$(( (T_COLS - lov) / 2 ))
-    elif [ ${lov} -gt ${T_COLS} ]; then
-      stpt=0
-    else
-      stpt=$(( (T_COLS - 10) / 2 ))
-    fi
-    EMPTY="$(printf '%*s' $stpt)"
-    read -p "$EMPTY $Result :" retval
-
-    Change=$retval
+    Echo
+    PrintOne "Press Enter to install with these settings, or"
+    Translate "Enter number for data to change"
+    TPread "${Result}: "
+    Change=$Response
     case $Change in
-      1) set_timezone
+      1) SetTimeZone
+        continue
       ;;
       2) setlocale
+        continue
       ;;
-      3) get_keymap
+      3) getkeymap
+        continue
       ;;
-      4) confirm_virtualbox
+      4) ConfirmVbox
+        continue
       ;;
       5) DisplayManager=""
-        choose_display_manager
+        ChooseDM
+        continue
       ;;
-      6) manual_settings
+      6) ManualSettings
+        continue
       ;;
-      7) pick_category
+      7) PickLuxuries
+        continue
       ;;
-      8) select_kernel
+      8) SetKernel
+        continue
       ;;
       9) if [ $GrubDevice != "EFI" ]; then  # Can't be changed if EFI
-          select_grub_device
+          SetGrubDevice
         fi
+        continue
       ;;
       10) AddPartList=""   # Empty the lists of extra partitions
         AddPartMount=""
         AddPartType=""
-        check_parts         # finish partitioning
-        allocate_partitions
+        CheckParts         # Restart partitioning
+        ChoosePartitions
+        continue
       ;;
       *) break
     esac
   done
 }
 
-function manual_settings()
-{
+ManualSettings() {
   while true
   do
-    translate "Hostname"
-    Hname="$Result"
-    translate "User Name"
-    Uname="$Result"
-    message_first_line "Choose an item"
-    dialog --backtitle "$Backtitle" --title " $Uname & $Hname "
-      --ok-label "$Ok" --cancel-label "Done" --menu "\n$Message" 10 40 2 \
-      "$Uname"  "$user_name" \
-      "$Hname" 	"$HostName"   2> output.file
-    retvar=$?
-    if [ $retvar -ne 0 ]; then return; fi
-    Result="$(cat output.file)"
-
-    case $Result in
-      "$Uname") translate "Enter new username (currently"
-          Message="$Result ${user_name})"
-          title="$Uname"
-          dialog_inputbox 10 30
-          if [ $retvar -ne 0 ]; then return; fi
-          if [ -z $Result ]; then
-           Result="$user_name"
-          fi
-          user_name=${Result,,}
-          user_name=${user_name// }             # Ensure no spaces
-          user_name=${user_name%% }
+    print_heading
+    PrintOne "Enter number for data to change"
+    PrintOne "or ' ' to exit"
+    Echo
+    Translate "Hostname (currently"
+    PrintOne "1) $Result" "${HostName})"
+    Translate "Username (currently"
+    PrintMany "2) $Result" "${UserName})"
+    Echo
+    Translate "Please enter the number of your selection"
+    TPread "${Result}: "
+    Echo
+    case $Response in
+      1) Translate "Enter new Hostname (currently"
+        TPread "${Result} ${HostName}): "
+         HostName=$Response
         ;;
-      "$Hname") translate "Enter new hostname (currently"
-          Message="$Result ${HostName})"
-          title="$Uname"
-          dialog_inputbox 10 30
-          if [ $retvar -ne 0 ]; then return; fi
-          if [ -z $Result ]; then
-           Result="$HostName"
-          fi
-          HostName=${Result,,}
-          HostName=${HostName// }             # Ensure no spaces
-          HostName=${HostName%% }
+      2) Translate "Enter new username (currently"
+      TPread "${Result} ${UserName}) : "
+         UserName=$Response
         ;;
       *) return 0
     esac
