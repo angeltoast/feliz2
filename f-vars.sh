@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 29th December 2017
+# Revision date: 6th January 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,15 +27,15 @@
 # Function          Line    Function            Line
 # ----------------------    ------------------------
 # set_language        38    print_subsequent     127
-# not_found           97    common_translations  197
-# dialog_inputbox    107    translate            246
-# message_first_line 127    
-# message_subsequent 148    Arrays & Variables   266
+# not_found          113    common_translations  197
+# dialog_inputbox    128    translate            246
+# message_first_line 138    
+# message_subsequent 159    Arrays & Variables   266
 # print_first_line   127       ... and onwards
 # ----------------------    ------------------------
 
-function set_language
-{
+function set_language {
+  
   setfont LatGrkCyr-8x16 -m 8859-2    # To display wide range of characters
   
   # First load English file
@@ -58,39 +58,30 @@ function set_language
       pl "Polski" \
       pt-BR "Português" \
       vi "Vietnamese" 2>output.file
-    retval=$?
-    if [ $retval -ne 0 ]; then exit; fi
+    if [ $? -ne 0 ]; then return 1; fi
     InstalLanguage=$(cat output.file)
 
   case "$InstalLanguage" in
     de) LanguageFile="German.lan"
-    ;;
-    el) setfont LatGrkCyr-8x16 -m 8859-2
-      LanguageFile="Greek.lan"
-    ;;
-    es) LanguageFile="Spanish.lan"
-    ;;
+        setfont eurlatgr ;;
+    el) LanguageFile="Greek.lan" 
+        setfont LatGrkCyr-8x16 -m 8859-2 ;;
+    es) LanguageFile="Spanish.lan" ;;
     fr) LanguageFile="French.lan"
-    ;;
-    it) LanguageFile="Italian.lan"
-    ;;
-    nl) LanguageFile="Dutch.lan"
-    ;;
-    pl) LanguageFile="Polish.lan"
-    ;;
-    pt-PT) LanguageFile="Portuguese-PT.lan"
-    ;;
-    pt-BR) LanguageFile="Portuguese-BR.lan"
-    ;;
+        setfont eurlatgr ;;
+    it) LanguageFile="Italian.lan" ;;
+    nl) LanguageFile="Dutch.lan"   ;;
+    pl) LanguageFile="Polish.lan"  ;;
+    pt-PT) LanguageFile="Portuguese-PT.lan" ;;
+    pt-BR) LanguageFile="Portuguese-BR.lan" ;;
     vi) LanguageFile="Vietnamese.lan"
-      setfont viscii10-8x16 -m 8859-2
-    ;;
+        setfont viscii10-8x16 -m 8859-2 ;;
     *) LanguageFile="English.lan"
       InstalLanguage="en"
   esac
   
   # Get the required language files
-  if [ $LanguageFile != "English.lan" ]; then   # If English is not the user language, get the translation file
+  if [ $LanguageFile != "English.lan" ]; then  # If English is not the user language, get the translation file
     if [ ! -f ${LanguageFile} ]; then
       wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
     fi
@@ -115,10 +106,11 @@ function set_language
   Ok="$Result"
   translate "Yes"
   Yes="$Result"
+
+  return 0
 }
 
-function not_found                # Optional arguments $1 & $2 for box size
-{
+function not_found {                # Optional arguments $1 & $2 for box size
   if [ $1 ] && [ -n $1 ]; then
     Height="$1"
   else
@@ -130,30 +122,31 @@ function not_found                # Optional arguments $1 & $2 for box size
     Length=25
   fi
   dialog --backtitle "$Backtitle" --title " Not Found " --ok-label "$Ok" --msgbox "\n$Message $3" $Height $Length
+  return 0
 }
 
-function dialog_inputbox          # General-purpose input box ... $1 & $2 are box size
-{
+function dialog_inputbox {          # General-purpose input box ... $1 & $2 are box size
   dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" \
     --inputbox "\n$Message\n" $1 $2 2>output.file
   retval=$?
   Result=$(cat output.file)
+  return 0
 }
 
-function message_first_line       # translates $1 and starts a Message with it
-{
+function message_first_line {       # translates $1 and starts a Message with it
   translate "$1"
   Message="$Result"
+  return 0
 }
 
-function message_subsequent       # translates $1 and continues a Message with it
-{
+function message_subsequent {       # translates $1 and continues a Message with it
   translate "$1"
   Message="${Message}\n${Result}"
+  return 0
 }
 
-function print_first_line         # Called by FinalCheck to display all user-defined variables
-{                                 # Prints argument(s) centred according to content and screen size
+function print_first_line {         # Called by FinalCheck to display all user-defined variables
+                                    # Prints argument(s) centred according to content and screen size
   text="$1 $2 $3"
   local width=$(tput cols)
   EMPTY=" "
@@ -164,16 +157,18 @@ function print_first_line         # Called by FinalCheck to display all user-def
     EMPTY="$(printf '%*s' $stpt)"
   fi
   echo "$EMPTY $text"
+  return 0
 }
 
-function print_subsequent() # Called by FinalCheck to display all user-defined variables
-{ # Prints argument(s) aligned to print_first_line according to content and screen size
+function print_subsequent { # Called by FinalCheck to display all user-defined variables
+                            # Prints argument(s) aligned to print_first_line according to content and screen size
   text="$1 $2 $3"
   echo "$EMPTY $text"
+  return 0
 }
 
-function translate()  # Called by message_first_line & message_subsequent and by other functions as required
-{                     # $1 is text to be translated
+function translate {  # Called by message_first_line & message_subsequent and by other functions as required
+                      # $1 is text to be translated
   text="${1%% }"      # Remove any trailing spaces
   if [ $LanguageFile = "English.lan" ] || [ $translate = "N" ]; then
     Result="$text"
@@ -185,10 +180,10 @@ function translate()  # Called by message_first_line & message_subsequent and by
   case ${RecordNumber} in
   "" | 0) # No match found in English.lan, so use Google translate
      ./trans -b en:${InstalLanguage} "$text" > output.file 2>/dev/null
-     Result=$(cat output.file)
-  ;;
+     Result=$(cat output.file) ;;
   *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target language file
   esac
+  return 0
 }
 
 # Partition variables and arrays
@@ -205,7 +200,7 @@ HomeSize=""               # Home variable
 HomeType=""               # Home variable
 SwapPartition=""          # eg: /dev/sda3
 FormatSwap="N"            # User selects whether to reuse swap
-MakeSwap="Y"
+MakeSwap="Y"              # 
 SwapFile=""               # eg: 2G
 IsSwap=""                 # Result of lsblk test
 UEFI=0                    # 0 = BIOS; 1 = EFI
@@ -214,7 +209,7 @@ RootPartition=""          # eg: /dev/sda2
 RootType=""               # eg: ext4
 Partition=""              # eg: sda1
 Ignorelist=""             # Used in review process
-AutoPart="NONE"           # Flag - MANUAL/AUTO/GUIDED/NONE
+AutoPart="NONE"           # Flag - MANUAL/AUTO/GUIDED/CFDISK/NONE
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
 
@@ -270,15 +265,16 @@ LongAccs[6]="Handy lightweight text editor from LXDE"
 LongAccs[7]="Lightweight terminal emulator from LXDE"
 LongAccs[8]="The file manager from LXDE"
 # Desktops
-Desktops="Budgie Cinnamon Gnome KDE LXDE LXQt Mate Xfce"
+Desktops="Budgie Cinnamon Deepin Gnome KDE LXDE LXQt Mate Xfce"
 LongDesk[1]="Budgie is the default desktop of Solus OS"
 LongDesk[2]="Slick, modern desktop from the Mint team"
-LongDesk[3]="Full-featured, modern DE"
-LongDesk[4]="Plasma 5 and accessories pack"
-LongDesk[5]="Traditional, lightweight desktop"
-LongDesk[6]="Lightweight and modern Qt-based DE"
-LongDesk[7]="Traditional desktop from the Mint team"
-LongDesk[8]="Lightweight, highly configurable DE"
+LongDesk[3]="Desktop of the Deepin project"
+LongDesk[4]="Full-featured, modern DE"
+LongDesk[5]="Plasma 5 and accessories pack"
+LongDesk[6]="Traditional, lightweight desktop"
+LongDesk[7]="Lightweight and modern Qt-based DE"
+LongDesk[8]="Traditional desktop from the Mint team"
+LongDesk[9]="Lightweight, highly configurable DE"
 # Graphical
 Graphical="blender gimp imagemagick inkscape gthumb simple-scan xsane"
 LongGraph[1]="3D graphics creation suite"
