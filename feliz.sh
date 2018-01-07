@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 6th January 2018
+# Revision date: 31st December 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,9 +31,11 @@ source f-part1.sh    # Functions concerned with allocating partitions
 source f-part2.sh    # Guided partitioning for BIOS & EFI systems
 source f-run.sh      # Functions called during installation
 
-function main {
+function main()
+{ # All functions called from this function must return a value of 1 or 0
   
-  if [ -f dialogrc ] && [ ! -f .dialogrc ]; then        # Ensure that display of dialogs is controlled
+  if [ -f dialogrc ] && [ ! -f .dialogrc ]        # Ensure that display of dialogs is controlled
+  then
     cp dialogrc .dialogrc
   fi
   
@@ -42,10 +44,10 @@ function main {
   
   Backtitle=$(head -n 1 README)                   # Will be different for testing or stable
 
-  while true; do
+  while true
+  do
     the_start                                     # All user interraction takes place in this function
     if [ $? -ne 0 ]; then exit; fi                # Quit if error or user selects <Cancel>
-      
     if [ "$AutoPart" = "NONE"  ]; then continue; fi  # Restart if no partitioning options    
     translate "Preparations complete"             # Inform user
     install_message "$Result"
@@ -63,98 +65,114 @@ function main {
   done
 }
 
-function the_start { # All user interraction takes place in this function
-
-  while true; do
-    set_language                                  # In f-vars.sh - Use appropriate language file
+function the_start() # All user interraction takes place in this function
+{ # All functions called from this function must return a value of 1 or 0
+  while true
+  do
+    set_language                                  # In f-set.sh - Use appropriate language file
     if [ $? -ne 0 ]; then return 1; fi            # If user cancels
     timedatectl set-ntp true
 
     # Check if on UEFI or BIOS system
     tput setf 0 # Change foreground colour to black temporarily to hide system messages
     dmesg | grep -q "efi: EFI"                    # Test for EFI (-q tells grep to be quiet)
-    if [ $? -eq 0 ]; then                         # check exit code; 0 = EFI, else BIOS
+    if [ $? -eq 0 ]
+    then                                          # check exit code; 0 = EFI, else BIOS
       UEFI=1                                      # Set variable UEFI ON and mount the device
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> feliz.log
     else
       UEFI=0                                      # Set variable UEFI OFF
     fi
     tput sgr0                                     # Reset colour
+    while true
+    do
+      select_device                               # Detect all available devices & allow user to select
+      retval=$?
+      if [ $retval -ne 0 ]; then return 1; fi
+      
+      get_device_size                             # First make sure that there is space for installation
+      retval=$?
+      if [ $retval -ne 0 ]; then return 1; fi     # If not, restart
+      
+      localisation_settings                       # Locale, keyboard & hostname
+      retval=$?
+      if [ $retval -ne 0 ]; then return 1; fi
+      
+      desktop_settings                            # User chooses desktop environment and other extras
+      if [ $Scope != "Basic" ]; then              # If any extra apps have been added
+        if [ -n "$DesktopEnvironment" ] && [ "$DesktopEnvironment" != "FelizOB" ] && [ "$DesktopEnvironment" != "Gnome" ]
+        then                                      # Gnome and FelizOB install their own DM
+          choose_display_manager                  # User selects from list of display managers
+        fi
 
-    select_device                               # Detect all available devices & allow user to select
-    if [ $? -ne 0 ]; then return 1; fi
+        set_username                              # Enter name of primary user
 
-    get_device_size                             # First make sure that there is space for installation
-    if [ $? -ne 0 ]; then return 1; fi          # If not, restart
-
-    localisation_settings                       # Locale, keyboard & hostname
-    if [ $? -ne 0 ]; then continue 1; fi
-
-    choose_mirrors
-    if [ $? -ne 0 ]; then continue; fi
-
-    desktop_settings                            # User chooses desktop environment and other extras
-    if [ $Scope != "Basic" ]; then              # If any extra apps have been added
-      if [ -n "$DesktopEnvironment" ] && [ "$DesktopEnvironment" != "FelizOB" ] && [ "$DesktopEnvironment" != "Gnome" ]
-      then                                      # Gnome and FelizOB install their own DM
-        choose_display_manager                  # User selects from list of display managers
+        if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
+          confirm_virtualbox                      # If running in Virtualbox, offer to include guest utilities
+        else
+          IsInVbox=""
+        fi
       fi
 
-      set_username                              # Enter name of primary user
-
-      if (ls -l /dev/disk/by-id | grep "VBOX" &> /dev/null); then
-        confirm_virtualbox                      # If running in Virtualbox, offer to include guest utilities
-      else
-        IsInVbox=""
+      # Partitioning - In f-part1.sh
+      while true
+      do
+        check_parts                               # Check partition table & offer partitioning options
+        if [ $? -ne 0 ]; then                     # User cancelled partitioning options
+          retval=1                                # so return
+          break
+        fi
+        
+        if [ "$AutoPart" = "MANUAL" ]; then       # Not Auto partitioned or guided
+          allocate_partitions                     # Assign /root /swap & others
+        fi
+        if [ $? -eq 0 ]; then break; fi
+      done
+      if [ $retval -ne 0 ]; then continue; fi
+      select_kernel                               # Select kernel and device for Grub
+      if [ $? -ne 0 ]; then exit; fi
+      
+      choose_mirrors
+      if [ $? -ne 0 ]; then continue; fi
+  
+      if [ ${UEFI} -eq 1 ]; then                  # If installing in EFI
+        GrubDevice="EFI"                          # Set variable
+      else							                          # If BIOS 
+        select_grub_device                        # User chooses grub partition
       fi
-    fi
-
-    # Partitioning - In f-part1.sh
-    while true; do
-      check_parts                               # Check partition table & offer partitioning options
-      if [ $? -ne 0 ]; then return 1; fi        # User cancelled partitioning options
-
-      if [ "$AutoPart" = "MANUAL" ] || [ "$AutoPart" = "CFDISK" ]; then  # Not Auto partitioned or guided
-        allocate_partitions                     # Assign /root /swap & others
-      fi
-      if [ $? -eq 0 ]; then break; fi
+      retval=$?
+      if [ $retval -ne 0 ]; then continue; fi
+  
+      final_check                                 # Allow user to change any variables
+      return $?
     done
-    if [ $retval -ne 0 ]; then continue; fi
-    select_kernel                               # Select kernel and device for Grub
-    if [ $? -ne 0 ]; then exit; fi
-
-    if [ ${UEFI} -eq 1 ]; then                  # If installing in EFI
-      GrubDevice="EFI"                          # Set variable
-    else							                          # If BIOS 
-      select_grub_device                        # User chooses grub partition
-    fi
-    if [ $? -ne 0 ]; then continue; fi
-
-    final_check                                 # Allow user to change any variables
-    if [ $? -ne 0 ]; then continue; fi
-    return 0
+    return $?
   done
+
 }
 
-function preparation { # Prepare the environment for the installation phase
-  if [ ${UEFI} -eq 1 ] && [ "$AutoPart" = "GUIDED" ]; then    # If installing on EFI with Guided partitioning_options
-    action_EFI
-  elif [ ${UEFI} -eq 0 ] && [ "$AutoPart" = "GUIDED" ]; then  # If installing on BIOS with Guided partitioning_options
-    action_MBR
+function preparation()  # Prepare the environment for the installation phase
+{
+  if [ ${UEFI} -eq 1 ] && [ "$AutoPart" = "GUIDED" ]; then    # If installing on EFI and Guided partitioning_options
+    action_EFI                                                # In f-part2.sh
+  elif [ ${UEFI} -eq 0 ] && [ "$AutoPart" = "GUIDED" ]; then  # If installing on BIOS and Guided partitioning_options
+    action_MBR                                                # In f-part2.sh
   elif [ "$AutoPart" = "AUTO" ]; then                         # If Auto partitioning_options
-    autopart 
-  elif [ "$AutoPart" = "NONE" ]; then                         # If partitioning_options not set
-    Message="No partitions"
-    not_found 6 20
+    autopart                                                  # In f-part1.sh
+  elif [ "$AutoPart" = "NONE" ]; then                         # If Auto partitioning_options
     return 1
   fi
+
   mount_partitions                                            # In f-run.sh
+
   mirror_list                                                 # In f-run.sh
+
   install_kernel                                              # In f-run.sh
-  return 0
+
 }
 
-function the_middle { # The installation phase
+function the_middle() # The installation phase
+{
     translate "Preparing local services"
     install_message "$Result"
     echo ${HostName} > /mnt/etc/hostname 2>> feliz.log
@@ -212,14 +230,15 @@ function the_middle { # The installation phase
     echo -e "Section \"InputClass\"\nIdentifier \"system-keyboard\"\nMatchIsKeyboard \"on\"\nOption \"XkbLayout\" \"${Countrykbd}\"\nEndSection" > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf 2>> feliz.log
   # Extra processes for desktop installation
     if [ $Scope != "Basic" ]; then
-      add_codecs                                               # Various bits
+      add_codecs # Various bits
       if [ ${IsInVbox} = "VirtualBox" ]; then                  # If in Virtualbox
         translate="Installing"
         install_message "$Result " "Virtualbox Guest Modules"
         translate="Y"
         case $Kernel in
         1) pacstrap /mnt dkms linux-lts-headers 2>> feliz.log  # LTS kernel
-          pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log ;;
+          pacstrap /mnt virtualbox-guest-dkms 2>> feliz.log
+        ;;
         *) pacstrap /mnt dkms linux-headers 2>> feliz.log      # Latest kernel
           pacstrap /mnt virtualbox-guest-modules-arch 2>> feliz.log
         esac
@@ -229,19 +248,22 @@ function the_middle { # The installation phase
       install_extras                                           # Install DEs, WMs and DMs
       user_add
     fi
-  return 0
 }
 
-function the_end { # Set passwords and finish Feliz
-  EndTime=$(date +%s)                                         # The end of life as we know it
+function the_end()  # Set passwords and finish Feliz
+{
+  EndTime=$(date +%s)
   Difference=$(( EndTime-StartTime ))
   DIFFMIN=$(( Difference / 60 ))
   DIFFSEC=$(( Difference % 60 ))
+  
   set_root_password
+  
   if [ $Scope != "Basic" ]; then set_user_password; fi
+
   cp feliz.log /mnt/etc                                        # Copy installation log for reference
+    
   finish                                                       # Shutdown or reboot
-  return 0
 }
 
 main
