@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 31st December 2017
+# Revision date: 8th January 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 # Variables for UEFI Architecture
 UEFI=0            # 1 = UEFI; 0 = BIOS
-EFIPartition=""   # "/dev/sda1"
+EFIPartition=""   # eg: /dev/sda1
 UEFI_MOUNT=""    	# UEFI mountpoint
 DualBoot="N"      # For formatting EFI partition
 
@@ -229,7 +229,6 @@ function guided_MBR { # Called by f-part1.sh/partitioning_options as the first s
   message_subsequent "you wish to create. When ready, Feliz will wipe the disk"
   message_subsequent "and create a new partition table with your settings"
   message_subsequent "This facility is restricted to creating"
-  " "
   Message="${Message} /root, /swap & /home\n"
   message_subsequent "Are you sure you wish to continue?"
 
@@ -350,7 +349,7 @@ function guided_MBR_root { # Called by guided_MBR - Set variables: RootSize, Roo
     message_subsequent "and perhaps also a /home partition"
     message_subsequent "The /root partition should not be less than 8G"
     message_subsequent "ideally more, up to 20G"
-    enter_size        # Adds advice about 100%
+    enter_size        # Adds advice to message about 100%
     
     dialog_inputbox 30 75
 

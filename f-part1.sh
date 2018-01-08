@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 7th January 2018
+# Revision date: 8th January 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -162,10 +162,9 @@ function partitioning_options { # Called without arguments by check_parts after 
       if [ $? -ne 0 ]; then return 1; fi
     fi
     AutoPart="GUIDED" ;;
-  3) AutoPart="NONE"                                  # Checks if multiple devices, and allows selection
+  3) AutoPart=""                                      # Checks if multiple devices, and allows selection
     choose_device
-    if [ $? -eq 1 ]; then return 1; fi
-    AutoPart="AUTO"                                   # AUTO flag triggers autopart in installation phase
+    if [ $? -eq 1 ]; then return 1; fi                # AUTO flag triggers autopart in installation phase
   esac
   return 0
 }
@@ -173,7 +172,7 @@ function partitioning_options { # Called without arguments by check_parts after 
 function choose_device { # Called from partitioning_options or partitioning_optionsEFI
                          # Select device for autopartition
                          # Sets AutoPart and UseDisk; returns 0 if completed, 1 if interrupted
-  while [ ${AutoPart} != "AUTO" ]; do
+  while [ -z ${AutoPart} ]; do
     DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)
     # Count lines. If more than one disk, ask user which to use
     local Counter
@@ -202,13 +201,11 @@ function choose_device { # Called from partitioning_options or partitioning_opti
     message_subsequent "Are you sure you wish to continue?"
     dialog --backtitle "$Backtitle" --title " $title " \
       --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 55 2>output.file
-    retval=$?
-    case $retval in
-    0) AutoPart="AUTO" ;;
-    *) UseDisk=""
-      AutoPart="MANUAL"
-      return 1
-    esac
+    if [ $? -eq 0 ]; then
+      AutoPart="AUTO"
+    else
+      AutoPart="NONE"
+    fi
   done
   return 0
 }

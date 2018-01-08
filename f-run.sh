@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 7th January 2018
+# Revision date: 8th January 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,6 +56,9 @@ function install_message { # For displaying status while running on auto
 
 function action_MBR { # Called without arguments by feliz.sh before other partitioning actions
                       # Uses the variables set by user to create partition table & all partitions
+                      
+  create_partition_table
+  
   local Unit
   local EndPoint
   declare -i Chars
@@ -67,7 +70,7 @@ function action_MBR { # Called without arguments by feliz.sh before other partit
     # Calculate end-point    
     Unit=${RootSize: -1}                # Save last character of root (eg: G)
     Chars=${#RootSize}                  # Count characters in root variable
-    Var=${RootSize:0:Chars-1}           # Remove unit character from root variable
+    Var=${RootSize:0:Chars-1}           # Remove unit character to get an int
     if [ "$Unit" = "G" ]; then
       Var=$((Var*1024))                 # Convert to MiB
       EndPart=$((1+Var))                # Start at 1MiB
@@ -135,6 +138,9 @@ function action_MBR { # Called without arguments by feliz.sh before other partit
 
 function action_EFI { # Called without arguments by feliz.sh before other partitioning actions
                       # Uses the variables set by user to create partition table & all partitions
+                      
+  create_partition_table
+  
   local Unit
   local EndPoint
   declare -i Chars
@@ -232,12 +238,7 @@ function action_EFI { # Called without arguments by feliz.sh before other partit
   return 0
 }
 
-function autopart { # Called by feliz.sh/preparation during installation phase
-                    # if AutoPartition flag is AUTO.
-                    # Consolidated automatic partitioning for BIOS or EFI environment
-  GrubDevice="/dev/${UseDisk}"
-  Home="N"                                          # No /home partition at this point
-  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed "s/G\|M\|K//g") # Get disk size
+function create_partition_table {
   # Create a new partition table
   if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
     sgdisk --zap-all ${GrubDevice} &>> feliz.log    # Remove all existing filesystems
@@ -250,6 +251,16 @@ function autopart { # Called by feliz.sh/preparation during installation phase
     parted_script "mklabel msdos"                   # Create new filesystem
     StartPoint="1MiB"                               # Set start point for next partition
   fi
+}
+
+function autopart { # Called by feliz.sh/preparation during installation phase
+                    # if AutoPartition flag is AUTO.
+                    # Consolidated automatic partitioning for BIOS or EFI environment
+  GrubDevice="/dev/${UseDisk}"
+  Home="N"                                          # No /home partition at this point
+  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed "s/G\|M\|K//g") # Get disk size
+
+  create_partition_table
                                                     # Decide partition sizes
   if [ $DiskSize -ge 40 ]; then                     # ------ /root /home /swap partitions ------
     HomeSize=$((DiskSize-15-4))                     # /root 15 GiB, /swap 4GiB, /home from 18GiB
@@ -274,8 +285,8 @@ function autopart { # Called by feliz.sh/preparation during installation phase
 
 function mount_partitions { # Called without arguments by feliz.sh after action_UEFI or action_EFI
     install_message "Preparing and mounting partitions"
-    # First unmount any mounted partitions
-    umount ${RootPartition} /mnt 2>> feliz.log                        # eg: umount /dev/sda1
+    # First unmount any mounted partitions !!! Why? Feliz is running in a new Arch session. Nothing is mounted.
+  #  umount ${RootPartition} /mnt 2>> feliz.log                        # eg: umount /dev/sda1
   # 1) Root partition
     if [ $RootType = "" ]; then
       echo "Not formatting root partition" >> feliz.log               # If /root filetype not set - do nothing
