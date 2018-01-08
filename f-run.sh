@@ -23,20 +23,22 @@
 #                    Boston, MA 02110-1301 USA
 
 # In this module: functions used during installation
-# -------------------------    ---------------------------
-# Functions           Line     Functions              Line
-# -------------------------    ---------------------------
-# arch_chroot            40    mirror_list             419
-# parted_script          44    install_display_manager 473
-# install_message        48    install_extras          487
-# action_MBR             56    install_yaourt          581
-# action_EFI            134    user_add                603
-# autopart              233    check_existing          666
-# mount_partitions      273    set_root_password       673
-# install_kernel        346    set_user_password       728
-# add_codecs            384    finish                  774
-#                              partition_maker         793
-# -------------------------    ---------------------------
+# ---------------------------    ---------------------------
+# Functions             Line     Functions              Line
+# --------------------------    ---------------------------
+# arch_chroot             42    add_codecs              370
+# parted_script           46    mirror_list             405
+# install_message         50    install_display_manager 459
+# action_MBR              58    install_extras          473
+# action_EFI             102    install_yaourt          567
+# root_partition         165    user_add                589
+# swap_partition         182    check_existing          652
+# home_partition         199    set_root_password       659
+# create_partition_table 216    set_user_password       714
+# autopart               231    
+# mount_partitions       261    finish                  760
+# install_kernel         332    partition_maker         779
+# --------------------------    ---------------------------
 
 function arch_chroot { # From Lution AIS - calls arch-chroot with options
   arch-chroot /mnt /bin/bash -c "${1}" 2>> feliz.log
@@ -67,20 +69,8 @@ function action_MBR { # Called without arguments by feliz.sh before other partit
   declare -i NextStart
   # Root partition
   # --------------
-    # Calculate end-point    
-    Unit=${RootSize: -1}                # Save last character of root (eg: G)
-    Chars=${#RootSize}                  # Count characters in root variable
-    Var=${RootSize:0:Chars-1}           # Remove unit character to get an int
-    if [ "$Unit" = "G" ]; then
-      Var=$((Var*1024))                 # Convert to MiB
-      EndPart=$((1+Var))                # Start at 1MiB
-      EndPoint="${EndPart}MiB"          # Append unit
-    elif [ "$Unit" = "M" ]; then
-      EndPart=$((1+Var))                # Start at 1MiB
-      EndPoint="${EndPart}MiB"          # Append unit
-    elif [ "$Unit" = "%" ]; then
-      EndPoint="${Var}%"
-    fi
+    root_partition
+    # Make the partition
     parted_script "mkpart primary ${RootType} 1MiB ${EndPoint}"
     parted_script "set 1 boot on"
     RootPartition="${GrubDevice}1"      # "/dev/sda1"
@@ -88,20 +78,7 @@ function action_MBR { # Called without arguments by feliz.sh before other partit
   # Swap partition
   # --------------
     if [ -n "$SwapSize" ]; then
-      # Calculate end-point
-      Unit=${SwapSize: -1}              # Save last character of swap (eg: G)
-      Chars=${#SwapSize}                # Count characters in swap variable
-      Var=${SwapSize:0:Chars-1}         # Integer part of swap variable
-      if [ "$Unit" = "G" ]; then
-        Var=$((Var*1024))               # Convert to MiB
-        EndPart=$((NextStart+Var))      # Add to previous end
-        EndPoint="${EndPart}MiB"        # Append unit
-      elif [ "$Unit" = "M" ]; then
-        EndPart=$((NextStart+Var))      # Add to previous end
-        EndPoint="${EndPart}MiB"        # Append unit
-      elif [ "$Unit" = "%" ]; then
-        EndPoint="${Var}%"
-      fi
+      swap_partition
       # Make the partition
       parted_script "mkpart primary linux-swap ${NextStart}MiB ${EndPoint}"
       SwapPartition="${GrubDevice}2"    # "/dev/sda2"
@@ -110,24 +87,11 @@ function action_MBR { # Called without arguments by feliz.sh before other partit
     fi
   # Home partition
   # --------------
-    if [ $HomeSize ]; then
-      # Calculate end-point
-      Unit=${HomeSize: -1}              # Save last character of home (eg: G)
-      Chars=${#HomeSize}                # Count characters in home variable
-      Var=${HomeSize:0:Chars-1}         # Remove unit character from home variable
-      if [ "$Unit" = "G" ]; then
-        Var=$((Var*1024))               # Convert to MiB
-        EndPart=$((NextStart+Var))      # Add to previous end
-        EndPoint="${EndPart}MiB"        # Append unit
-      elif [ "$Unit" = "M" ]; then
-        EndPart=$((NextStart+Var))      # Add to previous end
-        EndPoint="${EndPart}MiB"        # Append unit
-      elif [ "$Unit" = "%" ]; then
-        EndPoint="${Var}%"
-      fi
+    if [ -n "HomeSize" ]; then
+      home_partition
       # Make the partition
       parted_script "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}"
-      HomePartition="${GrubDevice}3"    # "/dev/sda3"
+      HomePartition="${GrubDevice}3"    # "/dev/sda4"
       Home="Y"
       AddPartList[0]="${GrubDevice}3"   # /dev/sda3     | add to
       AddPartMount[0]="/home"           # Mountpoint    | array of
@@ -140,7 +104,6 @@ function action_EFI { # Called without arguments by feliz.sh before other partit
                       # Uses the variables set by user to create partition table & all partitions
                       
   create_partition_table
-  
   local Unit
   local EndPoint
   declare -i Chars
@@ -169,6 +132,37 @@ function action_EFI { # Called without arguments by feliz.sh before other partit
     NextStart=${EndPoint}               # Save for next partition. Numerical only (has no unit)
   # Root partition
   # --------------
+    root_partition
+    # Make the partition
+    parted_script "mkpart primary ${RootType} ${NextStart}MiB ${EndPoint}"
+    RootPartition="${GrubDevice}2"      # "/dev/sda2"
+    NextStart=${EndPart}                # Save for next partition. Numerical only (has no unit)
+  # Swap partition
+  # --------------
+    if [ -n "$SwapSize" ]; then
+      swap_partition
+      # Make the partition
+      parted_script "mkpart primary linux-swap ${NextStart}MiB ${EndPoint}"
+      SwapPartition="${GrubDevice}3"    # "/dev/sda3"
+      MakeSwap="Y"
+      NextStart=${EndPart}              # Save for next partition. Numerical only (has no unit)
+    fi
+  # Home partition
+  # --------------
+    if [ -n "$HomeSize" ]; then
+      home_partition
+      # Make the partition
+      parted_script "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}"
+      HomePartition="${GrubDevice}4"    # "/dev/sda4"
+      Home="Y"
+      AddPartList[0]="${GrubDevice}4"   # /dev/sda4     | add to
+      AddPartMount[0]="/home"           # Mountpoint    | array of
+      AddPartType[0]="${HomeType}"      # Filesystem    | additional partitions
+    fi
+  return 0
+}
+
+function root_partition {
     # Calculate end-point
     Unit=${RootSize: -1}                # Save last character of root (eg: G)
     Chars=${#RootSize}                  # Count characters in root variable
@@ -183,14 +177,10 @@ function action_EFI { # Called without arguments by feliz.sh before other partit
     elif [ "$Unit" = "%" ]; then
       EndPoint="${Var}%"
     fi
-    # Make the partition
-    parted_script "mkpart primary ${RootType} ${NextStart}MiB ${EndPoint}"
-    RootPartition="${GrubDevice}2"      # "/dev/sda2"
-    NextStart=${EndPart}                # Save for next partition. Numerical only (has no unit)
-  # Swap partition
-  # --------------
-    if [ $SwapSize ]; then
-      # Calculate end-point
+}
+  
+function swap_partition {
+# Calculate end-point
       Unit=${SwapSize: -1}              # Save last character of swap (eg: G)
       Chars=${#SwapSize}                # Count characters in swap variable
       Var=${SwapSize:0:Chars-1}         # Remove unit character from swap variable
@@ -204,38 +194,23 @@ function action_EFI { # Called without arguments by feliz.sh before other partit
       elif [ "$Unit" = "%" ]; then
         EndPoint="${Var}%"
       fi
-      # Make the partition
-      parted_script "mkpart primary linux-swap ${NextStart}MiB ${EndPoint}"
-      SwapPartition="${GrubDevice}3"    # "/dev/sda3"
-      MakeSwap="Y"
-      NextStart=${EndPart}              # Save for next partition. Numerical only (has no unit)
-    fi
-  # Home partition
-  # --------------
-    if [ $HomeSize ]; then
-      # Calculate end-point
-      Unit=${HomeSize: -1}              # Save last character of home (eg: G)
-      Chars=${#HomeSize}                # Count characters in home variable
-      Var=${HomeSize:0:Chars-1}         # Remove unit character from home variable
-      if [ "$Unit" = "G" ]; then
-        Var=$((Var*1024))               # Convert to MiB
-        EndPart=$((NextStart+Var))      # Add to previous end
-        EndPoint="${EndPart}MiB"        # Add unit
-      elif [ "$Unit" = "M" ]; then
-        EndPart=$((NextStart+Var))      # Add to previous end
-        EndPoint="${EndPart}MiB"        # Add unit
-      elif [ "$Unit" = "%" ]; then
-        EndPoint="${Var}%"
-      fi
-      # Make the partition
-      parted_script "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}"
-      HomePartition="${GrubDevice}4"    # "/dev/sda4"
-      Home="Y"
-      AddPartList[0]="${GrubDevice}4"   # /dev/sda4     | add to
-      AddPartMount[0]="/home"           # Mountpoint    | array of
-      AddPartType[0]="ext4"             # Filesystem    | additional partitions
-    fi
-  return 0
+}
+
+function home_partition {
+  # Calculate end-point
+  Unit=${HomeSize: -1}              # Save last character of home (eg: G)
+  Chars=${#HomeSize}                # Count characters in home variable
+  Var=${HomeSize:0:Chars-1}         # Remove unit character from home variable
+  if [ "$Unit" = "G" ]; then
+    Var=$((Var*1024))               # Convert to MiB
+    EndPart=$((NextStart+Var))      # Add to previous end
+    EndPoint="${EndPart}MiB"        # Add unit
+  elif [ "$Unit" = "M" ]; then
+    EndPart=$((NextStart+Var))      # Add to previous end
+    EndPoint="${EndPart}MiB"        # Add unit
+  elif [ "$Unit" = "%" ]; then
+    EndPoint="${Var}%"
+  fi
 }
 
 function create_partition_table {
@@ -285,8 +260,6 @@ function autopart { # Called by feliz.sh/preparation during installation phase
 
 function mount_partitions { # Called without arguments by feliz.sh after action_UEFI or action_EFI
     install_message "Preparing and mounting partitions"
-    # First unmount any mounted partitions !!! Why? Feliz is running in a new Arch session. Nothing is mounted.
-  #  umount ${RootPartition} /mnt 2>> feliz.log                        # eg: umount /dev/sda1
   # 1) Root partition
     if [ $RootType = "" ]; then
       echo "Not formatting root partition" >> feliz.log               # If /root filetype not set - do nothing
