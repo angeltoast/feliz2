@@ -123,7 +123,7 @@ function the_start {  # All user interraction takes place in this function
         continue                                  # No option selected, restart
       fi
       if [ "$Scope" != "Basic" ]; then            # If any extra apps have been added
-        if [ -n "$DesktopEnvironment" ] && [ "$DesktopEnvironment" != "FelizOB" ] && [ "$DesktopEnvironment" != "Gnome" ]; then                                          # Gnome and FelizOB install their own DM
+        if [ -n "$DesktopEnvironment" ] && [ "$DesktopEnvironment" != "FelizOB" ] && [ "$DesktopEnvironment" != "Gnome" ] && [ "$DesktopEnvironment" != "Deepin" ]; then  # Deepin, Gnome and FelizOB install their own DM
           choose_display_manager                  # User selects from list of display managers
         fi                                        # Installation can continue without a display manager
         set_username                              # Enter name of primary user; default = "archie"

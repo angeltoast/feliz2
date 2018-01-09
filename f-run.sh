@@ -487,7 +487,7 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
     install_yaourt                                                                    # And install Yaourt
   fi
   # Display manager - runs only once
-  if [ -n "${DisplayManager}" ]; then             # Not triggered by FelizOB or Gnome
+  if [ -n "${DisplayManager}" ]; then             # Not triggered by FelizOB or Gnome ... or Deepin
     install_display_manager                       # Clear any pre-existing DM and install this one
   fi
   # First parse through LuxuriesList checking for DEs and Window Managers (not used by FelizOB)
@@ -503,7 +503,10 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
           pacstrap /mnt cinnamon 2>> feliz.log ;;
       "Deepin") install_message "$Result Deepin"
           pacstrap /mnt deepin 2>> feliz.log
-          pacstrap /mnt deepin-extra 2>> feliz.log ;;
+          pacstrap /mnt deepin-extra 2>> feliz.log
+          sed -i 's/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/' /mnt/etc/lightdm/lightdm.conf
+          arch_chroot "systemctl disable display-manager.service" >> feliz.log
+          arch_chroot "systemctl -f enable lightdm.service" >> feliz.log ;;
       "Enlightenment") install_message "$Result Enlightenment"
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log ;;
       "Fluxbox") install_message "$Result Fluxbox"
@@ -511,6 +514,7 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
       "Gnome") install_message "$Result Gnome"
           pacstrap /mnt gnome 2>> feliz.log
           pacstrap /mnt gnome-extra 2>> feliz.log
+          arch_chroot "systemctl disable display-manager.service" >> feliz.log
           arch_chroot "systemctl -f enable gdm.service" >> feliz.log ;;
       "i3") install_message "$Result i3 window manager"
           pacstrap /mnt i3 2>> feliz.log ;;                           # i3 group includes i3-wm
