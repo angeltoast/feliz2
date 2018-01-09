@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 6th January 2018
+# Revision date: 9th January 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,19 +26,18 @@
 # --------------------------  ---------------------------
 # Function             Line   Function               Line
 # --------------------------  ---------------------------
-# menu_dialog            44   type_of_installation    515
-# localisation_settings  74   pick_category           554
-# desktop_settings       90   choose_extras           633
-# set_timezone          102   display_extras          692
-# set_subzone           154   choose_display_manager  752
-# america               199   select_grub_device      776
-# america_subgroups     250   enter_grub_path         804
-# setlocale             273   select_kernel           828
-# edit_locale           349   choose_mirrors          852
-# get_keymap            369   edit_mirrors            923
-# search_keyboards      431   confirm_virtualbox      949
-# set_username          477   final_check             968
-# set_hostname          496   manual_settings        1098
+# menu_dialog            44   pick_category           554
+# set_timezone          102   choose_extras           633
+# set_subzone           154   display_extras          692
+# america               199   choose_display_manager  752
+# america_subgroups     250   select_grub_device      776
+# setlocale             273   enter_grub_path         804
+# edit_locale           349   select_kernel           828
+# get_keymap            369   choose_mirrors          852
+# search_keyboards      431   edit_mirrors            923
+# set_username          477   confirm_virtualbox      949
+# set_hostname          496   final_check             968
+# type_of_installation  515   manual_settings        1098
 # -------------------------   ---------------------------
 
 function menu_dialog {  # Display a simple menu from $menu_dialogVariable and return selection as $Result
@@ -69,43 +68,9 @@ function menu_dialog {  # Display a simple menu from $menu_dialogVariable and re
   return 0
 }
 
-function localisation_settings {              # Locale, keyboard & hostname
-
-  localisation=1
-
-  until [ $localisation -eq 0 ]; do
-    setlocale                                 # CountryLocale eg: en_GB.UTF-8
-    if [ $? -ne 0 ]; then return 1; fi
-
-    get_keymap                                # Select keyboard layout eg: uk
-    if [ $? -ne 0 ]; then return 1; fi
-
-    set_hostname
-    localisation=$?
-
-  done
-
-  return 0
-}
-
-function desktop_settings {
-  
-  environment=1
-  until [ $environment -eq 0 ]                # Each function must return 0 before next function can be called
-  do
-    DesktopEnvironment=""
-    type_of_installation                      # Basic or Full - use chooses Build, FeliOB or Basic
-    environment=$?
-  done
-  return $environment 
-}
-
 function set_timezone {
-  
   SUBZONE=""
-
   while true; do
-  
     message_first_line "To set the system clock, please first"
     message_subsequent "choose the World Zone of your location"
     timedatectl list-timezones | cut -d'/' -f1 | uniq > zones.file # Ten world zones
@@ -255,9 +220,7 @@ function america_subgroups { # Called from america
 }
 
 function setlocale {
-  
   CountryLocale=""
-
   while [ -z "$CountryLocale" ]; do
     set_timezone # First get a validated ZONE/SUBZONE
     if [ $? -ne 0 ]; then return 1; fi
@@ -517,11 +480,12 @@ function type_of_installation { # User chooses between FelizOB, self-build or ba
       1 "$BMO" \
       2 "$FOB" \
       3  "$BAL" 2>output.file
-  retval=$?
+  if [ $? -ne 0 ]; then return 1; fi
   Result=$(cat output.file)
 
   case $Result in
-    1) pick_category ;;
+    1) pick_category
+      if [ $? -ne 0 ]; then return 1; fi ;;
     2) DesktopEnvironment="FelizOB"
       Scope="Full" ;;
     *) Scope="Basic"
@@ -790,8 +754,8 @@ function enter_grub_path { # Manual input
 
 function select_kernel {
   
-  Kernel="0"
-  until [ "$Kernel" != "0" ]
+  Kernel=0
+  until [ "$Kernel" -ne 0 ]
   do
     translate "Choose your kernel"
     title="$Result"
@@ -803,12 +767,16 @@ function select_kernel {
     Default="${Result} LTS"
   
     dialog --backtitle "$Backtitle" --title "$title" \
-      --ok-label "$Ok" --cancel-label "$Cancel" --no-tags --menu "\n  $Default" 10 70 2 \
+      --ok-label "$Ok" --no-cancel --no-tags --menu "\n  $Default" 10 70 2 \
       "1" "$LTS" \
       "2" "$Latest" 2>output.file
-    if [ $? -ne 0 ]; then Result="1"; fi
+    retval=$?
     Result=$(cat output.file)
-    Kernel=${Result} # Set the Kernel variable (1 = LTS; 2 = Latest)
+    if [ $retval -ne 0 ] || [ -z "$Result" ] || ([ "$Result" -ne 1 ] && [ "$Result" -ne 2 ]); then
+      Kernel=1  # Set the Kernel variable (1 = LTS; 2 = Latest)
+    else
+      Kernel="$Result"
+    fi
   done
   return 0
 }
@@ -1001,7 +969,7 @@ function final_check {  # Called without arguments by feliz.sh/the_start
     EMPTY="$SaveStartPoint" # Reset cursor start point
     # 8) Kernel
     translate "Kernel"
-    if [ $Kernel -eq 1 ]; then
+    if [ -n $Kernel ] && [ $Kernel -eq 1 ]; then
       print_subsequent "8) $Result = 'LTS'"
     else
       print_subsequent "8) $Result = 'Latest'"
@@ -1085,7 +1053,7 @@ function final_check {  # Called without arguments by feliz.sh/the_start
       9) if [ $GrubDevice != "EFI" ]; then  # Can't be changed if EFI
           select_grub_device
          fi ;;
-      10) return 1 ;;
+      10) return 1 ;;                       # Low-level backout
       11) AddPartList=""                    # Empty the lists of extra partitions
         AddPartMount=""
         AddPartType=""
