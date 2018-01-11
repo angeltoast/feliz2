@@ -305,7 +305,7 @@ function mount_partitions { # Called without arguments by feliz.sh after action_
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)
     local Counter=0
     for id in ${AddPartList}; do                                      # $id will be in the form /dev/sda2
-      umount ${id} /mnt${AddPartMount[$Counter]} >> feliz.log
+    #  umount ${id} /mnt${AddPartMount[$Counter]} >> feliz.log
       mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log            # eg: mkdir -p /mnt/home
       # Check if replacing existing ext3/4 partition with btrfs (as with /root)
       CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
@@ -337,10 +337,10 @@ function install_kernel { # Called without arguments by feliz.sh
   # Passes test if the date of the running iso is more recent than the date of the latest Arch
   # trust update. Next trust update due 2018:06:25
   # Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
-  RunningDate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
-  TrustDate=201710                                                # Reset this to date of latest Arch Linux trust update
+  isodate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
+  TrustDate=201710                                                # Date of latest Arch Linux trust update
                                                                   # Next trustdb check 2018-10-20
-  if [ "$RunningDate" -ge "$TrustDate" ]; then                    # If the running iso is more recent than
+  if [ "$isodate" -ge "$TrustDate" ]; then                        # If the running iso is more recent than
     echo "pacman-key trust check passed" >> feliz.log             # the last trust update, no action is taken
   else                                                            # But if the iso is older than the last trust
     install_message "Updating keys"                               # update then the keys are updated
