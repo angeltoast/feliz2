@@ -38,6 +38,7 @@
 # set_username          477   confirm_virtualbox      949
 # set_hostname          496   final_check             968
 # type_of_installation  515   manual_settings        1098
+#                             wireless_option        1115
 # -------------------------   ---------------------------
 
 function menu_dialog {  # Display a simple menu from $menu_dialogVariable and return selection as $Result
@@ -894,11 +895,8 @@ function edit_mirrors { # Called without arguments by choose_mirrors
 }
 
 function confirm_virtualbox { # Called without arguments by feliz.sh/the_start
-  message_first_line  "It appears that feliz is running in Virtualbox"
-  message_subsequent  "If it is, feliz can install Virtualbox guest"
-  message_subsequent  "utilities and make appropriate settings for you"
-  translate "Install Virtualbox guest utilities?"
-  title="$Result"
+  message_first_line "Install Virtualbox guest utilities?"
+  title="Virtualbox"
     
   dialog --backtitle "$Backtitle" --title " $title " \
     --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 70
@@ -1108,5 +1106,21 @@ function manual_settings {  # Called without arguments by final_check if
       *) return 0
     esac
   done
+  return 0
+}
+
+function wireless_option { # Called without arguments by feliz.sh/the_start
+  message_first_line  "Install wireless tools?"
+  translate "Wifi Option"
+  title="$Result"
+    
+  dialog --backtitle "$Backtitle" --title " $title " \
+    --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 70
+
+  if [ $? -eq 0 ]; then  # Yes
+    WirelessTools="Y"
+  else                   # No
+    WirelessTools="N"
+  fi
   return 0
 }

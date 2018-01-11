@@ -242,6 +242,7 @@ Scope=""                  # Installation scope ... 'Full' or 'Basic'
 declare -a BeenThere      # Restrict translations to first pass
 PrimaryFile=""
 translate="Y"             # May be set to N to stifle translation
+WirelessTools="N"         # May be Y or N
 
 # ---- Arrays for extra Applications ----
 CategoriesList="Accessories Desktop_Environments Graphical Internet Multimedia Office Programming Window_Managers Taskbars"

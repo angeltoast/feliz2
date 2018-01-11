@@ -305,7 +305,6 @@ function mount_partitions { # Called without arguments by feliz.sh after action_
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)
     local Counter=0
     for id in ${AddPartList}; do                                      # $id will be in the form /dev/sda2
-    #  umount ${id} /mnt${AddPartMount[$Counter]} >> feliz.log
       mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log            # eg: mkdir -p /mnt/home
       # Check if replacing existing ext3/4 partition with btrfs (as with /root)
       CurrentType=$(file -sL ${AddPartType[$Counter]} | grep 'ext\|btrfs' | cut -c26-30) 2>> feliz.log
@@ -333,13 +332,13 @@ function install_kernel { # Called without arguments by feliz.sh
                           # Installs selected kernel and some other core systems
   LANG=C                  # Set the locale for all processes run from the current shell 
 
-  # Solve keys issue if an older Feliz or Arch iso is running after keyring changes
+  # Solve pacman keys issue if an older Feliz or Arch iso is running after keyring changes
   # Passes test if the date of the running iso is more recent than the date of the latest Arch
   # trust update. Next trust update due 2018:06:25
   # Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
   isodate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
   TrustDate=201710                                                # Date of latest Arch Linux trust update
-                                                                  # Next trustdb check 2018-10-20
+  # Next trustdb check 2018-10-20
   if [ "$isodate" -ge "$TrustDate" ]; then                        # If the running iso is more recent than
     echo "pacman-key trust check passed" >> feliz.log             # the last trust update, no action is taken
   else                                                            # But if the iso is older than the last trust
@@ -370,15 +369,17 @@ function install_kernel { # Called without arguments by feliz.sh
 function add_codecs { # Called without arguments by feliz.sh
   translate "Installing"
   install_message "$Result codecs"
-  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora
-  pacstrap /mnt libvorbis libxv wavpack x264 gstreamer gst-plugins-base gst-plugins-good
+  pacstrap /mnt a52dec autofs faac faad2 flac lame libdca libdv libmad libmpeg2 libtheora 2>> feliz.log
+  pacstrap /mnt libvorbis libxv wavpack x264 gstreamer gst-plugins-base gst-plugins-good 2>> feliz.log
   pacstrap /mnt pavucontrol pulseaudio pulseaudio-alsa libdvdcss dvd+rw-tools dvdauthor dvgrab 2>> feliz.log
-  translate "Wireless Tools"
-  Message="$Result"
-  translate "Installing"
-  install_message "$Result $Message"
-  pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
-  pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
+  if [ "$WirelessTools" = "Y" ]; then
+    translate "Wireless Tools"
+    Message="$Result"
+    translate "Installing"
+    install_message "$Result $Message"
+    pacstrap /mnt b43-fwcutter ipw2100-fw ipw2200-fw zd1211-firmware 2>> feliz.log
+    pacstrap /mnt iw wireless_tools wpa_supplicant 2>> feliz.log
+  fi
   # Note that networkmanager and network-manager-applet are installed separately by feliz.sh
   translate "Graphics tools"
   Message="$Result"
@@ -457,7 +458,6 @@ function mirror_list {  # Use rankmirrors (script in /usr/bin/ from Arch) to gen
 }
 
 function install_display_manager { # Disable any existing display manager
-  arch_chroot "systemctl disable display-manager.service" >> feliz.log
   # Then install selected display manager
   translate "Installing"
   install_message "$Result " "${DisplayManager}"
@@ -475,7 +475,7 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
   if [ $DesktopEnvironment = "FelizOB" ]; then
     translate "Installing"
     install_message "$Result FelizOB"
-    arch_chroot "systemctl disable display-manager.service" 2>> feliz.log
+    # arch_chroot "systemctl disable display-manager.service" 2>> feliz.log
     pacstrap /mnt lxdm 2>> feliz.log
     arch_chroot "systemctl -f enable lxdm.service" >> feliz.log
     pacstrap /mnt openbox 2>> feliz.log                                               # First ensure that Openbox gets installed
@@ -505,7 +505,6 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
           pacstrap /mnt deepin 2>> feliz.log
           pacstrap /mnt deepin-extra 2>> feliz.log
           sed -i 's/#greeter-session=example-gtk-gnome/greeter-session=lightdm-deepin-greeter/' /mnt/etc/lightdm/lightdm.conf
-          arch_chroot "systemctl disable display-manager.service" >> feliz.log
           arch_chroot "systemctl -f enable lightdm.service" >> feliz.log ;;
       "Enlightenment") install_message "$Result Enlightenment"
           pacstrap /mnt enlightenment connman terminology 2>> feliz.log ;;
@@ -514,7 +513,6 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
       "Gnome") install_message "$Result Gnome"
           pacstrap /mnt gnome 2>> feliz.log
           pacstrap /mnt gnome-extra 2>> feliz.log
-          arch_chroot "systemctl disable display-manager.service" >> feliz.log
           arch_chroot "systemctl -f enable gdm.service" >> feliz.log ;;
       "i3") install_message "$Result i3 window manager"
           pacstrap /mnt i3 2>> feliz.log ;;                           # i3 group includes i3-wm
