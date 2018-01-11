@@ -87,7 +87,7 @@ function action_MBR { # Called without arguments by feliz.sh before other partit
     fi
   # Home partition
   # --------------
-    if [ -n "HomeSize" ]; then
+    if [ -n "$HomeSize" ]; then
       home_partition
       # Make the partition
       parted_script "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}"

@@ -245,6 +245,8 @@ function guided_MBR { # Called by f-part1.sh/partitioning_options as the first s
       recalculate_space "$SwapSize"                   # Recalculate remaining space
     fi
   else
+    HomeSize=""
+    SwapSize=""
     message_first_line "There is no space for a /swap partition, but you can"
     message_subsequent "assign a swap-file. It is advised to allow some swap"
     Message="${Message}\n"
@@ -255,7 +257,11 @@ function guided_MBR { # Called by f-part1.sh/partitioning_options as the first s
     fi                                                # and SwapFile is created during installation by mount_partitions
   fi
 
-  if [ ${FreeSpace} -gt 0 ]; then guided_MBR_home; fi
+  if [ ${FreeSpace} -gt 0 ]; then
+    guided_MBR_home
+  else
+    HomeSize=""
+  fi
 
   AutoPart="GUIDED"
   return 0
