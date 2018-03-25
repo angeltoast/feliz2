@@ -1,39 +1,57 @@
-Feliz
-
+					Feliz
+					-----
 The Feliz scripts make installation of Arch Linux quick and easy.
 
-Feliz can be run from an iso available at ... https://sourceforge.net/projects/feliz
-  and ... https://github.com/angeltoast/feliz/releases
-  Burn the iso to a CD or USB stick, or run it directly in Virtualbox.
-  It starts a live session of Arch Linux, and runs the script.
-  All you have to do is follow the prompts.
-  Feliz always downloads the latest scripts from Github at the start of each installation,
-  so you don't need to replace your Feliz iso every time there's a new release.
+1) Feliz can be run from an iso available at:
+	https://sourceforge.net/projects/feliz ... and ...
+	https://github.com/angeltoast/feliz/releases
+   Burn the iso to a CD or USB stick, or run it directly in Virtualbox.
+   It starts a live session of Arch Linux, and runs the script.
+   All you have to do is follow the prompts.
+   Feliz always downloads the latest scripts from Github at the start of each installation,
+   so you don't need to replace your Feliz iso every time there's a new release.
 
-Alternatively, you can run Feliz by downloading the initialising script from Github into a running live Arch Linux session.
-
-Here's how to do it:
-
-  1) Download Arch Linux from ... https://www.archlinux.org/download/
-
-  2) Either:
-	(a) Burn the Arch iso image to a usb stick as described here ...
+2) Alternatively, you can run Feliz by downloading the initialising script from Github into a running
+   live Arch Linux session.
+   Here's how to do it:
+     1) Download Arch Linux from ... https://www.archlinux.org/download/
+     2) Either:
+	(a) Burn the Arch iso image to a usb stick as described here:
 		https://wiki.archlinux.org/index.php/USB_flash_installation_media
 			... or...
    	(b) To test in Virtualbox or other virtualising system, add the iso as a disk
-
-  3) Start your Arch session, then when you have the root prompt, enter the following:
+     3) Start your Arch session, then when you have the root prompt, enter the following:
 	pacman -Sy unzip
-
-  4) Next enter:
+     4) Next enter:
 	wget https://raw.githubusercontent.com/angeltoast/feliz-init/master/felizinit-stable
+     5) Now enter: chmod +x felizinit-stable
+     6) Then start Feliz by entering: ./felizinit-stable
 
-  5) Now enter: chmod +x felizinit-stable
+3) Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data
+   as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop
+   environments, web browsers, office software and programming tools) and working with you to set up your
+   partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see
+   exactly what the installer is doing - just like a manual installation.
 
-  6) Then start Feliz by entering: ./felizinit-stable
+4) Partitioning
+   Feliz used to offer tools to modify existing partitions and create new partitions.
+   However, there have recently been serious problems with this code, so those options have been removed until the bugs can be fixed. This means that the partitions you wish to use for installation must be created before running Feliz. I recommend running Gparted Live (https://gparted.org/download.php), or a similar partitioning program, to prepare the partition table in accordance with the procedures set out in the Arch Wiki. Ideally, these might be as follows:
 
-Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
+   For a BIOS/MBR system ...
+   A root partition of at least 8GB (preferably more, up to 12GB) of type ext4;
+   If desired, a swap partition up to 4GB (alternatively, Feliz can make a swap file);
+   If desired, a home partition of 10GB or more (for all your programs, data, etc) of type ext4.
 
+   For a UEFI/GPT system …
+   An EFI partition of 512MB to 1GB of type vfat;
+   A root partition of at least 8GB (preferably more, up to 12GB) of type ext4;
+   If desired, a swap partition up to 4GB (alternatively, Feliz can make a swap file);
+   If desired, a home partition of 10GB or more (for all your programs, data, etc) of type ext4.
+
+   If you do not desire a separate home partition, then your root partition should be 20GB or bigger.
+
+   I am sorry for this retrograde step, but it is important that Feliz works safely and correctly. Liz Mills (developer, Feliz)
+  
 Find our friendly and lively communities on Facebook:
 	https://www.facebook.com/groups/915936978471838/
 		... and Google+ ...
@@ -50,4 +68,4 @@ A copy of the GNU General Public License is available from the Feliz page at htt
 And, finally, an anouncement from the creator of Feliz. I am not sure how much longer I will be able to maintain Feliz, so I hope that many people will clone Feliz and release their own versions to keep the dream alive.
 
 Elizabeth Mills
-27th December 2017
+12th February 2018

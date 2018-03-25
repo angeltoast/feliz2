@@ -44,7 +44,7 @@
 function menu_dialog {  # Display a simple menu from $menu_dialogVariable and return selection as $Result
                         # $1 and $2 are dialog box size;
                         # $3 is optional: can be the text for --cancel-label
-  if [ $3 ]; then
+  if [ "$3" ]; then
     cancel="$3"
   else
     cancel="Cancel"
@@ -63,7 +63,7 @@ function menu_dialog {  # Display a simple menu from $menu_dialogVariable and re
   # Display the list for user-selection
   dialog --backtitle "$Backtitle" --title " $title " \
     --no-tags --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" \
-      $1 $2 ${Items} "${ItemList[@]}" 2>output.file
+      "$1" "$2" ${Items} "${ItemList[@]}" 2>output.file
   retval=$?
   Result=$(cat output.file)
   return 0
@@ -98,7 +98,7 @@ function set_timezone {
     Item=$((Response*2))
     NativeZONE="${ItemList[${Item}]}"                        # Recover item from list (in user's language)  
 
-    ZONE="$(head -n ${Response} zones.file | tail -n 1)"     # Recover English version of Item
+    ZONE=$(head -n "$Response" zones.file | tail -n 1)     # Recover English version of Item
 
     # We now have a zone! eg: Europe
     set_subzone                             # Call subzone function
@@ -114,7 +114,7 @@ function set_timezone {
 function set_subzone {  # Called from set_timezone
                         # Use ZONE set in set_timezone to prepare list of available subzones
   while true; do
-    SubZones=$(timedatectl list-timezones | grep ${ZONE}/ | sed 's/^.*\///')
+    SubZones=$(timedatectl list-timezones | grep "${ZONE}"/ | sed 's/^.*\///')
     Ocean=0
     SUBZONE=""
   
@@ -127,7 +127,7 @@ function set_subzone {  # Called from set_timezone
     esac
   
     # User-selection of subzone starts here:
-    menu_dialogVariable=$(timedatectl list-timezones | grep ${ZONE}/ | cut -d'/' -f2)
+    menu_dialogVariable=$(timedatectl list-timezones | grep "${ZONE}"/ | cut -d'/' -f2)
   
     translate "Now select your location in"
     Message="$Result $NativeZONE"
@@ -154,10 +154,10 @@ function america {  # Called from set_subzone
   Previous=""       # Prepare to save previous record
   local toggle="First"
   for i in $(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}'); do
-    if [ $Previous ] && [ $i = $Previous ] && [ $toggle = "First" ]; then # First reccurance
+    if [ -n "$Previous" ] && [ "$i" = "$Previous" ] && [ "$toggle" = "First" ]; then # First reccurance
       SubList="$SubList $i"
       Toggle="Second"
-    elif [ $Previous ] && [ $i != $Previous ] && [ $toggle = "Second" ]; then # 1st occ after prev group
+    elif [ -n "$Previous" ] && [ "$i" != "$Previous" ] && [ "$toggle" = "Second" ]; then # 1st occ after prev group
       Toggle="First"
       Previous=$i
     else                                                                  # Subsequent occurances
@@ -178,7 +178,7 @@ function america {  # Called from set_subzone
   if [ $retval -eq 1 ]; then              # "None of These" - check normal subzones
     translate "Now select your location in"
     Message="$Result $NativeZONE"
-    menu_dialogVariable=$(timedatectl list-timezones | grep ${ZONE}/ | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2)  # Prepare variable
+    menu_dialogVariable=$(timedatectl list-timezones | grep "${ZONE}"/ | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2)  # Prepare variable
     Cancel="$Back"
     title="Subzone"
     
@@ -242,11 +242,11 @@ function setlocale {
       LocaleList=$(grep "${EXTSEARCHTERM}" /etc/locale.gen | cut -d'#' -f2 | cut -d' ' -f1)
     fi
 
-    HowMany=$(echo $LocaleList | wc -w)     # Count them
+    HowMany=$(echo "$LocaleList" | wc -w)     # Count them
     Rows=$(tput lines)                      # to ensure menu doesn't over-run
     Rows=$((Rows-4))                        # Available (printable) rows
     choosefrom="" 
-    for l in ${LocaleList[@]}; do           # Convert to space-separated list
+    for l in "${LocaleList[@]}"; do           # Convert to space-separated list
       choosefrom="$choosefrom $l"           # Add each item to file for handling
     done
     if [ -z "${choosefrom}" ]; then         # If none found, start again
@@ -305,11 +305,10 @@ function edit_locale {  # Use Nano to edit locale.gen
       0) nano /etc/locale.gen
         return 0 ;;
       1) return 1 ;;
-      *) not_found 10 50 "Error reported at function $FUNCNAME line $LINENO in $SOURCE0 called from $SOURCE1"
+      *) not_found 10 50 "Error reported at function ${FUNCNAME[0]} line ${LINENO[0]} in ${SOURCE[0]} called from ${SOURCE[1]}"
         return 2
     esac
   done
-  return 0
 }
 
 function get_keymap { # Display list of locale-appropriate keyboards for user to choose
@@ -320,13 +319,13 @@ function get_keymap { # Display list of locale-appropriate keyboards for user to
   *) Term="${country:3:2}"
   esac
   
-  ListKbs=$(grep ${Term} keymaps.list)
-  Found=$(grep -c ${Term} keymaps.list)  # Count records
-  if [ ! $Found ]; then
+  ListKbs=$(grep "${Term}" keymaps.list)
+  Found=$(grep -c "${Term}" keymaps.list)  # Count records
+  if [ -z "$Found" ]; then
     Found=0
   fi
 
-  title="$(echo $Result | cut -d' ' -f1)"
+  title=$(echo "$Result" | cut -d' ' -f1)
   Countrykbd=""
   while [ -z "$Countrykbd" ]; do
     case $Found in
@@ -349,7 +348,7 @@ function get_keymap { # Display list of locale-appropriate keyboards for user to
         ;;
         *) return 1
       esac
-      loadkeys ${Countrykbd} 2>> feliz.log ;;
+      loadkeys "${Countrykbd}" 2>> feliz.log ;;
     *) # If the search found multiple matches
       title="Keyboards"
       message_first_line "Select your keyboard, or Exit to try again"
@@ -362,7 +361,7 @@ function get_keymap { # Display list of locale-appropriate keyboards for user to
         1) search_keyboards ;;                # User can enter search criteria to find a keyboard layout
         *) return 1
       esac
-      loadkeys ${Countrykbd} 2>> feliz.log
+      loadkeys "${Countrykbd}" 2>> feliz.log
     esac
   done
   return 0
@@ -380,12 +379,12 @@ function search_keyboards { # Called by get_keymap when all other options failed
     dialog --backtitle "$Backtitle" --ok-label "$Ok" --inputbox "$Message" 14 70 2>output.file
     retval=$?
     Result="$(cat output.file)"
-    if [ $retval -eq 1 ] || [ $Result = "" ]; then
+    if [ "$retval" -eq 1 ] || [ "$Result" = "" ]; then
       Countrykbd=""
       return 1
     fi
     local term="${Result,,}"
-    ListKbs=$(grep ${Term} keymaps.list)
+    ListKbs=$(grep "${Term}" keymaps.list)
     if [ -n "${ListKbs}" ]; then  # If a match or matches found
       menu_dialogVariable="$ListKbs"
       message_first_line "Please choose one"
@@ -395,7 +394,7 @@ function search_keyboards { # Called by get_keymap when all other options failed
         Countrykbd=""
         continue
       else
-        ListKbs=$(grep ${Result} keymaps.list)    # Check if valid
+        ListKbs=$(grep "$Result" keymaps.list)    # Check if valid
         if [ -n "${ListKbs}" ]; then  # If a match or matches found
           Countrykbd="${Result}"
         else
@@ -404,7 +403,7 @@ function search_keyboards { # Called by get_keymap when all other options failed
           continue
         fi
       fi
-      loadkeys ${Countrykbd} 2>> feliz.log
+      loadkeys "$Countrykbd" 2>> feliz.log
       return 0
     else
       translate "No keyboards found containing"
@@ -426,7 +425,7 @@ function set_username {
   retval=$?
   Result="$(cat output.file)"
 
-  if [ -z $Result ]; then
+  if [ -z "$Result" ]; then
     user_name="archie"
   else
     user_name=${Result,,}
@@ -446,7 +445,7 @@ function set_hostname {
   retval=$?
   Result="$(cat output.file)"
 
-  if [ -z $Result ]; then
+  if [ -z "$Result" ]; then
     HostName="arch-linux"
   else
     HostName=${Result,,}
@@ -558,7 +557,7 @@ function pick_category { # menu_dialog of categories of selected items from the 
   done
 
   for i in $LuxuriesList; do                          # Run through list
-    Check="$(echo $Desktops | grep $i)"               # Test if a DE
+    Check=$(echo "$Desktops" | grep $i)               # Test if a DE
     if [ -n "$Check" ]; then                          # This is just to set a primary DE variable
       DesktopEnvironment="$i"                         # Add as DE
       if [ "$DesktopEnvironment" = "Gnome" ]; then    # Gnome installs own DM, so break after adding
@@ -672,7 +671,7 @@ function display_extras { # Called by choose_extras
     Result=$(cat output.file)
     # Add selected items to LuxuriesList
     LuxuriesList="$LuxuriesList $Result"
-    LuxuriesList=$( echo $LuxuriesList | sed "s/^ *//")        # Remove any leading spaces caused by deletions
+    LuxuriesList=$( echo "$LuxuriesList" | sed "s/^ *//")        # Remove any leading spaces caused by deletions
   return 0
 }
 
@@ -696,7 +695,6 @@ function choose_display_manager {
     "xdm" "XDM" 2> output.file
   if [ $? -ne 0 ]; then return; fi
   DisplayManager="$(cat output.file)"
-  return 0
 }
 
 function select_grub_device {
@@ -709,7 +707,6 @@ function select_grub_device {
     Enter_Manually="$Result"
     menu_dialogVariable="$DevicesList $Result"
     title="Grub"
-    GrubDevice=""
     local Counter=0
     message_first_line "Select the device where Grub is to be installed"
     message_subsequent "Note that if you do not select a device, Grub"
@@ -717,14 +714,13 @@ function select_grub_device {
     message_subsequent "alternative arrangements for booting your new system"
 
     menu_dialog  20 60 # (arguments are dialog size) displays a menu and returns $retval and $Result
-    if [ $Result = "$Enter_Manually" ]; then				# Call function to type in a path
+    if [ "$Result" = "$Enter_Manually" ]; then				# Call function to type in a path
       enter_grub_path
       GrubDevice="$Result"
     else
       GrubDevice="$Result"
     fi
   done
-  return 0
 }
 
 function enter_grub_path { # Manual input
@@ -742,9 +738,9 @@ function enter_grub_path { # Manual input
     Entered=${Result,,}
     # test input
     CheckGrubEntry="${Entered:0:5}"
-    if [ -z $Entered ]; then
+    if [ -z "$Entered" ]; then
       return 1
-    elif [ $CheckGrubEntry != "/dev/" ]; then
+    elif [ "$CheckGrubEntry" != "/dev/" ]; then
       not_found "$Entered is not in the correct format"
     else
       GrubDevice="${Entered}"
@@ -800,7 +796,7 @@ function choose_mirrors { # Called without arguments by feliz.sh/the_start
       # Get line number of first country
       FirstLine=$(grep -n "Australia" archmirrors.list | head -n 1 | cut -d':' -f1)
       # Remove text prior to FirstLine and save in new file
-      tail -n +${FirstLine} archmirrors.list > allmirrors.list
+      tail -n +"$FirstLine" archmirrors.list > allmirrors.list
       rm archmirrors.list
       # Create list of countries from allmirrors.list, using '##' to identify
       #                        then removing the '##' and leading spaces
@@ -967,7 +963,7 @@ function final_check {  # Called without arguments by feliz.sh/the_start
     EMPTY="$SaveStartPoint" # Reset cursor start point
     # 8) Kernel
     translate "Kernel"
-    if [ -n $Kernel ] && [ $Kernel -eq 1 ]; then
+    if [ -n "$Kernel" ] && [ "$Kernel" -eq 1 ]; then
       print_subsequent "8) $Result = 'LTS'"
     else
       print_subsequent "8) $Result = 'Latest'"
@@ -989,13 +985,13 @@ function final_check {  # Called without arguments by feliz.sh/the_start
     "GUIDED") message_first_line "Feliz will"
         translate "partition"
         print_first_line "Feliz will $Result ..."
-        if [ ${UEFI} -eq 1 ]; then
+        if [ "$UEFI" -eq 1 ]; then
           print_subsequent "/boot : fat32 : ${BootSize}"
         fi
         print_subsequent "/root : ${RootType}: ${RootSize}"
-        if [ ${SwapSize} ] && [ "${SwapSize}" != "" ]; then
+        if [ -n "$SwapSize" ]; then
           print_subsequent "/swap : ${SwapSize}"
-        elif [ ${SwapFile} ] && [ ${SwapFile} != "" ]; then
+        elif [ -n "$SwapFile" ]; then
           print_subsequent "swapfile : ${SwapFile}"
         fi
         if [ -n "${HomeSize}" ]; then
@@ -1029,9 +1025,9 @@ function final_check {  # Called without arguments by feliz.sh/the_start
     local T_COLS=$(tput cols)
     local lov=${#Result}
     stpt=0
-    if [ ${lov} -lt ${T_COLS} ]; then
+    if [ "$lov" -lt "$T_COLS" ]; then
       stpt=$(( (T_COLS - lov) / 2 ))
-    elif [ ${lov} -gt ${T_COLS} ]; then
+    elif [ "$lov" -gt "$T_COLS" ]; then
       stpt=0
     else
       stpt=$(( (T_COLS - 10) / 2 ))
@@ -1048,7 +1044,7 @@ function final_check {  # Called without arguments by feliz.sh/the_start
       6) manual_settings ;;
       7) pick_category ;;
       8) select_kernel ;;
-      9) if [ $GrubDevice != "EFI" ]; then  # Can't be changed if EFI
+      9) if [ "$GrubDevice" != "EFI" ]; then  # Can't be changed if EFI
           select_grub_device
          fi ;;
       10) return 1 ;;                       # Low-level backout
@@ -1085,8 +1081,8 @@ function manual_settings {  # Called without arguments by final_check if
           Message="$Result ${user_name})"
           title="$Uname"
           dialog_inputbox 10 30
-          if [ $retvar -ne 0 ]; then return; fi
-          if [ -z $Result ]; then
+          if [ "$retvar" -ne 0 ]; then return; fi
+          if [ -z "$Result" ]; then
            Result="$user_name"
           fi
           user_name=${Result,,}
@@ -1097,7 +1093,7 @@ function manual_settings {  # Called without arguments by final_check if
           title="$Uname"
           dialog_inputbox 10 30
           if [ $retvar -ne 0 ]; then return; fi
-          if [ -z $Result ]; then
+          if [ -z "$Result" ]; then
            Result="$HostName"
           fi
           HostName=${Result,,}

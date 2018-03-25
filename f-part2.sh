@@ -48,14 +48,13 @@ function allocate_uefi {  # Called at start of allocate_root, as first step of E
 	translate "Here are the partitions that are available"
   title="$Result"
 	message_first_line "First you should select one to use for EFI /boot"
-	message_subsequent "This must be of type vfat, and may be about 512MiB"
+	message_subsequent "This must be of type vfat, and may be about 512M"
   display_partitions
-  if [ $retval -ne 0 ]; then return; fi
+  if [ $retval -ne 0 ]; then return 1; fi
   PassPart="/dev/${Result}" # eg: sda1
-  SetLabel "/dev/${Result}"
+  SetLabel="/dev/${Result}"
 	EFIPartition="/dev/${Result}"
-  PartitionList=$(echo "$PartitionList" | sed "s/$Result //")  # Remove selected item
-  return 0
+  PartitionList=$(echo "$PartitionList" | sed "s/${Result}$//")  # Remove selected item
 }
 
 function enter_size { # Called by guided_EFI_Root, guided_EFI_Swap, guided_EFI_Home
@@ -63,18 +62,16 @@ function enter_size { # Called by guided_EFI_Root, guided_EFI_Swap, guided_EFI_H
   message_subsequent "Please enter the desired size"
   message_subsequent "or, to allocate all the remaining space, enter"
   Message="$Message 100%"
-  return 0
 }
 
-function select_device {  # Called by feliz.sh
-                          # User chooses device to use for auto partition
-                          # from all connected devices
+function select_device {  # Called by f-part1.sh/check_parts
+                          # Detects available devices
   DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)     # eg: sda sdb
   UseDisk=$DiskDetails                                      # If more than one, $UseDisk will be first
   local Counter=$(echo "$DiskDetails" | wc -w)
-  if [ $Counter -gt 1 ]; then   # If there are multiple devices ask user which to use
+  if [ "$Counter" -gt 1 ]; then   # If there are multiple devices ask user which to use
     UseDisk=""            # Reset for user choice
-    while [ "$UseDisk" = "" ]; do
+    while [ -z "$UseDisk" ]; do
       message_first_line "There are"
       Message="$Message $Counter"
       translate "devices available"
@@ -112,16 +109,20 @@ function select_device {  # Called by feliz.sh
       Result=$(cat output.file)                           # Return values to calling function
       rm list.file
       
-      if [ $retval -ne 0 ]; then
+      if [ "$retval" -ne 0 ]; then
         dialog --title "$title" --yes-label "$Yes" --no-label "$No" --yesno \
         "\nPartitioning cannot continue without a device.\nAre you sure you don't want to select a device?" 10 40
-        if [ $retval -eq 0 ]; then return 1; fi
+        if [ "$?" -eq 0 ]; then
+          UseDisk=""
+          RootDevice=""
+          return 1
+        fi
       fi
-      UseDisk="${Result}"
+      UseDisk="$Result"
     done
   fi
-  GrubDevice="/dev/${UseDisk}"  # Full path of selected device
-  return 0
+  RootDevice="/dev/${UseDisk}"  # Full path of selected device
+  EFIPartition="${RootDevice}1"
 }
 
 function get_device_size {  # Called by feliz.sh
@@ -133,80 +134,89 @@ function get_device_size {  # Called by feliz.sh
   Available=${DiskSize:0:Chars-1} # Separate the value from the unit
                                   # Must be integer, so remove any decimal
   Available=${Available%.*}       # point and any character following
-  if [ $Unit = "G" ]; then
+  if [ "$Unit" = "G" ]; then
     FreeSpace=$((Available*1024))
     Unit="M"
-  elif [ $Unit = "T" ]; then
+  elif [ "$Unit" = "T" ]; then
     FreeSpace=$((Available*1024*1024))
     Unit="M"
   else
     FreeSpace=$Available
   fi
 
-  if [ ${FreeSpace} -lt 2048 ]; then    # Warn user if space is less than 2GiB
+  if [ "$FreeSpace" -lt 2048 ]; then    # Warn user if space is less than 2GiB
     message_first_line "Your device has only"
     Message="$Message ${FreeSpace}MiB:"
     message_first_line "This is not enough for an installation"
     translate "Exit"
     dialog --backtitle "$Backtitle" --ok-label "$Ok" --infobox "$Message" 10 60
     return 1
-  elif [ ${FreeSpace} -lt 4096 ]; then                            # If less than 4GiB
+  elif [ "$FreeSpace" -lt 4096 ]; then                            # If less than 4GiB
     message_first_line "Your device has only"
     Message="$Message ${FreeSpace}MiB:"
     message_subsequent "This is just enough for a basic"
     message_subsequent "installation, but you should choose light applications only"
     message_subsequent "and you may run out of space during installation or at some later time"
     dialog --backtitle "$Backtitle" --ok-label "$Ok" --infobox "$Message" 10 60
-  elif [ ${FreeSpace} -lt 8192 ]; then                            # If less than 8GiB
+  elif [ "$FreeSpace" -lt 8192 ]; then                            # If less than 8GiB
     message_first_line "Your device has"
     Messgae="$Message ${FreeSpace}MiB:"
     message_subsequent "This is enough for"
     message_subsequent "installation, but you should choose light applications only"
     dialog --backtitle "$Backtitle" --ok-label "$Ok" --infobox "$Message" 10 60
   fi
-  return 0
 }
 
 function recalculate_space {  # Called by guided_MBR & guided_EFI
                               # Calculate remaining disk space
-  local Passed=$1
+  local Passed="$1"
   case ${Passed: -1} in
-  "%") Calculator=$FreeSpace ;;       # Allow for 100%
-  "G") Chars=${#Passed}               # Count characters in variable
-        Passed=${Passed:0:Chars-1}      # Passed variable stripped of unit
-        Calculator=$((Passed*1024)) ;;
-    *) Chars=${#Passed}                 # Count characters in variable
-       Calculator=${Passed:0:Chars-1}   # Passed variable stripped of unit
+  "%") Calculator="$FreeSpace" ;;         # Allow for 100%
+  "G") Chars="${#Passed}"                 # Count characters in variable
+        Passed="${Passed:0:Chars-1}"      # Passed variable stripped of unit
+        Calculator="$((Passed*1024))" ;;
+    *) Chars="${#Passed}"                 # Count characters in variable
+       Calculator="${Passed:0:Chars-1}"   # Passed variable stripped of unit
   esac
-  FreeSpace=$((FreeSpace-Calculator))   # Recalculate available space
-  return 0
+  FreeSpace="$((FreeSpace-Calculator))"   # Recalculate available space
 }
 
 function guided_EFI {  # Called by f-part1.sh/partitioning_options as the first step
                        # in EFI guided partitioning option - Inform user of purpose, call each step
-  select_device                   # Get details of device to use
-  get_device_size                 # Get available space in MiB
-
-  message_first_line "Here you can set the size and format of the partitions"
-  message_subsequent "you wish to create. When ready, Feliz will wipe the disk"
-  message_subsequent "and create a new partition table with your settings"
+  if [ "$UEFI" -eq 1 ]; then return 1; fi # Option disabled
+  message_first_line "Here you can set the size and format of the partitions you"
+  message_subsequent "wish to create. during installation, Feliz will wipe the"
+  message_subsequent "disk and create a new partition table with your settings"
   Message="${Message}\n"
   message_subsequent "Are you sure you wish to continue?"
   dialog --backtitle "$Backtitle" --yes-label "$Yes" --no-label "$No" --yesno "$Message" 15 70
-  if [ $? -ne 0 ]; then return 1; fi   # Inform calling function
+  if [ "$?" -ne 0 ]; then return 1; fi    # Inform calling function
   
   message_first_line "We begin with the"
   translate "partition"
   Message="$Message /boot $Result"
 
-  guided_EFI_Boot                  # Create /boot partition
-  recalculate_space "$BootSize"    # Recalculate remaining space
-  
-  guided_EFI_Root                  # Create /root partition
-  recalculate_space "$RootSize"    # Recalculate remaining space
-  if [ ${FreeSpace} -gt 0 ]; then
+  guided_EFI_Boot                         # Create /boot partition
+
+  if [ -n "$BootSize" ]; then
+    PARTITIONS=$((PARTITIONS+1))
+    recalculate_space "$BootSize"         # Recalculate remaining space
+  else
+    return 1
+  fi
+  guided_EFI_Root                         # Create /root partition
+  if [ -n "$RootSize" ]; then
+    PARTITIONS=$((PARTITIONS+1))
+    recalculate_space "$RootSize"         # Recalculate remaining space
+  else
+    return 1
+  fi
+  if [ "$FreeSpace" -gt 0 ]; then
     guided_EFI_Swap
-    if [ $SwapSize ] && [ $SwapSize != "" ]; then recalculate_space "$SwapSize"; fi  # Recalculate available space
+    if [ -n "$SwapSize" ]; then
+      PARTITIONS=$((PARTITIONS+1))
+      recalculate_space "$SwapSize"
+    fi                                    # Recalculate available space
   else
     message_first_line "There is no space for a /swap partition, but you can"
     message_subsequent "assign a swap-file. It is advised to allow some swap"
@@ -216,373 +226,11 @@ function guided_EFI {  # Called by f-part1.sh/partitioning_options as the first 
       --no-label "$No" --yesno "\n$Message" 10 55 2>output.file
     if [ $? -ne 0 ]; then return 1; fi
     set_swap_file           # Note: Global variable SwapFile is set by set_swap_file
-  fi                     # (SwapFile will be created during installation by mount_partitions)
+  fi                        # (SwapFile will be created during installation by mount_partitions)
 
-  if [ ${FreeSpace} -gt 2 ]; then guided_EFI_Home; fi
-  AutoPart="GUIDED"
-  return 0
-}
-
-function guided_MBR { # Called by f-part1.sh/partitioning_options as the first step in the 
-                      # guided BIOS partitioning option - Inform user of purpose, call each step
-  message_first_line "Here you can set the size and format of the partitions"
-  message_subsequent "you wish to create. When ready, Feliz will wipe the disk"
-  message_subsequent "and create a new partition table with your settings"
-  message_subsequent "This facility is restricted to creating"
-  Message="${Message} /root, /swap & /home\n"
-  message_subsequent "Are you sure you wish to continue?"
-
-  dialog --backtitle "Feliz" --yes-label "$Yes" --no-label "$No" --yesno "$Message" 15 70
-  if [ $? -ne 0 ]; then return 1; fi                  # User cancelled guided partitioning
-
-  guided_MBR_root                                     # Create /root partition
-  if [ $? -ne 0 ]; then return 1; fi                  # User cancelled guided root
-
-  recalculate_space "$RootSize"                       # Recalculate remaining space
-  if [ ${FreeSpace} -gt 0 ]; then
-    guided_MBR_swap
-    if [ $SwapSize ] && [ $SwapSize != "" ]; then
-      recalculate_space "$SwapSize"                   # Recalculate remaining space
-    fi
-  else
-    HomeSize=""
-    SwapSize=""
-    message_first_line "There is no space for a /swap partition, but you can"
-    message_subsequent "assign a swap-file. It is advised to allow some swap"
-    Message="${Message}\n"
-    message_subsequent "Do you wish to allocate a swapfile?"
-    dialog --backtitle "$Backtitle" --yes-label "$Yes" --no-label "$No" --yesno "$Message" 15 70
-    if [ $? -eq 0 ]; then
-      set_swap_file                                   # Note: Global variable SwapFile is set by set_swap_file
-    fi                                                # and SwapFile is created during installation by mount_partitions
+  if [ "$FreeSpace" -gt 2 ]; then guided_EFI_Home; fi
+  if [ -n "$HomeSize" ]; then
+    PARTITIONS=$((PARTITIONS+1))
   fi
-
-  if [ ${FreeSpace} -gt 0 ]; then
-    guided_MBR_home
-  else
-    HomeSize=""
-  fi
-
   AutoPart="GUIDED"
-  return 0
-}
-
-function guided_EFI_Boot {  # Called by guided_EFI
-                            # EFI - User sets variable: BootSize
-  BootSize=""
-  while [ ${BootSize} = "" ]; do
-    title="/boot"
-    FreeGigs=$((FreeSpace/1024))
-    message_first_line "You have"
-    Message="$Message ${FreeGigs}GiB"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    message_subsequent "All we need to set here is the size of your /boot partition"
-    message_subsequent "It should be no less than 512MiB and need be no larger than 1GiB"
-
-    dialog_inputbox 12 70
-    RESPONSE="${Result^^}"
-    # Check that entry includes 'M or G'
-    CheckInput=${RESPONSE: -1}
-    echo
-    if [ ${CheckInput} != "M" ] && [ ${CheckInput} != "G" ] && [ ${CheckInput} != "M" ]; then
-      message_first_line "You must include M, G or %"
-      dialog --backtitle "$Backtitle" --ok-label "$Ok" --infobox "$Message" 10 60
-      BootSize=""
-    else
-      BootSize="${RESPONSE}"
-    fi
-  done
-  return 0
-}
-
-function guided_EFI_Root {  # Celled by guided_EFI - User sets variables: RootSize, RootType
-  
-  RootSize=""
-  FreeGigs=$((FreeSpace/1024))
-  while [ ${RootSize} = "" ]; do
-    title="/root"
-    # Show /boot and available space
-    translate "partition"
-    Message="/boot $Result: ${BootSize}\n"
-    message_subsequent "You now have"
-    Message="$Message ${FreeGigs}GiB"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    message_subsequent "A partition is needed for /root"
-    message_subsequent "You can use all the remaining space on the device, if you wish"
-    message_subsequent "although you may want to leave room for a /swap partition"
-    message_subsequent "and perhaps also a /home partition"
-    message_subsequent "The /root partition should not be less than 8GiB"
-    message_subsequent "ideally more, up to 20GiB"
-    
-    enter_size               # Adds advice about 100%
-    
-    dialog_inputbox 30 70
-    RESPONSE="${Result^^}"
-    # Check that entry includes 'G or %'
-    CheckInput=${RESPONSE: -1}
-    echo
-    if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ] && [ ${CheckInput} != "M" ]; then
-      message_first_line "You must include M, G or %"
-      RootSize=""
-    else
-      RootSize=$RESPONSE
-      Partition="/root"
-      select_filesystem
-      RootType=${PartitionType}
-    fi
-  done
-  return 0
-}
-
-function guided_MBR_root { # Called by guided_MBR - Set variables: RootSize, RootType
-  
-  RootSize=""
-  FreeGigs=$((FreeSpace/1024))
-  while [ "$RootSize" = "" ]; do
-    # Show /boot and available space
-    title="/root"
-    message_first_line "We begin with the"
-    translate "partition"
-    Message="$Message /root $Result \n"
-    message_subsequent "You have"
-    Message="$Message ${FreeGigs}G"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    message_subsequent "You can use all the remaining space on the device, if you wish"
-    message_subsequent "although you may want to leave room for a /swap partition"
-    message_subsequent "and perhaps also a /home partition"
-    message_subsequent "The /root partition should not be less than 8G"
-    message_subsequent "ideally more, up to 20G"
-    enter_size        # Adds advice to message about 100%
-    
-    dialog_inputbox 30 75
-
-    RESPONSE="${Result^^}"
-    # Check that entry includes 'G or %'
-    CheckInput1=${RESPONSE: -1}
-    if [ -z ${CheckInput1} ]; then
-      RootSize=""
-    elif [ ${CheckInput1} != "%" ] && [ ${CheckInput1} != "G" ] && [ ${CheckInput1} != "M" ]; then
-      message_first_line "You must include M, G or %"
-      dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "$Message"
-      RootSize=""
-    else
-      RootSize=$RESPONSE
-      Partition="/root"
-      print_heading
-      translate "allocated to /root"
-      Message="${RootSize}" "$Result"
-      select_filesystem 30 60
-      RootType=${PartitionType}
-    fi
-  done
-  return 0
-}
-
-function guided_EFI_Swap {  # Called by guided_EFI
-                            # User sets variable: SwapSize
-  RootSize=""
-  FreeGigs=$((FreeSpace/1024))
-  while [ ${RootSize} = "" ]; do
-    title="/swap"
-    # Show /boot and available space
-    translate "partition"
-    Message="/boot $Result: ${BootSize}"
-    Message="${Message}\n/root $Result: ${RootType} : ${RootSize}\n"
-    message_first_line "You now have"
-    Message="$Message ${FreeGigs}GiB"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    if [ ${FreeSpace} -gt 10 ]; then
-      message_first_line "There is space for a"
-      translate "partition"
-      Message="$Message /swap $Result"
-      message_subsequent "Swap can be anything from 512MiB upwards but"
-      message_subsequent "it is not necessary to exceed 4GiB"
-      message_subsequent "You may want to leave room for a /home partition"
-    elif [ ${FreeSpace} -gt 5 ]; then
-      message_first_line "There is space for a"
-      translate "partition"
-      Message="$Message /swap $Result"
-      message_subsequent "Swap can be anything from 512MiB upwards but"
-      message_subsequent "it is not necessary to exceed 4GiB"
-      message_subsequent "You may want to leave room for a /home partition"
-    else
-      message_first_line "There is just space for a"
-      translate "partition"
-      Message="$Message /swap $Result"
-      message_subsequent "Swap can be anything from 512MiB upwards but"
-      message_subsequent "it is not necessary to exceed 4GiB"
-    fi
-    enter_size        # Adds advice about 100%
-
-    dialog_inputbox 30 70
-    RESPONSE="${Result^^}"
-    case ${RESPONSE} in
-    '' | 0) message_first_line "Do you wish to allocate a swapfile?"
-      dialog  --backtitle "$Backtitle" --yes-label "$Yes" --no-label "$No" --yesno "$Message"
-      if [ $retval -eq 0 ]; then
-        set_swap_file
-      fi
-      return 0 ;;
-    *) # Check that entry includes 'G or %'
-      CheckInput=${RESPONSE: -1}
-      if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ] && [ ${CheckInput} != "M" ]; then
-        message_first_line "You must include M, G or %"
-        RootSize=""
-      else
-        SwapSize=$RESPONSE
-      fi
-    esac
-  done
-  return 0
-}
-
-function guided_MBR_swap { # Called by guided_MBR - Set variable: SwapSize
-
-  FreeGigs=$((FreeSpace/1024))
-  SwapSize=""
-  translate "partition"
-  while [ "$SwapSize" = "" ]; do
-    # Show /root and available space
-    title="/swap"
-    Message="/root $Result: ${RootType} : ${RootSize}\n"
-    message_subsequent "You now have"
-    Message="$Message ${FreeGigs}GiB"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    if [ ${FreeSpace} -gt 10 ]; then
-      message_subsequent "There is space for a"
-      translate "partition"
-      Message="$Message /swap ${Result}\n"
-      message_subsequent "Swap can be anything from 512MiB upwards but"
-      message_subsequent "it is not necessary to exceed 4GiB"
-      message_subsequent "You may want to leave room for a /home partition"
-    elif [ ${FreeSpace} -gt 5 ]; then
-      message_subsequent "There is space for a"
-      translate "partition"
-      Message="$Message /swap ${Result}\n"
-      message_subsequent "Swap can be anything from 512MiB upwards but"
-      message_subsequent "it is not necessary to exceed 4GiB"
-      message_subsequent "You can use all the remaining space on the device, if you wish"
-      message_subsequent "You may want to leave room for a /home partition"
-    else
-      message_subsequent "There is just space for a"
-      translate "partition"
-      Message="$Message /swap ${Result}\n"
-      message_subsequent "Swap can be anything from 512MiB upwards but"
-      message_subsequent "it is not necessary to exceed 4GiB"
-      message_subsequent "You can use all the remaining space on the device, if you wish"
-    fi
-    enter_size        # Adds advice about 100%
-    
-    dialog_inputbox 30 75
-    RESPONSE="${Result^^}"
-
-    case ${RESPONSE} in
-    ''|0) message_first_line "Do you wish to allocate a swapfile?"
-      dialog --backtitle "$Backtitle" --yes-label "$Yes" --no-label "$No" --yesno "$Message" 10 50
-      if [ $? -eq 0 ]; then
-        set_swap_file
-      fi
-      return 0 ;;
-    *) # Check that entry includes 'G or %'
-      CheckInput=${RESPONSE: -1}
-      if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ] && [ ${CheckInput} != "M" ]; then
-        message_first_line "You must include M, G or %"
-        dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "$Message"
-        SwapSize=""
-      else
-        SwapSize=$RESPONSE
-      fi
-    esac
-  done
-  return 0
-}
-
-function guided_EFI_Home { # Called by guided_EFI - Set variables: HomeSize, HomeType
-  
-  HomeSize=""
-  FreeGigs=$((FreeSpace/1024))
-  while [ ${HomeSize} = "" ]; do
-    title="/home"
-    # Show /boot and available space
-    Message="/boot $Result: ${BootSize}"
-    Message="${Message}\n/root $Result: ${RootType} : ${RootSize}"
-    Message="${Message}\n/swap $Result: ${SwapSize}\n"
-    message_subsequent "You now have"
-    Message="$Message ${FreeGigs}GiB"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    message_subsequent "There is space for a"
-    translate "partition"
-    Message="$Message /home $Result"
-    message_subsequent "You can use all the remaining space on the device, if you wish"
-    enter_size        # Adds advice about 100%
-
-    dialog_inputbox 30 75
-    RESPONSE="${Result^^}"
-    case ${RESPONSE} in
-    "" | 0) HomeSize="" ;;
-    *) # Check that entry includes 'G or %'
-        CheckInput=${RESPONSE: -1}
-        if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ] && [ ${CheckInput} != "M" ]; then
-          message_first_line "You must include M, G or %"
-          HomeSize=""
-        else
-          HomeSize=$RESPONSE
-          Partition="/home"
-          print_heading
-          select_filesystem
-          HomeType=${PartitionType}
-        fi
-    esac
-  done
-  return 0
-}
-
-function guided_MBR_home { # Called by guided_MBR - Set variables: HomeSize, HomeType
-  
-  FreeGigs=$((FreeSpace/1024))
-  HomeSize=""
-  while [ -z "$HomeSize" ]; do
-    # Show /root, /swap and available space
-    title="/home"
-    Message="/root $Result: ${RootType}: ${RootSize}"
-    message_subsequent "/swap ${Result}: ${SwapSize}\n"
-    translate "You now have"
-    Message="${Message} ${FreeGigs}GiB"
-    translate "available on the chosen device"
-    Message="$Message ${Result}\n"
-    message_subsequent "There is space for a"
-    translate "partition"
-    Message="${Message} /home $Result"
-    message_subsequent "You can use all the remaining space on the device, if you wish"
-    enter_size        # Adds advice about 100%
-
-    dialog_inputbox 16 70
-    RESPONSE="${Result^^}"
-    case ${RESPONSE} in
-    "") return 0 ;;
-    *) # Check that entry includes 'G or %'
-        CheckInput=${RESPONSE: -1}
-      if [ ${CheckInput} != "%" ] && [ ${CheckInput} != "G" ] && [ ${CheckInput} != "M" ]; then
-        message_first_line "You must include M, G or %"
-        dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "$Message"
-        HomeSize=""
-      else
-        HomeSize=$RESPONSE
-        Partition="/home"
-        translate "of remaining space allocated to"
-        Message="${HomeSize} $Result"
-        translate "partition"
-        Message="${Message} /home $Result"
-        select_filesystem 12 60
-        HomeType=${PartitionType}
-      fi
-    esac
-  done
-  return 0
 }

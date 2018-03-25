@@ -214,7 +214,8 @@ UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
 
 # Grub & kernel variables
-GrubDevice=""             # eg: /dev/sda
+GrubDevice=""             # eg: /dev/sda - device for grub
+RootDevice=""             # eg: /dev/sda - device for root partitin
 Kernel="1"                # Default 1 = LTS
 IsInVbox="N"              # Result of test to see if installation is in Virtualbox
 OSprober="Y"
@@ -277,31 +278,34 @@ LongDesk[7]="Lightweight and modern Qt-based DE"
 LongDesk[8]="Traditional desktop from the Mint team"
 LongDesk[9]="Lightweight, highly configurable DE"
 # Graphical
-Graphical="blender gimp imagemagick inkscape gthumb simple-scan xsane"
+Graphical="blender gimp imagemagick inkscape krita gthumb simple-scan xsane"
 LongGraph[1]="3D graphics creation suite"
 LongGraph[2]="Advanced image editing suite"
 LongGraph[3]="Command-line image manipulation"
 LongGraph[4]="Vector graphics editor"
-LongGraph[5]="Image viewer & basic editor"
-LongGraph[6]="A simple scanner GUI"
-LongGraph[7]="GTK-based sane frontend"
+LongGraph[5]="Raster graphics editor from KDE"
+LongGraph[6]="Image viewer & basic editor"
+LongGraph[7]="A simple scanner GUI"
+LongGraph[8]="GTK-based sane frontend"
 # Internet
-Internet="chromium epiphany filezilla firefox midori qbittorrent thunderbird transmission-gtk"
-LongNet[1]="Open source web browser from Google"
-LongNet[2]="Gnome WebKitGTK+ browser (aka Web)"
-LongNet[3]="Fast & reliable FTP, FTPS & SFTP client"
-LongNet[4]="Extensible browser from Mozilla"
-LongNet[5]="Light web browser"
-LongNet[6]="Open source BitTorrent client"
-LongNet[7]="Feature-rich email client from Mozilla"
-LongNet[8]="Easy-to-use BitTorrent client"
+Internet="apache chromium epiphany filezilla firefox lynx midori qbittorrent thunderbird transmission-gtk"
+LongNet[1]="Apache web server"
+LongNet[2]="Open source web browser"
+LongNet[3]="Gnome WebKitGTK+ browser (aka Web)"
+LongNet[4]="Fast & reliable FTP, FTPS & SFTP client"
+LongNet[5]="Extensible browser from Mozilla"
+LongNet[6]="Text-based browser"
+LongNet[7]="Light web browser"
+LongNet[8]="Open source BitTorrent client"
+LongNet[9]="Feature-rich email client from Mozilla"
+LongNet[10]="Easy-to-use BitTorrent client"
 # Multimedia
 Multimedia="avidemux-gtk banshee handbrake openshot vlc xfburn"
 LongMulti[1]="Easy-to-use video editor"
 LongMulti[2]="Feature-rich audio player"
 LongMulti[3]="Simple yet powerful video transcoder"
 LongMulti[4]="Easy-to-use non-linear video editor"
-LongMulti[5]="Middleweight video player"
+LongMulti[5]="Middleweight media player"
 LongMulti[6]="GUI CD burner"
 # Office
 Office="abiword calibre evince gnumeric libreoffice-fresh orage scribus"
