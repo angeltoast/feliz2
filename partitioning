@@ -1,0 +1,45 @@
+                       (press [Enter] to scroll, 'Q' to quit)
+
+Partitioning
+------------
+Feliz used to offer tools to modify existing partitions and create new partitions.
+However, there have recently been serious problems with this code, so those options
+have been removed until the bugs can be fixed. This means that the partitions you
+wish to use for installation must be created before running Feliz.
+
+I recommend using Gparted Live (https://gparted.org/download.php), or a similar
+partitioning program, to prepare the partition table in advance, in accordance with
+the procedures set out in the Arch Wiki.
+
+As an alternative to Gparted, several command-line (cli) partitioning tools are
+included with the Arch Linux session:
+   cfdisk
+   fdisk
+   parted
+If you create partitions using the above cli tools, you will also have to format
+them with appropriate filesystems, using the same tools. See the man pages for help.
+
+After setting up your partitions (see suggestions below) restart Feliz by typing:
+   ./feliz.sh
+
+If Feliz still informs you that there are no partitions, try shutting down the
+session and restarting. If that fails, then Gparted may be your best bet.
+
+                       (press [Enter] to scroll, 'Q' to quit)
+
+The partitions you need for Arch Linux might be as follows:
+
+For a BIOS/MBR system ...
+A root partition of at least 8GB (up to 15GB, depending on available space) - type ext4;
+If desired, a swap partition up to 4GB - type linux-swap (or Feliz can make a swap file);
+If desired, a home partition of 10GB or more (for all your programs, data, etc) - type ext4.
+
+For a UEFI/GPT system …
+An EFI partition of 512MB to 1GB of type vfat;
+A root partition of at least 8GB (up to 15GB, depending on available space) - type ext4;
+If desired, a swap partition up to 4GB - type linux-swap (or Feliz can make a swap file);
+If desired, a home partition of 10GB or more (for all your programs, data, etc) - type ext4.
+
+If you do not desire a separate home partition, then your root partition should be 20GB or bigger.
+
+Liz Mills

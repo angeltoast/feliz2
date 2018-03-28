@@ -35,29 +35,16 @@ The Feliz scripts make installation of Arch Linux quick and easy.
 
 4) Partitioning
    Feliz used to offer tools to modify existing partitions and create new partitions.
-   However, there have recently been serious problems with this code, so those options have been removed until the bugs can be fixed. This means that the partitions you wish to use for installation must be created before running Feliz. I recommend running Gparted Live (https://gparted.org/download.php), or a similar partitioning program, to prepare the partition table in accordance with the procedures set out in the Arch Wiki. Ideally, these might be as follows:
-
-   For a BIOS/MBR system ...
-   A root partition of at least 8GB (preferably more, up to 12GB) of type ext4;
-   If desired, a swap partition up to 4GB (alternatively, Feliz can make a swap file);
-   If desired, a home partition of 10GB or more (for all your programs, data, etc) of type ext4.
-
-   For a UEFI/GPT system …
-   An EFI partition of 512MB to 1GB of type vfat;
-   A root partition of at least 8GB (preferably more, up to 12GB) of type ext4;
-   If desired, a swap partition up to 4GB (alternatively, Feliz can make a swap file);
-   If desired, a home partition of 10GB or more (for all your programs, data, etc) of type ext4.
-
-   If you do not desire a separate home partition, then your root partition should be 20GB or bigger.
-
-   I am sorry for this retrograde step, but it is important that Feliz works safely and correctly. Liz Mills (developer, Feliz)
+   However, there have recently been serious problems with this code, so those options have been removed until the
+   bugs can be fixed.
+   There is now a file with advice about partitioning ... partitioning ... which can be read during installation.
   
 Find our friendly and lively communities on Facebook:
 	https://www.facebook.com/groups/915936978471838/
 		... and Google+ ...
 	https://plus.google.com/u/0/communities/115015910961165526577
 
-NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer. However, i686 packages will still be supported until November 2017. If you have an Arch iso dated before March 2017, or a Feliz iso dated before April 2017, the i686 option will still work. And just because the i686 software is not supported, doesn't necessarily mean that it will stop working - it will just not be updated.
+NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer.
 
 Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 

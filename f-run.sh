@@ -24,20 +24,16 @@
 
 # In this module: functions used during installation
 # ---------------------------    ---------------------------
-# Functions             Line     Functions              Line
-# --------------------------    ---------------------------
-# arch_chroot             43    install_kernel          332
-# parted_script           47    add_codecs              370
-# install_message         51    mirror_list             405
-# action_MBR              59    install_display_manager 459
-# action_EFI             102    install_extras          473
-# root_partition         165    install_yaourt          567
-# swap_partition         182    user_add                589
-# home_partition         199    check_existing          652
-# remove_partitions      208    set_root_password       659
-# autopart               231    set_user_password       714
-# partition_maker        779    
-# mount_partitions       261    finish                  760
+# Functions              Line    Functions              Line
+# ---------------------------    ---------------------------
+# arch_chroot              39    install_extras          234
+# parted_script            43    install_yaourt          329
+# install_message          47    user_add                350
+# mount_partitions         55    check_existing          412
+# install_kernel           96    set_root_password       418 
+# add_codecs              133    set_user_password       472 
+# mirror_list             169    finish                  517 
+# install_display_manager 222    
 # --------------------------    ---------------------------
 
 function arch_chroot { # From Lution AIS - calls arch-chroot with options
@@ -56,267 +52,6 @@ function install_message { # For displaying status while running on auto
   echo
 }
 
-function action_MBR { # GUIDED BIOS/MBR (if AutoPartition flag is "GUIDED")
-                      # Called by feliz.sh before other partitioning actions
-                      # Uses variables set by user to create partition
-                      # table & all partitions
-                      # Called without arguments
-  local Unit
-  local EndPoint
-  declare -i Chars
-  declare -i Var
-  declare -i EndPart
-  declare -i NextStart
-
-  remove_partitions                     # Delete existing partitions for AUTO & GUIDED
-  
-  # Root partition
-    root_partition                      # Calculate endpoint for this partition
-    parted_script "mkpart primary ${RootType} 1MiB ${EndPoint}" # Make the partition
-    parted_script "set 1 boot on"
-    RootPartition="${RootDevice}1"      # "/dev/sda1"
-    local NextStart=${EndPart}          # Save for next partition. Numerical only (has no unit)
-  # Swap partition
-    if [ -n "$SwapSize" ]; then
-      swap_partition                    # Calculate endpoint for this partition
-      parted_script "mkpart primary linux-swap ${NextStart}MiB ${EndPoint}" # Make the partition
-      SwapPartition="${RootDevice}2"    # "/dev/sda2"
-      MakeSwap="Y"
-      NextStart=${EndPart}              # Save for next partition. Numerical only (has no unit)
-    fi
-  # Home partition
-    if [ -n "$HomeSize" ]; then
-      home_partition                    # Calculate endpoint for this partition
-      parted_script "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}" # Make the partition
-      HomePartition="${RootDevice}3"    # "/dev/sda4"
-      Home="Y"
-      AddPartList[0]="${RootDevice}3"   # /dev/sda3     | add to
-      AddPartMount[0]="/home"           # Mountpoint    | array of
-      AddPartType[0]="${HomeType}"      # Filesystem    | additional partitions
-    fi
-}
-
-function action_EFI { # GUIDED EFI/GPT (if AutoPartition flag is "GUIDED")
-                      # Called by feliz.sh before other partitioning actions
-                      # Uses variables set by user to create partition
-                      # table & all partitions
-                      # Called without arguments
-
-  if [ "$UEFI" -eq 1 ]; then return 0; fi # Option disabled
-                      
-  local Unit
-  local EndPoint
-  declare -i Chars
-  declare -i Var
-  declare -i EndPart
-  declare -i NextStart
-
-  remove_partitions                     # Delete existing partitions for AUTO & GUIDED
-
-  # Boot partition - calculate end-point, then create the partition as #1
-    Unit=${BootSize: -1}                # Save last character of boot (eg: M)
-    Chars=${#BootSize}                  # Count characters in boot variable
-    Var=${BootSize:0:Chars-1}           # Remove unit character from boot variable
-    if [ "$Unit" = "G" ]; then
-      Var=$((Var*1024))                 # Convert to MiB
-    fi
-    EndPoint=$((Var+1))                 # Add start and finish. Result is MiBs, numerical only (has no unit)
-    parted_script "mkpart primary fat32 1MiB ${EndPoint}MiB"
-    parted_script "set 1 boot on"
-    EFIPartition="${RootDevice}1"       # "/dev/sda1"
-    NextStart=${EndPoint}               # Save for next partition. Numerical only (has no unit)
-
-  # Root partition
-    root_partition                      # Calculates end point
-    parted_script "mkpart primary ${RootType} ${NextStart}MiB ${EndPoint}" # Make the partition
-    RootPartition="${RootDevice}2"      # "/dev/sda2"
-    NextStart=${EndPart}                # Save for next partition. Numerical only (has no unit)
-
-  # Swap partition
-    if [ -n "$SwapSize" ]; then
-      swap_partition                    # Calculates end point
-      parted_script "mkpart primary linux-swap ${NextStart}MiB ${EndPoint}" # Make the partition
-      SwapPartition="${RootDevice}3"    # "/dev/sda3"
-      MakeSwap="Y"
-      NextStart=${EndPart}              # Save for next partition. Numerical only (has no unit)
-    fi
-
-  # Home partition
-    if [ -n "$HomeSize" ]; then
-      home_partition                    # Calculates end point
-      parted_script "mkpart primary ${HomeType} ${NextStart}MiB ${EndPoint}" # Make the partition
-      HomePartition="${RootDevice}4"    # "/dev/sda4"
-      Home="Y"
-      AddPartList[0]="${RootDevice}4"   # /dev/sda4     | add to
-      AddPartMount[0]="/home"           # Mountpoint    | array of
-      AddPartType[0]="${HomeType}"      # Filesystem    | additional partitions
-    fi
-}
-
-function root_partition { # Called by action_EFI and action_MBR
-                          # Calculate end-point based on size set by user
-  Unit=${RootSize: -1}                # Save last character of root (eg: G)
-  Chars=${#RootSize}                  # Count characters in root variable
-  Var=${RootSize:0:Chars-1}           # Remove unit character from root variable
-  if [ "$Unit" = "G" ]; then
-    Var=$((Var*1024))                 # Convert to MiB
-    EndPart=$((NextStart+Var))        # Add to previous end
-    EndPoint="${EndPart}MiB"          # Add unit
-  elif [ "$Unit" = "M" ]; then
-    EndPart=$((NextStart+Var))        # Add to previous end
-    EndPoint="${EndPart}MiB"          # Add unit
-  elif [ "$Unit" = "%" ]; then
-    EndPoint="${Var}%"
-  fi
-}
-  
-function swap_partition { # Calculate end-point
-  Unit=${SwapSize: -1}              # Save last character of swap (eg: G)
-  Chars=${#SwapSize}                # Count characters in swap variable
-  Var=${SwapSize:0:Chars-1}         # Remove unit character from swap variable
-  if [ "$Unit" = "G" ]; then
-    Var=$((Var*1024))               # Convert to MiB
-    EndPart=$((NextStart+Var))      # Add to previous end
-    EndPoint="${EndPart}MiB"        # Add unit
-  elif [ "$Unit" = "M" ]; then
-    EndPart=$((NextStart+Var))      # Add to previous end
-    EndPoint="${EndPart}MiB"        # Add unit
-  elif [ "$Unit" = "%" ]; then
-    EndPoint="${Var}%"
-  fi
-}
-
-function home_partition { # Calculate end-point
-  Unit=${HomeSize: -1}              # Save last character of home (eg: G)
-  Chars=${#HomeSize}                # Count characters in home variable
-  Var=${HomeSize:0:Chars-1}         # Remove unit character from home variable
-  if [ "$Unit" = "G" ]; then
-    Var=$((Var*1024))               # Convert to MiB
-    EndPart=$((NextStart+Var))      # Add to previous end
-    EndPoint="${EndPart}MiB"        # Add unit
-  elif [ "$Unit" = "M" ]; then
-    EndPart=$((NextStart+Var))      # Add to previous end
-    EndPoint="${EndPart}MiB"        # Add unit
-  elif [ "$Unit" = "%" ]; then
-    EndPoint="${Var}%"
-  fi
-}
-
-function remove_partitions { # Delete existing partitions for AUTO & GUIDED
-                                                                  
-  table=$(parted "/dev/${UseDisk}" print | grep 'Partition Table' | grep unknown) # Test if partition table exists
-                                                                          # eg: "Partition Table: unknown"
-  if [ -n "$table" ] ; then                                               # If device has no table, make one
-    if [ "$UEFI" -eq 1 ]; then
-      parted_script "mklabel gpt"                                         # On EFI
-    else
-      parted_script "mklabel msdos"                                       # On BIOS
-    fi
-  else
-    HowMany=$(lsblk -l | grep "$UseDisk" | grep -v "${UseDisk} " | wc -l)	# Count existing partitions (eg: 6 or 0)
-    if [ "$HowMany" -gt 0 ]; then                                         # If more than one existing partition
-
-      for p in $(lsblk -l | grep sda | grep -v "sda " | cut -c1-5)
-      do
-        umount "/dev/${p}"                                                # Try to unmount any mounted partitions
-      done
-
-      for i in $(seq 1 $HowMany)
-      do
-        parted_script "rm $i"                                             # Use parted to remove each one
-      done
-    else
-      return 1                                                            # Unlikely event that there is no device
-    fi
-  fi
-}
-
-function autopart { # Called by feliz.sh/preparation during installation phase
-                    # if AutoPartition flag is AUTO.
-                    # Consolidated automatic partitioning for BIOS
-
-  if [ "$UEFI" -eq 1 ]; then return 0; fi # Option disabled
-                    
-  Root="${RootDevice}"
-  Home="N"                                            # No /home partition at this point
-  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}' | sed "s/G\|M\|K//g") # Get disk size
-
-  remove_partitions                                   # Delete existing partitions for AUTO & GUIDED
-
-  if [ "$UEFI" -eq 1 ]; then                          # If installing on EFI
-    parted_script "mkpart primary fat32 1MiB 513MiB"  # Create EFI boot partition
-    StartPoint="513MiB"                               # Start point for next GPT partition
-  else
-    StartPoint="1MiB"                                 # Start point for next MBR partition
-  fi
-                    # Decide partition sizes then make each partition
-                    # startpoint : rootsize : homesize : swapsize
-  if [ "$DiskSize" -ge 40 ]; then                     # ------ /root /home /swap partitions ------ #
-    HomeSize=$((DiskSize-15-4))                       # /root 15 GiB, /swap 4GiB, /home from 18GiB
-    partition_maker "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
-  elif [ "$DiskSize" -ge 30 ]; then                   # ------ /root /home /swap partitions ------ #
-    HomeSize=$((DiskSize-15-3))                       # /root 15 GiB, /swap 3GiB, /home 12 to 22GiB
-    partition_maker "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
-  elif [ "$DiskSize" -ge 18 ]; then                   # ----- /root & /swap partitions only ------ #
-    RootSize=$((DiskSize-2))                          # /root 16 to 28GiB, /swap 2GiB
-    partition_maker "${StartPoint}" "${RootSize}GiB" "" "100%"
-  elif [ "$DiskSize" -gt 10 ]; then                   # ----- /root & /swap partitions only ------ #
-    RootSize=$((DiskSize-1))                          # /root 9 to 17GiB, /swap 1GiB
-    partition_maker "${StartPoint}" "${RootSize}GiB" "" "100%"
-  else                                                # --- Swap file and /root partition only --- #
-    partition_maker "${StartPoint}" "100%" "" ""
-    SwapFile="2G"                                     # Swap file
-    SwapPartition=""                                  # Clear swap partition variable
-  fi
-  partprobe 2>> feliz.log                             # Inform kernel of changes to partitions
-}
-
-function partition_maker {  # Called from autopart for and BIOS systems
-                            # Uses GNU Parted to create partitions as defined by autopart
-                            # Receives up to 4 arguments
-  local StartPoint=$1       #   $1 is the starting point of the first partition
-                            #   $2 is size of root partition
-                            #   $3 if passed is size of home partition
-                            #   $4 if passed is size of swap partition
-                            # Appropriate partition table has already been created in remove_partitions
-                            # If EFI the /boot partition has also been created at /dev/sda1
-                            # and the startpoint has been set to follow /boot
-
-  if [ "$UEFI" -eq 1 ]; then return 0; fi                 # Option disabled for UEFI
-                            
-                                                          # Set the device to be used to 'set x boot on'    
-  MountDevice=1                                           # $MountDevice is numerical - eg: 1 is sda1
-                                                          # Start with first partition = [sda]1
-  parted_script "mkpart primary ext4 ${StartPoint} ${2}"  # Make / at startpoint
-                                                          # eg: parted /dev/sda mkpart primary ext4 1MiB 12GiB
-  parted_script "set 1 boot on"                           # For autopart, /boot is always 1
-                                                          # eg: parted /dev/sda set 1 boot on
-                                                          
-  if [ "$UEFI" -eq 1 ]; then                              # In EFI environment
-    MountDevice=2                                         # Next partition after /boot = [sda]2
-  fi
-  RootPartition="${RootDevice}${MountDevice}"             # eg: /dev/sda1
-  RootType="ext4"
-  StartPoint=$2                                           # Increment startpoint for /home or /swap
-  MountDevice=$((MountDevice+1))                          # Advance partition numbering for next step
-
-  if [ -n "$3" ]; then
-    parted_script "mkpart primary ext4 ${StartPoint} ${3}" # eg: parted /dev/sda mkpart primary ext4 12GiB 19GiB
-    AddPartList[0]="${RootDevice}${MountDevice}"          # eg: /dev/sda3  | add to
-    AddPartMount[0]="/home"                               # Mountpoint     | array of
-    AddPartType[0]="ext4"                                 # Filesystem     | additional partitions
-    Home="Y"
-    StartPoint=$3                                         # Reset startpoint for /swap
-    MountDevice=$((MountDevice+1))                        # Advance partition numbering
-  fi
-
-  if [ -n "$4" ]; then
-    parted_script "mkpart primary linux-swap ${StartPoint} ${4}" # eg: parted /dev/sda mkpart primary linux-swap 31GiB 100%
-    SwapPartition="${RootDevice}${MountDevice}"
-    MakeSwap="Y"
-  fi
-}
-
 function mount_partitions { # Format and mount each partition as defined by MANUAL, AUTO or GUIDED
                             # Called without arguments by feliz.sh after autopart, action_MBR or action_EFI
   
@@ -329,7 +64,6 @@ function mount_partitions { # Format and mount each partition as defined by MANU
   # 2) EFI (if required)
     if [ "$UEFI" -eq 1 ] && [ "$DualBoot" = "N" ]; then               # Check if /boot partition required
       umount "$EFIPartition"
-    #  mkfs.vfat -F32 "$EFIPartition" # 2>> feliz.log                 # Format EFI boot partition ... disabled
       mkdir -p /mnt/boot                                              # Make mountpoint
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> feliz.log
       mount "$EFIPartition" /mnt/boot                                 # eg: mount /dev/sda2 /mnt/boot
@@ -337,14 +71,6 @@ function mount_partitions { # Format and mount each partition as defined by MANU
   # 3) Swap
     if [ -n "$SwapPartition" ]; then
       swapoff -a 2>> feliz.log                                        # Make sure any existing swap cleared
-      if [ "$MakeSwap" = "Y" ] && [ "$UEFI" -ne 1 ]; then
-        Partition=${SwapPartition: -4}                                # Last 4 characters (eg: sda2)
-        Label="${Labelled[${Partition}]}"                             # Check for label
-        if [ -n "$Label" ]; then
-          Label="-L ${Label}"                                         # Prepare label
-        fi
-        mkswap "$Label" "$SwapPartition" # 2>> feliz.log              # eg: mkswap -L Arch-Swap /dev/sda2
-      fi
       swapon "$SwapPartition" # 2>> feliz.log                         # eg: swapon /dev/sda2
     fi
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)
@@ -698,15 +424,18 @@ function set_root_password {
   while [ $Repeat = "Y" ]; do
     message_subsequent "Enter a password for"
     Message="${Message} root\n"
-    dialog --backtitle "$Backtitle" --title " $title " --insecure --nocancel \
-      --ok-label "$Ok" --passwordbox "$Message" 16 60 2>output.file
-    Pass1=$(cat output.file)
+
+    dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
+    --passwordform "\n $Message" 18 60 2 \
+    "Enter password:" 1 1 "" 1 25 25 30 \
+    "Re-enter password:" 2 1 "" 2 25 25 30 \
+    2>output.file
+
+    Pass1=$(head -n1 output.file)
+    Pass2=$(tail -n1 output.file)
+
     rm output.file
-    translate "Re-enter the password for"
-    Message="${Message} root\n"
-    dialog --backtitle "$Backtitle" --insecure --title " Root " --ok-label "$Ok" --nocancel --passwordbox "$Result root\n" 10 50 2>output.file
-    Pass2=$(cat output.file)
-    rm output.file
+
     if [ -z "$Pass1" ] || [ -z "$Pass2" ]; then
       title="Error"
       message_first_line "Passwords cannot be blank"
@@ -735,6 +464,7 @@ function set_root_password {
 }
 
 function set_user_password {
+  title="Passwords"
   message_first_line "Enter a password for"
   Message="${Message} ${user_name}\n"
   Repeat="Y"
@@ -742,15 +472,16 @@ function set_user_password {
     message_subsequent "Note that you will not be able to"
     message_subsequent "see passwords as you enter them"
     Message="${Message}\n"
-    dialog --backtitle "$Backtitle" --title " $user_name " --insecure \
-      --ok-label "$Ok" --nocancel --passwordbox "$Message" 15 50 2>output.file
-    Pass1=$(cat output.file)
-    rm output.file
-    message_first_line "Re-enter the password for"
-    Message="${Message} $user_name\n"
-    dialog --backtitle "$Backtitle" --title " $user_name " --insecure \
-      --ok-label "$Ok" --nocancel --passwordbox "$Message" 10 50 2>output.file
-    Pass2=$(cat output.file)
+    
+    dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
+    --passwordform "\n $Message" 16 60 2 \
+    "Enter password:" 1 1 "" 1 25 25 30 \
+    "Re-enter password:" 2 1 "" 2 25 25 30 \
+    2>output.file
+
+    Pass1=$(head -n1 output.file)
+    Pass2=$(tail -n1 output.file)
+
     rm output.file
     if [ -z "$Pass1" ] || [ -z "$Pass2" ]; then
       title="Error"

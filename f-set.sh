@@ -895,7 +895,7 @@ function confirm_virtualbox { # Called without arguments by feliz.sh/the_start
   title="Virtualbox"
     
   dialog --backtitle "$Backtitle" --title " $title " \
-    --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 70
+    --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 7 60
 
   if [ $? -eq 0 ]; then  # Yes
     IsInVbox="VirtualBox"
@@ -1111,7 +1111,7 @@ function wireless_option { # Called without arguments by feliz.sh/the_start
   title="$Result"
     
   dialog --backtitle "$Backtitle" --title " $title " \
-    --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 70
+    --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 7 60
 
   if [ $? -eq 0 ]; then  # Yes
     WirelessTools="Y"
