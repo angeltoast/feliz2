@@ -91,7 +91,6 @@ function prepare_device # Called by autopart, guided_MBR and guided_EFI
 
 function prepare_partitions # Called from autopart for either EFI or BIOS system
 {
-read -p "$1 $2 $3 $4"
   # Uses gnu parted to create partitions 
   # Receives up to 4 arguments
   #   $1 is the starting point of the root partition  - 1MiB if MBR, 513MiB if GPT
