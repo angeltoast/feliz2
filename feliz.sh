@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 9th January 2018
+# Revision date: 2nd April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 # Include source files
 source f-vars.sh      # Global functions, variables and arrays are declared in this module
+source f-prep.sh      # Added 30th March 2018 - creates partitions if none exist
 source f-set.sh       # Functions to set user locale and preferences
 source f-part.sh      # Functions concerned with allocating partitions
 source f-run.sh       # Functions called during installation
@@ -66,10 +67,7 @@ function main {       # Prepare environment, call the four processes in sequence
     install_message "$Result"
     translate "Entering automatic installation phase"
     install_message "$Result"
-  
-    preparation                                   # Prepare the environment for the installation phase
-    if [ $? -ne 0 ]; then continue; fi            # Restart if error
-    
+
     the_middle                                    # The installation phase
     if [ $? -ne 0 ]; then continue; fi            # Restart if error
   
@@ -97,7 +95,7 @@ function the_start {  # All user interraction takes place in this function
        0) step=3 ;;                               # Device selected, advance to step 3
        *) continue                                # No device, rerun this step
       esac ;;
-    3) # Check that there are partitions on the device, if not, exit
+    3) # Check that there are partitions on the device, if not, offer options
       check_parts
       case $? in
        0) step=4 ;;                               # Partitions exist, advance to step 4
@@ -159,27 +157,12 @@ function the_start {  # All user interraction takes place in this function
   done
 }
 
-function preparation { # Prepare the environment for the installation phase
-  if [ "$UEFI" -eq 1 ] && [ "$AutoPart" = "GUIDED" ]; then    # If installing on EFI with Guided partitioning
-    action_EFI
-  elif [ "$UEFI" -eq 0 ] && [ "$AutoPart" = "GUIDED" ]; then  # If installing on BIOS with Guided partitioning
-    action_MBR
-  fi
-
-  if [ "$AutoPart" = "AUTO" ]; then                           # If Auto partitioning_options
-    autopart 
-  elif [ "$AutoPart" = "NONE" ]; then                         # If partitioning_options not set
-    Message="No partitions"
-    not_found 6 20
-    return 1
-  fi                                                          # Note that MANUAL allocation was done in f-part1
-
-  mount_partitions                                            # In f-run.sh
-  mirror_list                                                 # In f-run.sh
-  install_kernel                                              # In f-run.sh
-}
-
 function the_middle { # The installation phase
+  # Preparation
+    mount_partitions                                            # In f-run.sh
+    mirror_list                                                 # In f-run.sh
+    install_kernel                                              # In f-run.sh
+  
     translate "Preparing local services"
     install_message "$Result"
     echo "$HostName" > /mnt/etc/hostname 2>> feliz.log

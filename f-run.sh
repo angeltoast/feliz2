@@ -58,12 +58,15 @@ function mount_partitions { # Format and mount each partition as defined by MANU
   install_message "Preparing and mounting partitions"
 
   # 1) Root partition
-    umount "$RootPartition"
+    umount "$RootPartition" 2>> feliz.log
+    if [ -n "$RootType" ]; then
+      mkfs.${RootType} ${RootPartition} &>> feliz.log                 # eg: mkfs.ext4 -L Arch-Root /dev/sda1
+    fi
     mount "$RootPartition" /mnt 2>> feliz.log                         # eg: mount /dev/sda1 /mnt
 
   # 2) EFI (if required)
     if [ "$UEFI" -eq 1 ] && [ "$DualBoot" = "N" ]; then               # Check if /boot partition required
-      umount "$EFIPartition"
+      umount "$EFIPartition" 2>> feliz.log
       mkdir -p /mnt/boot                                              # Make mountpoint
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> feliz.log
       mount "$EFIPartition" /mnt/boot                                 # eg: mount /dev/sda2 /mnt/boot
@@ -76,7 +79,7 @@ function mount_partitions { # Format and mount each partition as defined by MANU
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)
     local Counter=0
     for id in "${AddPartList[@]}"; do                                 # $id will be in the form /dev/sda2
-      umount "$id"
+      umount "$id" 2>> feliz.log
       mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log            # eg: mkdir -p /mnt/home
 
       mount "$id" /mnt${AddPartMount[$Counter]} &>> feliz.log         # eg: mount /dev/sda3 /mnt/home
@@ -426,7 +429,7 @@ function set_root_password {
     Message="${Message} root\n"
 
     dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
-    --passwordform "\n $Message" 18 60 2 \
+    --passwordform "\n $Message" 20 60 2 \
     "Enter password:" 1 1 "" 1 25 25 30 \
     "Re-enter password:" 2 1 "" 2 25 25 30 \
     2>output.file
@@ -439,8 +442,8 @@ function set_root_password {
     if [ -z "$Pass1" ] || [ -z "$Pass2" ]; then
       title="Error"
       message_first_line "Passwords cannot be blank"
-      message_subsequent "Please try again"
-      Message="${Message}\n"
+      translate "Please try again"
+      Message="${Message}. $Result \n"
       message_subsequent "Note that you will not be able to"
       message_subsequent "see passwords as you enter them"
       Message="${Message}\n"
@@ -454,8 +457,8 @@ function set_root_password {
     else
       title="Error"
       message_first_line "Passwords don't match"
-      message_subsequent "Please try again"
-      Message="${Message}\n"
+      translate "Please try again"
+      Message="${Message}. $Result \n"
       message_subsequent "Note that you will not be able to"
       message_subsequent "see passwords as you enter them"
       Message="${Message}\n"
@@ -474,7 +477,7 @@ function set_user_password {
     Message="${Message}\n"
     
     dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
-    --passwordform "\n $Message" 16 60 2 \
+    --passwordform "\n $Message" 18 60 2 \
     "Enter password:" 1 1 "" 1 25 25 30 \
     "Re-enter password:" 2 1 "" 2 25 25 30 \
     2>output.file
@@ -486,11 +489,10 @@ function set_user_password {
     if [ -z "$Pass1" ] || [ -z "$Pass2" ]; then
       title="Error"
       message_first_line "Passwords cannot be blank"
-      message_subsequent "Please try again"
-      Message="${Message}\n"
-      message_subsequent "Note that you will not be able to"
-      message_subsequent "see passwords as you enter them"
-      Message="${Message}\n"
+      translate "Please try again"
+      Message="${Message}. $Result \n"
+      message_subsequent "Enter a password for"
+      Message="${Message} ${user_name} \n"
       continue
     fi
     if [ "$Pass1" = "$Pass2" ]; then
@@ -501,11 +503,10 @@ function set_user_password {
     else
       title="Error"
       message_first_line "Passwords don't match"
-      message_subsequent "Please try again"
-      Message="${Message}\n"
-      message_subsequent "Note that you will not be able to"
-      message_subsequent "see passwords as you enter them"
-      Message="${Message}\n"
+      translate "Please try again"
+      Message="${Message}. $Result \n"
+      message_subsequent "Enter a password for"
+      Message="${Message} ${user_name} \n"
     fi
   done
 }

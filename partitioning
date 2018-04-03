@@ -2,33 +2,17 @@
 
 Partitioning
 ------------
-Feliz used to offer tools to modify existing partitions and create new partitions.
-However, there have recently been serious problems with this code, so those options
-have been removed until the bugs can be fixed. This means that the partitions you
-wish to use for installation must be created before running Feliz.
-
-I recommend using Gparted Live (https://gparted.org/download.php), or a similar
-partitioning program, to prepare the partition table in advance, in accordance with
+I'm happy to announce that I have added back the tools in Feliz that create new partitions. They were removed following some serious problems with the code. The tools are only offered if there are no partitions on the selected device. They consist of an "auto-partition" tool, that will make a partition table appropriate for the size and type of the device, and a "guided partitioning" tool, that enables you to define the main partitions yourself. If the device already has partitions, Feliz will skip these options and instead enable you to select which existing partitions you want to use. Please note that it will no longer offer to change any existing partitions, nor to add new ones. This means that, if you want to change an existing partition table, you will have to do that with some other software before running Feliz. For that purpose I recommend using Gparted Live (https://gparted.org/download.php), or a similar partitioning program, to prepare the partition table in advance, in accordance with
 the procedures set out in the Arch Wiki.
 
-As an alternative to Gparted, several command-line (cli) partitioning tools are
-included with the Arch Linux session:
+As an alternative to Gparted, several command-line (cli) partitioning tools are included with the Arch Linux session:
    cfdisk
    fdisk
-   parted
-If you create partitions using the above cli tools, you will also have to format
-them with appropriate filesystems, using the same tools. See the man pages for help.
-
-After setting up your partitions (see suggestions below) restart Feliz by typing:
-   ./feliz.sh
-
-If Feliz still informs you that there are no partitions, try shutting down the
-session and restarting. If that fails, then Gparted may be your best bet.
-
-                       (press [Enter] to scroll, 'Q' to quit)
+   parted (this is what I use)
+If you create partitions using these cli tools, you will also have to format them with appropriate filesystems (perhaps using: mkfs.ext4 and similar commands). See the man pages or Arch Wiki for help.
 
 The partitions you need for Arch Linux might be as follows:
-
+----------------------------------------------------------
 For a BIOS/MBR system ...
 A root partition of at least 8GB (up to 15GB, depending on available space) - type ext4;
 If desired, a swap partition up to 4GB - type linux-swap (or Feliz can make a swap file);
@@ -43,3 +27,4 @@ If desired, a home partition of 10GB or more (for all your programs, data, etc) 
 If you do not desire a separate home partition, then your root partition should be 20GB or bigger.
 
 Liz Mills
+April 2018

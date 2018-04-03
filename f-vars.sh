@@ -209,7 +209,7 @@ RootPartition=""          # eg: /dev/sda2
 RootType=""               # eg: ext4
 Partition=""              # eg: sda1
 Ignorelist=""             # Used in review process
-AutoPart="NONE"           # Flag - MANUAL/AUTO/GUIDED/CFDISK/NONE
+AutoPart="MANUAL"         # Flag - MANUAL/AUTO/GUIDED/CFDISK/NONE
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
 

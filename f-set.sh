@@ -41,7 +41,7 @@
 #                             wireless_option        1115
 # -------------------------   ---------------------------
 
-function menu_dialog {  # Display a simple menu from $menu_dialogVariable and return selection as $Result
+function menu_dialog {  # Display a simple menu from $menu_dialog_variable and return selection as $Result
                         # $1 and $2 are dialog box size;
                         # $3 is optional: can be the text for --cancel-label
   if [ "$3" ]; then
@@ -53,11 +53,11 @@ function menu_dialog {  # Display a simple menu from $menu_dialogVariable and re
   # Prepare array for display
   declare -a ItemList=()                                      # Array will hold entire list
   Items=0
-  for Item in $menu_dialogVariable; do                      # Read items from the variable
-    Items=$((Items+1))                                      # and copy each one to the array
-    ItemList[${Items}]="${Item}"                            # First element is tag
+  for Item in $menu_dialog_variable; do                       # Read items from the variable
+    Items=$((Items+1))                                        # and copy each one to the array
+    ItemList[${Items}]="${Item}"                              # First element is tag
     Items=$((Items+1))
-    ItemList[${Items}]="${Item}"                            # Second element is required
+    ItemList[${Items}]="${Item}"                              # Second element is required
   done
    
   # Display the list for user-selection
@@ -66,7 +66,6 @@ function menu_dialog {  # Display a simple menu from $menu_dialogVariable and re
       "$1" "$2" ${Items} "${ItemList[@]}" 2>output.file
   retval=$?
   Result=$(cat output.file)
-  return 0
 }
 
 function set_timezone {
@@ -76,7 +75,7 @@ function set_timezone {
     message_subsequent "choose the World Zone of your location"
     timedatectl list-timezones | cut -d'/' -f1 | uniq > zones.file # Ten world zones
 
-    declare -a ItemList=()                                      # Array will hold entire menu list
+    declare -a ItemList=()                                    # Array will hold entire menu list
     Items=0
     Counter=0
     while read -r Item; do                                    # Read items from the zones file
@@ -127,7 +126,7 @@ function set_subzone {  # Called from set_timezone
     esac
   
     # User-selection of subzone starts here:
-    menu_dialogVariable=$(timedatectl list-timezones | grep "${ZONE}"/ | cut -d'/' -f2)
+    menu_dialog_variable=$(timedatectl list-timezones | grep "${ZONE}"/ | cut -d'/' -f2)
   
     translate "Now select your location in"
     Message="$Result $NativeZONE"
@@ -170,7 +169,7 @@ function america {  # Called from set_subzone
   title="$Result"
   translate "None_of_these"
   Cancel="$Result"
-  menu_dialogVariable="$SubList"
+  menu_dialog_variable="$SubList"
   Message=" "
   
   menu_dialog  15 40 # (arguments are dialog size) displays a menu and returns $retval and $Result
@@ -178,7 +177,7 @@ function america {  # Called from set_subzone
   if [ $retval -eq 1 ]; then              # "None of These" - check normal subzones
     translate "Now select your location in"
     Message="$Result $NativeZONE"
-    menu_dialogVariable=$(timedatectl list-timezones | grep "${ZONE}"/ | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2)  # Prepare variable
+    menu_dialog_variable=$(timedatectl list-timezones | grep "${ZONE}"/ | grep -v 'Argentina\|Indiana\|Kentucky\|North_Dakota' | cut -d'/' -f2)  # Prepare variable
     Cancel="$Back"
     title="Subzone"
     
@@ -202,9 +201,9 @@ function america_subgroups { # Called from america
                              # This function receives either 1-part or 2-part ZONE from america
   case $SubGroup in
   "") # No subgroup selected. Here we are working on the second field - cities without a subgroup
-      menu_dialogVariable=$(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}') ;;
+      menu_dialog_variable=$(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $2}') ;;
   *) # Here we are working on the third field - cities within the chosen subgroup
-      menu_dialogVariable=$(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $3}')
+      menu_dialog_variable=$(timedatectl list-timezones | grep "$ZONE/" | awk 'BEGIN { FS = "/"; OFS = "/" } {print $3}')
    esac
   translate "Please select a city from this list"
   Message="$Result"
@@ -256,7 +255,7 @@ function setlocale {
       title="Locale"
       message_first_line "Choose the main locale for your system"
       message_subsequent "Choose one or Exit to retry"
-      menu_dialogVariable="$choosefrom Edit_locale.gen"             # Add manual edit option to menu
+      menu_dialog_variable="$choosefrom Edit_locale.gen"             # Add manual edit option to menu
       Cancel="$Exit"
 
       menu_dialog 17 50 # Arguments are dialog size. To display a menu and return $Result & $retval
@@ -277,7 +276,7 @@ function setlocale {
           *) translate "Choose the main locale for your system"     # If many uncommented lines found
             Message="$Result"
             # Prepare list for display
-            menu_dialogVariable="$(cat list.file)"
+            menu_dialog_variable="$(cat list.file)"
 
             menu_dialog 20 60                                       # Display in menu
           esac
@@ -352,7 +351,7 @@ function get_keymap { # Display list of locale-appropriate keyboards for user to
     *) # If the search found multiple matches
       title="Keyboards"
       message_first_line "Select your keyboard, or Exit to try again"
-      menu_dialogVariable="$ListKbs"
+      menu_dialog_variable="$ListKbs"
       message_first_line "Please choose one"
       translate "None_of_these"
       menu_dialog 15 40 "$Result"
@@ -386,7 +385,7 @@ function search_keyboards { # Called by get_keymap when all other options failed
     local term="${Result,,}"
     ListKbs=$(grep "${Term}" keymaps.list)
     if [ -n "${ListKbs}" ]; then  # If a match or matches found
-      menu_dialogVariable="$ListKbs"
+      menu_dialog_variable="$ListKbs"
       message_first_line "Please choose one"
 
       menu_dialog 15 40
@@ -516,13 +515,13 @@ function pick_category { # menu_dialog of categories of selected items from the 
     fi
     # Display categories as numbered list
     title="Arch Linux"
-    menu_dialogVariable="${TransCatList}"
+    menu_dialog_variable="${TransCatList}"
 
     # Prepare array for display
     declare -a ItemList=()                                    # Array will hold entire list
     Items=0
     Counter=1
-    for Item in $menu_dialogVariable; do                      # Read items from the variable
+    for Item in $menu_dialog_variable; do                      # Read items from the variable
       Items=$((Items+1))
       ItemList[${Items}]="${Counter}"                         # and copy each one to the array
       Counter=$((Counter+1))
@@ -705,7 +704,7 @@ function select_grub_device {
     # Add an option to enter grub device manually
     translate "Enter_Manually"
     Enter_Manually="$Result"
-    menu_dialogVariable="$DevicesList $Result"
+    menu_dialog_variable="$DevicesList $Result"
     title="Grub"
     local Counter=0
     message_first_line "Select the device where Grub is to be installed"
@@ -978,42 +977,10 @@ function final_check {  # Called without arguments by feliz.sh/the_start
     translate "The following partitions have been selected"
     print_subsequent "11) $Result ..."
     translate "partition"
-    case "$AutoPart" in
-    "AUTO") message_first_line "Feliz will"
-      translate "partition"
-      print_first_line "${Message} $Result $GrubDevice" ;;
-    "GUIDED") message_first_line "Feliz will"
-        translate "partition"
-        print_first_line "Feliz will $Result ..."
-        if [ "$UEFI" -eq 1 ]; then
-          print_subsequent "/boot : fat32 : ${BootSize}"
-        fi
-        print_subsequent "/root : ${RootType}: ${RootSize}"
-        if [ -n "$SwapSize" ]; then
-          print_subsequent "/swap : ${SwapSize}"
-        elif [ -n "$SwapFile" ]; then
-          print_subsequent "swapfile : ${SwapFile}"
-        fi
-        if [ -n "${HomeSize}" ]; then
-          print_subsequent "/home ${Result}: ${HomeSize}"
-        fi ;;
-    *) translate="N"
-      print_first_line "${RootPartition} /root ${RootType}"
-      print_subsequent "${SwapPartition} /swap"
-      if [ -n "${AddPartList}" ]; then
-        local Counter=0
-        for Part in ${AddPartList}; do                # Iterate through the list of extra partitions
-          if [ $Counter -ge 1 ]; then                 # Only display the first one
-            translate "Too many to display all"
-            print_subsequent "$Result"
-            break
-          fi                                          # Display each partition, mountpoint & format type
-          print_subsequent "${Part} ${AddPartMount[${Counter}]} ${AddPartType[${Counter}]}"
-          Counter=$((Counter+1))
-        done
-      fi
-    esac
-    
+    translate="N"
+    print_first_line "${RootPartition} /root ${RootType}"
+    print_subsequent "${HomePartition} /home ${HomeType}"
+    print_subsequent "${SwapPartition} /swap"
     echo
     # Prompt user for a number
     translate="Y"
@@ -1033,7 +1000,7 @@ function final_check {  # Called without arguments by feliz.sh/the_start
       stpt=$(( (T_COLS - 10) / 2 ))
     fi
     EMPTY="$(printf '%*s' $stpt)"
-    read -p "$EMPTY $Result :" Change
+    read -p "$EMPTY $Result : " Change
     case $Change in
       1) set_timezone ;;
       2) setlocale ;;
@@ -1043,16 +1010,21 @@ function final_check {  # Called without arguments by feliz.sh/the_start
          choose_display_manager ;;
       6) manual_settings ;;
       7) pick_category ;;
-      8) select_kernel ;;
+      8) select_kernel
+         if [ $? -ne 0 ]; then return $?; fi ;;
       9) if [ "$GrubDevice" != "EFI" ]; then  # Can't be changed if EFI
           select_grub_device
+          if [ $? -ne 0 ]; then return $?; fi
          fi ;;
-      10) return 1 ;;                       # Low-level backout
-      11) AddPartList=""                    # Empty the lists of extra partitions
+      10) return 1 ;;                         # Low-level backout
+      11) AddPartList=""                      # Empty the lists of extra partitions
         AddPartMount=""
         AddPartType=""
-        check_parts                         # Update lists
-        allocate_partitions ;;
+        autopart="MANUAL"
+        check_parts                           # Update lists
+        if [ $? -ne 0 ]; then return $?; fi
+        allocate_partitions
+        if [ $? -ne 0 ]; then return $?; fi ;;
       *) break
     esac
   done

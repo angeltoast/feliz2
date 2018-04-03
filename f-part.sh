@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 9th January 2018
+# Revision date: 2nd April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,34 +30,30 @@
 # use_parts             87    set_swap_file       361
 # build_lists           99    more_partitions     382
 # allocate_partitions  142    choose_mountpoint   430 
-#                             display_partitions  461  
+# parted_script        150    display_partitions  461  
 # allocate_root        200    allocate_uefi       489 
 # allocate_swap        245    select_device       509 
 # select_device        285    get_device_size     570 
 # ------------------------    ------------------------
 
 # Variables for UEFI Architecture
-UEFI=0            # 1 = UEFI; 0 = BIOS
-EFIPartition=""   # eg: /dev/sda1
-UEFI_MOUNT=""    	# UEFI mountpoint
-DualBoot="N"      # For formatting EFI partition
+UEFI=0                  # 1 = UEFI; 0 = BIOS
+EFIPartition=""         # eg: /dev/sda1
+UEFI_MOUNT=""    	      # UEFI mountpoint
+DualBoot="N"            # For formatting EFI partition
 
-function check_parts { # Called by feliz.sh
-                       # Tests for existing partitions, informs user, calls build_lists to prepare arrays
-                       # Displays menu of options, then calls partitioning_options to act on user selection
+function check_parts {  # Called by feliz.sh and f-set.sh
+                        # Tests for existing partitions, informs user, calls build_lists to prepare arrays
+                        # Displays menu of options, then calls partitioning_options to act on user selection
   if [ "$UEFI" -eq 1 ]; then
     GrubDevice="EFI"                        # Preset $GrubDevice if installing in EFI
   fi
   
-  select_device                             # User selects device to use for system
-
+  select_device                             # User selects device $UseDisk (eg: sda)
   if [ $? -ne 0 ]; then return 1; fi
+  
   get_device_size                           # Get available space in MiB
   if [ $? -ne 0 ]; then return 1; fi
-
-  translate "Choose from existing partitions"
-  LongPart1="$Result"
-  title="Partitioning"
 
   ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)  # List of all partitions on all connected devices
   PARTITIONS=$(echo "$ShowPartitions" | wc -w)
@@ -69,34 +65,40 @@ function check_parts { # Called by feliz.sh
     while true
     do
       dialog --backtitle "$Backtitle" --title " Partitioning " \
-      --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" \
-        15 50 3 \
+      --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" 15 50 5 \
         1 "Exit Feliz to the command line" \
         2 "Shut down this session" \
-        3 "Display the 'partitioning' file" 2>output.file
+        3 "Allow Feliz to partition the device" \
+        4 "Use Guided Manual Partitioning" \
+        5 "Display the 'partitioning' file" 2>output.file
       if [ $? -ne 0 ]; then return 1; fi
       Result=$(cat output.file)
     
       case $Result in
         1) exit ;;
         2) shutdown -h now ;;
-        *) more partitioning
+        3) auto_warning
+            if [ $retval -ne 0 ]; then continue; fi         # If 'No' then display menu again
+            autopart ;;
+        4) guided_partitions ;;
+        *) more partitioning                              # Use bash 'more' to display help file
           continue
       esac
+      if [ $? -eq 0 ]; then return 0; else return 1; fi
     done
+  else
+    autopart="MANUAL"
   fi
 }
 
-function use_parts {                                      # There are existing partitions on the device
-    build_lists                                           # Generate list of partitions and matching array
-    translate "Here is a list of available partitions"
-    Message="\n               ${Result}:\n"
+function use_parts {    # Called by feliz.sh/the_start step 7 to display existing partitions
+  build_lists                                           # Generate list of partitions and matching array
+  translate "Here is a list of available partitions"
+  Message="\n               ${Result}:\n"
 
-    for part in ${PartitionList}; do
-      Message="${Message}\n        $part ${PartitionArray[${part}]}"
-    done
-
-    AutoPart="MANUAL"
+  for part in ${PartitionList}; do
+    Message="${Message}\n        $part ${PartitionArray[${part}]}"
+  done
 }
 
 function build_lists { # Called by check_parts to generate details of existing partitions
@@ -166,11 +168,14 @@ function allocate_partitions { # Called by feliz.sh
   fi
 }
 
+function parted_script { # Calls GNU parted tool with options
+  parted --script "/dev/${UseDisk}" "$1" 2>> feliz.log
+}
+
 function check_filesystem { # Called by choose_mountpoint & allocate_root
                             # Checks file system type on the selected partition
                             # Sets $CurrentType to existing file system type
   CurrentType=$(blkid "$Partition" | sed -n -e 's/^.*TYPE=//p' | cut -d'"' -f2)
-  return 0
 }
 
 
@@ -202,13 +207,16 @@ function allocate_root {  # Called by allocate_partitions
     check_filesystem                # This sets variable CurrentType and starts the Message
     Message="\n${Message}"
     if [ -n "$CurrentType" ]; then
-      message_subsequent "You can choose to leave it as it is, but should"
-      message_subsequent "understand that not reformatting the /root"
-      message_subsequent "partition can have unexpected consequences"
+      dialog --backtitle "$Backtitle" --title " Root Partition " \
+    --yes-label "$Yes" --no-label "$No" --yesno "\nReformat the root partition?" 6 50
+      retval=$?
+      if [ $retval -eq 0 ]; then
+        PartitionType="$CurrentType"    # Reformat to current type
+      else
+        PartitionType=""                # PartitionType can be empty (will not be formatted)
+      fi
+      RootType="${PartitionType}"
     fi
-    
-    PartitionType=""                # PartitionType can be empty (will not be formatted)
-    RootType="${PartitionType}" 
   fi
 
   PartitionList=$(echo "$PartitionList" | sed "s/$PassPart//")  # Remove the used partition from the list
@@ -531,7 +539,7 @@ function select_device {  # Called by f-part1.sh/check_parts
 }
 
 function get_device_size {  # Called by feliz.sh
-                            # Establish size of device in MiB and inform user
+                            # Establish size of device $UseDisk in MiB and inform user
   DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}') # 1) Get disk size eg: 465.8G
   Unit=${DiskSize: -1}                                          # 2) Save last character (eg: G)
                                   # Remove last character for calculations
