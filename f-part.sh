@@ -491,37 +491,9 @@ function select_device {  # Called by f-part1.sh/check_parts
       Message="$Message $Result"
       message_subsequent "Which do you wish to use for this installation?"
 
-      Counter=0
-      for i in $DiskDetails; do
-        Counter=$((Counter+1))
-        message_first_line "" "$Counter) $i"
-      done
+      menu_dialog_variable="$DiskDetails"
+      menu_dialog 15 50
 
-      title="Selecting a device"
-      echo $DiskDetails > list.file
-
-      # Prepare list for display as a radiolist
-      local -a ItemList=                                # Array will hold entire checklist
-      local Items=0
-      local Counter=0
-      while read -r Item; do                              # Read items from the file
-        Counter=$((Counter+1)) 
-        Items=$((Items+1))
-        ItemList[${Items}]="${Item}"                      # and copy each one to the variable
-        Items=$((Items+1))
-        ItemList[${Items}]="${Item}" 
-        Items=$((Items+1))
-        ItemList[${Items}]="off"                          # with added off switch and newline
-      done < list.file
-      Items=$Counter
-
-      dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" \
-        --cancel-label "$Cancel"--no-tags --radiolist "${Message}" \
-          $1 $2 ${Items} ${ItemList[@]} 2>output.file
-      retval=$?
-      Result=$(cat output.file)                           # Return values to calling function
-      rm list.file
-      
       if [ "$retval" -ne 0 ]; then
         dialog --title "$title" --yes-label "$Yes" --no-label "$No" --yesno \
         "\nPartitioning cannot continue without a device.\nAre you sure you don't want to select a device?" 10 40
@@ -536,6 +508,8 @@ function select_device {  # Called by f-part1.sh/check_parts
   fi
   RootDevice="/dev/${UseDisk}"  # Full path of selected device
   EFIPartition="${RootDevice}1"
+}
+
 }
 
 function get_device_size {  # Called by feliz.sh
