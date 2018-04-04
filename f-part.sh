@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 2nd April 2018
+# Revision date: 4th April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 # allocate_partitions  142    choose_mountpoint   430 
 # parted_script        150    display_partitions  461  
 # allocate_root        200    allocate_uefi       489 
-# allocate_swap        245    select_device       509 
+# allocate_swap        245    
 # select_device        285    get_device_size     570 
 # ------------------------    ------------------------
 
@@ -46,19 +46,13 @@ function check_parts {  # Called by feliz.sh and f-set.sh
                         # Tests for existing partitions, informs user, calls build_lists to prepare arrays
                         # Displays menu of options, then calls partitioning_options to act on user selection
   if [ "$UEFI" -eq 1 ]; then
-    GrubDevice="EFI"                        # Preset $GrubDevice if installing in EFI
+    GrubDevice="EFI"                                                   # Preset $GrubDevice if installing in EFI
   fi
-  
-  select_device                             # User selects device $UseDisk (eg: sda)
-  if [ $? -ne 0 ]; then return 1; fi
-  
-  get_device_size                           # Get available space in MiB
-  if [ $? -ne 0 ]; then return 1; fi
 
-  ShowPartitions=$(lsblk -l | grep 'part' | cut -d' ' -f1)  # List of all partitions on all connected devices
+  ShowPartitions=$(lsblk -l "$RootDevice" | grep 'part' | cut -d' ' -f1) # List all partitions on the device
   PARTITIONS=$(echo "$ShowPartitions" | wc -w)
 
-  if [ "$PARTITIONS" -eq 0 ]; then                          # If no partitions exist, notify
+  if [ "$PARTITIONS" -eq 0 ]; then                                     # If no partitions exist, notify
     message_first_line "\nThere are no partitions on the device."
     message_subsequent "Please read the 'partitioning' file for advice."
 
@@ -121,7 +115,7 @@ function build_lists { # Called by check_parts to generate details of existing p
   # 3) Add records to the other associative array, PartitionArray, corresponding to PartitionList
     for part in ${PartitionList}; do
       # Get size and mountpoint of that partition
-      SizeMount=$(lsblk -l | grep "${part} " | awk '{print $4 " " $7}')      # eg: 7.5G [SWAP]
+      SizeMount=$(lsblk -l "$RootDevice" | grep "${part} " | awk '{print $4 " " $7}')      # eg: 7.5G [SWAP]
       # And the filesystem:        | just the text after TYPE= | select first text inside double quotations
       Type=$(blkid /dev/"$part" | sed -n -e 's/^.*TYPE=//p' | cut -d'"' -f2) # eg: ext4
       PartitionArray[$part]="$SizeMount $Type" # ... and save them to the associative array
@@ -258,13 +252,15 @@ function allocate_swap { # Called by allocate_partitions
   return 0
 }
 
-function select_device {  # Called by f-part1.sh/check_parts
+function select_device {  # Called by f-part.sh/check_parts
                           # Detects available devices
-  DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)     # eg: sda sdb
-  UseDisk=$DiskDetails                                      # If more than one, $UseDisk will be first
+  # First list all devices with their sizes
+  DiskDetails=$(lsblk -l -o NAME,SIZE,TYPE | grep disk | sed 's/disk//')  # eg: sda 10G sdb 215G
+
   local Counter=$(echo "$DiskDetails" | wc -w)
+  Counter=$((Counter/2))
   if [ "$Counter" -gt 1 ]; then   # If there are multiple devices ask user which to use
-    UseDisk=""            # Reset for user choice
+    UseDisk=""                    # Reset
     while [ -z "$UseDisk" ]; do
       message_first_line "There are"
       Message="$Message $Counter"
@@ -272,49 +268,36 @@ function select_device {  # Called by f-part1.sh/check_parts
       Message="$Message $Result"
       message_subsequent "Which do you wish to use for this installation?"
 
-      Counter=0
-      for i in $DiskDetails; do
-        Counter=$((Counter+1))
-        message_first_line "" "$Counter) $i"
+      declare -a ItemList=()                                    # Array will hold entire list for menu display
+      Items=0
+      for Item in $DiskDetails; do 
+        Items=$((Items+1))
+        ItemList[${Items}]="${Item}"                            # eg: sda1
       done
-
-      title="Selecting a device"
-      echo $DiskDetails > list.file
-
-      # Prepare list for display as a radiolist
-      local -a ItemList=                                # Array will hold entire checklist
-      local Items=0
-      local Counter=0
-      while read -r Item; do                              # Read items from the file
-        Counter=$((Counter+1)) 
-        Items=$((Items+1))
-        ItemList[${Items}]="${Item}"                      # and copy each one to the variable
-        Items=$((Items+1))
-        ItemList[${Items}]="${Item}" 
-        Items=$((Items+1))
-        ItemList[${Items}]="off"                          # with added off switch and newline
-      done < list.file
-      Items=$Counter
-
-      dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" \
-        --cancel-label "$Cancel"--no-tags --radiolist "${Message}" \
-          $1 $2 ${Items} ${ItemList[@]} 2>output.file
-      retval=$?
-      Result=$(cat output.file)                           # Return values to calling function
-      rm list.file
       
-      if [ "$retval" -ne 0 ]; then
-        dialog --title "$title" --yes-label "$Yes" --no-label "$No" --yesno \
-        "\nPartitioning cannot continue without a device.\nAre you sure you don't want to select a device?" 10 40
-        if [ "$?" -eq 0 ]; then
-          UseDisk=""
-          RootDevice=""
-          return 1
+      if [ "$Items" -gt 0 ]; then                               # Display for selection
+        dialog --backtitle "$Backtitle" --title " $title " --ok-label "$Ok" \
+        --cancel-label "$Cancel" --menu "$Message" 18 70 ${Items} "${ItemList[@]}" 2>output.file
+        retval=$?
+        Result=$(cat output.file)
+        UseDisk="$Result"
+
+        if [ "$retval" -ne 0 ]; then
+          dialog --title "$title" --yes-label "$Yes" --no-label "$No" --yesno \
+          "\nPartitioning cannot continue without a device.\nAre you sure you don't want to select a device?" 10 50
+          if [ "$?" -eq 0 ]; then
+            UseDisk=""
+            RootDevice=""
+            return 1
+          fi
         fi
+        UseDisk="$Result"
       fi
-      UseDisk="$Result"
     done
+  else                          # If only one device
+    UseDisk=$DiskDetails        # Save just the name
   fi
+
   RootDevice="/dev/${UseDisk}"  # Full path of selected device
   EFIPartition="${RootDevice}1"
 }
@@ -324,7 +307,7 @@ function no_swap_partition {  # Called by allocate_partitions when there are no 
   message_subsequent "but you can allocate a swap file, if you wish"
   title="Create a swap file?"
   dialog --backtitle "$Backtitle" --title " $title " \
-    --yes-label "$Yes" --no-label "$No"--yesno "\n$Message" 10 55 2>output.file
+    --yes-label "$Yes" --no-label "$No"--yesno "\n$Message" 14 60 2>output.file
   case $? in
   0) set_swap_file
     SwapPartition="" ;;
@@ -338,8 +321,11 @@ function set_swap_file {
   SwapFile=""
   while [ -z ${SwapFile} ]; do
     message_first_line "Allocate the size of your swap file"
-    message_subsequent "M = Megabytes, G = Gigabytes [eg: 512M or 2G]"
+    message_subsequent "M = Megabytes, G = Gigabytes [ eg: 512M or 2G ]"
+    title="Swap File"
+
     dialog_inputbox 12 60
+ 
     if [ $retval -ne 0 ]; then SwapFile=""; return 0; fi
     RESPONSE="${Result^^}"
     # Check that entry includes 'M or G'
@@ -477,44 +463,9 @@ function allocate_uefi {  # Called at start of allocate_root, as first step of E
   PartitionList=$(echo "$PartitionList" | sed "s/${Result}$//")  # Remove selected item
 }
 
-function select_device {  # Called by f-part1.sh/check_parts
-                          # Detects available devices
-  DiskDetails=$(lsblk -l | grep 'disk' | cut -d' ' -f1)     # eg: sda sdb
-  UseDisk=$DiskDetails                                      # If more than one, $UseDisk will be first
-  local Counter=$(echo "$DiskDetails" | wc -w)
-  if [ "$Counter" -gt 1 ]; then   # If there are multiple devices ask user which to use
-    UseDisk=""            # Reset for user choice
-    while [ -z "$UseDisk" ]; do
-      message_first_line "There are"
-      Message="$Message $Counter"
-      translate "devices available"
-      Message="$Message $Result"
-      message_subsequent "Which do you wish to use for this installation?"
-
-      menu_dialog_variable="$DiskDetails"
-      menu_dialog 15 50
-
-      if [ "$retval" -ne 0 ]; then
-        dialog --title "$title" --yes-label "$Yes" --no-label "$No" --yesno \
-        "\nPartitioning cannot continue without a device.\nAre you sure you don't want to select a device?" 10 40
-        if [ "$?" -eq 0 ]; then
-          UseDisk=""
-          RootDevice=""
-          return 1
-        fi
-      fi
-      UseDisk="$Result"
-    done
-  fi
-  RootDevice="/dev/${UseDisk}"  # Full path of selected device
-  EFIPartition="${RootDevice}1"
-}
-
-}
-
 function get_device_size {  # Called by feliz.sh
                             # Establish size of device $UseDisk in MiB and inform user
-  DiskSize=$(lsblk -l | grep "${UseDisk}\ " | awk '{print $4}') # 1) Get disk size eg: 465.8G
+  DiskSize=$(lsblk -l "$RootDevice" | grep "$UseDisk " | awk '{print $4}') # 1) Get disk size eg: 465.8G
   Unit=${DiskSize: -1}                                          # 2) Save last character (eg: G)
                                   # Remove last character for calculations
   Chars=${#DiskSize}              # Count characters in variable

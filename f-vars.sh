@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 6th January 2018
+# Revision date: 4th April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -130,7 +130,6 @@ function dialog_inputbox {          # General-purpose input box ... $1 & $2 are 
     --inputbox "\n$Message\n" $1 $2 2>output.file
   retval=$?
   Result=$(cat output.file)
-  return 0
 }
 
 function message_first_line {       # translates $1 and starts a Message with it
