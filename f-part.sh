@@ -295,7 +295,7 @@ function select_device {  # Called by f-part.sh/check_parts
       fi
     done
   else                          # If only one device
-    UseDisk=$DiskDetails        # Save just the name
+    UseDisk=$(echo "$DiskDetails" | cut -d' ' -f1)        # Save just the name
   fi
 
   RootDevice="/dev/${UseDisk}"  # Full path of selected device

@@ -230,15 +230,13 @@ function install_extras { # Install desktops and other extras for FelizOB (note 
   if [ "$DesktopEnvironment" = "FelizOB" ]; then
     translate "Installing"
     install_message "$Result FelizOB"
-    # arch_chroot "systemctl disable display-manager.service" 2>> feliz.log
-    pacstrap /mnt lxdm 2>> feliz.log
-    arch_chroot "systemctl -f enable lxdm.service" >> feliz.log
+    pacstrap /mnt lightdm lightdm-gtk-greeter 2>> feliz.log
+    arch_chroot "systemctl -f enable lightdm.service" >> feliz.log
     pacstrap /mnt openbox 2>> feliz.log                                               # First ensure that Openbox gets installed
     pacstrap /mnt obmenu obconf 2>> feliz.log                                         # Then Openbox tools
     pacstrap /mnt lxde-icon-theme leafpad lxappearance lxinput lxpanel 2>> feliz.log  # Then LXDE tools
     pacstrap /mnt lxrandr lxsession lxtask lxterminal pcmanfm 2>> feliz.log           # more LXDE tools
     pacstrap /mnt compton conky gpicview midori xscreensaver 2>> feliz.log            # Add some extras
-    cp lxdm.conf /mnt/etc/lxdm/                                                       # Copy the LXDM config file
     install_yaourt                                                                    # And install Yaourt
   fi
   # Display manager - runs only once
@@ -392,6 +390,10 @@ function user_add { # Adds user and copies FelizOB configurations
     check_existing "/mnt/home/${user_name}/.config/pcmanfm/default/" "desktop-items-0.conf"
     cp desktop-items /mnt/home/"$user_name"/.config/pcmanfm/default/desktop-items-0.conf 2>> feliz.log # Desktop configurations for pcmanfm
     cp wallpaper.jpg /mnt/usr/share/ 2>> feliz.log
+    # Configure lightdm
+    sed -i 's/#greeter-hide-users=false/greeter-hide-users=false/' /mnt/etc/lightdm/lightdm.conf 2>> feliz.log
+    sed -i 's/#background=/background=\/usr\/share\/wallpaper.jpg/' /mnt/etc/lightdm/lightdm-gtk-greeter.conf 2>> feliz.log
+    sed -i 's/#user-background=/user-background=false/' /mnt/etc/lightdm/lightdm-gtk-greeter.conf 2>> feliz.log
     # Set owner
     arch_chroot "chown -R ${user_name}:users /home/${user_name}/"
   fi
@@ -409,7 +411,7 @@ function check_existing {     # Test if $1 (path) + $2 (file) already exists
   fi
 }
 
-function set_root_password {
+function set_root_password {  # ↓↑
   translate "Success!"
   title="$Result"
   translate "minutes"
@@ -422,6 +424,7 @@ function set_root_password {
   Message="${Message}\n"
   message_subsequent "Note that you will not be able to"
   message_subsequent "see passwords as you enter them"
+  message_subsequent "Use cursor keys up/down"
   Message="${Message}\n"
   Repeat="Y"
   while [ $Repeat = "Y" ]; do
@@ -446,6 +449,7 @@ function set_root_password {
       Message="${Message}. $Result \n"
       message_subsequent "Note that you will not be able to"
       message_subsequent "see passwords as you enter them"
+      message_subsequent "Use cursor keys up/down"
       Message="${Message}\n"
       continue
     fi
@@ -461,6 +465,7 @@ function set_root_password {
       Message="${Message}. $Result \n"
       message_subsequent "Note that you will not be able to"
       message_subsequent "see passwords as you enter them"
+      message_subsequent "Use cursor keys up/down"
       Message="${Message}\n"
     fi
   done
@@ -474,6 +479,7 @@ function set_user_password {
   while [ $Repeat = "Y" ]; do
     message_subsequent "Note that you will not be able to"
     message_subsequent "see passwords as you enter them"
+    message_subsequent "Use cursor keys up/down"
     Message="${Message}\n"
     
     dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
@@ -493,6 +499,7 @@ function set_user_password {
       Message="${Message}. $Result \n"
       message_subsequent "Enter a password for"
       Message="${Message} ${user_name} \n"
+      message_subsequent "Use cursor keys up/down"
       continue
     fi
     if [ "$Pass1" = "$Pass2" ]; then
@@ -507,6 +514,7 @@ function set_user_password {
       Message="${Message}. $Result \n"
       message_subsequent "Enter a password for"
       Message="${Message} ${user_name} \n"
+      message_subsequent "Use cursor keys up/down"
     fi
   done
 }

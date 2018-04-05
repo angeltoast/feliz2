@@ -557,6 +557,9 @@ function pick_category { # menu_dialog of categories of selected items from the 
 
   for i in $LuxuriesList; do                          # Run through list
     Check=$(echo "$Desktops" | grep $i)               # Test if a DE
+    if [ -z "$Check" ]; then                          # If not DE
+      Check=$(echo "$WindowManagers" | grep $i)             # Test if a WM
+    fi
     if [ -n "$Check" ]; then                          # This is just to set a primary DE variable
       DesktopEnvironment="$i"                         # Add as DE
       if [ "$DesktopEnvironment" = "Gnome" ]; then    # Gnome installs own DM, so break after adding
