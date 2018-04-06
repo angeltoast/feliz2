@@ -218,23 +218,24 @@ function guided_partitions
 
 function guided_recalc                  # Calculate remaining disk space
 {
-  local Passed=$1
-  Chars=${#Passed}                      # Count characters in variable
+  if [ -z $1 ]; then return; fi         # Just in case
+  local Passed
+  Chars=${#1}                           # Count characters in variable
   
-  if [ ${Passed: -1} = "%" ]; then      # Allow for percentage
-    Passed=${Passed:0:Chars-1}          # Passed variable stripped of unit
+  if [ ${1: -1} = "%" ]; then           # Allow for percentage
+    Passed=${1:0:Chars-1}               # Passed variable stripped of unit
     Value=$((FreeSpace*100/Passed))     # Convert percentage to value
     Calculator=$Value
-  elif [ ${Passed: -1} = "G" ]; then
-    Passed=${Passed:0:Chars-1}          # Passed variable stripped of unit
+  elif [ ${1: -1} = "G" ]; then
+    Passed=${1:0:Chars-1}               # Passed variable stripped of unit
     Calculator=$((Passed*1024))
-  elif [ ${Passed: -3} = "GiB" ]; then  
-    Passed=${Passed:0:Chars-3}          # Passed variable stripped of unit
+  elif [ ${1: -3} = "GiB" ]; then  
+    Passed=${1:0:Chars-3}               # Passed variable stripped of unit
     Calculator=$((Passed*1024))
-  elif [ ${Passed: -1} = "M" ]; then
-    Calculator=${Passed:0:Chars-1}      # (M or MiB) Passed variable stripped of unit
-  elif [ ${Passed: -3} = "MiB" ]; then
-    Calculator=${Passed:0:Chars-3}      # (M or MiB) Passed variable stripped of unit
+  elif [ ${1: -1} = "M" ]; then
+    Calculator=${1:0:Chars-1}           # (M or MiB) Passed variable stripped of unit
+  elif [ ${1: -3} = "MiB" ]; then
+    Calculator=${1:0:Chars-3}           # (M or MiB) Passed variable stripped of unit
   else
     read -p "Error in free-space calculator at line $LINENO"
   fi
