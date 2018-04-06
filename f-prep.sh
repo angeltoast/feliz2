@@ -266,14 +266,18 @@ function guided_root # MBR & EFI Set variables: RootSize, RootType
     message_subsequent "The /root partition should not be less than 8GiB"
     message_subsequent "ideally more, up to 20GiB"
     message_subsequent "\nPlease enter the desired size"
-     Message="$Message \n [ eg: 12G or 100% ] ... "
+    Message="$Message \n [ eg: 12G or 100% ] ... "
 
     dialog --backtitle "$Backtitle" --title " Root " --ok-label "$Ok" --inputbox "$Message" 18 70 2>output.file
     retval=$?
 
     if [ $retval -ne 0 ]; then return 1; fi
     Result="$(cat output.file)"
-    RESPONSE="${Result^^}"
+    if [ $retval -eq 1 ] || [ -z "$Result" ]; then
+        continue        # Cannot be zero or blank
+      else
+        RESPONSE="${Result^^}"
+      fi
     # Check that entry includes 'G or M or %'
     CheckInput=${RESPONSE: -1}
 
@@ -319,8 +323,11 @@ function guided_home # MBR & EFI Set variables: HomeSize, HomeType
     dialog --backtitle "$Backtitle" --title " Home " --ok-label "$Ok" --inputbox "$Message" 16 70 2>output.file
     retval=$?
     Result="$(cat output.file)"
-    RESPONSE="${Result^^}"
-
+    if [ $retval -eq 1 ] || [ -z "$Result" ]; then
+      RESPONSE=0
+    else
+      RESPONSE="${Result^^}"
+    fi
     case ${RESPONSE} in
       "" | 0) HomeSize="0"
           break ;;
@@ -387,33 +394,37 @@ function guided_swap # MBR & EFI Set variable: SwapSize
       dialog --backtitle "$Backtitle" --title " Swap " --ok-label "$Ok" --inputbox "$Message" 16 70 2>output.file
       retval=$?
       Result="$(cat output.file)"
-      RESPONSE="${Result^^}"
+      if [ $retval -eq 1 ] || [ -z "$Result" ]; then
+        RESPONSE=0
+      else
+        RESPONSE="${Result^^}"
+      fi
       case ${RESPONSE} in
-        '' | 0) Echo
-            message_first_line "Do you wish to allocate a swapfile?"
-          dialog --backtitle "$Backtitle" --title " $title " \
-              --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 7 60
-          if [ $? -eq 0 ]; then
-            set_swap_file
+      '' | 0) Echo
+          message_first_line "Do you wish to allocate a swapfile?"
+        dialog --backtitle "$Backtitle" --title " $title " \
+            --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 7 60
+        if [ $? -eq 0 ]; then
+          set_swap_file
+        else
+          SwapSize="0"
+        fi
+        break
+      ;;
+      *) # Check that entry includes 'G or M or %'
+        CheckInput=${RESPONSE: -1}
+        if [ "$CheckInput" != "%" ] && [ "$CheckInput" != "G" ] && [ "$CheckInput" != "M" ]; then
+          dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\nYou must include M or G or %\n" 6 50
+          SwapSize=""
+          continue
+        else
+          if [ "$CheckInput" = "%" ]; then
+            SwapSize="${RESPONSE}"
           else
-            SwapSize="0"
+            SwapSize="${RESPONSE}iB"
           fi
           break
-        ;;
-        *) # Check that entry includes 'G or M or %'
-          CheckInput=${RESPONSE: -1}
-          if [ "$CheckInput" != "%" ] && [ "$CheckInput" != "G" ] && [ "$CheckInput" != "M" ]; then
-            dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\nYou must include M or G or %\n" 6 50
-            SwapSize=""
-            continue
-          else
-            if [ "$CheckInput" = "%" ]; then
-              SwapSize="${RESPONSE}"
-            else
-              SwapSize="${RESPONSE}iB"
-            fi
-            break
-          fi
+        fi
       esac
     else
       message_first_line "There is no space for a /swap partition, but you can"
