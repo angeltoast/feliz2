@@ -53,18 +53,29 @@ function check_parts {  # Called by feliz.sh and f-set.sh
   PARTITIONS=$(echo "$ShowPartitions" | wc -w)
 
   if [ "$PARTITIONS" -eq 0 ]; then                                     # If no partitions exist, notify
-    message_first_line "\nThere are no partitions on the device."
+    message_first_line "There are no partitions on the device"
     message_subsequent "Please read the 'partitioning' file for advice."
+
+    translate "Exit Feliz to the command line"
+    first_item="$Result"
+    translate "Shut down this session"
+    second_item="$Result"
+    translate "Allow Feliz to partition the device"
+    third_item="$Result"
+    translate "Use Guided Manual Partitioning"
+    fourth_item="$Result"
+    translate "Display the 'partitioning' file"
+    fifth_item="$Result"
 
     while true
     do
       dialog --backtitle "$Backtitle" --title " Partitioning " \
       --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" 15 50 5 \
-        1 "Exit Feliz to the command line" \
-        2 "Shut down this session" \
-        3 "Allow Feliz to partition the device" \
-        4 "Use Guided Manual Partitioning" \
-        5 "Display the 'partitioning' file" 2>output.file
+        1 "$first_item" \
+        2 "$second_item" \
+        3 "$third_item" \
+        4 "$fourth_item" \
+        5 "$fifth_item" 2>output.file
       if [ $? -ne 0 ]; then return 1; fi
       Result=$(cat output.file)
     
@@ -217,8 +228,9 @@ function allocate_root {  # Called by allocate_partitions
 }
 
 function allocate_swap { # Called by allocate_partitions
-  message_first_line "Select a partition for swap from the ones that"
-  message_subsequent "remain, or you can allocate a swap file"
+  message_first_line "Select a partition for"
+  Message="$Message /swap"
+  message_subsequent "Or you can assign a swap file"
   message_subsequent "Warning: Btrfs does not support swap files"
   SwapPartition=""
   SwapFile=""
@@ -304,8 +316,7 @@ function select_device {  # Called by f-part.sh/check_parts
 
 function no_swap_partition {  # Called by allocate_partitions when there are no unallocated partitions
   message_first_line "There are no partitions available for swap"
-  message_subsequent "but you can allocate a swap file, if you wish"
-  title="Create a swap file?"
+  message_subsequent "but you can assign a swap file"
   dialog --backtitle "$Backtitle" --title " $title " \
     --yes-label "$Yes" --no-label "$No"--yesno "\n$Message" 14 60 2>output.file
   case $? in
@@ -320,7 +331,7 @@ function no_swap_partition {  # Called by allocate_partitions when there are no 
 function set_swap_file {
   SwapFile=""
   while [ -z ${SwapFile} ]; do
-    message_first_line "Allocate the size of your swap file"
+    message_first_line "Set the size of your swap file"
     message_subsequent "M = Megabytes, G = Gigabytes [ eg: 512M or 2G ]"
     title="Swap File"
 

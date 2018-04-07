@@ -79,13 +79,15 @@ function prepare_device # Called by autopart, guided_MBR and guided_EFI
   clear
 
   # Create a new partition table
-  if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
+  if [ ${UEFI} -eq 1 ]; then                          # Installing in UEFI environment
     parted_script "mklabel gpt"                       # Create new filesystem
-    parted_script "mkpart primary fat32 1MiB 513MiB"  # EFI boot partition
-    StartPoint="513MiB"                             # For next partition
-  else                                              # Installing in BIOS environment
-    parted_script "mklabel msdos"                   # Create new filesystem
-    StartPoint="1MiB"                               # For next partition
+    parted_script "mkpart ESP fat32 1MiB 550MiB"  # EFI boot partition
+    EFIPartition="${GrubDevice}1"                     # Define EFI partition 
+    mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log      # Format EFI boot partition
+    StartPoint="551MiB"                               # For next partition
+  else                                                # Installing in BIOS environment
+    parted_script "mklabel msdos"                     # Create new filesystem
+    StartPoint="1MiB"                                 # For next partition
   fi
 
 }
@@ -101,37 +103,44 @@ function prepare_partitions # Called from autopart for either EFI or BIOS system
   # Note:
   # An appropriate partition table has already been created in prepare_device
   # If system is EFI, prepare_device has also created the /boot partition at
-  #   /dev/${UseDisk} and set it as bootable, and the startpoint
-  #    (passed here as $1) has been set to follow /boot
-                    
-  local StartPoint=$1                               # Local variable 
+  #   /dev/${UseDisk}1 and the startpoint (passed here as $1) has been set to follow /boot
 
-  # Set the device to be used to 'set x boot on'    # $MountDevice is numerical - eg: 1 in sda1
-  MountDevice=1                                     # Start with first partition = [sda]1
-                                                    # Make /boot at startpoint
-  parted_script "mkpart primary ext4 ${StartPoint} ${2}"   # eg: parted /dev/sda mkpart primary ext4 1MiB 12GiB
-  parted_script "set ${MountDevice} boot on"               # eg: parted /dev/sda set 1 boot on
-  if [ $UEFI -eq 1 ]; then                          # Reset if installing in EFI environment
-    MountDevice=2                                   # Next partition after /boot = [sda]2
+  local StartPoint=$1
+  # Set the partition number for parted commands
+  if [ $UEFI -eq 1 ]; then     # eg: 1 in sda1
+    MountDevice=2              # Next after EFI
+  else
+    MountDevice=1              # Or 1 if not on EFI
   fi
-  RootPartition="${GrubDevice}${MountDevice}"       # eg: /dev/sda1
-  mkfs."{RootType}" "${RootPartition}" &>> feliz.log   # eg: mkfs.ext4 /dev/sda1
-  StartPoint=$2                                     # Increment startpoint for /home or /swap
-  MountDevice=$((MountDevice+1))                    # Advance partition numbering for next step
-
-  if [ -n "$3" ] && [ "$3" != "0" ]; then # eg: parted /dev/sda mkpart primary ext4 12GiB 19GiB
+  # Make /root partition at startpoint
+  # eg: parted /dev/sda mkpart primary ext4 1MiB 12GiB
+  parted_script "mkpart primary ext4 ${StartPoint} ${2}"
+  # eg: /dev/sda2 if there is an EFI partition
+  RootPartition="${GrubDevice}${MountDevice}"
+  # eg: mkfs.ext4 /dev/sda1
+  mkfs."{RootType}" "${RootPartition}" &>> feliz.log
+  # Set first partition as bootable
+  # eg: parted /dev/sda set 1 boot on
+  parted_script "set 1 boot on"
+  StartPoint=$2                               # Increment startpoint for /home or /swap
+  MountDevice=$((MountDevice+1))              # Advance partition numbering for next step
+  # Make /home partition at startpoint
+  if [ -n "$3" ] && [ "$3" != "0" ]; then
+    # eg: parted /dev/sda mkpart primary ext4 12GiB 19GiB
     parted_script "mkpart primary ext4 ${StartPoint} ${3}"
     HomePartition="${GrubDevice}${MountDevice}"
-    AddPartList[0]="${HomePartition}"               # eg: /dev/sda2  | add to
-    AddPartMount[0]="/home"                         # Mountpoint     | array of
-    AddPartType[0]="$HomeType"                      # Filesystem     | additional partitions
+    AddPartList[0]="${HomePartition}"         # eg: /dev/sda2  | add to
+    AddPartMount[0]="/home"                   # Mountpoint     | array of
+    AddPartType[0]="$HomeType"                # Filesystem     | additional partitions
     Home="Y"
-    mkfs."$HomeType" "${HomePartition}" &>> feliz.log  # eg: mkfs.ext4 /dev/sda3
-    StartPoint=$3                                   # Reset startpoint for /swap
-    MountDevice=$((MountDevice+1))                  # Advance partition numbering
+    # eg: mkfs.ext4 /dev/sda3
+    mkfs."$HomeType" "${HomePartition}" &>> feliz.log
+    StartPoint=$3                             # Reset startpoint for /swap
+    MountDevice=$((MountDevice+1))            # Advance partition numbering
   fi
-
-  if [ -n "$4" ] && [ "$4" != "0" ]; then # eg: parted /dev/sda mkpart primary linux-swap 31GiB 100%
+  # Make /swap partition at startpoint
+  if [ -n "$4" ] && [ "$4" != "0" ]; then
+    # eg: parted /dev/sda mkpart primary linux-swap 31GiB 100%
     parted_script "mkpart primary linux-swap ${StartPoint} ${4}"
     SwapPartition="${GrubDevice}${MountDevice}"
     mkswap "$SwapPartition"
@@ -164,7 +173,7 @@ function guided_message
   message_subsequent "you wish to create. When ready, Feliz will wipe the disk"
   message_subsequent "and create a new partition table with your settings"
   message_subsequent "$limitations"
-  message_subsequent "\nDo you wish to continue?"
+  message_subsequent "Do you wish to continue?"
 
   dialog --backtitle "$Backtitle" --title " $title " \
       --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 12 60
@@ -197,8 +206,10 @@ function guided_partitions
     guided_swap                             # Prepare $SwapSize
     if [ $? -ne 0 ]; then return 1; fi      # If error then return to caller
   else
-    message_first_line "There is no space for a /swap partition, but you can"
-    message_subsequent "assign a swap-file. It is advised to allow some swap\n"
+    message_first_line "There is no space for a"
+    translate "partition"
+    Message="$Message /swap $Result"
+    message_subsequent "You can assign a swap-file"
     message_subsequent "Do you wish to allocate a swapfile?"
     SwapSize="0"
     dialog --backtitle "$Backtitle" --title " $title " \
@@ -260,12 +271,18 @@ function guided_root # MBR & EFI Set variables: RootSize, RootType
     Message="$Message ${FreeGigs}GiB"
     Message="$Message available on the chosen device"
     message_subsequent "A partition is needed for /root"
+    message_subsequent "It should not be less than"
+    Message="$Message 8GiB"
     message_subsequent "You can use all the remaining space on the device, if you wish"
-    message_subsequent "although you may want to leave room for a /swap partition"
-    message_subsequent "and perhaps also a /home partition"
-    message_subsequent "The /root partition should not be less than 8GiB"
+    message_subsequent "You may want to leave room for a"
+    translate "partition"
+    Message="$Message /swap $Result"
+    message_subsequent "and perhaps also a"
+    translate "partition"
+    Message="$Message /home $Result"
     message_subsequent "ideally more, up to 20GiB"
-    message_subsequent "\nPlease enter the desired size"
+    Message="$Message \n"
+    message_subsequent "Please enter the desired size"
     Message="$Message \n [ eg: 12G or 100% ] ... "
 
     dialog --backtitle "$Backtitle" --title " Root " --ok-label "$Ok" --inputbox "$Message" 18 70 2>output.file
@@ -282,7 +299,8 @@ function guided_root # MBR & EFI Set variables: RootSize, RootType
     CheckInput=${RESPONSE: -1}
 
     if [ "$CheckInput" != "%" ] && [ "$CheckInput" != "G" ] && [ "$CheckInput" != "M" ]; then
-      dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\nYou must include M or G or %\n" 6 50
+      translate "You must include M or G or %"
+      dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n$Result\n" 6 50
       RootSize=""
       continue
     else
@@ -305,18 +323,20 @@ function guided_home # MBR & EFI Set variables: HomeSize, HomeType
   while true
   do
     # Show /root, /swap and available space
-    translate "/root partition"
-    message_first_line "$Result : ${RootType} : ${RootSize}"
+    translate "partition"
+    message_first_line "/root $Result : ${RootType} : ${RootSize}"
     message_subsequent "You now have"
     Message="$Message ${FreeGigs}GiB"
     Message="$Message available on the chosen device"
     
     message_subsequent "There is space for a"
-    translate "/home partition"
-    Message="$Message $Result"
+    translate "partition"
+    Message="$Message /home $Result"
     message_subsequent "You can use all the remaining space on the device, if you wish"
-    message_subsequent "You may want to leave room for a /swap partition"
-    message_subsequent "\nPlease enter the desired size"
+    translate "partition"
+    message_subsequent "You may want to leave room for a"
+    Message="$Message /swap $Result \n"
+    message_subsequent "Please enter the desired size"
     translate "Size"
     message_subsequent "${Result} [ eg: 10G or 0 or 100% ] ... "
     
@@ -334,7 +354,8 @@ function guided_home # MBR & EFI Set variables: HomeSize, HomeType
       *) # Check that entry includes 'G or M'
           CheckInput=${RESPONSE: -1}
         if [ "$CheckInput" != "%" ] && [ "$CheckInput" != "G" ] && [ "$CheckInput" != "M" ]; then
-          dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\nYou must include M or G or %\n" 8 75
+          translate "You must include M or G or %"
+          dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\nResult\n" 8 75
           HomeSize=""
           continue
         else
@@ -359,35 +380,38 @@ function guided_swap # MBR & EFI Set variable: SwapSize
   do
     if [ ${FreeSpace} -gt 0 ]; then
       # show /root and available space
-      translate "/root partition"
-      message_first_line "$Result : ${RootType} : ${RootSize}"
-      translate "/home partition"
-      message_first_line "$Result : ${HomeType} : ${HomeSize}"
+      translate "partition"
+      Message="/root $Result : ${RootType} : ${RootSize}"
+      translate "partition"
+      Message="$Message \n/home $Result : ${HomeType} : ${HomeSize}"
       message_subsequent "You now have"
       Message="$Message ${FreeGigs}GiB"
       Message="$Message available on the chosen device"
   
       if [ ${FreeSpace} -gt 10 ]; then
         message_subsequent "There is space for a"
-        translate "/swap partition"
-        Message="$Message $Result"
+        translate "partition"
+        Message="$Message /swap $Result"
         message_subsequent "Swap can be anything from 512MiB upwards but"
         message_subsequent "it is not necessary to exceed 4GiB"
         message_subsequent "You can use all the remaining space on the device, if you wish"
       elif [ ${FreeSpace} -gt 5 ]; then
         message_subsequent "There is space for a"
-        Message="$Message $_SwapPartition"
+        translate "partition"
+        Message="$Message /swap $Result"
         message_subsequent "Swap can be anything from 512MiB upwards but"
         message_subsequent "it is not necessary to exceed 4GiB"
         message_subsequent "You can use all the remaining space on the device, if you wish"
       else
         message_subsequent "There is just space for a"
-        Message="$Message $_SwapPartition"
+        translate "partition"
+        Message="$Message /swap $Result"
         message_subsequent "Swap can be anything from 512MiB upwards but"
         message_subsequent "it is not necessary to exceed 4GiB"
         message_subsequent "You can use all the remaining space on the device, if you wish"
       fi
-      message_subsequent "\nPlease enter the desired size"
+      Message="$Message \n"
+      message_subsequent "Please enter the desired size"
       translate "Size"
       message_subsequent "$Result [ eg: 2G or 0 or 100% ] ... "
   
@@ -414,7 +438,8 @@ function guided_swap # MBR & EFI Set variable: SwapSize
       *) # Check that entry includes 'G or M or %'
         CheckInput=${RESPONSE: -1}
         if [ "$CheckInput" != "%" ] && [ "$CheckInput" != "G" ] && [ "$CheckInput" != "M" ]; then
-          dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\nYou must include M or G or %\n" 6 50
+          translate "You must include M or G or %"
+          dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n$Result\n" 6 50
           SwapSize=""
           continue
         else
@@ -427,8 +452,11 @@ function guided_swap # MBR & EFI Set variable: SwapSize
         fi
       esac
     else
-      message_first_line "There is no space for a /swap partition, but you can"
-      message_subsequent "assign a swap-file. It is advised to allow some swap\n"
+      message_first_line "There is no space for a"
+      translate "partition"
+      Message="$Message /swap $Result"
+      message_subsequent "but you can assign a swap file"
+      Message="$Message \n"
       message_subsequent "Do you wish to allocate a swapfile?"
       SwapSize="0"
       dialog --backtitle "$Backtitle" --title " $title " \
