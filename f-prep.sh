@@ -483,5 +483,5 @@ function display_results
     p="$p \n $Item"                  # Add to $p with newline after each $Item
   done < output.file
 
-  dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n Partitioning of ${GrubDevice} \n $p" 15 70
+  dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n Partitioning of ${GrubDevice} \n $p" 20 70
 }

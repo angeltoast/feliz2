@@ -11,8 +11,7 @@ The Feliz scripts make installation of Arch Linux quick and easy.
    Feliz always downloads the latest scripts from Github at the start of each installation,
    so you don't need to replace your Feliz iso every time there's a new release.
 
-2) Alternatively, you can run Feliz by downloading the initialising script from Github into a running
-   live Arch Linux session.
+2) Alternatively, you can run Feliz by downloading the initialising script from Github into a running live Arch Linux session.
    Here's how to do it:
      1) Download Arch Linux from ... https://www.archlinux.org/download/
      2) Either:
@@ -27,17 +26,10 @@ The Feliz scripts make installation of Arch Linux quick and easy.
      5) Now enter: chmod +x felizinit-stable
      6) Then start Feliz by entering: ./felizinit-stable
 
-3) Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data
-   as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop
-   environments, web browsers, office software and programming tools) and working with you to set up your
-   partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see
-   exactly what the installer is doing - just like a manual installation.
+3) Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
 
 4) Partitioning
-   Feliz used to offer tools to modify existing partitions and create new partitions.
-   However, there have recently been serious problems with this code, so those options have been removed until the
-   bugs can be fixed.
-   There is now a file with advice about partitioning ... partitioning ... which can be read during installation.
+   Feliz includes options to help you with partitioning an empty device. There is now a file with advice about partitioning, which can be read during installation.
   
 Find our friendly and lively communities on Facebook:
 	https://www.facebook.com/groups/915936978471838/
@@ -45,6 +37,7 @@ Find our friendly and lively communities on Facebook:
 	https://plus.google.com/u/0/communities/115015910961165526577
 
 NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer.
+      Arch Linux is now 64 bit only.
 
 Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
