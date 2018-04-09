@@ -85,6 +85,7 @@ function prepare_device # Called by autopart, guided_MBR and guided_EFI
     EFIPartition="${GrubDevice}1"                     # Define EFI partition 
     mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log      # Format EFI boot partition
     StartPoint="551MiB"                               # For next partition
+    FreeSpace="$((FreeSpace-550))"                    # For guided partitioning
   else                                                # Installing in BIOS environment
     parted_script "mklabel msdos"                     # Create new filesystem
     StartPoint="1MiB"                                 # For next partition
@@ -263,7 +264,7 @@ function guided_root # MBR & EFI Set variables: RootSize, RootType
   do
     # Clear display, show /boot and available space
     if [ $UEFI -eq 1 ]; then
-      message_first_line "$BootPartition : ${BootSize}"
+      message_first_line "EFI Partition : 550MiB"
       message_subsequent "You now have"
     else
       message_first_line "You have"
@@ -288,9 +289,9 @@ function guided_root # MBR & EFI Set variables: RootSize, RootType
     dialog --backtitle "$Backtitle" --title " Root " --ok-label "$Ok" --inputbox "$Message" 18 70 2>output.file
     retval=$?
 
-    if [ $retval -ne 0 ]; then return 1; fi
+    if [ $retval -ne 0 ]; then continue 1; fi
     Result="$(cat output.file)"
-    if [ $retval -eq 1 ] || [ -z "$Result" ]; then
+    if [ $retval -eq 1 ] || [ -z "$Result" ] || [ "$Result" = "0" ]; then
         continue        # Cannot be zero or blank
       else
         RESPONSE="${Result^^}"
@@ -343,7 +344,7 @@ function guided_home # MBR & EFI Set variables: HomeSize, HomeType
     dialog --backtitle "$Backtitle" --title " Home " --ok-label "$Ok" --inputbox "$Message" 16 70 2>output.file
     retval=$?
     Result="$(cat output.file)"
-    if [ $retval -eq 1 ] || [ -z "$Result" ]; then
+    if [ $retval -eq 1 ] || [ -z "$Result" ] || [ "$Result" = "0" ]; then
       RESPONSE=0
     else
       RESPONSE="${Result^^}"
@@ -415,10 +416,10 @@ function guided_swap # MBR & EFI Set variable: SwapSize
       translate "Size"
       message_subsequent "$Result [ eg: 2G or 0 or 100% ] ... "
   
-      dialog --backtitle "$Backtitle" --title " Swap " --ok-label "$Ok" --inputbox "$Message" 16 70 2>output.file
+      dialog --backtitle "$Backtitle" --title " Swap " --ok-label "$Ok" --inputbox "$Message" 18 70 2>output.file
       retval=$?
       Result="$(cat output.file)"
-      if [ $retval -eq 1 ] || [ -z "$Result" ]; then
+      if [ $retval -eq 1 ] || [ -z "$Result" ] || [ "$Result" = "0" ]; then
         RESPONSE=0
       else
         RESPONSE="${Result^^}"
@@ -475,7 +476,7 @@ function guided_swap # MBR & EFI Set variable: SwapSize
 
 function display_results
 {
-  lsblk -l "${RootDevice}" > output.file
+  fdisk -l "${RootDevice}" > output.file
   p=" "
   while read -r Item; do             # Read items from the output.file file
     p="$p \n $Item"                  # Add to $p with newline after each $Item
