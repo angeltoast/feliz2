@@ -230,7 +230,7 @@ function guided_partitions
 
 function guided_recalc                  # Calculate remaining disk space
 {
-  if [ -z $1 ]; then return; fi         # Just in case
+  if [ -z $1 ] || [  $1 -eq 0 ]; then return; fi         # Just in case
   local Passed
   Chars=${#1}                           # Count characters in variable
   
@@ -345,7 +345,8 @@ function guided_home # MBR & EFI Set variables: HomeSize, HomeType
     retval=$?
     Result="$(cat output.file)"
     if [ $retval -eq 1 ] || [ -z "$Result" ] || [ "$Result" = "0" ]; then
-      RESPONSE=0
+      HomeSize="0"
+      return 0
     else
       RESPONSE="${Result^^}"
     fi
