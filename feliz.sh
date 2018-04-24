@@ -59,7 +59,7 @@ function main {       # Prepare environment, call the four processes in sequence
     the_start                                     # All user interraction takes place in this function
     case $? in                                    # the_start allows progressive 'backing out'
     1) continue ;;                                # Restart on low-level backout
-    2) exit ;;                                    # Quit on high-level backout
+    2) finish ;;                                  # Quit on high-level backout
     esac
       
     if [ "$AutoPart" = "NONE"  ] || [ -z "$AutoPart"  ]; then continue; fi  # Restart if no partitioning options    
