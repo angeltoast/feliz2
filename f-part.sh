@@ -483,7 +483,7 @@ function get_device_size {  # Called by feliz.sh
   Available=${DiskSize:0:Chars-1} # Separate the value from the unit
                                   # Must be integer, so remove any decimal
   Available=${Available%.*}       # point and any character following
-  if [ "$Unit" = "G" ]; then
+  if [ "$Unit" = "G" ]; then      # And convert to MiB
     FreeSpace=$((Available*1024))
     Unit="M"
   elif [ "$Unit" = "T" ]; then

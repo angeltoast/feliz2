@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th April 2018
+# Revision date: 26th April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -211,6 +211,7 @@ Ignorelist=""             # Used in review process
 AutoPart="MANUAL"         # Flag - MANUAL/AUTO/GUIDED/CFDISK/NONE
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
+Calculator=0              # Used in f-prep to separate numeric part of "nGiB"
 
 # Grub & kernel variables
 GrubDevice=""             # eg: /dev/sda - device for grub

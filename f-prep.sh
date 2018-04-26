@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th April 2018
+# Revision date: 26th April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,23 +45,23 @@ function auto_warning
 
 function autopart   # Consolidated fully automatic partitioning for BIOS or EFI environment
 {                   # Called by f-part.sh/check_parts (after auto_warning)
+                    # Decide partition sizes based on device size
   prepare_device                                    # Create partition table and device variables
   RootType="ext4"                                   # Default for auto
   HomeType="ext4"                                   # Default for auto
-  # Decide partition sizes based on device size
-  if [ $DiskSize -ge 40 ]; then                     # ------ /root /home /swap partitions ------
-    HomeSize=$((DiskSize-15-4))                     # /root 15 GiB, /swap 4GiB, /home from 18GiB
+  if [ $DiskSize -ge 50 ]; then                     # ------ /root /home /swap partitions ------
+    HomeSize=$((DiskSize-19))                       # /root 15 GiB, /home from 31GiB, /swap 4GiB
     prepare_partitions "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
   elif [ $DiskSize -ge 30 ]; then                   # ------ /root /home /swap partitions ------
-    HomeSize=$((DiskSize-15-3))                     # /root 15 GiB, /swap 3GiB, /home 12 to 22GiB
-    prepare_partitions "${StartPoint}" "15GiB" "${HomeSize}GiB" "100%"
+    HomeSize=$((DiskSize-16))                       # /root 15 GiB, /home 12 to 22GiB, /swap 3GiB
+    prepare_partitions "${StartPoint}" "13GiB" "${HomeSize}GiB" "100%"
   elif [ $DiskSize -ge 18 ]; then                   # ------ /root & /swap partitions only ------
     RootSize=$((DiskSize-2))                        # /root 16 to 28GiB, /swap 2GiB
     prepare_partitions "${StartPoint}" "${RootSize}GiB" "0" "100%"
   elif [ $DiskSize -gt 10 ]; then                   # ------ /root & /swap partitions only ------
     RootSize=$((DiskSize-1))                        # /root 9 to 17GiB, /swap 1GiB
     prepare_partitions "${StartPoint}" "${RootSize}GiB" "0" "100%"
-  else                                              # ------ Swap file and /root partition only -----
+  else                                              # ------/root partition &  Swap file only -----
     prepare_partitions "${StartPoint}" "100%" "0" "0"
     SwapFile="2G"                                   # Swap file
     SwapPartition=""                                # Clear swap partition variable
@@ -70,32 +70,34 @@ function autopart   # Consolidated fully automatic partitioning for BIOS or EFI 
 }
 
 function prepare_device # Called by autopart, guided_MBR and guided_EFI
-{
+{                       # Create partition table
   GrubDevice="/dev/${UseDisk}"
   Home="N"                                          # No /home partition at this point
-  DiskSize=$(lsblk -l "$RootDevice" | grep "${UseDisk} " | awk '{print $4}' | sed "s/G\|M\|K//g") # Get disk size
-  FreeSpace="$((DiskSize*1024))"                    # For guided partitioning
-  tput setf 0                                       # Change foreground colour to black to hide error message
-  clear
-
+  DiskSize=$(lsblk -l "$RootDevice" | grep "${UseDisk} " | awk '{print $4}' | sed "s/G\|M\|K//g" | cut -d'.' -f1) # eg: 149
+  get_unit=$(lsblk -l "$RootDevice" | grep "${UseDisk} " | awk '{print $4}') # eg: 149.1G
+  disk_unit=${get_unit: -1}                         # eg: G
+  case "$disk_unit" in                              # For converting to MiB 
+  "G") Factor=1024 ;;
+  "M") Factor=1 ;;
+  *) Factor=0
+  esac
+  FreeSpace="$((DiskSize*Factor))"                  # For guided and auto partitioning
   # Create a new partition table
-  if [ ${UEFI} -eq 1 ]; then                          # Installing in UEFI environment
-    parted_script "mklabel gpt"                       # Create new filesystem
-    parted_script "mkpart ESP fat32 1MiB 550MiB"  # EFI boot partition
-    EFIPartition="${GrubDevice}1"                     # Define EFI partition 
-    mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log      # Format EFI boot partition
-    StartPoint="551MiB"                               # For next partition
-    FreeSpace="$((FreeSpace-550))"                    # For guided partitioning
-  else                                                # Installing in BIOS environment
-    parted_script "mklabel msdos"                     # Create new filesystem
-    StartPoint="1MiB"                                 # For next partition
+  if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
+    parted_script "mklabel gpt"                     # Create new filesystem
+    parted_script "mkpart ESP fat32 1MiB 550MiB"    # EFI boot partition
+    EFIPartition="${GrubDevice}1"                   # Define EFI partition 
+    mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log    # Format EFI boot partition
+    StartPoint="551MiB"                             # For next partition
+    FreeSpace="$((FreeSpace-550))"                  # For guided partitioning
+  else                                              # Installing in BIOS environment
+    parted_script "mklabel msdos"                   # Create new filesystem
+    StartPoint="1MiB"                               # For next partition
   fi
-
 }
 
 function prepare_partitions # Called from autopart for either EFI or BIOS system
-{
-  # Uses gnu parted to create partitions 
+{                           # Uses gnu parted to create partitions 
   # Receives up to 4 arguments
   #   $1 is the starting point of the root partition  - 1MiB if MBR, 513MiB if GPT
   #   $2 is size of root partition                    - 8GiB upwards to 100%
@@ -106,43 +108,46 @@ function prepare_partitions # Called from autopart for either EFI or BIOS system
   # If system is EFI, prepare_device has also created the /boot partition at
   #   /dev/${UseDisk}1 and the startpoint (passed here as $1) has been set to follow /boot
 
-  local StartPoint=$1
+  StartPoint="$1"
   # Set the partition number for parted commands
-  if [ $UEFI -eq 1 ]; then     # eg: 1 in sda1
-    MountDevice=2              # Next after EFI
+  if [ $UEFI -eq 1 ]; then                            # eg: 1 in sda1
+    MountDevice=2                                     # Next after EFI
   else
-    MountDevice=1              # Or 1 if not on EFI
+    MountDevice=1                                     # Or 1 if not on EFI
   fi
-  # Make /root partition at startpoint
-  # eg: parted /dev/sda mkpart primary ext4 1MiB 12GiB
-  parted_script "mkpart primary ext4 ${StartPoint} ${2}"
-  # eg: /dev/sda2 if there is an EFI partition
-  RootPartition="${GrubDevice}${MountDevice}"
-  # eg: mkfs.ext4 /dev/sda1
-  mkfs."{RootType}" "${RootPartition}" &>> feliz.log
+  # 1) Make /root partition at startpoint
+  guided_recalc "$1"                                  # Get numeric part of startpoint
+  Start="$Calculator"
+  guided_recalc "$2"                                  # Get numeric part of root size
+  End=$((Start+Calculator))
+  EndPoint="${End}MiB"
+  parted_script "mkpart primary ext4 ${StartPoint} ${EndPoint}" # eg: parted /dev/sda mkpart primary ext4 1MiB 12000MiB
+  RootPartition="${GrubDevice}${MountDevice}"         # eg: /dev/sda2 if there is an EFI partition
+  mkfs."{RootType}" "${RootPartition}" &>> feliz.log  # eg: mkfs.ext4 /dev/sda1
   # Set first partition as bootable
-  # eg: parted /dev/sda set 1 boot on
-  parted_script "set 1 boot on"
-  StartPoint=$2                               # Increment startpoint for /home or /swap
-  MountDevice=$((MountDevice+1))              # Advance partition numbering for next step
-  # Make /home partition at startpoint
+  parted_script "set 1 boot on"                       # eg: parted /dev/sda set 1 boot on
+  StartPoint="${EndPoint}"                            # For /home or /swap
+  MountDevice=$((MountDevice+1))                      # Advance partition numbering for next step
+  # 2) Make /home partition at startpoint
   if [ -n "$3" ] && [ "$3" != "0" ]; then
-    # eg: parted /dev/sda mkpart primary ext4 12GiB 19GiB
-    parted_script "mkpart primary ext4 ${StartPoint} ${3}"
+    Start="$End"
+    guided_recalc "$3"                                # Get numeric part og home size
+    End=$((Start+Calculator))
+    EndPoint="${End}MiB"
+    parted_script "mkpart primary ext4 ${StartPoint} ${EndPoint}" # eg: parted /dev/sda mkpart primary ext4 12000GiB 19000GiB
     HomePartition="${GrubDevice}${MountDevice}"
-    AddPartList[0]="${HomePartition}"         # eg: /dev/sda2  | add to
-    AddPartMount[0]="/home"                   # Mountpoint     | array of
-    AddPartType[0]="$HomeType"                # Filesystem     | additional partitions
+    AddPartList[0]="${HomePartition}"                 # eg: /dev/sda2  | add to
+    AddPartMount[0]="/home"                           # Mountpoint     | array of
+    AddPartType[0]="$HomeType"                        # Filesystem     | additional partitions
     Home="Y"
-    # eg: mkfs.ext4 /dev/sda3
-    mkfs."$HomeType" "${HomePartition}" &>> feliz.log
-    StartPoint=$3                             # Reset startpoint for /swap
-    MountDevice=$((MountDevice+1))            # Advance partition numbering
+    mkfs."$HomeType" "${HomePartition}" &>> feliz.log # eg: mkfs.ext4 /dev/sda3
+    StartPoint="${EndPoint}"                          # Reset startpoint for /swap
+    MountDevice=$((MountDevice+1))                    # Advance partition numbering
   fi
-  # Make /swap partition at startpoint
+  # 3) Make /swap partition at startpoint
   if [ -n "$4" ] && [ "$4" != "0" ]; then
-    # eg: parted /dev/sda mkpart primary linux-swap 31GiB 100%
-    parted_script "mkpart primary linux-swap ${StartPoint} ${4}"
+    EndPoint="${4}"
+    parted_script "mkpart primary linux-swap ${StartPoint} ${EndPoint}" # eg: parted /dev/sda mkpart primary linux-swap 31GiB 100%
     SwapPartition="${GrubDevice}${MountDevice}"
     mkswap "$SwapPartition"
     MakeSwap="Y"
@@ -159,7 +164,6 @@ function select_filesystem # User chooses filesystem from list in global variabl
 
   menu_dialog_variable="ext4 ext3 btrfs xfs"
   menu_dialog 16 55 "$_Exit"
-
   if [ $retval -ne 0 ]; then
     PartitionType=""
     return 1
@@ -168,7 +172,7 @@ function select_filesystem # User chooses filesystem from list in global variabl
   fi
 }
 
-function guided_message
+function guided_message # Inform user
 {
   message_first_line "Here you can set the size and format of the partitions"
   message_subsequent "you wish to create. When ready, Feliz will wipe the disk"
@@ -215,7 +219,6 @@ function guided_partitions
     SwapSize="0"
     dialog --backtitle "$Backtitle" --title " $title " \
       --yes-label "$Yes" --no-label "$No" --yesno "\n$Message" 10 60 2>output.file
-    
     if [ $? -eq 0 ]; then
       set_swap_file # Note: Global variable SwapFile is set by set_swap_file
                     # and a swap file is created during installation by MountPartitions
@@ -223,43 +226,45 @@ function guided_partitions
       SwapSize="0"
     fi
   fi
-
   prepare_partitions "${StartPoint}" "${RootSize}" "${HomeSize}" "${SwapSize}" # variables include MiB GiB or %
-  AutoPart="GUIDED"                     # Set auto-partition flag
+  AutoPart="GUIDED"                         # Set auto-partition flag
 }
 
-function guided_recalc                  # Calculate remaining disk space
-{
-  if [ -z $1 ] || [  $1 -eq 0 ]; then return; fi         # Just in case
+function guided_recalc  # Calculate remaining disk space
+{                       # $1 is a partition size eg: 10MiB or 100% or perhaps 0
+  if [ -z "$1" ] || [  "$1" == 0 ]; then Calculator=0; return; fi # Just in case
   local Passed
-  Chars=${#1}                           # Count characters in variable
+  Chars=${#1}                               # Count characters in variable
   
-  if [ ${1: -1} = "%" ]; then           # Allow for percentage
-    Passed=${1:0:Chars-1}               # Passed variable stripped of unit
-    Value=$((FreeSpace*100/Passed))     # Convert percentage to value
+  if [ ${1: -1} = "%" ]; then               # Allow for percentage
+    Passed=${1:0:Chars-1}                   # Passed variable stripped of unit
+    Value=$((FreeSpace*100/Passed))         # Convert percentage to value
     Calculator=$Value
   elif [ ${1: -1} = "G" ]; then
-    Passed=${1:0:Chars-1}               # Passed variable stripped of unit
-    Calculator=$((Passed*1024))
+    Passed=${1:0:Chars-1}                   # Passed variable stripped of unit
+    Calculator=$((Passed*Factor))
   elif [ ${1: -3} = "GiB" ]; then  
-    Passed=${1:0:Chars-3}               # Passed variable stripped of unit
-    Calculator=$((Passed*1024))
+    Passed=${1:0:Chars-3}                   # Passed variable stripped of unit
+    Calculator=$((Passed*Factor))
   elif [ ${1: -1} = "M" ]; then
-    Calculator=${1:0:Chars-1}           # (M or MiB) Passed variable stripped of unit
+    Calculator=${1:0:Chars-1}               # (M or MiB) Passed variable stripped of unit
   elif [ ${1: -3} = "MiB" ]; then
-    Calculator=${1:0:Chars-3}           # (M or MiB) Passed variable stripped of unit
+    Calculator=${1:0:Chars-3}               # (M or MiB) Passed variable stripped of unit
   else
-    read -p "Error in free-space calculator at line $LINENO"
+    echo "Error at ${BASH_SOURCE[0]} ${FUNCNAME[0]} line $LINENO"
   fi
-
   # Recalculate available space
   FreeSpace=$((FreeSpace-Calculator))
 }
 
 function guided_root # MBR & EFI Set variables: RootSize, RootType
 {
-  FreeGigs=$((FreeSpace/1024))
-
+  if [ $Factor -gt 0 ]; then
+    FreeGigs=$((FreeSpace/Factor))
+  else
+    FreeGigs=0
+    Return 1
+  fi
   while true
   do
     # Clear display, show /boot and available space
@@ -320,7 +325,12 @@ function guided_root # MBR & EFI Set variables: RootSize, RootType
 
 function guided_home # MBR & EFI Set variables: HomeSize, HomeType
 {
-  FreeGigs=$((FreeSpace/1024))
+  if [ $Factor -gt 0 ]; then
+    FreeGigs=$((FreeSpace/Factor))
+  else
+    FreeGigs=0
+    Return 1
+  fi
   while true
   do
     # Show /root, /swap and available space
@@ -377,7 +387,12 @@ function guided_home # MBR & EFI Set variables: HomeSize, HomeType
 function guided_swap # MBR & EFI Set variable: SwapSize
 {
   # Show /boot and /root
-  FreeGigs=$((FreeSpace/1024))
+  if [ $Factor -gt 0 ]; then
+    FreeGigs=$((FreeSpace/Factor))
+  else
+    FreeGigs=0
+    Return 1
+  fi
   while true
   do
     if [ ${FreeSpace} -gt 0 ]; then
@@ -483,5 +498,5 @@ function display_results
     p="$p \n $Item"                  # Add to $p with newline after each $Item
   done < output.file
 
-  dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n Partitioning of ${GrubDevice} \n $p" 20 70
+  dialog --backtitle "$Backtitle" --ok-label "$Ok" --msgbox "\n Partitioning of ${GrubDevice} \n $p" 20 77
 }
