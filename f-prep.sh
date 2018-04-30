@@ -87,7 +87,7 @@ function prepare_device # Called by autopart, guided_MBR and guided_EFI
   if [ ${UEFI} -eq 1 ]; then                        # Installing in UEFI environment
     while true
     do
-      message_first "A partition is needed for"
+      message_first_line "A partition is needed for"
       Message="$Message EFI boot"
       message_subsequent "can be anything from 512MiB upwards but"
       Message="EFI boot $Message"
@@ -106,8 +106,8 @@ function prepare_device # Called by autopart, guided_MBR and guided_EFI
         RESPONSE="${Result^^}"
       fi
       CheckInput=${RESPONSE: -1}
-      if [ "$CheckInput" != "M" ]; then
-        continue
+      if [ "$CheckInput" = "M" ]; then
+        break
       fi
     done
     parted_script "mklabel gpt"                     # Create new filesystem
