@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 26th April 2018
+# Revision date: 30th April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,17 +37,14 @@
 function set_language {
   
   setfont LatGrkCyr-8x16 -m 8859-2    # To display wide range of characters
-  
   # First load English file
   if [ ! -f English.lan ]; then
     wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/English.lan 2>> feliz.log
   fi
-  
-  dialog --backtitle "$Backtitle" \
-    --title " Idioma/Język/Language/Langue/Limba/Língua/Sprache " --no-tags --menu \
-    "\n       You can use the UP/DOWN arrow keys, or\n \
-    the first letter of your choice as a hot key.\n \
-           Please choose your language" 21 60 11 \
+  clear
+  dialog --backtitle "$Backtitle" --title " Idioma/Język/Language/Langue/Limba/Língua/Sprache " \
+        --ok-label "Ok" --no-tags --menu \
+    "\n You can use the UP/DOWN arrow keys,\n or the first letter of your choice.\n Please choose your language" 21 60 11 \
       en "English" \
       de "Deutsche" \
       el "Ελληνικά" \
@@ -85,7 +82,6 @@ function set_language {
     if [ ! -f ${LanguageFile} ]; then
       wget https://raw.githubusercontent.com/angeltoast/feliz-language-files/master/${LanguageFile} 2>> feliz.log
     fi
-
   #  if [ ! -f trans ]; then               # If Google translate hasn't already been installed, get it
   #    wget -q git.io/trans 2>> feliz.log  # (for situations where no translation is found in language files)
   #    chmod +x ./trans
@@ -106,8 +102,6 @@ function set_language {
   Ok="$Result"
   translate "Yes"
   Yes="$Result"
-
-  return 0
 }
 
 function not_found {                # Optional arguments $1 & $2 for box size
@@ -122,7 +116,6 @@ function not_found {                # Optional arguments $1 & $2 for box size
     Length=25
   fi
   dialog --backtitle "$Backtitle" --title " Not Found " --ok-label "$Ok" --msgbox "\n$Message $3" $Height $Length
-  return 0
 }
 
 function dialog_inputbox {          # General-purpose input box ... $1 & $2 are box size
@@ -135,13 +128,11 @@ function dialog_inputbox {          # General-purpose input box ... $1 & $2 are 
 function message_first_line {       # translates $1 and starts a Message with it
   translate "$1"
   Message="$Result"
-  return 0
 }
 
 function message_subsequent {       # translates $1 and continues a Message with it
   translate "$1"
   Message="${Message}\n${Result}"
-  return 0
 }
 
 function print_first_line {         # Called by FinalCheck to display all user-defined variables
@@ -156,14 +147,12 @@ function print_first_line {         # Called by FinalCheck to display all user-d
     EMPTY="$(printf '%*s' $stpt)"
   fi
   echo "$EMPTY $text"
-  return 0
 }
 
 function print_subsequent { # Called by FinalCheck to display all user-defined variables
                             # Prints argument(s) aligned to print_first_line according to content and screen size
   text="$1 $2 $3"
   echo "$EMPTY $text"
-  return 0
 }
 
 function translate {  # Called by message_first_line & message_subsequent and by other functions as required
@@ -182,7 +171,6 @@ function translate {  # Called by message_first_line & message_subsequent and by
      Result=$(cat output.file) ;;
   *) Result="$(head -n ${RecordNumber} ${LanguageFile} | tail -n 1)" # Read item from target language file
   esac
-  return 0
 }
 
 # Partition variables and arrays
@@ -212,6 +200,12 @@ AutoPart="MANUAL"         # Flag - MANUAL/AUTO/GUIDED/CFDISK/NONE
 UseDisk="sda"             # Used if more than one disk
 DiskDetails=0             # Size of selected disk
 Calculator=0              # Used in f-prep to separate numeric part of "nGiB"
+
+# Variables for UEFI Architecture
+UEFI=0                  # 1 = UEFI; 0 = BIOS
+EFIPartition=""         # eg: /dev/sda1
+UEFI_MOUNT=""    	      # UEFI mountpoint
+DualBoot="N"            # For formatting EFI partition
 
 # Grub & kernel variables
 GrubDevice=""             # eg: /dev/sda - device for grub

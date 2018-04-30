@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th April 2018
+# Revision date: 30th April 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,33 +26,27 @@
 # ------------------------    ------------------------
 # Functions           Line    Functions           Line
 # ------------------------    ------------------------
-# check_parts           45    no_swap_partition   346
-# use_parts             87    set_swap_file       361
-# build_lists           99    more_partitions     382
-# allocate_partitions  142    choose_mountpoint   430 
-# parted_script        150    display_partitions  461  
-# allocate_root        200    allocate_uefi       489 
-# allocate_swap        245    
-# select_device        285    get_device_size     570 
+# check_parts           45    select_device       249
+# use_parts             99    no_swap_partition   299
+# build_lists          109    set_swap_file       313
+# allocate_partitions  152    more_partitions     337
+# parted_script        176    choose_mountpoint   382
+# create_filesystem    181    display_partitions  413
+# allocate_root        186    allocate_uefi       441 
+# allocate_swap        214    get_device_size     462
 # ------------------------    ------------------------
-
-# Variables for UEFI Architecture
-UEFI=0                  # 1 = UEFI; 0 = BIOS
-EFIPartition=""         # eg: /dev/sda1
-UEFI_MOUNT=""    	      # UEFI mountpoint
-DualBoot="N"            # For formatting EFI partition
 
 function check_parts {  # Called by feliz.sh and f-set.sh
                         # Tests for existing partitions, informs user, calls build_lists to prepare arrays
                         # Displays menu of options, then calls partitioning_options to act on user selection
   if [ "$UEFI" -eq 1 ]; then
-    GrubDevice="EFI"                                                   # Preset $GrubDevice if installing in EFI
+    GrubDevice="EFI"                                                      # Preset $GrubDevice if installing in EFI
   fi
 
-  ShowPartitions=$(lsblk -l "$RootDevice" | grep 'part' | cut -d' ' -f1) # List all partitions on the device
+  ShowPartitions=$(lsblk -l "$RootDevice" | grep 'part' | cut -d' ' -f1)  # List all partitions on the device
   PARTITIONS=$(echo "$ShowPartitions" | wc -w)
 
-  if [ "$PARTITIONS" -eq 0 ]; then                                     # If no partitions exist, notify
+  if [ "$PARTITIONS" -eq 0 ]; then                                        # If no partitions exist, notify
     message_first_line "There are no partitions on the device"
     message_subsequent "Please read the 'partitioning' file for advice."
 
@@ -83,7 +77,7 @@ function check_parts {  # Called by feliz.sh and f-set.sh
         1) exit ;;
         2) shutdown -h now ;;
         3) auto_warning
-            if [ $retval -ne 0 ]; then continue; fi         # If 'No' then display menu again
+            if [ $retval -ne 0 ]; then continue; fi       # If 'No' then display menu again
             autopart ;;
         4) guided_partitions ;;
         *) more partitioning                              # Use bash 'more' to display help file
@@ -96,8 +90,8 @@ function check_parts {  # Called by feliz.sh and f-set.sh
   fi
 }
 
-function use_parts {    # Called by feliz.sh/the_start step 7 to display existing partitions
-  build_lists                                           # Generate list of partitions and matching array
+function use_parts { # Called by feliz.sh/the_start step 7 to display existing partitions
+  build_lists                                             # Generate list of partitions and matching array
   translate "Here is a list of available partitions"
   Message="\n               ${Result}:\n"
 
@@ -115,14 +109,12 @@ function build_lists { # Called by check_parts to generate details of existing p
   # 1) Make a simple list variable of all partitions up to sd*99
                          # | starts /dev/  | select 1st field | ignore /dev/
   PartitionList=$(fdisk -l | grep '^/dev/' | cut -d' ' -f1 | cut -d'/' -f3) # eg: sda1 sdb1 sdb2
-
   # 2) List IDs of all partitions with "LABEL=" | select 1st field (eg: sdb1) | remove colon | remove /dev/
     ListLabelledIDs=$(blkid /dev/sd* | grep '/dev/sd.[0-9]' | grep LABEL= | cut -d':' -f1 | cut -d'/' -f3)
     # If at least one labelled partition found, add a matching record to associative array Labelled[]
     for item in $ListLabelledIDs; do      
       Labelled[$item]=$(blkid /dev/sd* | grep "/dev/$item" | sed -n -e 's/^.*LABEL=//p' | cut -d'"' -f2)
     done
-
   # 3) Add records to the other associative array, PartitionArray, corresponding to PartitionList
     for part in ${PartitionList}; do
       # Get size and mountpoint of that partition
@@ -177,52 +169,37 @@ function parted_script { # Calls GNU parted tool with options
   parted --script "/dev/${UseDisk}" "$1" 2>> feliz.log
 }
 
-function check_filesystem { # Called by choose_mountpoint & allocate_root
-                            # Checks file system type on the selected partition
-                            # Sets $CurrentType to existing file system type
-  CurrentType=$(blkid "$Partition" | sed -n -e 's/^.*TYPE=//p' | cut -d'"' -f2)
+function create_filesystem {  # Called by choose_mountpoint & allocate_root
+                              # Creates a file-system on the selected partition
+  select_filesystem           # Offer the user the list of filesystem options
+  if [ $retval -eq 0 ] && [ -n $PartitionType ]; then
+    mkfs."${PartitionType}" "${Partition}" &>> feliz.log  # eg: mkfs.ext4 /dev/sda1
+  fi
 }
-
 
 function allocate_root {  # Called by allocate_partitions
                           # Display partitions for user-selection of one as /root
                           #  (uses list of all available partitions in PartitionList)
-  if [ "$UEFI" -eq 1 ]; then        # Installing in UEFI environment
-    allocate_uefi                   # First allocate the /boot partition
-    retval=$?
-    if [ $retval -ne 0 ]; then return 1; fi
+  if [ "$UEFI" -eq 1 ]; then          # Installing in UEFI environment
+    allocate_uefi                     # First allocate the /boot partition
+    if [ $? -ne 0 ]; then return 1; fi
   fi
   Remaining=""
   Partition=""
   PartitionType=""
   message_first_line "Please select a partition to use for /root"
   display_partitions
-  if [ $retval -ne 0 ]; then        # User selected <Cancel>
+  if [ $retval -ne 0 ]; then            # User selected <Cancel>
     PartitionType=""
     return 1
   fi
   
-  PassPart=${Result:0:4}            # eg: sda4
-  MountDevice=${PassPart:3:2}       # Save the device number for 'set x boot on'
+  PassPart=${Result:0:4}                # eg: sda4
+  MountDevice=${PassPart:3:2}           # Save the device number for 'set x boot on'
   Partition="/dev/$Result"
   RootPartition="${Partition}"
 
-  if [ "$AutoPart" = "MANUAL" ]; then # Not required for AUTO or GUIDED
-                                    # Check if there is an existing filesystem on the selected partition
-    check_filesystem                # This sets variable CurrentType and starts the Message
-    Message="\n${Message}"
-    if [ -n "$CurrentType" ]; then
-      dialog --backtitle "$Backtitle" --title " Root Partition " \
-    --yes-label "$Yes" --no-label "$No" --yesno "\nReformat the root partition?" 6 50
-      retval=$?
-      if [ $retval -eq 0 ]; then
-        PartitionType="$CurrentType"    # Reformat to current type
-      else
-        PartitionType=""                # PartitionType can be empty (will not be formatted)
-      fi
-      RootType="${PartitionType}"
-    fi
-  fi
+  create_filesystem                     # User selects filesystem
 
   PartitionList=$(echo "$PartitionList" | sed "s/$PassPart//")  # Remove the used partition from the list
 }
@@ -240,17 +217,15 @@ function allocate_swap { # Called by allocate_partitions
   PartitionList="$PartitionList swapfile"
   display_partitions  # Sets $retval & $Result, and returns 0 if it completes
   if [ $retval -ne 0 ]; then
-    FormatSwap="N"
     return 1          # Returns 1 to caller if no partition selected
   fi
-  FormatSwap="Y"
   Swap="$Result"
   if [ "$Swap" = "swapfile" ]; then
     set_swap_file
   else
     SwapPartition="/dev/$Swap"
     IsSwap=$(blkid "$SwapPartition" | grep 'swap' | cut -d':' -f1)
-    MakeSwap="Y"
+    mkswap "$SwapPartition"
   fi
   PartitionList="$SavePartitionList"                                        # Restore PartitionList without 'swapfile'
   if [ -z "$SwapPartition" ] && [ -z "$SwapFile" ]; then
@@ -261,7 +236,6 @@ function allocate_swap { # Called by allocate_partitions
   elif [ -n "$SwapFile" ]; then
     dialog --ok-label "$Ok" --msgbox "Swap file = ${SwapFile}" 5 20
   fi
-  return 0
 }
 
 function select_device {  # Called by f-part.sh/check_parts
@@ -309,7 +283,6 @@ function select_device {  # Called by f-part.sh/check_parts
   else                          # If only one device
     UseDisk=$(echo "$DiskDetails" | cut -d' ' -f1)        # Save just the name
   fi
-
   RootDevice="/dev/${UseDisk}"  # Full path of selected device
   EFIPartition="${RootDevice}1"
 }
@@ -325,7 +298,6 @@ function no_swap_partition {  # Called by allocate_partitions when there are no 
   *) SwapPartition=""
     SwapFile=""
   esac
-  return 0
 }
 
 function set_swap_file {
@@ -334,9 +306,7 @@ function set_swap_file {
     message_first_line "Set the size of your swap file"
     message_subsequent "M = Megabytes, G = Gigabytes [ eg: 512M or 2G ]"
     title="Swap File"
-
-    dialog_inputbox 12 60
- 
+    dialog_inputbox 12 60                                     # User enters size
     if [ $retval -ne 0 ]; then SwapFile=""; return 0; fi
     RESPONSE="${Result^^}"
     # Check that entry includes 'M or G'
@@ -349,11 +319,10 @@ function set_swap_file {
       break
     fi
   done
-  return 0
 }
 
-function more_partitions {  # Called by allocate_partitions if partitions remain
-                            # unallocated. User may select for /home, etc
+function more_partitions {  # Called by allocate_partitions if any partitions
+                            # remain unallocated. User may select for /home, etc
   translate "Partitions"
   title="$Result"
   declare -i Elements
@@ -362,37 +331,33 @@ function more_partitions {  # Called by allocate_partitions if partitions remain
   while [ "$Elements" -gt 0 ]; do
     message_first_line "The following partitions are available"
     message_subsequent "If you wish to use one, select it from the list"
-
     display_partitions                        # Sets $retval & $Result, and returns 0 if completed
-
     if [ "$retval" -ne 0 ]; then return 1; fi # User cancelled or escaped; no partition selected. Inform caller
     PassPart=${Result:0:4}                    # Isolate first 4 characters of partition
     Partition="/dev/$PassPart"
-    choose_mountpoint   # Calls dialog_inputbox to manually enter mountpoint
-                        # Validates response, warns if already used, then adds the partition to
-    retval=$?           # the arrays for extra partitions. Returns 0 if completed, 1 if interrupted
-
-    if [ $retval -ne 0 ]; then return 1; fi # Inform calling function that user cancelled; no details added
-
-    # If this point has been reached, then all data for a partiton has been accepted
-    # So add it to the arrays for extra partitions
-    ExtraPartitions=${#AddPartList[@]}                # Count items in AddPartList
-
-    AddPartList[$ExtraPartitions]="${Partition}"      # Add this item (eg: /dev/sda5)
-    AddPartType[$ExtraPartitions]="${PartitionType}"  # Add filesystem
-    AddPartMount[$ExtraPartitions]="${PartMount}"     # And the mountpoint
-  
-    PartitionList=$(echo "$PartitionList" | sed "s/$PassPart//") # Remove the used partition from the list
-    Elements=$(echo "$PartitionList" | wc -w)                     # and count remaining partitions
+    choose_mountpoint  # Displays inputbox to manually enter mountpoint, validates response, warns
+                       # if already used, then adds the partition to the arrays for extra partitions.
+    retval=$?          # Returns 0 if completed, 1 if interrupted 2 if incomplete
+    case $retval in
+    2) continue ;;     # Invalid mountpoint attempted
+    1) return 1 ;;     # Inform calling function that user cancelled; no details added
+    *) # If this point has been reached, then all data for a partiton has been accepted
+      create_filesystem                                 # So create a filesystem on the partition
+      # And add it to the arrays for extra partitions
+      ExtraPartitions=${#AddPartList[@]}                # Count items in AddPartList
+      AddPartList[$ExtraPartitions]="${Partition}"      # Add this item (eg: /dev/sda5)
+      AddPartType[$ExtraPartitions]="${PartitionType}"  # Link filesystem
+      AddPartMount[$ExtraPartitions]="${PartMount}"     # and mountpoint
+      if [ "${PartMount}" = "/home" ]; then HomePartition="${Partition}"; fi
+      PartitionList=$(echo "$PartitionList" | sed "s/$PassPart//") # Remove the used partition from the list
+      Elements=$(echo "$PartitionList" | wc -w)                    # and count remaining partitions
+    esac
   done
-
-  # Ensure that if AddPartList (the defining array) is empty, all others are too
+  # Ensure that if AddPartList (the defining array) is empty, all others are also empty
   if [ ${#AddPartList[@]} -eq 0 ]; then
     AddPartMount=()
     AddPartType=()
   fi
-
-  return 0
 }
 
 function choose_mountpoint {  # Called by more_partitions. Uses $Partition set by caller
@@ -401,7 +366,6 @@ function choose_mountpoint {  # Called by more_partitions. Uses $Partition set b
   declare -i formatPartition=0                      # Set to reformat
   message_first_line "Enter a mountpoint for"
   Message="$Message ${Partition}\n(eg: /home) ... "
-  
   dialog_inputbox 10 50                           # User manually enters a mountpoint; Sets $retval & $Result
                                                   # Returns 0 if completed, 1 if cancelled by user
   if [ $retval -ne 0 ]; then return 1; fi         # No mountpoint selected, so inform calling function
@@ -415,22 +379,21 @@ function choose_mountpoint {  # Called by more_partitions. Uses $Partition set b
 
   if [ ${#AddPartMount[@]} -gt 0 ]; then          # If there are existing (extra) mountpoints
     for MountPoint in ${AddPartMount}; do         # Go through AddPartMount
-      if [ "$MountPoint" = "$PartMount" ]; then       # If the mountpoint has already been used
+      if [ "$MountPoint" = "$PartMount" ]; then   # If the mountpoint has already been used, inform user ...
         dialog --backtitle "$Backtitle" --ok-label "$Ok" \
           --msgbox "\nMountpoint ${PartMount} has already been used.\nPlease use a different mountpoint." 6 30
-        PartMount=""                              # Ensure that outer loop will continue
-        break
+        PartMount=""                              # ... ensure that outer loop will continue ...
+        return 2                                  # ... and return
       fi
     done
   fi
-  return 0
 }
 
 function display_partitions { # Called by more_partitions, allocate_swap & allocate_root
                               # Uses $PartitionList & PartitionArray to generate menu of available partitions
                               # Sets $retval (0/1) and $Result (Item text from output.file - eg: sda1)
                               # Calling function must validate output
-  declare -a ItemList=()                                    # Array will hold entire list for menu display
+  declare -a ItemList=()                                    # Array to hold entire list for menu display
   Items=0
   for Item in $PartitionList; do 
     Items=$((Items+1))
@@ -461,7 +424,6 @@ function allocate_uefi {  # Called at start of allocate_root, as first step of E
 	local Counter=0
   Partition=""
 	PartitionType=""
-
 	translate "Here are the partitions that are available"
   title="$Result"
 	message_first_line "First you should select one to use for EFI /boot"
@@ -471,6 +433,7 @@ function allocate_uefi {  # Called at start of allocate_root, as first step of E
   PassPart="/dev/${Result}" # eg: sda1
   SetLabel="/dev/${Result}"
 	EFIPartition="/dev/${Result}"
+  mkfs.vfat -F32 ${EFIPartition} 2>> feliz.log  # Format EFI boot partition
   PartitionList=$(echo "$PartitionList" | sed "s/${Result}$//")  # Remove selected item
 }
 

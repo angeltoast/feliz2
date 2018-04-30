@@ -43,7 +43,6 @@ function main {       # Prepare environment, call the four processes in sequence
   Backtitle=$(head -n 1 README)                   # Will be different for testing or stable
 
   # Check if on UEFI or BIOS system
-  tput setf 0                                     # Change foreground colour to black to hide system messages
   dmesg | grep -q "efi: EFI"                      # Test for EFI (-q tells grep to be quiet)
   if [ $? -eq 0 ]; then                           # check exit code; 0 = EFI, else BIOS
     UEFI=1                                        # Set variable UEFI ON and mount the device
@@ -51,10 +50,8 @@ function main {       # Prepare environment, call the four processes in sequence
   else
     UEFI=0                                        # Set variable UEFI OFF
   fi
-  tput sgr0                                       # Reset foreground colour
 
   timedatectl set-ntp true
-    
   while true; do
     the_start                                     # All user interraction takes place in this function
     case $? in                                    # the_start allows progressive 'backing out'

@@ -26,14 +26,14 @@
 # ---------------------------    ---------------------------
 # Functions              Line    Functions              Line
 # ---------------------------    ---------------------------
-# arch_chroot              39    install_extras          234
-# parted_script            43    install_yaourt          329
-# install_message          47    user_add                350
-# mount_partitions         55    check_existing          412
-# install_kernel           96    set_root_password       418 
-# add_codecs              133    set_user_password       472 
-# mirror_list             169    finish                  517 
-# install_display_manager 222    
+# arch_chroot              39    install_extras          228
+# parted_script            43    install_yaourt          321
+# install_message          47    user_add                342
+# mount_partitions         55    check_existing          409
+# install_kernel           90    set_root_password       415 
+# add_codecs              127    set_user_password       468 
+# mirror_list             163    finish                  510
+# install_display_manager 216    
 # --------------------------    ---------------------------
 
 function arch_chroot { # From Lution AIS - calls arch-chroot with options
@@ -58,15 +58,15 @@ function mount_partitions { # Format and mount each partition as defined by MANU
   install_message "Preparing and mounting partitions"
 
   # 1) Root partition
-    umount "$RootPartition" 2>> feliz.log
-    if [ -n "$RootType" ]; then
-      mkfs.${RootType} ${RootPartition} &>> feliz.log                 # eg: mkfs.ext4 -L Arch-Root /dev/sda1
-    fi
+    # umount "$RootPartition" 2>> feliz.log
+  #  if [ -n "$RootType" ]; then
+  #    mkfs.${RootType} ${RootPartition} &>> feliz.log                 # eg: mkfs.ext4 -L Arch-Root /dev/sda1
+  #  fi
     mount "$RootPartition" /mnt 2>> feliz.log                         # eg: mount /dev/sda1 /mnt
 
   # 2) EFI (if required)
     if [ "$UEFI" -eq 1 ] && [ "$DualBoot" = "N" ]; then               # Check if /boot partition required
-      umount "$EFIPartition" 2>> feliz.log
+      # umount "$EFIPartition" 2>> feliz.log
       mkdir -p /mnt/boot                                              # Make mountpoint
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2> feliz.log
       mount "$EFIPartition" /mnt/boot                                 # eg: mount /dev/sda2 /mnt/boot
@@ -79,9 +79,8 @@ function mount_partitions { # Format and mount each partition as defined by MANU
   # 4) Any additional partitions (from the related arrays AddPartList, AddPartMount & AddPartType)
     local Counter=0
     for id in "${AddPartList[@]}"; do                                 # $id will be in the form /dev/sda2
-      umount "$id" 2>> feliz.log
+      # umount "$id" 2>> feliz.log
       mkdir -p /mnt${AddPartMount[$Counter]} 2>> feliz.log            # eg: mkdir -p /mnt/home
-
       mount "$id" /mnt${AddPartMount[$Counter]} &>> feliz.log         # eg: mount /dev/sda3 /mnt/home
       Counter=$((Counter+1))
     done
@@ -96,7 +95,7 @@ function install_kernel { # Called without arguments by feliz.sh
   # trust update. Next trust update due 2018:06:25
   # Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
   isodate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
-  TrustDate=201801                                                # Date of latest Arch Linux trust update
+  TrustDate=201804                                                # Date of latest Arch Linux trust update
   # Next trustdb check 2018-06-25
   if [ "$isodate" -ge "$TrustDate" ]; then                        # If the running iso is more recent than
     echo "pacman-key trust check passed" >> feliz.log             # the last trust update, no action is taken
@@ -113,9 +112,9 @@ function install_kernel { # Called without arguments by feliz.sh
   translate "kernel and core systems"
   install_message "$Message $Result"
   case "$Kernel" in
-  1) # This is the full linux group list at 1st August 2017 with linux-lts in place of linux
-      # Use the script ArchBaseGroup.sh in FelizWorkshop to regenerate the list periodically
-    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs 2>> feliz.log ;;
+  1) # LTS - This is the full linux group list at 24th April 2018 with linux-lts in place of linux
+     # Use the script ArchBaseGroup.sh in FelizWorkshop to regenerate the list periodically
+    pacstrap /mnt autoconf automake bash binutils bison bzip2 coreutils cryptsetup device-mapper dhcpcd diffutils e2fsprogs fakeroot file filesystem findutils flex gawk gcc gcc-libs gettext glibc grep groff gzip inetutils iproute2 iputils jfsutils less libtool licenses linux-lts logrotate lvm2 m4 make man-db man-pages mdadm nano netctl pacman patch pciutils pcmciautils perl pkg-config procps-ng psmisc reiserfsprogs sed shadow s-nail sudo sysfsutils systemd systemd-sysvcompat tar texinfo usbutils util-linux vi which xfsprogs ;;
   *) pacstrap /mnt base base-devel 2>> feliz.log
   esac
   translate "cli tools"
