@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 4th April 2018
+# Revision date: 3rd June 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,8 +102,6 @@ function the_start {  # All user interraction takes place in this function
       setlocale                                   # CountryLocale eg: en_GB.UTF-8
       if [ $? -ne 0 ]; then step=1; continue; fi
       get_keymap                                  # Select keyboard layout eg: uk
-      if [ $? -ne 0 ]; then continue; fi
-      set_hostname
       case $? in
        0) step=5 ;;                               # Step 3 completed, advance to step 5
        1) continue ;;                             # Backout, rerun this step
@@ -116,6 +114,7 @@ function the_start {  # All user interraction takes place in this function
        *) step=3 ;;                               # Backout, rerun previous step
       esac ;;
     6) # desktop settings
+      set_hostname
       DesktopEnvironment=""
       type_of_installation                        # Basic or Full - use chooses Build, FeliOB or Basic
       if [ $? -ne 0 ]; then

@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 30th April 2018
+# Revision date: 3rd June 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@
 # print_first_line   127       ... and onwards
 # ----------------------    ------------------------
 
-function set_language {
-  
+function set_language
+{
   setfont LatGrkCyr-8x16 -m 8859-2    # To display wide range of characters
   # First load English file
   if [ ! -f English.lan ]; then
@@ -104,7 +104,8 @@ function set_language {
   Yes="$Result"
 }
 
-function not_found {                # Optional arguments $1 & $2 for box size
+function not_found
+{                     # Optional arguments $1 & $2 for box size
   if [ $1 ] && [ -n $1 ]; then
     Height="$1"
   else
@@ -116,6 +117,10 @@ function not_found {                # Optional arguments $1 & $2 for box size
     Length=25
   fi
   dialog --backtitle "$Backtitle" --title " Not Found " --ok-label "$Ok" --msgbox "\n$Message $3" $Height $Length
+}
+
+function Error { # Error-handling - $1 should be "${BASH_SOURCE[0]} ${FUNCNAME[0]} $LINENO"
+  echo "Error at $1" >> feliz.log
 }
 
 function dialog_inputbox {          # General-purpose input box ... $1 & $2 are box size

@@ -3,7 +3,7 @@
 # The Feliz installation scripts for Arch Linux
 # Developed by Elizabeth Mills  liz@feliz.one
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 30th April 2018
+# Revision date: 3rd June 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,14 +26,14 @@
 # ------------------------    ------------------------
 # Functions           Line    Functions           Line
 # ------------------------    ------------------------
-# check_parts           45    select_device       249
-# use_parts             99    no_swap_partition   299
-# build_lists          109    set_swap_file       313
-# allocate_partitions  152    more_partitions     337
-# parted_script        176    choose_mountpoint   382
-# create_filesystem    181    display_partitions  413
-# allocate_root        186    allocate_uefi       441 
-# allocate_swap        214    get_device_size     462
+# check_parts           39    select_device       264
+# use_parts             93    
+# build_lists          103    set_swap_file       313
+# allocate_partitions  144    more_partitions     334
+# parted_script        178    choose_mountpoint   373
+# create_filesystem    182    display_partitions  402
+# allocate_root        203    allocate_uefi       430 
+# allocate_swap        230    get_device_size     450
 # ------------------------    ------------------------
 
 function check_parts {  # Called by feliz.sh and f-set.sh
@@ -91,10 +91,9 @@ function check_parts {  # Called by feliz.sh and f-set.sh
 }
 
 function use_parts { # Called by feliz.sh/the_start step 7 to display existing partitions
-  build_lists                                             # Generate list of partitions and matching array
+  build_lists        # Generate list of partitions and matching array
   translate "Here is a list of available partitions"
   Message="\n               ${Result}:\n"
-
   for part in ${PartitionList}; do
     Message="${Message}\n        $part ${PartitionArray[${part}]}"
   done
@@ -106,39 +105,39 @@ function build_lists { # Called by check_parts to generate details of existing p
   # 2) Saves any existing labels on any partitions into an associative array - Labelled
   # 3) Assembles information about all partitions in another associative array - PartitionArray
 
-  # 1) Make a simple list variable of all partitions up to sd*99
+# 1) Make a simple list variable of all partitions up to sd*99
                          # | starts /dev/  | select 1st field | ignore /dev/
   PartitionList=$(fdisk -l | grep '^/dev/' | cut -d' ' -f1 | cut -d'/' -f3) # eg: sda1 sdb1 sdb2
-  # 2) List IDs of all partitions with "LABEL=" | select 1st field (eg: sdb1) | remove colon | remove /dev/
-    ListLabelledIDs=$(blkid /dev/sd* | grep '/dev/sd.[0-9]' | grep LABEL= | cut -d':' -f1 | cut -d'/' -f3)
-    # If at least one labelled partition found, add a matching record to associative array Labelled[]
-    for item in $ListLabelledIDs; do      
-      Labelled[$item]=$(blkid /dev/sd* | grep "/dev/$item" | sed -n -e 's/^.*LABEL=//p' | cut -d'"' -f2)
-    done
-  # 3) Add records to the other associative array, PartitionArray, corresponding to PartitionList
-    for part in ${PartitionList}; do
-      # Get size and mountpoint of that partition
-      SizeMount=$(lsblk -l "$RootDevice" | grep "${part} " | awk '{print $4 " " $7}')      # eg: 7.5G [SWAP]
-      # And the filesystem:        | just the text after TYPE= | select first text inside double quotations
-      Type=$(blkid /dev/"$part" | sed -n -e 's/^.*TYPE=//p' | cut -d'"' -f2) # eg: ext4
-      PartitionArray[$part]="$SizeMount $Type" # ... and save them to the associative array
-    done
-    # Add label and bootable flag to PartitionArray
-    for part in ${PartitionList}; do
-      # Test if flagged as bootable
-      Test=$(sfdisk -l 2>/dev/null | grep '/dev' | grep "$part" | grep '*')
-      if [ -n "$Test" ]; then
-        Bootable="Bootable"
-      else
-        Bootable=""
-      fi
-      # Read the current record for this partition in the array
-      Temp="${PartitionArray[${part}]}"
-      # ... and add the new data
-      PartitionArray[${part}]="$Temp ${Labelled[$part]} ${Bootable}" 
-      # eg: PartitionArray[sdb1] = "912M /media/elizabeth/Lubuntu dos Lubuntu 17.04 amd64"
-      #               | partition | size | -- mountpoint -- | filesystem | ------ label ------- |
-    done
+# 2) List IDs of all partitions with "LABEL=" | select 1st field (eg: sdb1) | remove colon | remove /dev/
+  ListLabelledIDs=$(blkid /dev/sd* | grep '/dev/sd.[0-9]' | grep LABEL= | cut -d':' -f1 | cut -d'/' -f3)
+  # If at least one labelled partition found, add a matching record to associative array Labelled[]
+  for item in $ListLabelledIDs; do      
+    Labelled[$item]=$(blkid /dev/sd* | grep "/dev/$item" | sed -n -e 's/^.*LABEL=//p' | cut -d'"' -f2)
+  done
+# 3) Add records to the other associative array, PartitionArray, corresponding to PartitionList
+  for part in ${PartitionList}; do
+    # Get size and mountpoint of that partition
+    SizeMount=$(lsblk -l "$RootDevice" | grep "${part} " | awk '{print $4 " " $7}')      # eg: 7.5G [SWAP]
+    # And the filesystem:        | just the text after TYPE= | select first text inside double quotations
+    Type=$(blkid /dev/"$part" | sed -n -e 's/^.*TYPE=//p' | cut -d'"' -f2) # eg: ext4
+    PartitionArray[$part]="$SizeMount $Type" # ... and save them to the associative array
+  done
+# 4) Add label and bootable flag to PartitionArray
+  for part in ${PartitionList}; do
+    # Test if flagged as bootable
+    Test=$(sfdisk -l 2>/dev/null | grep '/dev' | grep "$part" | grep '*')
+    if [ -n "$Test" ]; then
+      Bootable="Bootable"
+    else
+      Bootable=""
+    fi
+    # Read the current record for this partition in the array
+    Temp="${PartitionArray[${part}]}"
+    # ... and add the new data
+    PartitionArray[${part}]="$Temp ${Labelled[$part]} ${Bootable}" 
+    # eg: PartitionArray[sdb1] = "912M /media/elizabeth/Lubuntu dos Lubuntu 17.04 amd64"
+    #               | partition | size | -- mountpoint -- | filesystem | ------ label ------- |
+  done
 }
 
 function allocate_partitions { # Called by feliz.sh
@@ -152,8 +151,18 @@ function allocate_partitions { # Called by feliz.sh
   if [ -n "$PartitionList" ]; then      # If there are unallocated partitions
     allocate_swap                       # Display display them for user to choose swap
   else                                  # If there is no partition for swap
-    no_swap_partition                   # Inform user and allow swapfile
+    message_first_line "There are no partitions available for swap"
+    message_subsequent "but you can assign a swap file"
+    dialog --backtitle "$Backtitle" --title " $title " \
+      --yes-label "$Yes" --no-label "$No"--yesno "\n$Message" 14 60 2>output.file
+    case $? in
+    0) set_swap_file
+      SwapPartition="" ;;
+    *) SwapPartition=""
+      SwapFile=""
+    esac
   fi
+
   if [ -z "$PartitionList" ]; then return 0; fi
   for i in ${PartitionList}; do         # Check contents of PartitionList
     echo "$i" > output.file               # If anything found, echo to file
@@ -165,14 +174,29 @@ function allocate_partitions { # Called by feliz.sh
   fi
 }
 
-function parted_script { # Calls GNU parted tool with options
-  parted --script "/dev/${UseDisk}" "$1" 2>> feliz.log
+function parted_script  # Called by f-prep/prepare_device & prepare_partitions
+{                       # Calls GNU parted with options passed in $1
+  parted --script "$GrubDevice" "$1" 2>> feliz.log
 }
 
-function create_filesystem {  # Called by choose_mountpoint & allocate_root
-                              # Creates a file-system on the selected partition
-  select_filesystem           # Offer the user the list of filesystem options
-  if [ $retval -eq 0 ] && [ -n $PartitionType ]; then
+function create_filesystem {  # Called by allocate_root, more_partitions, guided_root & guided_home
+                              # User chooses filesystem from ${TypeList}
+  local record="$1"  # 0 to create a filesystem, 1 to just record the variables
+  local Counter=0
+  message_first_line "Please select the file system for"
+  Message="$Message ${Partition}"
+  message_subsequent "It is not recommended to mix the btrfs file-system with others"
+  menu_dialog_variable="ext4 ext3 btrfs xfs None"         # Set the menu elements
+  menu_dialog 16 55 "$_Exit"                              # Display the menu
+  if [ $retval -ne 0 ] || [ "$Result" == "None" ]; then   # Nothing selected
+    PartitionType=""
+    retval=1
+  else
+    PartitionType="$Result"
+    retval=0
+  fi
+  # If required, create a file-system on the selected partition
+  if [ $record -eq 0 ] && [ $retval -eq 0 ] && [ -n $PartitionType ]; then
     mkfs."${PartitionType}" "${Partition}" &>> feliz.log  # eg: mkfs.ext4 /dev/sda1
   fi
 }
@@ -196,10 +220,10 @@ function allocate_root {  # Called by allocate_partitions
   
   PassPart=${Result:0:4}                # eg: sda4
   MountDevice=${PassPart:3:2}           # Save the device number for 'set x boot on'
-  Partition="/dev/$Result"
+  Partition="/dev/$Result"              # Result from display_partitions (eg: sda1)
   RootPartition="${Partition}"
 
-  create_filesystem                     # User selects filesystem
+  create_filesystem 0                   # User selects filesystem
 
   PartitionList=$(echo "$PartitionList" | sed "s/$PassPart//")  # Remove the used partition from the list
 }
@@ -287,19 +311,6 @@ function select_device {  # Called by f-part.sh/check_parts
   EFIPartition="${RootDevice}1"
 }
 
-function no_swap_partition {  # Called by allocate_partitions when there are no unallocated partitions
-  message_first_line "There are no partitions available for swap"
-  message_subsequent "but you can assign a swap file"
-  dialog --backtitle "$Backtitle" --title " $title " \
-    --yes-label "$Yes" --no-label "$No"--yesno "\n$Message" 14 60 2>output.file
-  case $? in
-  0) set_swap_file
-    SwapPartition="" ;;
-  *) SwapPartition=""
-    SwapFile=""
-  esac
-}
-
 function set_swap_file {
   SwapFile=""
   while [ -z ${SwapFile} ]; do
@@ -342,7 +353,7 @@ function more_partitions {  # Called by allocate_partitions if any partitions
     2) continue ;;     # Invalid mountpoint attempted
     1) return 1 ;;     # Inform calling function that user cancelled; no details added
     *) # If this point has been reached, then all data for a partiton has been accepted
-      create_filesystem                                 # So create a filesystem on the partition
+      create_filesystem 0                               # So create a filesystem on the partition
       # And add it to the arrays for extra partitions
       ExtraPartitions=${#AddPartList[@]}                # Count items in AddPartList
       AddPartList[$ExtraPartitions]="${Partition}"      # Add this item (eg: /dev/sda5)
