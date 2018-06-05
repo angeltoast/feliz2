@@ -422,35 +422,33 @@ function set_root_password {  # ↓↑
   Message="$Message ${DIFFMIN} $mins ${DIFFSEC} ${secs}\n"
   message_subsequent "Finally we need to set passwords"
   Message="${Message}\n"
-
+  message_subsequent "Note that you will not be able to"
+  message_subsequent "see passwords as you enter them"
+  Message="${Message}\n"
   Repeat="Y"
   while [ $Repeat = "Y" ]; do
     message_subsequent "Enter a password for"
     Message="${Message} root\n"
-    message_subsequent "Note that you will not be able to"
-    message_subsequent "see passwords as you enter them"
-    message_subsequent "Use cursor keys up/down"
-    Message="${Message}\n"
-    
-    dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
-    --passwordform "\n $Message" 20 60 2 \
-    "Enter password:" 1 1 "" 1 25 25 30 \
-    "Re-enter password:" 2 1 "" 2 25 25 30 \
-    2>output.file
-
-    Pass1=$(head -n1 output.file)
-    Pass2=$(tail -n1 output.file)
-
+    dialog --backtitle "$Backtitle" --title " $title " --insecure --nocancel \
+      --ok-label "$Ok" --passwordbox "$Message" 16 60 2>output.file
+    Pass1=$(cat output.file)
     rm output.file
-
-    if [ -z "$Pass1" ] || [ -z "$Pass2" ]; then
+    translate "Re-enter the password for"
+    Message="${Message} root\n"
+    dialog --backtitle "$Backtitle" --insecure --title " Root " --ok-label "$Ok" --nocancel --passwordbox "$Result root\n" 10 50 2>output.file
+    Pass2=$(cat output.file)
+    rm output.file
+    if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       title="Error"
       message_first_line "Passwords cannot be blank"
-      translate "Please try again"
-      Message="${Message}. $Result \n"
+      message_subsequent "Please try again"
+      Message="${Message}\n"
+      message_subsequent "Note that you will not be able to"
+      message_subsequent "see passwords as you enter them"
+      Message="${Message}\n"
       continue
     fi
-    if [ "$Pass1" = "$Pass2" ]; then
+    if [ $Pass1 = $Pass2 ]; then
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
      arch_chroot "passwd root" < /tmp/.passwd >> feliz.log
      rm /tmp/.passwd 2>> feliz.log
@@ -458,41 +456,44 @@ function set_root_password {  # ↓↑
     else
       title="Error"
       message_first_line "Passwords don't match"
-      translate "Please try again"
-      Message="${Message}. $Result \n"
+      message_subsequent "Please try again"
+      Message="${Message}\n"
+      message_subsequent "Note that you will not be able to"
+      message_subsequent "see passwords as you enter them"
+      Message="${Message}\n"
     fi
   done
 }
 
 function set_user_password {
-  title="Passwords"
+  message_first_line "Enter a password for"
+  Message="${Message} ${user_name}\n"
   Repeat="Y"
   while [ $Repeat = "Y" ]; do
-    message_first_line "Enter a password for"
-    Message="${Message} ${user_name}\n"
     message_subsequent "Note that you will not be able to"
     message_subsequent "see passwords as you enter them"
-    message_subsequent "Use cursor keys up/down"
-    Message="${Message} \n"
-    
-    dialog --backtitle "$Backtitle" --title " $title " --nocancel --insecure --ok-label "$Ok" \
-    --passwordform "\n $Message" 18 60 2 \
-    "Enter password:" 1 1 "" 1 25 25 30 \
-    "Re-enter password:" 2 1 "" 2 25 25 30 \
-    2>output.file
-
-    Pass1=$(head -n1 output.file)
-    Pass2=$(tail -n1 output.file)
-
+    Message="${Message}\n"
+    dialog --backtitle "$Backtitle" --title " $user_name " --insecure \
+      --ok-label "$Ok" --nocancel --passwordbox "$Message" 15 50 2>output.file
+    Pass1=$(cat output.file)
     rm output.file
-    if [ -z "$Pass1" ] || [ -z "$Pass2" ]; then
+    message_first_line "Re-enter the password for"
+    Message="${Message} $user_name\n"
+    dialog --backtitle "$Backtitle" --title " $user_name " --insecure \
+      --ok-label "$Ok" --nocancel --passwordbox "$Message" 10 50 2>output.file
+    Pass2=$(cat output.file)
+    rm output.file
+    if [ -z ${Pass1} ] || [ -z ${Pass2} ]; then
       title="Error"
       message_first_line "Passwords cannot be blank"
-      translate "Please try again"
-      Message="${Message}. $Result \n"
+      message_subsequent "Please try again"
+      Message="${Message}\n"
+      message_subsequent "Note that you will not be able to"
+      message_subsequent "see passwords as you enter them"
+      Message="${Message}\n"
       continue
     fi
-    if [ "$Pass1" = "$Pass2" ]; then
+    if [ $Pass1 = $Pass2 ]; then
      echo -e "${Pass1}\n${Pass2}" > /tmp/.passwd
      arch_chroot "passwd ${user_name}" < /tmp/.passwd >> feliz.log
      rm /tmp/.passwd 2>> feliz.log
@@ -500,8 +501,11 @@ function set_user_password {
     else
       title="Error"
       message_first_line "Passwords don't match"
-      translate "Please try again"
-      Message="${Message}. $Result \n"
+      message_subsequent "Please try again"
+      Message="${Message}\n"
+      message_subsequent "Note that you will not be able to"
+      message_subsequent "see passwords as you enter them"
+      Message="${Message}\n"
     fi
   done
 }
