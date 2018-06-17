@@ -3,7 +3,7 @@
 # The Feliz2 installation scripts for Arch Linux
 # Developed by Elizabeth Mills
 # With grateful acknowlegements to Helmuthdu, Carl Duff and Dylan Schacht
-# Revision date: 3rd June 2018
+# Revision date: 17th June 2018
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -88,25 +88,33 @@ function mount_partitions { # Format and mount each partition as defined by MANU
 
 function install_kernel { # Called without arguments by feliz.sh
                           # Installs selected kernel and some other core systems
+                          
   LANG=C                  # Set the locale for all processes run from the current shell 
 
-  # Solve pacman keys issue if an older Feliz or Arch iso is running after keyring changes
-  # Passes test if the date of the running iso is more recent than the date of the latest Arch
-  # trust update. Next trust update due 2018:06:25
-  # Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
-  isodate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
-  TrustDate=201804                                                # Date of latest Arch Linux trust update
-  # Next trustdb check 2018-06-25
-  if [ "$isodate" -ge "$TrustDate" ]; then                        # If the running iso is more recent than
-    echo "pacman-key trust check passed" >> feliz.log             # the last trust update, no action is taken
-  else                                                            # But if the iso is older than the last trust
-    install_message "Updating keys"                               # update then the keys are updated
-    pacman-db-upgrade
-    pacman-key --init
-    pacman-key --populate archlinux
-    pacman-key --refresh-keys
-    pacman -Sy --noconfirm archlinux-keyring
-  fi
+  # Pacman keys must be updated if the Feliz or Arch iso is older than the last keyring change
+    # 1) Get the page of the last Arch Linux trust update
+    trustpage=$(wget -q -O - https://www.archlinux.org/packages/core/any/archlinux-keyring/)
+    # 2) grep the line with the version date, and separate the date field 
+    trustline=$(echo "$trustpage" | grep '"version" content=' | cut -d'=' -f3) # eg: "20180404-1"/>
+    # 3) Trim just the first 6 digits of the date
+    TrustDate="${trustline:1:6}"
+    echo "TrustDate $TrustDate" >> feliz.log  # Save for reference
+    # 4) Use blkid to get details of the Feliz or Arch iso that is running, in the form yyyymm
+    isodate=$(blkid | grep "feliz\|arch" | cut -d'=' -f3 | cut -d'-' -f2 | cut -b-6)
+    echo "isodate $isodate" >> feliz.log      # Save for reference
+    # 5) If the running iso is more recent than the last trust update, no action is taken
+    if [ "$isodate" -ge "$TrustDate" ]; then                        
+      echo "pacman-key trust check passed" >> feliz.log
+    else  # But if the iso is older than the last trust update, then the keys must be updated
+      install_message "Updating keys"
+      pacman-db-upgrade
+      pacman-key --init
+      pacman-key --populate archlinux
+      pacman-key --refresh-keys
+      pacman -Sy --noconfirm archlinux-keyring
+      echo "pacman keys updated" >> feliz.log
+    fi
+
   translate "Installing"
   Message="$Result"
   translate "kernel and core systems"
@@ -398,7 +406,7 @@ function user_add { # Adds user and copies FelizOB configurations
   fi
   # Set keyboard at login for user
   arch_chroot "localectl set-x11-keymap $Countrykbd"
-  # cp /mnt/etc/X11/xinit/xinitrc /mnt/home/"$user_name"/.xinitrc 2>> feliz.log
+
   case "$Countrykbd" in
   "uk") echo "setxkbmap -layout gb &" >> /mnt/home/"$user_name"/.bashrc 2>> feliz.log ;;
   *) echo "setxkbmap -layout $Countrykbd &" >> /mnt/home/"$user_name"/.bashrc 2>> feliz.log
