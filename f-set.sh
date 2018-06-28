@@ -60,7 +60,7 @@ function menu_dialog {  # Display a simple menu from $menu_dialog_variable and r
   done
   # Display the list for user-selection
   dialog --backtitle "$Backtitle" --title " $title " \
-    --no-tags --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" \
+    --no-tags --ok-label "$Ok" --cancel-label "$cancel" --menu "$Message" \
       "$1" "$2" ${Items} "${ItemList[@]}" 2>output.file
   retval=$?
   Result=$(cat output.file)
@@ -381,7 +381,7 @@ function search_keyboards { # Called by get_keymap when all other options failed
       return 1
     fi
     local term="${Result,,}"
-    ListKbs=$(grep "${Term}" keymaps.list)
+    ListKbs=$(grep "${term}" keymaps.list)
     if [ -n "${ListKbs}" ]; then  # If a match or matches found
       menu_dialog_variable="$ListKbs"
       message_first_line "Please choose one"
@@ -471,7 +471,7 @@ function type_of_installation { # User chooses between FelizOB, self-build or ba
   translate "Basic_Arch_Linux"
   BAL="$Result"
   
-  dialog --backtitle "$Backtitle" --title " type_of_installation " \
+  dialog --backtitle "$Backtitle" --title " Type of Installation " \
     --ok-label "$Ok" --cancel-label "$Cancel" --menu "$Message" \
       24 70 3 \
       1 "$BMO" \
@@ -1041,7 +1041,7 @@ function manual_settings {  # Called without arguments by final_check if
     translate "User Name"
     Uname="$Result"
     message_first_line "Choose an item"
-    dialog --backtitle "$Backtitle" --title " $Uname & $Hname "
+    dialog --backtitle "$Backtitle" --title " $Uname & $Hname " \
       --ok-label "$Ok" --cancel-label "Done" --menu "\n$Message" 10 40 2 \
       "$Uname"  "$user_name" \
       "$Hname" 	"$HostName"   2> output.file
