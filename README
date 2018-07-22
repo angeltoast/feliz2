@@ -1,6 +1,8 @@
 					Feliz
 					-----
-The Feliz scripts were written to make installation of Arch Linux quick and easy. They are my gift to you, my legacy. I am finished. Feliz will slowly fail to work as Arch Linux moves on.
+The Feliz scripts were written to make installation of Arch Linux quick and easy.
+They are my gift to you, my legacy. I am finished.
+Feliz will slowly fail to work as Arch Linux moves on.
 
 1) Feliz can be run from an iso available at:
 	https://sourceforge.net/projects/feliz ... and ...
@@ -11,7 +13,8 @@ The Feliz scripts were written to make installation of Arch Linux quick and easy
    Feliz always downloads the latest scripts from Github at the start of each installation,
    so you don't need to replace your Feliz iso every time there's a new release.
 
-2) Alternatively, you can run Feliz by downloading the initialising script from Github into a running live Arch Linux session.
+2) Alternatively, you can run Feliz by downloading the initialising script from Github into
+   a running live Arch Linux session.
    Here's how to do it:
      1) Download Arch Linux from ... https://www.archlinux.org/download/
      2) Either:
@@ -26,10 +29,16 @@ The Feliz scripts were written to make installation of Arch Linux quick and easy
      5) Now enter: chmod +x felizinit-stable
      6) Then start Feliz by entering: ./felizinit-stable
 
-3) Feliz has helpful on-screen advice at every stage, guiding you through the entering of such essential data as your location, username, etc, offering you a host of extras from the official Arch repos (like desktop environments, web browsers, office software and programming tools) and working with you to set up your partitioning. Then everything rolls along automatically, displaying all output on the screen, so you can see exactly what the installer is doing - just like a manual installation.
+3) Feliz has helpful on-screen advice at every stage, guiding you through the entering of such
+   essential data as your location, username, etc, offering you a host of extras from the official
+   Arch repos (like desktop environments, web browsers, office software and programming tools) and
+   working with you to set up your partitioning. Then everything rolls along automatically, displaying
+   all output on the screen, so you can see exactly what the installer is doing - just like a manual
+   installation.
 
 4) Partitioning
-   Feliz includes options to help you with partitioning an empty device. There is now a file with advice about partitioning, which can be read during installation.
+   Feliz includes options to help you with partitioning an empty device. There is now a file with
+   advice about partitioning, which can be read during installation.
   
 Find our friendly and lively communities on Facebook:
 	https://www.facebook.com/groups/399100943839328/
@@ -39,13 +48,21 @@ Find our friendly and lively communities on Facebook:
 NOTE: From 1st March 2017, Arch Linux removed the i686 (32 bit) option from their installer.
       Arch Linux is now 64 bit only.
 
-Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+Feliz is free software; you can redistribute it and/or modify it under the terms of the GNU General
+Public License as published by the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
-Feliz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+Feliz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
 
-A copy of the GNU General Public License is available from the Feliz page at http://sourceforge.net/projects/feliz/files or https://github.com/angeltoast/feliz, or write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+A copy of the GNU General Public License is available from the Feliz page at ...
+ http://sourceforge.net/projects/feliz/files or https://github.com/angeltoast/feliz
+... or write to ...
+ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-And, finally, an anouncement from the creator of Feliz. I am not sure how much longer I will be able to maintain Feliz, so I hope that many people will clone Feliz and release their own versions to keep the dream alive.
+And, finally, an anouncement from the creator of Feliz. I am no longer able to maintain Feliz,
+so I hope that many people will clone Feliz and release their own versions to keep the dream alive.
 
 Elizabeth Mills
-19th April 2018
+22nd July 2018
